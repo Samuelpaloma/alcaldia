@@ -1,0 +1,4 @@
+.nav-link { padding: 0.5rem 0.75rem; border-radius: 0.5rem; }
+.nav-link:hover { background: hsl(var(--muted)); }
+.nav-link.active { background: hsl(var(--foreground)); color: hsl(var(--background)); }
+.nav-section { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: hsl(var(--muted-foreground)); margin: .5rem .25rem; }
