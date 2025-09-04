@@ -1,0 +1,101 @@
+@startuml
+title Ticket Management System - Class Diagram (IDs only)
+
+' ==== ENTIDADES BASE ====
+entity Usuario {
+  * id
+  * rol_id
+  * email
+  * contrasena
+}
+
+entity Rol {
+  * id
+  * nombre
+}
+
+entity Ticket {
+  * id
+  * usuario_id
+  * tecnico_id
+  * estado_ticket_id
+  * fecha_creacion
+  * fecha_cierre
+}
+
+entity EstadoTicket {
+  * id
+  * nombre
+}
+
+entity Comentario {
+  * id
+  * ticket_id
+  * usuario_id
+  * fecha
+}
+
+entity Evidencia {
+  * id
+  * ticket_id
+  * tipo (foto/video)
+  * archivo
+  * fecha
+}
+
+entity Notificacion {
+  * id
+  * usuario_id
+  * ticket_id
+  * fecha
+  * tipo
+}
+
+entity EncuestaSatisfaccion {
+  * id
+  * ticket_id
+  * usuario_id
+  * calificacion
+  * comentario
+}
+
+' ==== REPORTES Y DASHBOARD ====
+entity Reporte {
+  * id
+  * admin_id
+  * tipo (PDF/Excel)
+  * periodo
+}
+
+entity Dashboard {
+  * id
+  * admin_id
+}
+
+' ==== MODULO DE AUTOMATIZACIÓN E IA ====
+entity ReglaAutomatizacion {
+  * id
+  * descripcion
+  * condicion
+  * accion
+}
+
+entity MotorIA {
+  * id
+  * version
+}
+
+' ==== RELACIONES ====
+Usuario }o--o{ Rol : pertenece >
+Usuario ||--o{ Ticket : crea >
+Ticket }o--|| EstadoTicket : estado >
+Ticket ||--o{ Comentario : tiene >
+Ticket ||--o{ Evidencia : adjunta >
+Ticket ||--o{ Notificacion : genera >
+Ticket ||--o{ EncuestaSatisfaccion : recibe >
+Usuario ||--o{ Reporte : genera >
+Usuario ||--o{ Dashboard : consulta >
+MotorIA ||--o{ Ticket : clasifica >
+ReglaAutomatizacion ||--o{ Ticket : aplica >
+
+@enduml

@@ -1,0 +1,108 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #FDFDFD
+  BorderColor Black
+  ArrowColor Black
+}
+
+' Actores principales
+actor "Funcionario (Web)" as Funcionario
+actor "Administrador (Web)" as Admin
+actor "Técnico (App Móvil)" as Tecnico
+actor "Módulo de IA" as IA
+
+' ==========================
+' Casos de Uso - Funcionario
+' ==========================
+rectangle "Casos de Uso - Funcionario" {
+  usecase F1 as "Iniciar sesión \n(Login + 2FA)"
+  usecase F2 as "Registrar Ticket"
+  usecase F3 as "Consultar Estado de Ticket"
+  usecase F4 as "Visualizar Historial de Tickets"
+  usecase F5 as "Recibir Notificaciones"
+  usecase F6 as "Reabrir Ticket"
+  usecase F7 as "Responder Encuesta de Satisfacción"
+}
+
+' ==========================
+' Casos de Uso - Administrador
+' ==========================
+rectangle "Casos de Uso - Administrador" {
+  usecase A1 as "Iniciar sesión \n(Login + 2FA)"
+  usecase A2 as "Visualizar Tickets"
+  usecase A3 as "Asignar Tickets"
+  usecase A4 as "Configurar Reglas de Autoasignación"
+  usecase A5 as "Configurar Reglas de Escalamiento"
+  usecase A6 as "Eliminar/Restaurar Tickets"
+  usecase A7 as "Registrar/Editar/Eliminar Técnicos"
+  usecase A8 as "Gestionar Usuarios y Roles"
+  usecase A9 as "Generar Reportes"
+  usecase A10 as "Visualizar Dashboard de Estadísticas"
+  usecase A11 as "Personalizar Sistema \n(logo, colores, datos)"
+}
+
+' ==========================
+' Casos de Uso - Técnico
+' ==========================
+rectangle "Casos de Uso - Técnico" {
+  usecase T1 as "Iniciar sesión \n(Login + 2FA)"
+  usecase T2 as "Visualizar Tickets Asignados"
+  usecase T3 as "Recibir Notificaciones"
+  usecase T4 as "Actualizar Estado de Ticket"
+  usecase T5 as "Subir Evidencias (fotos/videos)"
+  usecase T6 as "Consultar Historial de Tickets"
+  usecase T7 as "Editar Datos Personales"
+}
+
+' ==========================
+' Casos de Uso - Inteligencia Artificial
+' ==========================
+rectangle "Casos de Uso - Inteligencia Artificial" {
+  usecase I1 as "Clasificación Automática \nde Tickets"
+  usecase I2 as "Sugerencia de Respuestas"
+  usecase I3 as "Respuestas Automáticas \na Tickets Simples"
+}
+
+' ==========================
+' Relaciones
+' ==========================
+Funcionario --> F1
+Funcionario --> F2
+Funcionario --> F3
+Funcionario --> F4
+Funcionario --> F5
+Funcionario --> F6
+Funcionario --> F7
+
+Admin --> A1
+Admin --> A2
+Admin --> A3
+Admin --> A4
+Admin --> A5
+Admin --> A6
+Admin --> A7
+Admin --> A8
+Admin --> A9
+Admin --> A10
+Admin --> A11
+
+Tecnico --> T1
+Tecnico --> T2
+Tecnico --> T3
+Tecnico --> T4
+Tecnico --> T5
+Tecnico --> T6
+Tecnico --> T7
+
+IA --> I1
+IA --> I2
+IA --> I3
+
+' Interacciones IA con otros actores
+Funcionario --> I1 : <<al registrar ticket>>
+Funcionario --> I3 : <<cuando aplica>>
+Admin --> I2 : <<al gestionar ticket>>
+Tecnico --> I2 : <<al atender ticket>>
+@enduml
