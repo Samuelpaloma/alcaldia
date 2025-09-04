@@ -1,15 +1,7 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "dist/server/node-build.mjs",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/dist/server/node-build.mjs"
-    }
+  "buildCommand": "npm run build:client",
+  "outputDirectory": "dist/spa",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
