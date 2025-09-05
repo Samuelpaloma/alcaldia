@@ -1,0 +1,5 @@
+{
+  "buildCommand": "cd frontend/gestion-de-tickets && npm run build:client",
+  "outputDirectory": "frontend/gestion-de-tickets/dist/spa",
+  "installCommand": "cd frontend/gestion-de-tickets && npm install"
+}
