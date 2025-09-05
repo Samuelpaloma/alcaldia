@@ -1,5 +1,8 @@
 {
-  "buildCommand": "cd frontend/gestion-de-tickets && npm run build:client",
+  "buildCommand": "cd frontend/gestion-de-tickets && npm install && npm run build:client",
   "outputDirectory": "frontend/gestion-de-tickets/dist/spa",
-  "installCommand": "cd frontend/gestion-de-tickets && npm install"
+  "installCommand": "cd frontend/gestion-de-tickets && npm install",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
