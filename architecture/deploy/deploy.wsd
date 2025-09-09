@@ -1,0 +1,40 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam node {
+  BackgroundColor #F9F9F9
+  BorderColor Black
+}
+
+node "Cliente - Funcionario/Admin" as ClienteWeb {
+  [Navegador Web]  
+}
+
+node "Cliente - Técnico" as ClienteMovil {
+  [Aplicación Móvil Android]
+}
+
+node "Servidor de Aplicaciones" as Servidor {
+  [API REST / Backend]  
+  [Módulo de Autenticación (Login + 2FA)]  
+  [Módulo de Gestión de Tickets]  
+  [Módulo de Reportes y Dashboard]  
+  [Módulo de Gestión de Usuarios/Roles]
+}
+
+node "Base de Datos" as BD {
+  [PostgreSQL / MySQL]  
+}
+
+node "Servicios Externos" as Externos {
+  [Módulo de IA (Clasificación / Respuestas)]  
+  [Servidor de Correo / Notificaciones]  
+}
+
+' Relaciones
+ClienteWeb --> Servidor : HTTPS (Navegador ↔ API)
+ClienteMovil --> Servidor : HTTPS (App ↔ API)
+
+Servidor --> BD : JDBC / SQL
+Servidor --> Externos : API REST
+
+@enduml

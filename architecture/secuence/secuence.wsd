@@ -1,0 +1,89 @@
+@startuml
+actor Funcionario
+actor Administrador
+actor Tecnico
+
+participant "Portal Web" as Web
+participant "Aplicación Móvil" as App
+participant "Servidor / API" as API
+participant "Base de Datos" as DB
+participant "Sistema de Correo/Notificación" as Mail
+participant "Módulo IA" as IA
+
+== Autenticación ==
+Funcionario -> Web: Ingresar credenciales
+Web -> API: POST /login (funcionario)
+API -> DB: Verificar usuario y rol
+DB --> API: OK
+API -> Mail: Enviar código 2FA
+Mail --> Funcionario: Código
+Funcionario -> Web: Ingresa código 2FA
+Web -> API: Validar código
+API --> Web: Sesión válida
+
+Administrador -> Web: Ingresar credenciales
+Web -> API: POST /login (admin)
+API -> DB: Verificar usuario y rol
+API -> Mail: Enviar código 2FA
+Mail --> Administrador: Código
+Administrador -> Web: Ingresa código
+Web -> API: Validar código
+API --> Web: Sesión válida
+
+Tecnico -> App: Ingresar credenciales
+App -> API: POST /login (tecnico)
+API -> DB: Verificar usuario
+API -> Mail: Enviar código 2FA
+Mail --> Tecnico: Código
+Tecnico -> App: Ingresa código
+App -> API: Validar código
+API --> App: Sesión válida
+
+== Creación del Ticket ==
+Funcionario -> Web: Completar formulario
+Web -> API: POST /tickets
+API -> IA: Clasificar ticket
+IA --> API: Categoría / prioridad sugerida
+API -> DB: Insertar ticket
+API -> Administrador: Notificación nuevo ticket
+
+== Asignación del Ticket ==
+Administrador -> Web: Revisa ticket
+alt Asignación automática
+    API -> DB: Asignar técnico disponible
+else Asignación manual
+    Administrador -> Web: Selecciona técnico
+    Web -> API: PUT /tickets/{id}/assign
+    API -> DB: Actualizar ticket
+end
+API -> App: Notificación al técnico
+
+== Atención del Ticket ==
+Tecnico -> App: Visualizar ticket
+App -> API: GET /tickets/{id}
+API -> DB: Consultar datos
+DB --> API: Datos ticket
+API --> App: Respuesta ticket
+Tecnico -> App: Cambiar estado a "En proceso"
+App -> API: PATCH /tickets/{id} (estado)
+API -> DB: Actualizar estado
+Tecnico -> App: Subir evidencias (fotos/videos)
+App -> API: POST /tickets/{id}/evidence
+API -> DB: Guardar evidencias
+Tecnico -> App: Cambiar estado a "Finalizado"
+App -> API: PATCH /tickets/{id} (estado=finalizado)
+API -> DB: Guardar estado final
+
+== Cierre del Ticket ==
+API -> Web: Notificación cierre
+Web -> Funcionario: Notificación + Encuesta
+Funcionario -> Web: Completa encuesta
+Web -> API: POST /tickets/{id}/survey
+API -> DB: Guardar encuesta
+
+== Reapertura del Ticket ==
+Funcionario -> Web: Solicitar reapertura
+Web -> API: PATCH /tickets/{id} (estado=reabierto)
+API -> DB: Actualizar estado
+API -> Administrador: Notificación reapertura
+@enduml

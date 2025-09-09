@@ -1,0 +1,5 @@
+.auth-center{display:grid;place-items:center;min-height:100dvh}
+.auth-card{width:100%;max-width:420px}
+.label{font-size:.875rem;color:hsl(var(--muted-foreground))}
+.hint{font-size:.875rem;color:hsl(var(--muted-foreground))}
+.auth-links{margin-top:.5rem;font-size:.875rem;color:hsl(var(--muted-foreground))}

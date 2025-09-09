@@ -1,0 +1,50 @@
+@startuml
+title Ticket Management System - Package Diagram
+
+' ==== Paquete de Seguridad y Usuarios ====
+package "Security & Users" {
+  class Usuario
+  class Rol
+}
+
+' ==== Paquete de Gestión de Tickets ====
+package "Ticket Management" {
+  class Ticket
+  class EstadoTicket
+  class Comentario
+  class Evidencia
+}
+
+' ==== Paquete de Comunicación ====
+package "Communication" {
+  class Notificacion
+  class EncuestaSatisfaccion
+}
+
+' ==== Paquete de Reportes y Panel ====
+package "Reports & Dashboard" {
+  class Reporte
+  class Dashboard
+}
+
+' ==== Paquete de Automatización e IA ====
+package "Automation & AI" {
+  class ReglaAutomatizacion
+  class MotorIA
+}
+
+' ==== RELACIONES ENTRE PAQUETES ====
+Usuario --> Rol
+Usuario --> Ticket
+Ticket --> EstadoTicket
+Ticket --> Comentario
+Ticket --> Evidencia
+Ticket --> Notificacion
+Ticket --> EncuestaSatisfaccion
+
+Usuario --> Reporte
+Usuario --> Dashboard
+
+MotorIA --> Ticket
+ReglaAutomatizacion --> Ticket
+@enduml

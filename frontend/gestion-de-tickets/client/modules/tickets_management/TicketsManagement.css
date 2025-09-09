@@ -1,0 +1,28 @@
+/* Tickets module specific styles */
+.page-title { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
+.page-subtitle { color: hsl(var(--muted-foreground)); }
+
+.btn-contrast { background: hsl(var(--foreground)); color: hsl(var(--background)); }
+.btn-contrast:hover { background: hsl(var(--foreground) / 0.9); }
+
+.generic-select {
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--input));
+  padding: 0 0.75rem;
+}
+.generic-select:focus { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); }
+
+.status-pill, .priority-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9999px; padding: 0.125rem 0.5rem; font-size: 0.75rem; font-weight: 600;
+  border: 1px solid hsl(var(--border));
+}
+.status-pill.open { background: hsl(var(--background)); }
+.status-pill.in_progress { background: hsl(var(--muted)); }
+.status-pill.resolved { background: hsl(var(--accent)); }
+
+.priority-pill.low { background: hsl(var(--background)); }
+.priority-pill.medium { background: hsl(var(--muted)); }
+.priority-pill.high { background: hsl(var(--foreground)); color: hsl(var(--background)); }
