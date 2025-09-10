@@ -5,12 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/i18n";
 import { addComment, getTickets, subscribe, Ticket } from "../client_tickets/store";
+import { detectLanguage, translateText } from "./utils/translationSystem";
 
 export default function ClientTracking() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [tickets, setTickets] = useState<Ticket[]>(getTickets());
   const [selected, setSelected] = useState<string | undefined>(tickets[0]?.id);
   const [comment, setComment] = useState("");
+  const [translatedEvents, setTranslatedEvents] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const unsub = subscribe(() => setTickets(getTickets()));
@@ -19,10 +21,36 @@ export default function ClientTracking() {
 
   const ticket = useMemo(() => tickets.find(t => t.id === selected), [tickets, selected]);
 
+  // Traducción automática usando la librería SOLO ES/EN
+  useEffect(() => {
+    const translateAll = async () => {
+      if (!ticket || !ticket.events) return;
+      const translations: Record<string, string> = {};
+      for (const e of ticket.events) {
+        const lang = detectLanguage(e.message);
+        if (lang !== locale && lang !== "unknown") {
+          const result = await translateText(e.message, locale as 'es' | 'en');
+          translations[e.at + e.author] = result?.translated || e.message;
+        } else {
+          translations[e.at + e.author] = e.message;
+        }
+      }
+      setTranslatedEvents(translations);
+    };
+    translateAll();
+  }, [ticket, locale]);
+
   const send = () => {
     if (ticket && comment.trim()) {
       addComment(ticket.id, "client", comment.trim());
       setComment("");
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      send();
     }
   };
 
@@ -70,13 +98,27 @@ export default function ClientTracking() {
                 {ticket.events.slice().reverse().map((e, idx) => (
                   <div className={`event ${e.author}`} key={idx}>
                     <div className="meta">{e.at.slice(11,19)} • {e.author}</div>
-                    <div className="msg">{e.message}</div>
+                    <div className="msg">
+                      {translatedEvents[e.at + e.author] || e.message}
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 flex gap-2">
-                <Input value={comment} onChange={(e)=>setComment(e.target.value)} placeholder={t("client.comment_placeholder")} />
-                <Button onClick={send}>{t("client.send")}</Button>
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <Input 
+                    value={comment} 
+                    onChange={(e)=>setComment(e.target.value)} 
+                    onKeyPress={handleKeyPress}
+                    placeholder={t("client.comment_placeholder")} 
+                  />
+                  <Button onClick={send} disabled={!comment.trim()}>
+                    {t("client.send")}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 Presiona Enter para enviar tu mensaje
+                </p>
               </div>
             </CardContent>
           </Card>

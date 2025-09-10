@@ -103,6 +103,11 @@ const DICTS: Record<Locale, Dict> = {
     "client.comment_placeholder": "Write a comment...",
     "client.send": "Send",
     "client.reopen": "Reopen",
+    "client.form.name": "Name",
+    "client.form.location": "Location",
+    "client.form.message": "Message",
+    "client.form.priority": "Priority",
+    "client.form.attach": "Attach file",
 
     "admin.title": "Admin Dashboard",
     "admin.subtitle": "Manage tickets, users, rules and more.",
@@ -202,6 +207,11 @@ const DICTS: Record<Locale, Dict> = {
     "client.comment_placeholder": "Escribe un comentario...",
     "client.send": "Enviar",
     "client.reopen": "Reabrir",
+    "client.form.name": "Nombre",
+    "client.form.location": "Ubicación",
+    "client.form.message": "Mensaje",
+    "client.form.priority": "Prioridad",
+    "client.form.attach": "Adjuntar archivo",
 
     "admin.title": "Panel de Administración",
     "admin.subtitle": "Gestiona tickets, usuarios, reglas y más.",

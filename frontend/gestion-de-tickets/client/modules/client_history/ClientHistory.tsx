@@ -8,12 +8,11 @@ import { getTickets, subscribe, Ticket, reopenTicket } from "../client_tickets/s
 export default function ClientHistory(){
   const { t } = useI18n();
   const [tickets, setTickets] = useState<Ticket[]>(getTickets());
-  useEffect(()=>{ const u = subscribe(()=>setTickets(getTickets())); return ()=>u(); },[]);
+  useEffect(()=>{ const u = subscribe(()=>setTickets(getTickets())); return ()=>{u();}; },[]);
   return (
     <div className="section grid gap-6">
       <div>
         <h1 className="page-title">{t("client.history")}</h1>
-        <p className="page-subtitle">{t("client.history_desc")}</p>
       </div>
       <Card>
         <CardHeader>
@@ -32,16 +31,16 @@ export default function ClientHistory(){
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tickets.map(t => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.id}</TableCell>
-                  <TableCell>{t(`tickets.priority.${t.priority}`)}</TableCell>
-                  <TableCell>{t.status}</TableCell>
-                  <TableCell>{t.createdAt.slice(0,10)}</TableCell>
-                  <TableCell className="text-right">{t.closedAt?.slice(0,10) ?? "-"}</TableCell>
+              {tickets.map(ticket => (
+                <TableRow key={ticket.id}>
+                  <TableCell className="font-medium">{ticket.id}</TableCell>
+                  <TableCell>{ticket.priority}</TableCell>
+                  <TableCell>{ticket.status}</TableCell>
+                  <TableCell>{ticket.createdAt.slice(0,10)}</TableCell>
+                  <TableCell className="text-right">{ticket.closedAt?.slice(0,10) ?? "-"}</TableCell>
                   <TableCell className="text-right">
-                    {t.status === "closed" && (
-                      <Button size="sm" variant="outline" onClick={()=>reopenTicket(t.id)}>{t("client.reopen")}</Button>
+                    {ticket.status === "closed" && (
+                      <Button size="sm" variant="outline" onClick={()=>reopenTicket(ticket.id)}>{t("client.reopen")}</Button>
                     )}
                   </TableCell>
                 </TableRow>

@@ -1,3 +1,5 @@
+import { detectLanguage, translateText } from "../client_tracking/utils/translationSystem";
+
 export type TicketStatus = "open" | "in_progress" | "pending" | "resolved" | "closed";
 export type Priority = "high" | "medium" | "low";
 export type TicketEvent = { at: string; author: "client" | "technician" | "system"; message: string; type: "comment" | "status" };
@@ -74,9 +76,31 @@ export function createTicket(input: { name: string; location: string; message: s
   return t;
 }
 
-export function addComment(id: string, author: TicketEvent["author"], message: string) {
+// 🔥 Traducción automática de comentarios según locale en localStorage
+export async function addComment(id: string, author: TicketEvent["author"], message: string) {
   const t = getTicket(id); if (!t) return;
-  t.events.push({ at: new Date().toISOString(), author, message, type: "comment" });
+
+  // Obtener locale desde localStorage
+  let locale: 'es' | 'en' = 'es';
+  try {
+    const settings = localStorage.getItem('i18n');
+    if (settings) {
+      const parsed = JSON.parse(settings);
+      if (parsed?.locale === 'en' || parsed?.locale === 'es') {
+        locale = parsed.locale;
+      }
+    }
+  } catch {}
+
+  // Detectar idioma y traducir si es necesario
+  const lang = detectLanguage(message);
+  let finalMessage = message;
+  if (lang !== locale && lang !== "unknown") {
+    const result = await translateText(message, locale);
+    finalMessage = result?.translated || message;
+  }
+
+  t.events.push({ at: new Date().toISOString(), author, message: finalMessage, type: "comment" });
   notify();
 }
 
