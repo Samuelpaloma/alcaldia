@@ -4,10 +4,14 @@ import com.example.demo.auth.dto.request.ForgotPasswordRequest;
 import com.example.demo.auth.dto.request.LoginRequest;
 import com.example.demo.auth.dto.request.RegisterRequest;
 import com.example.demo.auth.dto.request.ResetPasswordRequest;
+import com.example.demo.auth.dto.request.VerifyEmailRequest;
+import com.example.demo.auth.dto.request.ResendVerificationRequest;
 import com.example.demo.auth.dto.response.ApiResponse;
 import com.example.demo.auth.dto.response.LoginResponse;
 import com.example.demo.auth.service.AuthService;
+import com.example.demo.auth.service.EmailService;
 import com.example.demo.auth.service.PasswordResetService;
+import com.example.demo.usuario.model.Usuario;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +29,7 @@ public class AuthController {
     
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final EmailService emailService;
     
     // 🔐 LOGIN - Para todos los tipos de usuario
     @PostMapping("/login")
@@ -42,7 +47,53 @@ public class AuthController {
         
         authService.registerFuncionario(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(new ApiResponse("Usuario registrado exitosamente. Revisa tu email para más información."));
+            .body(new ApiResponse("Usuario registrado exitosamente. Revisa tu email para verificar tu cuenta con el código enviado."));
+    }
+    
+    // ✅ VERIFICAR EMAIL CON CÓDIGO
+    @PostMapping("/verify-email")
+    public ResponseEntity<ApiResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        log.info("Solicitud de verificación de email con código: {}", request.getCode());
+        
+        authService.verifyEmail(request);
+        return ResponseEntity.ok(
+            new ApiResponse("Email verificado exitosamente. Ya puedes iniciar sesión.")
+        );
+    }
+    
+    // 🔄 REENVIAR CÓDIGO DE VERIFICACIÓN
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        log.info("Solicitud de reenvío de código de verificación para: {}", request.getEmail());
+        
+        authService.resendVerificationCode(request);
+        return ResponseEntity.ok(
+            new ApiResponse("Código de verificación reenviado. Revisa tu bandeja de entrada.")
+        );
+    }
+    
+    // 🧪 ENDPOINT DE PRUEBA - ENVIAR EMAIL DE PRUEBA
+    @PostMapping("/test-email")
+    public ResponseEntity<ApiResponse> testEmail(@RequestParam String email) {
+        log.info("Enviando email de prueba a: {}", email);
+        
+        try {
+            // Crear un usuario temporal para la prueba
+            Usuario testUser = Usuario.builder()
+                .email(email)
+                .nombre("Test")
+                .apellido("Usuario")
+                .build();
+            
+            emailService.sendEmailVerificationCode(testUser, "123456");
+            return ResponseEntity.ok(
+                new ApiResponse("Email de prueba enviado exitosamente a: " + email)
+            );
+        } catch (Exception e) {
+            log.error("Error enviando email de prueba", e);
+            return ResponseEntity.status(500)
+                .body(new ApiResponse("Error enviando email: " + e.getMessage()));
+        }
     }
     
     // 🔑 SOLICITAR CÓDIGO DE RECUPERACIÓN

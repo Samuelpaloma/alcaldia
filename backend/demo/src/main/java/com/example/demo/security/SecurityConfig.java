@@ -64,6 +64,9 @@ public class SecurityConfig {
                 // 🔓 Endpoints públicos de AUTH
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/register").permitAll()
+                .requestMatchers("/api/auth/verify-email").permitAll()
+                .requestMatchers("/api/auth/resend-verification").permitAll()
+                .requestMatchers("/api/auth/test-email").permitAll()
                 .requestMatchers("/api/auth/forgot-password").permitAll()
                 .requestMatchers("/api/auth/reset-password").permitAll()
                 

@@ -278,4 +278,41 @@ public class EmailService {
             // No fallar el proceso por error de email
         }
     }
+    
+    /**
+     * Envía código de verificación de email durante el registro
+     */
+    public void sendEmailVerificationCode(Usuario usuario, String code) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(usuario.getEmail());
+            message.setSubject("Verifica tu email - " + appName);
+            
+            String content = String.format(
+                "Hola %s,\n\n" +
+                "¡Gracias por registrarte en %s!\n\n" +
+                "Para completar tu registro, necesitas verificar tu dirección de email.\n\n" +
+                "Tu código de verificación es: %s\n\n" +
+                "Este código es válido por 15 minutos.\n\n" +
+                "Si no solicitaste este registro, puedes ignorar este email.\n\n" +
+                "Una vez verificado tu email, podrás acceder al sistema en: %s\n\n" +
+                "Saludos,\n" +
+                "Equipo de %s",
+                usuario.getNombre(),
+                appName,
+                code,
+                appUrl,
+                appName
+            );
+            
+            message.setText(content);
+            mailSender.send(message);
+            
+            log.info("Código de verificación de email enviado a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error enviando código de verificación de email", e);
+            throw e;
+        }
+    }
 }

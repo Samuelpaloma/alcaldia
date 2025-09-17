@@ -2,6 +2,8 @@ package com.example.demo.auth.service;
 
 import com.example.demo.auth.dto.request.LoginRequest;
 import com.example.demo.auth.dto.request.RegisterRequest;
+import com.example.demo.auth.dto.request.VerifyEmailRequest;
+import com.example.demo.auth.dto.request.ResendVerificationRequest;
 import com.example.demo.auth.dto.response.LoginResponse;
 import com.example.demo.auth.exception.AuthException;
 import com.example.demo.auth.exception.UserAlreadyExistsException;
@@ -27,6 +29,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final EmailService emailService;
+    private final EmailVerificationService emailVerificationService;
     
     @Override
     public LoginResponse authenticate(LoginRequest request) {
@@ -45,6 +48,11 @@ public class AuthServiceImpl implements AuthService {
         // 3. Verificar que esté activo
         if (!usuario.getActivo()) {
             throw new AuthException("Usuario desactivado. Contacte al administrador");
+        }
+        
+        // 4. Verificar que el email esté verificado
+        if (!usuario.getEmailVerificado()) {
+            throw new AuthException("Debes verificar tu email antes de iniciar sesión. Revisa tu bandeja de entrada");
         }
         
         // 4. Actualizar último acceso
@@ -83,7 +91,7 @@ public class AuthServiceImpl implements AuthService {
             throw new UserAlreadyExistsException("Ya existe un usuario con este email");
         }
         
-        // 2. Crear nuevo funcionario
+        // 2. Crear nuevo funcionario (inactivo hasta verificar email)
         Usuario funcionario = Usuario.builder()
             .email(request.getEmail())
             .passwordHash(passwordEncoder.encode(request.getPassword()))
@@ -92,21 +100,34 @@ public class AuthServiceImpl implements AuthService {
             .telefono(request.getTelefono())
             .tipoUsuario(TipoUsuario.FUNCIONARIO)  // Fijo para auto-registro
             .creadoPor(null)  // Auto-registro, no tiene creador
-            .activo(true)
+            .activo(false)  // Inactivo hasta verificar email
+            .emailVerificado(false)  // Email no verificado
             .require2fa(false)
             .build();
         
         Usuario savedUser = usuarioRepository.save(funcionario);
         
-        // 3. Enviar email de bienvenida
+        // 3. Enviar código de verificación de email
         try {
-            emailService.sendWelcomeEmail(savedUser);
+            emailVerificationService.sendVerificationCode(savedUser);
         } catch (Exception e) {
-            log.error("Error enviando email de bienvenida a: {}", savedUser.getEmail(), e);
+            log.error("Error enviando código de verificación a: {}", savedUser.getEmail(), e);
             // No fallar el registro por error de email
         }
         
-        log.info("Funcionario registrado exitosamente: {}", savedUser.getEmail());
+        log.info("Funcionario registrado exitosamente (pendiente de verificación): {}", savedUser.getEmail());
+    }
+    
+    @Override
+    public void verifyEmail(VerifyEmailRequest request) {
+        log.info("Verificando email con código: {}", request.getCode());
+        emailVerificationService.verifyEmail(request.getCode());
+    }
+    
+    @Override
+    public void resendVerificationCode(ResendVerificationRequest request) {
+        log.info("Reenviando código de verificación a: {}", request.getEmail());
+        emailVerificationService.resendVerificationCode(request.getEmail());
     }
     
     @Override
