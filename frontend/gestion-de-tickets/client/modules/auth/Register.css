@@ -1,5 +1,93 @@
-.auth-center{display:grid;place-items:center;min-height:100dvh}
-.auth-card{width:100%;max-width:420px}
-.label{font-size:.875rem;color:hsl(var(--muted-foreground))}
-.hint{font-size:.875rem;color:hsl(var(--muted-foreground))}
-.auth-links{margin-top:.5rem;font-size:.875rem;color:hsl(var(--muted-foreground))}
+.auth-center {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  margin-bottom: 0.25rem;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.auth-links {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+}
+
+.auth-links a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.auth-links a:hover {
+  color: hsl(var(--primary) / 0.8);
+}
+
+/* Estilos para el código de verificación */
+.verification-code-input {
+  text-align: center;
+  font-size: 1.25rem;
+  letter-spacing: 0.5em;
+  font-weight: 600;
+}
+
+/* Estilos para mensajes de estado */
+.alert-success {
+  border-color: hsl(var(--green-500));
+  background-color: hsl(var(--green-50));
+}
+
+.alert-error {
+  border-color: hsl(var(--red-500));
+  background-color: hsl(var(--red-50));
+}
+
+/* Estilos para campos con error */
+.input-error {
+  border-color: hsl(var(--red-500)) !important;
+  box-shadow: 0 0 0 1px hsl(var(--red-500));
+}
+
+/* Estilos para el botón de carga */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

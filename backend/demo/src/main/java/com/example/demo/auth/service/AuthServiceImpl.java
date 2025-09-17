@@ -75,6 +75,28 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
+    public void validateCredentials(LoginRequest request) {
+        log.info("Validación de credenciales para email: {}", request.getEmail());
+        
+        // 1. Buscar usuario por email
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new AuthException("Credenciales inválidas"));
+        
+        // 2. Verificar contraseña
+        if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
+            log.warn("Validación de credenciales fallida para email: {}", request.getEmail());
+            throw new AuthException("Credenciales inválidas");
+        }
+        
+        // 3. Verificar que esté activo
+        if (!usuario.getActivo()) {
+            throw new AuthException("Usuario desactivado. Contacte al administrador");
+        }
+        
+        log.info("Credenciales válidas para usuario: {}", usuario.getEmail());
+    }
+    
+    @Override
     public void registerFuncionario(RegisterRequest request) {
         log.info("Registro de nuevo funcionario: {}", request.getEmail());
         

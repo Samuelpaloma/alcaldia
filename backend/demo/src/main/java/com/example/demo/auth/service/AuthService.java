@@ -6,6 +6,7 @@ import com.example.demo.auth.dto.response.LoginResponse;
 
 public interface AuthService {
     LoginResponse authenticate(LoginRequest request);
+    void validateCredentials(LoginRequest request);
     void registerFuncionario(RegisterRequest request);
     void logout(String token);
 }

@@ -35,6 +35,15 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
     
+    // 🔐 VALIDAR CREDENCIALES - Solo valida sin devolver token
+    @PostMapping("/validate-credentials")
+    public ResponseEntity<ApiResponse> validateCredentials(@Valid @RequestBody LoginRequest request) {
+        log.info("Validación de credenciales para email: {}", request.getEmail());
+        
+        authService.validateCredentials(request);
+        return ResponseEntity.ok(new ApiResponse("Credenciales válidas"));
+    }
+    
     // 👤 REGISTRO - Solo para funcionarios (público)
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegisterRequest request) {

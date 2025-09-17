@@ -70,18 +70,54 @@ const App = () => (
             </Route>
 
             {/* Admin section (role-restricted) */}
-            <Route element={<RoleRoute role="admin" />}>
+            <Route path="/admin" element={<RoleRoute role="admin" />}>
               <Route element={<AdminLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/tickets" element={<TicketsManagement />} />
-                <Route path="/users-roles" element={<UsersRoles />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/evidences" element={<Evidences />} />
-                <Route path="/system-configuration" element={<SystemConfiguration />} />
-                <Route path="/assignment-rules" element={<AssignmentRules />} />
-                <Route path="/tickets-history" element={<TicketsHistory />} />
-                <Route path="/metrics" element={<Metrics />} />
-                <Route path="/ai-classification" element={<AiClassification />} />
+                <Route index element={<AdminDashboard />} />
+              </Route>
+            </Route>
+            <Route path="/tickets" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<TicketsManagement />} />
+              </Route>
+            </Route>
+            <Route path="/users-roles" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<UsersRoles />} />
+              </Route>
+            </Route>
+            <Route path="/notifications" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<Notifications />} />
+              </Route>
+            </Route>
+            <Route path="/evidences" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<Evidences />} />
+              </Route>
+            </Route>
+            <Route path="/system-configuration" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<SystemConfiguration />} />
+              </Route>
+            </Route>
+            <Route path="/assignment-rules" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<AssignmentRules />} />
+              </Route>
+            </Route>
+            <Route path="/tickets-history" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<TicketsHistory />} />
+              </Route>
+            </Route>
+            <Route path="/metrics" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<Metrics />} />
+              </Route>
+            </Route>
+            <Route path="/ai-classification" element={<RoleRoute role="admin" />}>
+              <Route element={<AdminLayout />}>
+                <Route index element={<AiClassification />} />
               </Route>
             </Route>
 

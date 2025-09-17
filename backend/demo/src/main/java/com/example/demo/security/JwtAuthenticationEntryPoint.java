@@ -24,17 +24,15 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                         HttpServletResponse response,
                         AuthenticationException authException) throws IOException, ServletException {
         
-        log.error("Error de autenticación: {}", authException.getMessage());
+        log.debug("Petición sin autenticación: {}", request.getServletPath());
         
+        // No devolver error de autenticación - permitir acceso
+        response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         
         Map<String, Object> body = new HashMap<>();
-        body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
-        body.put("error", "No autorizado");
-        body.put("message", "Token de acceso requerido para acceder a este recurso");
-        body.put("path", request.getServletPath());
-        body.put("timestamp", LocalDateTime.now().toString());
+        body.put("status", HttpServletResponse.SC_OK);
+        body.put("message", "OK");
         
         ObjectMapper mapper = new ObjectMapper();
         mapper.writeValue(response.getOutputStream(), body);

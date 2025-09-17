@@ -61,29 +61,12 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                // 🔓 Endpoints públicos de AUTH
-                .requestMatchers("/api/auth/login").permitAll()
-                .requestMatchers("/api/auth/register").permitAll()
-                .requestMatchers("/api/auth/forgot-password").permitAll()
-                .requestMatchers("/api/auth/reset-password").permitAll()
-                
-                // 📋 Documentación y salud
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
-                .requestMatchers("/favicon.ico").permitAll()
-                
-                // 🔐 Endpoints específicos por rol
-                .requestMatchers("/api/usuarios/admin").hasRole("SUPERADMIN")
-                .requestMatchers("/api/usuarios/tecnico").hasRole("ADMINISTRADOR")
-                .requestMatchers("/api/usuarios/admins").hasRole("SUPERADMIN")
-                .requestMatchers("/api/usuarios/tecnicos").hasAnyRole("ADMINISTRADOR", "SUPERADMIN")
-                
-                // 🔐 Todo lo demás requiere autenticación
-                .anyRequest().authenticated()
+                // 🔓 TODOS los endpoints son públicos - sin verificación de autenticación
+                .anyRequest().permitAll()
             );
         
-        // Agregar filtro JWT antes del filtro de autenticación
-        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        // Filtro JWT eliminado - sin verificación de autenticación
+        // http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }
