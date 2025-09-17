@@ -15,4 +15,3 @@ public class ResendVerificationRequest {
     @Email(message = "El email debe tener un formato válido")
     private String email;
 }
-

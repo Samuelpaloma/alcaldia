@@ -36,4 +36,3 @@ public interface EmailVerificationTokenRepository extends JpaRepository<EmailVer
     // Verificar si existe token válido
     boolean existsByTokenAndUsadoFalseAndFechaExpiracionAfter(String token, LocalDateTime now);
 }
-

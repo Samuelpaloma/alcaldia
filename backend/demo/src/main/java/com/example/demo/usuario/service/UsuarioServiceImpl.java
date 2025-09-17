@@ -1,7 +1,6 @@
 package com.example.demo.usuario.service;
 
 import com.example.demo.auth.service.EmailService;
-import com.example.demo.shared.exception.NotFoundException;
 import com.example.demo.usuario.dto.request.*;
 import com.example.demo.usuario.dto.response.*;
 import com.example.demo.usuario.exception.*;

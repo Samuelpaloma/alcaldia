@@ -33,6 +33,7 @@ public class PasswordResetToken {
     private LocalDateTime fechaExpiracion;
     
     @Column(nullable = false)
+    @Builder.Default
     private Boolean usado = false;
     
     @CreationTimestamp

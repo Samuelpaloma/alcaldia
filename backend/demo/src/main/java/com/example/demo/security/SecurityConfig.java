@@ -81,6 +81,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/usuarios/admins").hasRole("SUPERADMIN")
                 .requestMatchers("/api/usuarios/tecnicos").hasAnyRole("ADMINISTRADOR", "SUPERADMIN")
                 
+                // 🎫 Endpoints de tickets - requieren autenticación
+                .requestMatchers("/api/tickets/**").authenticated()
+                
                 // 🔐 Todo lo demás requiere autenticación
                 .anyRequest().authenticated()
             );
