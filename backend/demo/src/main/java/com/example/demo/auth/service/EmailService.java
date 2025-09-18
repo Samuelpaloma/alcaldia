@@ -4,7 +4,6 @@ import com.example.demo.auth.model.PendingUser;
 import com.example.demo.usuario.model.Usuario;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -31,8 +30,11 @@ public class EmailService {
     @Value("${app.url:http://localhost:3000}")
     private String appUrl;
     
-    // ========== MÉTODOS EXISTENTES ==========
+    // ========== MÉTODOS DE BIENVENIDA ==========
     
+    /**
+     * Envía email de bienvenida a funcionarios registrados
+     */
     public void sendWelcomeEmail(Usuario usuario) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -65,67 +67,6 @@ public class EmailService {
             throw e;
         }
     }
-    
-    public void sendPasswordResetEmail(Usuario usuario, String token) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(usuario.getEmail());
-            message.setSubject("Código de recuperación de contraseña - " + appName);
-            
-            String content = String.format(
-                "Hola %s,\n\n" +
-                "Has solicitado recuperar tu contraseña en %s.\n\n" +
-                "Tu código de recuperación es: %s\n\n" +
-                "Este código es válido por 15 minutos.\n\n" +
-                "Si no solicitaste este cambio, puedes ignorar este email.\n\n" +
-                "Saludos,\n" +
-                "Equipo de %s",
-                usuario.getNombre(),
-                appName,
-                token,
-                appName
-            );
-            
-            message.setText(content);
-            mailSender.send(message);
-            
-            log.info("Email de recuperación enviado a: {}", usuario.getEmail());
-        } catch (Exception e) {
-            log.error("Error enviando email de recuperación", e);
-            throw e;
-        }
-    }
-    
-    public void sendPasswordChangedConfirmation(Usuario usuario) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(usuario.getEmail());
-            message.setSubject("Contraseña actualizada - " + appName);
-            
-            String content = String.format(
-                "Hola %s,\n\n" +
-                "Tu contraseña ha sido actualizada exitosamente en %s.\n\n" +
-                "Si no realizaste este cambio, contacta inmediatamente al administrador.\n\n" +
-                "Saludos,\n" +
-                "Equipo de %s",
-                usuario.getNombre(),
-                appName,
-                appName
-            );
-            
-            message.setText(content);
-            mailSender.send(message);
-            
-            log.info("Confirmación de cambio de contraseña enviada a: {}", usuario.getEmail());
-        } catch (Exception e) {
-            log.error("Error enviando confirmación de cambio de contraseña", e);
-            throw e;
-        }
-    }
-    
-    // ========== MÉTODOS NUEVOS PARA USUARIOS ==========
     
     /**
      * Envía email de bienvenida a un técnico creado por un admin
@@ -219,6 +160,114 @@ public class EmailService {
         }
     }
     
+    // ========== MÉTODOS DE VERIFICACIÓN ==========
+    
+    /**
+     * Envía código de verificación de email durante el registro
+     */
+    public void sendEmailVerificationCode(Usuario usuario, String code) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(usuario.getEmail());
+            message.setSubject("Verifica tu email - " + appName);
+            
+            String content = String.format(
+                "Hola %s,\n\n" +
+                "¡Gracias por registrarte en %s!\n\n" +
+                "Para completar tu registro, necesitas verificar tu dirección de email.\n\n" +
+                "Tu código de verificación es: %s\n\n" +
+                "Este código es válido por 15 minutos.\n\n" +
+                "Si no solicitaste este registro, puedes ignorar este email.\n\n" +
+                "Una vez verificado tu email, podrás acceder al sistema en: %s\n\n" +
+                "Saludos,\n" +
+                "Equipo de %s",
+                usuario.getNombre(),
+                appName,
+                code,
+                appUrl,
+                appName
+            );
+            
+            message.setText(content);
+            mailSender.send(message);
+            
+            log.info("Código de verificación de email enviado a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error enviando código de verificación de email", e);
+            throw e;
+        }
+    }
+    
+    // ========== MÉTODOS DE RECUPERACIÓN DE CONTRASEÑA ==========
+    
+    /**
+     * Envía código de recuperación de contraseña
+     */
+    public void sendPasswordResetEmail(Usuario usuario, String token) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(usuario.getEmail());
+            message.setSubject("Código de recuperación de contraseña - " + appName);
+            
+            String content = String.format(
+                "Hola %s,\n\n" +
+                "Has solicitado recuperar tu contraseña en %s.\n\n" +
+                "Tu código de recuperación es: %s\n\n" +
+                "Este código es válido por 15 minutos.\n\n" +
+                "Si no solicitaste este cambio, puedes ignorar este email.\n\n" +
+                "Saludos,\n" +
+                "Equipo de %s",
+                usuario.getNombre(),
+                appName,
+                token,
+                appName
+            );
+            
+            message.setText(content);
+            mailSender.send(message);
+            
+            log.info("Email de recuperación enviado a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error enviando email de recuperación", e);
+            throw e;
+        }
+    }
+    
+    /**
+     * Envía confirmación de cambio de contraseña
+     */
+    public void sendPasswordChangedConfirmation(Usuario usuario) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(usuario.getEmail());
+            message.setSubject("Contraseña actualizada - " + appName);
+            
+            String content = String.format(
+                "Hola %s,\n\n" +
+                "Tu contraseña ha sido actualizada exitosamente en %s.\n\n" +
+                "Si no realizaste este cambio, contacta inmediatamente al administrador.\n\n" +
+                "Saludos,\n" +
+                "Equipo de %s",
+                usuario.getNombre(),
+                appName,
+                appName
+            );
+            
+            message.setText(content);
+            mailSender.send(message);
+            
+            log.info("Confirmación de cambio de contraseña enviada a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error enviando confirmación de cambio de contraseña", e);
+            throw e;
+        }
+    }
+    
+    // ========== MÉTODOS DE NOTIFICACIÓN ==========
+    
     /**
      * Notifica cuando un usuario es desactivado
      */
@@ -282,43 +331,6 @@ public class EmailService {
         } catch (Exception e) {
             log.error("Error enviando notificación de reactivación", e);
             // No fallar el proceso por error de email
-        }
-    }
-    
-    /**
-     * Envía código de verificación de email durante el registro
-     */
-    public void sendEmailVerificationCode(Usuario usuario, String code) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(usuario.getEmail());
-            message.setSubject("Verifica tu email - " + appName);
-            
-            String content = String.format(
-                "Hola %s,\n\n" +
-                "¡Gracias por registrarte en %s!\n\n" +
-                "Para completar tu registro, necesitas verificar tu dirección de email.\n\n" +
-                "Tu código de verificación es: %s\n\n" +
-                "Este código es válido por 15 minutos.\n\n" +
-                "Si no solicitaste este registro, puedes ignorar este email.\n\n" +
-                "Una vez verificado tu email, podrás acceder al sistema en: %s\n\n" +
-                "Saludos,\n" +
-                "Equipo de %s",
-                usuario.getNombre(),
-                appName,
-                code,
-                appUrl,
-                appName
-            );
-            
-            message.setText(content);
-            mailSender.send(message);
-            
-            log.info("Código de verificación de email enviado a: {}", usuario.getEmail());
-        } catch (Exception e) {
-            log.error("Error enviando código de verificación de email", e);
-            throw e;
         }
     }
     

@@ -60,8 +60,31 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 🔓 PERMITIR TODAS LAS RUTAS TEMPORALMENTE
-                .anyRequest().permitAll()
+                // 🔓 Endpoints públicos de AUTH
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/register").permitAll()
+                .requestMatchers("/api/auth/verify-email").permitAll()
+                .requestMatchers("/api/auth/resend-verification").permitAll()
+                .requestMatchers("/api/auth/test-email").permitAll()
+                .requestMatchers("/api/auth/forgot-password").permitAll()
+                .requestMatchers("/api/auth/reset-password").permitAll()
+                
+                // 📋 Documentación y salud
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/favicon.ico").permitAll()
+                
+                // 🔐 Endpoints específicos por rol
+                .requestMatchers("/api/usuarios/admin").hasRole("SUPERADMIN")
+                .requestMatchers("/api/usuarios/tecnico").hasRole("ADMINISTRADOR")
+                .requestMatchers("/api/usuarios/admins").hasRole("SUPERADMIN")
+                .requestMatchers("/api/usuarios/tecnicos").hasAnyRole("ADMINISTRADOR", "SUPERADMIN")
+                
+                // 🎫 Endpoints de tickets - requieren autenticación
+                .requestMatchers("/api/tickets/**").authenticated()
+                
+                // 🔐 Todo lo demás requiere autenticación
+                .anyRequest().authenticated()
             );
         
         return http.build();

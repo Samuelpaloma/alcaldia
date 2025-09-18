@@ -115,4 +115,3 @@ public class EmailVerificationService {
         return String.valueOf(code);
     }
 }
-
