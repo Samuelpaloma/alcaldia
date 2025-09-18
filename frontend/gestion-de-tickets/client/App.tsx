@@ -21,7 +21,6 @@ import Metrics from "./modules/metrics/Metrics";
 import AiClassification from "./modules/ai_classification/AiClassification";
 import Login from "./modules/auth/Login";
 import Register from "./modules/auth/Register";
-import ClientDashboard from "./modules/client_dashboard/ClientDashboard";
 import AdminDashboard from "./modules/admin/AdminDashboard";
 import { I18nProvider } from "./i18n";
 import RoleRoute from "./modules/auth/RoleRoute";
@@ -29,6 +28,7 @@ import ClientHistory from "./modules/client_history/ClientHistory";
 import ClientTracking from "./modules/client_tracking/ClientTracking";
 import CreateTicket from "./modules/client_create/CreateTicket";
 import ClientProfile from "./modules/client_profile/ClientProfile";
+import ClientTickets from "./modules/client_tickets/ClientTickets";
 
 const queryClient = new QueryClient();
 
@@ -61,63 +61,23 @@ const App = () => (
             {/* Client section (role-restricted) */}
             <Route path="/client" element={<RoleRoute role="client" />}>
               <Route element={<ClientLayout />}>
-                <Route index element={<ClientDashboard />} />
-                <Route path="create" element={<CreateTicket />} />
-                <Route path="tracking" element={<ClientTracking />} />
-                <Route path="history" element={<ClientHistory />} />
-                <Route path="profile" element={<ClientProfile />} />
+                <Route index element={<ClientTickets />} />
               </Route>
             </Route>
 
             {/* Admin section (role-restricted) */}
-            <Route path="/admin" element={<RoleRoute role="admin" />}>
+            <Route element={<RoleRoute role="admin" />}>
               <Route element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-              </Route>
-            </Route>
-            <Route path="/tickets" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<TicketsManagement />} />
-              </Route>
-            </Route>
-            <Route path="/users-roles" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<UsersRoles />} />
-              </Route>
-            </Route>
-            <Route path="/notifications" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<Notifications />} />
-              </Route>
-            </Route>
-            <Route path="/evidences" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<Evidences />} />
-              </Route>
-            </Route>
-            <Route path="/system-configuration" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<SystemConfiguration />} />
-              </Route>
-            </Route>
-            <Route path="/assignment-rules" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<AssignmentRules />} />
-              </Route>
-            </Route>
-            <Route path="/tickets-history" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<TicketsHistory />} />
-              </Route>
-            </Route>
-            <Route path="/metrics" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<Metrics />} />
-              </Route>
-            </Route>
-            <Route path="/ai-classification" element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route index element={<AiClassification />} />
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/tickets" element={<TicketsManagement />} />
+                <Route path="/users-roles" element={<UsersRoles />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/evidences" element={<Evidences />} />
+                <Route path="/system-configuration" element={<SystemConfiguration />} />
+                <Route path="/assignment-rules" element={<AssignmentRules />} />
+                <Route path="/tickets-history" element={<TicketsHistory />} />
+                <Route path="/metrics" element={<Metrics />} />
+                <Route path="/ai-classification" element={<AiClassification />} />
               </Route>
             </Route>
 

@@ -52,12 +52,12 @@ export default function ClientTracking() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-1 text-sm">
-                <div><b>ID:</b> {ticket.id}</div>
+                <div><b>{t("tickets.table.id")}:</b> {ticket.id}</div>
                 <div><b>{t("tickets.priority")}:</b> {t(`tickets.priority.${ticket.priority}`)}</div>
                 <div><b>{t("tickets.status")}:</b> {ticket.status}</div>
-                <div><b>Tech:</b> {ticket.technician}</div>
+                <div><b>{t("tickets.technician")}:</b> {ticket.technician}</div>
                 <div><b>{t("client.table.created")}:</b> {ticket.createdAt.slice(0,16).replace('T',' ')}</div>
-                {ticket.closedAt && <div><b>Closed:</b> {ticket.closedAt.slice(0,16).replace('T',' ')}</div>}
+                {ticket.closedAt && <div><b>{t("tickets.status.closed")}:</b> {ticket.closedAt.slice(0,16).replace('T',' ')}</div>}
               </div>
             </CardContent>
           </Card>

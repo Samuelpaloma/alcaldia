@@ -1,14 +1,24 @@
 import "./Register.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useI18n } from "@/i18n";
-import { setAuth } from "./auth";
+import { setAuth, AuthState } from "./auth";
 import { useNavigate, Link } from "react-router-dom";
-import { api, RegisterRequest, ForgotPasswordRequest, ResetPasswordRequest } from "@shared/api";
+import { api, RegisterRequest, VerifyEmailRequest, LoginResponse } from "@shared/api";
+
+function isCorporateEmail(email: string) {
+  const publicDomains = /(gmail|yahoo|hotmail|outlook|icloud|proton)\.com$/i;
+  const parts = email.split("@");
+  if (parts.length !== 2) return false;
+  const domain = parts[1];
+  if (!/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(domain)) return false;
+  if (publicDomains.test(domain)) return false;
+  return /.+@.+/.test(email);
+}
 
 // Tipos para el estado del formulario
 interface FormData {
@@ -17,7 +27,7 @@ interface FormData {
   confirmPassword: string;
   nombre: string;
   apellido: string;
-  telefono: string;
+  telefono?: string;
 }
 
 interface FormErrors {
@@ -40,40 +50,25 @@ const validateEmail = (email: string): string | undefined => {
 
 const validatePassword = (password: string): string | undefined => {
   if (!password) return "La contraseña es requerida";
-  if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres";
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/;
-  if (!passwordRegex.test(password)) {
-    return "La contraseña debe contener al menos una mayúscula, una minúscula y un número";
-  }
+  if (password.length < 6) return "La contraseña debe tener al menos 6 caracteres";
   return undefined;
 };
 
 const validateConfirmPassword = (password: string, confirmPassword: string): string | undefined => {
-  if (!confirmPassword) return "La confirmación de contraseña es requerida";
+  if (!confirmPassword) return "Confirma tu contraseña";
   if (password !== confirmPassword) return "Las contraseñas no coinciden";
   return undefined;
 };
 
 const validateNombre = (nombre: string): string | undefined => {
   if (!nombre) return "El nombre es requerido";
-  if (nombre.length < 2 || nombre.length > 50) {
-    return "El nombre debe tener entre 2 y 50 caracteres";
-  }
+  if (nombre.length < 2) return "El nombre debe tener al menos 2 caracteres";
   return undefined;
 };
 
 const validateApellido = (apellido: string): string | undefined => {
   if (!apellido) return "El apellido es requerido";
-  if (apellido.length < 2 || apellido.length > 50) {
-    return "El apellido debe tener entre 2 y 50 caracteres";
-  }
-  return undefined;
-};
-
-const validateTelefono = (telefono: string): string | undefined => {
-  if (telefono && !/^[0-9+\-\s()]*$/.test(telefono)) {
-    return "El teléfono debe contener solo números y caracteres permitidos";
-  }
+  if (apellido.length < 2) return "El apellido debe tener al menos 2 caracteres";
   return undefined;
 };
 
@@ -93,9 +88,16 @@ export default function Register() {
   
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [step, setStep] = useState<"register" | "verification">("register");
   const [verificationCode, setVerificationCode] = useState("");
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [tempEmail, setTempEmail] = useState("");
+
+  // Limpiar mensajes al montar el componente
+  useEffect(() => {
+    setMessage(null);
+    setErrors({});
+  }, []);
 
   // Manejar cambios en los inputs
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -115,13 +117,12 @@ export default function Register() {
     newErrors.confirmPassword = validateConfirmPassword(formData.password, formData.confirmPassword);
     newErrors.nombre = validateNombre(formData.nombre);
     newErrors.apellido = validateApellido(formData.apellido);
-    newErrors.telefono = validateTelefono(formData.telefono);
     
     setErrors(newErrors);
     return !Object.values(newErrors).some(error => error !== undefined);
   };
 
-  // Manejar envío del formulario de registro
+  // Manejar registro (Paso 1)
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -134,6 +135,7 @@ export default function Register() {
     setIsLoading(true);
     
     try {
+      // Registrar usuario con el backend
       const registerData: RegisterRequest = {
         email: formData.email,
         password: formData.password,
@@ -143,32 +145,34 @@ export default function Register() {
         telefono: formData.telefono || undefined,
       };
 
-      await api.register(registerData);
+      console.log('📝 Registrando usuario...', registerData);
       
-      // Después del registro exitoso, solicitar código de verificación
-      const forgotPasswordData: ForgotPasswordRequest = {
-        email: formData.email,
-      };
+      const result = await api.register(registerData);
+      console.log('✅ Resultado de registro:', result);
       
-      await api.forgotPassword(forgotPasswordData);
+      // Guardar email temporalmente
+      setTempEmail(formData.email);
       
+      // Cambiar al paso de verificación
       setStep("verification");
       setMessage({ 
         type: "success", 
-        text: "Registro exitoso. Se ha enviado un código de verificación a tu email." 
+        text: "El código fue enviado a tu correo" 
       });
       
     } catch (error) {
+      console.error("❌ Error en registro:", error);
+      
       setMessage({ 
         type: "error", 
-        text: error instanceof Error ? error.message : "Error en el registro" 
+        text: error instanceof Error ? error.message : "Error al registrar usuario" 
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Manejar verificación de código
+  // Manejar verificación de código (Paso 2)
   const handleVerification = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
@@ -181,30 +185,25 @@ export default function Register() {
     setIsLoading(true);
     
     try {
-      const resetPasswordData: ResetPasswordRequest = {
-        token: verificationCode,
-        newPassword: formData.password,
+      // Verificar código de email
+      const verifyData: VerifyEmailRequest = {
+        email: tempEmail,
+        code: verificationCode,
       };
       
-      await api.resetPassword(resetPasswordData);
+      console.log('🔐 Verificando código...', verifyData);
       
-      // Configurar autenticación y redirigir
+      const response: LoginResponse = await api.verifyEmail(verifyData);
+      console.log('✅ Resultado de verificación:', response);
+      
+      // Configurar autenticación con solo token JWT (datos sensibles no se almacenan)
       setAuth({ 
-        email: formData.email, 
-        role: "client", // Los registros públicos son clientes (funcionarios)
-        token: "temp-token", // Token temporal hasta implementar verificación real
-        userInfo: {
-          userId: 0,
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          tipoUsuario: "funcionario",
-          require2fa: false
-        }
+        token: response.accessToken
       });
       
       setMessage({ 
         type: "success", 
-        text: "Cuenta verificada exitosamente. Redirigiendo..." 
+        text: `Cuenta verificada exitosamente. Bienvenido` 
       });
       
       // Redirigir después de un breve delay
@@ -213,9 +212,10 @@ export default function Register() {
       }, 2000);
       
     } catch (error) {
+      console.error("Error en verificación de código:", error);
       setMessage({ 
         type: "error", 
-        text: error instanceof Error ? error.message : "Código de verificación inválido" 
+        text: error instanceof Error ? error.message : "El código es incorrecto o ha expirado" 
       });
     } finally {
       setIsLoading(false);
@@ -227,7 +227,7 @@ export default function Register() {
       <Card className="auth-card">
         <CardHeader>
           <CardTitle className="text-center">
-            {step === "register" ? "Registro de Funcionario" : "Verificación de Cuenta"}
+            {step === "register" ? "Crear Cuenta" : "Verificación de Email"}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -241,7 +241,7 @@ export default function Register() {
                   type="text"
                   value={formData.nombre}
                   onChange={(e) => handleInputChange("nombre", e.target.value)}
-                  placeholder="Ingresa tu nombre"
+                  placeholder="Tu nombre"
                   className={errors.nombre ? "border-red-500" : ""}
                 />
                 {errors.nombre && <p className="text-sm text-red-500">{errors.nombre}</p>}
@@ -255,7 +255,7 @@ export default function Register() {
                   type="text"
                   value={formData.apellido}
                   onChange={(e) => handleInputChange("apellido", e.target.value)}
-                  placeholder="Ingresa tu apellido"
+                  placeholder="Tu apellido"
                   className={errors.apellido ? "border-red-500" : ""}
                 />
                 {errors.apellido && <p className="text-sm text-red-500">{errors.apellido}</p>}
@@ -277,16 +277,14 @@ export default function Register() {
 
               {/* Teléfono */}
               <div className="grid gap-1">
-                <Label htmlFor="telefono">Teléfono (opcional)</Label>
+                <Label htmlFor="telefono">Teléfono</Label>
                 <Input
                   id="telefono"
                   type="tel"
                   value={formData.telefono}
                   onChange={(e) => handleInputChange("telefono", e.target.value)}
-                  placeholder="+57 300 123 4567"
-                  className={errors.telefono ? "border-red-500" : ""}
+                  placeholder="(Opcional)"
                 />
-                {errors.telefono && <p className="text-sm text-red-500">{errors.telefono}</p>}
               </div>
 
               {/* Contraseña */}
@@ -297,7 +295,7 @@ export default function Register() {
                   type="password"
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
-                  placeholder="Mínimo 8 caracteres con mayúscula, minúscula y número"
+                  placeholder="Mínimo 6 caracteres"
                   className={errors.password ? "border-red-500" : ""}
                 />
                 {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
@@ -332,7 +330,7 @@ export default function Register() {
                 className="btn-contrast w-full" 
                 disabled={isLoading}
               >
-                {isLoading ? "Registrando..." : "Registrarse"}
+                {isLoading ? "Creando cuenta..." : "Crear Cuenta"}
               </Button>
 
               {/* Enlace a login */}
@@ -347,7 +345,7 @@ export default function Register() {
                 <p className="text-sm text-muted-foreground">
                   Hemos enviado un código de verificación de 6 dígitos a:
                 </p>
-                <p className="font-medium">{formData.email}</p>
+                <p className="font-medium">{tempEmail}</p>
               </div>
 
               {/* Código de verificación */}
@@ -382,15 +380,19 @@ export default function Register() {
                 {isLoading ? "Verificando..." : "Verificar Código"}
               </Button>
 
-              {/* Botón para volver al registro */}
+              {/* Botón para volver a registro */}
               <Button 
                 type="button" 
                 variant="outline" 
                 className="w-full" 
-                onClick={() => setStep("register")}
+                onClick={() => {
+                  setStep("register");
+                  setMessage(null);
+                  setVerificationCode("");
+                }}
                 disabled={isLoading}
               >
-                Volver al Registro
+                Volver a Registro
               </Button>
             </form>
           )}

@@ -48,6 +48,9 @@ public class Usuario {
     @Column(name = "require_2fa")
     private Boolean require2fa = false;
     
+    @Column(name = "email_verificado", nullable = false)
+    private Boolean emailVerificado = false;
+    
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creado_por")
     private Usuario creadoPor;

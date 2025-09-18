@@ -59,14 +59,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
             .authorizeHttpRequests(auth -> auth
-                // 🔓 TODOS los endpoints son públicos - sin verificación de autenticación
+                // 🔓 PERMITIR TODAS LAS RUTAS TEMPORALMENTE
                 .anyRequest().permitAll()
             );
-        
-        // Filtro JWT eliminado - sin verificación de autenticación
-        // http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }

@@ -8,36 +8,81 @@ export interface UserInfo {
   require2fa: boolean;
 }
 
+// Estado de autenticación simplificado - solo token JWT
 export interface AuthState {
-  email: string;
-  role: Role;
   token: string;
-  userInfo: UserInfo;
+  user?: {
+    id: string;
+    email: string;
+    role: Role;
+    name: string;
+  };
 }
 
 export type AuthStateOrNull = AuthState | null;
 
-const KEY = "auth_state";
+const TOKEN_KEY = "jwt_token";
+const USER_KEY = "user_info";
+const OLD_AUTH_KEY = "auth_state"; // Clave antigua para limpiar
 
+/**
+ * Obtiene el estado de autenticación (solo token JWT)
+ */
 export function getAuth(): AuthStateOrNull {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as AuthState) : null;
+    // Limpiar datos antiguos si existen
+    if (localStorage.getItem(OLD_AUTH_KEY)) {
+      localStorage.removeItem(OLD_AUTH_KEY);
+    }
+    
+    const token = localStorage.getItem(TOKEN_KEY);
+    const userStr = localStorage.getItem(USER_KEY);
+    const user = userStr ? JSON.parse(userStr) : undefined;
+    
+    return token ? { token, user } : null;
   } catch {
     return null;
   }
 }
 
+/**
+ * Establece el estado de autenticación (solo token JWT)
+ */
 export function setAuth(state: AuthStateOrNull) {
-  if (state) {
-    localStorage.setItem(KEY, JSON.stringify(state));
+  // Limpiar datos antiguos
+  localStorage.removeItem(OLD_AUTH_KEY);
+  
+  if (state && state.token) {
+    localStorage.setItem(TOKEN_KEY, state.token);
+    if (state.user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(state.user));
+    }
   } else {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }
 }
 
 export function logout() {
   setAuth(null);
+}
+
+/**
+ * Limpia completamente el localStorage de datos de autenticación
+ */
+export function clearAllAuthData() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(OLD_AUTH_KEY);
+  // Limpiar cualquier otra clave relacionada con auth
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.includes('auth') || key.includes('token') || key.includes('user'))) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(key => localStorage.removeItem(key));
 }
 
 export function getToken(): string | null {
@@ -47,12 +92,54 @@ export function getToken(): string | null {
 
 // Función eliminada - no necesaria para verificación básica
 
+/**
+ * Obtiene información del usuario desde el token JWT (decodificación básica)
+ * Nota: Para mayor seguridad, esta información debería obtenerse del servidor
+ */
 export function getUserInfo(): UserInfo | null {
-  const auth = getAuth();
-  return auth?.userInfo || null;
+  const token = getToken();
+  if (!token) return null;
+  
+  try {
+    // Decodificación básica del JWT (sin verificación de firma)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      userId: payload.userId || payload.sub,
+      nombre: payload.nombre || '',
+      apellido: payload.apellido || '',
+      tipoUsuario: payload.tipoUsuario || 'FUNCIONARIO',
+      require2fa: payload.require2fa || false
+    };
+  } catch {
+    return null;
+  }
 }
 
-// Función para hacer peticiones autenticadas (sin uso automático)
+/**
+ * Verifica si el usuario está autenticado
+ */
+export function isAuthenticated(): boolean {
+  const token = getToken();
+  if (!token) return false;
+  
+  try {
+    // Si es un token mock (empieza con "mock-token"), siempre es válido
+    if (token.startsWith("mock-token")) {
+      return true;
+    }
+    
+    // Para tokens JWT reales, verificar expiración
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const now = Math.floor(Date.now() / 1000);
+    return payload.exp > now;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Función para hacer peticiones autenticadas
+ */
 export async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
   
@@ -71,7 +158,29 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
   });
 }
 
-// Función para detectar rol basado en email (mantenida para compatibilidad)
+/**
+ * Detecta el rol basado en el tipo de usuario del token o información almacenada
+ */
+export function detectRoleByToken(): Role {
+  const auth = getAuth();
+  
+  // Si hay información de usuario almacenada, usarla
+  if (auth?.user?.role) {
+    return auth.user.role;
+  }
+  
+  // Fallback al método anterior
+  const userInfo = getUserInfo();
+  if (!userInfo) return "client";
+  
+  const tipoUsuario = userInfo.tipoUsuario?.toUpperCase();
+  if (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "SUPERADMIN") {
+    return "admin";
+  }
+  return "client";
+}
+
+// Función para detectar rol por email (para compatibilidad)
 export function detectRoleByEmail(email: string): Role {
   const lower = email.toLowerCase();
   const [, domain = ""] = lower.split("@");

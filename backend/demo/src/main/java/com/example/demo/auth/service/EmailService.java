@@ -1,5 +1,6 @@
 package com.example.demo.auth.service;
 
+import com.example.demo.auth.model.PendingUser;
 import com.example.demo.usuario.model.Usuario;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,7 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class EmailService {
     
     private final JavaMailSender mailSender;
+    private final EmailTemplateService emailTemplateService;
     
     @Value("${app.mail.from:noreply@empresa.com}")
     private String fromEmail;
@@ -277,5 +283,92 @@ public class EmailService {
             log.error("Error enviando notificación de reactivación", e);
             // No fallar el proceso por error de email
         }
+    }
+    
+    /**
+     * Envía código de verificación de email durante el registro
+     */
+    public void sendEmailVerificationCode(Usuario usuario, String code) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(usuario.getEmail());
+            message.setSubject("Verifica tu email - " + appName);
+            
+            String content = String.format(
+                "Hola %s,\n\n" +
+                "¡Gracias por registrarte en %s!\n\n" +
+                "Para completar tu registro, necesitas verificar tu dirección de email.\n\n" +
+                "Tu código de verificación es: %s\n\n" +
+                "Este código es válido por 15 minutos.\n\n" +
+                "Si no solicitaste este registro, puedes ignorar este email.\n\n" +
+                "Una vez verificado tu email, podrás acceder al sistema en: %s\n\n" +
+                "Saludos,\n" +
+                "Equipo de %s",
+                usuario.getNombre(),
+                appName,
+                code,
+                appUrl,
+                appName
+            );
+            
+            message.setText(content);
+            mailSender.send(message);
+            
+            log.info("Código de verificación de email enviado a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error enviando código de verificación de email", e);
+            throw e;
+        }
+    }
+    
+    // ========== MÉTODOS NUEVOS CON HTML ==========
+    
+    /**
+     * Envía email HTML con código de verificación
+     */
+    public void sendVerificationEmailHtml(PendingUser pendingUser) {
+        try {
+            log.info("Iniciando envío de email HTML a: {} - Tipo: {}", 
+                pendingUser.getEmail(), pendingUser.getVerificationType());
+            
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(pendingUser.getEmail());
+            helper.setSubject(getEmailSubject(pendingUser.getVerificationType()) + " - " + appName);
+            
+            log.info("Configurando email - From: {}, To: {}, Subject: {}", 
+                fromEmail, pendingUser.getEmail(), 
+                getEmailSubject(pendingUser.getVerificationType()) + " - " + appName);
+            
+            String htmlContent = emailTemplateService.generateVerificationEmail(
+                pendingUser.getNombre(),
+                pendingUser.getVerificationCode(),
+                pendingUser.getVerificationType()
+            );
+            
+            helper.setText(htmlContent, true);
+            
+            log.info("Enviando email...");
+            mailSender.send(message);
+            
+            log.info("✅ Email HTML de verificación enviado exitosamente a: {}", pendingUser.getEmail());
+        } catch (MessagingException e) {
+            log.error("❌ Error enviando email HTML de verificación", e);
+            throw new RuntimeException("Error enviando email de verificación", e);
+        } catch (Exception e) {
+            log.error("❌ Error inesperado enviando email", e);
+            throw new RuntimeException("Error inesperado enviando email", e);
+        }
+    }
+    
+    private String getEmailSubject(PendingUser.VerificationType type) {
+        return switch (type) {
+            case REGISTRATION -> "Verificación de Cuenta";
+            case LOGIN -> "Código de Inicio de Sesión";
+            case PASSWORD_RESET -> "Recuperación de Contraseña";
+        };
     }
 }

@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useI18n } from "@/i18n";
-import { setAuth } from "./auth";
+import { setAuth, AuthState, getAuth, isAuthenticated } from "./auth";
 import { useNavigate, Link } from "react-router-dom";
-import { api, LoginRequest, LoginResponse } from "@shared/api";
+import { api, LoginRequest, LoginResponse, VerifyEmailRequest } from "@shared/api";
 
 // Tipos para el estado del formulario
 interface FormData {
@@ -38,7 +38,7 @@ const validatePassword = (password: string): string | undefined => {
 
 // Función para determinar el rol basado en el tipo de usuario del backend
 const getRoleFromTipoUsuario = (tipoUsuario: string): "admin" | "client" => {
-  switch (tipoUsuario.toLowerCase()) {
+  switch (tipoUsuario?.toLowerCase()) {
     case "superadministrador":
     case "administrador":
       return "admin";
@@ -111,26 +111,34 @@ export default function Login() {
         password: formData.password,
       };
 
-      // Solo validar credenciales, no obtener token aún
-      await api.validateCredentials(loginData);
+      console.log('🔐 Validando credenciales...', loginData);
+      console.log('🌐 URL del backend:', 'http://localhost:8080/api');
+      
+      const validateResult = await api.validateCredentials(loginData);
+      console.log('✅ Resultado de validación:', validateResult);
+      
+      console.log('📧 Solicitando código de verificación...');
+      const codeResult = await api.requestLoginCode(loginData);
+      console.log('✅ Resultado de solicitud de código:', codeResult);
       
       // Guardar credenciales temporalmente
       setTempCredentials({ ...formData });
-      
-      // Solicitar código de verificación
-      await api.forgotPassword({ email: formData.email });
       
       // Cambiar al paso de verificación
       setStep("verification");
       setMessage({ 
         type: "success", 
-        text: "Credenciales válidas. Se ha enviado un código de verificación a tu email." 
+        text: "El código fue enviado a tu correo" 
       });
       
     } catch (error) {
+      console.error("❌ Error en validación de credenciales:", error);
+      console.error("❌ Tipo de error:", typeof error);
+      console.error("❌ Mensaje de error:", error instanceof Error ? error.message : 'Error desconocido');
+      
       setMessage({ 
         type: "error", 
-        text: error instanceof Error ? error.message : "Credenciales inválidas" 
+        text: error instanceof Error ? error.message : "El correo o la contraseña son incorrectos" 
       });
     } finally {
       setIsLoading(false);
@@ -155,46 +163,26 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      // Verificar código y obtener token
-      const resetPasswordData = {
-        token: verificationCode,
-        newPassword: tempCredentials.password,
-      };
-      
-      await api.resetPassword(resetPasswordData);
-      
-      // Ahora hacer login real para obtener el token
-      const loginData: LoginRequest = {
+      // Verificar código de login
+      const verifyData: VerifyEmailRequest = {
         email: tempCredentials.email,
-        password: tempCredentials.password,
+        code: verificationCode,
       };
-
-      const response: LoginResponse = await api.login(loginData);
       
-      // Determinar el rol basado en la respuesta del backend
-      const role = getRoleFromTipoUsuario(response.tipoUsuario);
+      const response: LoginResponse = await api.verifyLoginCode(verifyData);
       
-      // Configurar autenticación con token JWT
+      // Configurar autenticación con solo token JWT (datos sensibles no se almacenan)
       setAuth({ 
-        email: response.email, 
-        role: role,
-        token: response.accessToken,
-        userInfo: {
-          userId: response.userId,
-          nombre: response.nombre,
-          apellido: response.apellido,
-          tipoUsuario: response.tipoUsuario,
-          require2fa: response.require2fa
-        }
+        token: response.accessToken
       });
       
       setMessage({ 
         type: "success", 
-        text: `Bienvenido ${response.nombre} ${response.apellido}` 
+        text: `Bienvenido` 
       });
       
-      // Redirigir según el tipo de usuario
-      const redirectPath = role === "admin" ? "/admin" : "/client";
+      // Redirigir al dashboard principal (el rol se detectará desde el token)
+      const redirectPath = "/client";
       
       // Redirigir después de un breve delay
       setTimeout(() => {
@@ -202,13 +190,40 @@ export default function Login() {
       }, 1500);
       
     } catch (error) {
+      console.error("Error en verificación de código:", error);
       setMessage({ 
         type: "error", 
-        text: error instanceof Error ? error.message : "Código de verificación inválido" 
+        text: error instanceof Error ? error.message : "El código es incorrecto o ha expirado" 
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Acceso directo para pruebas
+  const handleDirectAccess = (role: "admin" | "client") => {
+    const authState: AuthState = { 
+      token: `mock-token-${role}-${Date.now()}`,
+      user: {
+        id: "1",
+        email: role === "admin" ? "admin@alcaldia.gov.co" : "cliente@alcaldia.gov.co",
+        role: role,
+        name: role === "admin" ? "Administrador" : "Cliente"
+      }
+    };
+    
+    setAuth(authState);
+    
+    setMessage({ 
+      type: "success", 
+      text: `Acceso directo como ${role === "admin" ? "Administrador" : "Cliente"}` 
+    });
+    
+    const redirectPath = role === "admin" ? "/admin" : "/client";
+    
+    setTimeout(() => {
+      navigate(redirectPath, { replace: true });
+    }, 1000);
   };
 
   return (
@@ -273,6 +288,31 @@ export default function Login() {
                 <span>¿No tienes cuenta? </span>
                 <Link to="/register" className="underline">Regístrate aquí</Link>
               </p>
+
+              {/* Acceso directo para pruebas */}
+              <div className="border-t pt-4 mt-4">
+                <p className="text-sm text-gray-600 text-center mb-3">Acceso directo para pruebas:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDirectAccess("admin")}
+                    className="text-xs"
+                  >
+                    🔧 Admin
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleDirectAccess("client")}
+                    className="text-xs"
+                  >
+                    👤 Cliente
+                  </Button>
+                </div>
+              </div>
             </form>
           ) : (
             <form className="grid gap-4" onSubmit={handleVerification}>

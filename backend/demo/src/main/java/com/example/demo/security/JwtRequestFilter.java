@@ -29,6 +29,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                                   HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
         
+        String path = request.getRequestURI();
+        log.debug("JwtRequestFilter procesando ruta: {}", path);
+        
         try {
             String jwt = getJwtFromRequest(request);
             
@@ -47,6 +50,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                     log.debug("Usuario autenticado: {} con roles: {}", 
                             userDetails.getUsername(), userDetails.getAuthorities());
                 }
+            } else {
+                log.debug("No hay JWT válido en la petición a: {}", path);
             }
         } catch (Exception ex) {
             log.error("No se pudo establecer la autenticación del usuario en el contexto de seguridad", ex);
@@ -67,10 +72,20 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
         
+        // No filtrar NINGUNA ruta de autenticación
+        boolean isAuthPath = path.startsWith("/api/auth/");
+        
         // No filtrar rutas públicas
-        return path.startsWith("/api/auth/") ||
-               path.startsWith("/swagger-ui/") ||
-               path.startsWith("/v3/api-docs/") ||
-               path.startsWith("/actuator/health");
+        boolean isPublicPath = path.startsWith("/swagger-ui/") ||
+                              path.startsWith("/v3/api-docs/") ||
+                              path.startsWith("/actuator/health") ||
+                              path.equals("/favicon.ico");
+        
+        boolean shouldNotFilter = isAuthPath || isPublicPath;
+        
+        log.info("🔍 JwtRequestFilter - Ruta: {} - Es auth: {} - Es pública: {} - NO FILTRAR: {}", 
+                 path, isAuthPath, isPublicPath, shouldNotFilter);
+        
+        return shouldNotFilter;
     }
 }

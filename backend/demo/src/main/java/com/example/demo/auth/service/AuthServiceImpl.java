@@ -1,10 +1,11 @@
 package com.example.demo.auth.service;
 
-import com.example.demo.auth.dto.request.LoginRequest;
-import com.example.demo.auth.dto.request.RegisterRequest;
+import com.example.demo.auth.dto.request.*;
 import com.example.demo.auth.dto.response.LoginResponse;
 import com.example.demo.auth.exception.AuthException;
 import com.example.demo.auth.exception.UserAlreadyExistsException;
+import com.example.demo.auth.model.PendingUser;
+import com.example.demo.auth.repository.PendingUserRepository;
 import com.example.demo.security.JwtTokenProvider;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.model.Usuario;
@@ -16,49 +17,305 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 @Slf4j
 public class AuthServiceImpl implements AuthService {
     
     private final UsuarioRepository usuarioRepository;
+    private final PendingUserRepository pendingUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final EmailService emailService;
+    
+    // ========== REGISTRO ==========
     
     @Override
-    public LoginResponse authenticate(LoginRequest request) {
-        log.info("Intento de login para email: {}", request.getEmail());
+    @Transactional
+    public PendingUser createPendingUser(RegisterRequest request) {
+        log.info("Creando usuario pendiente para email: {}", request.getEmail());
         
-        // 1. Buscar usuario por email
+        // Validación de seguridad: verificar si ya existe un usuario activo
+        validateUserNotExists(request.getEmail());
+        
+        // Limpiar usuarios pendientes anteriores para el mismo email
+        cleanupExistingPendingUsers(request.getEmail());
+        
+        // Generar código de verificación seguro
+        String verificationCode = generateSecureVerificationCode();
+        
+        // Crear usuario pendiente con datos seguros
+        PendingUser pendingUser = createSecurePendingUser(request, verificationCode);
+        
+        return pendingUserRepository.save(pendingUser);
+    }
+    
+    /**
+     * Valida que el usuario no exista en la base de datos
+     */
+    private void validateUserNotExists(String email) {
+        if (usuarioRepository.findByEmail(email).isPresent()) {
+            log.warn("Intento de registro con email existente: {}", email);
+            throw new UserAlreadyExistsException("Este correo electrónico ya está registrado en el sistema");
+        }
+    }
+    
+    /**
+     * Limpia usuarios pendientes existentes para el mismo email
+     */
+    private void cleanupExistingPendingUsers(String email) {
+        pendingUserRepository.findByEmailAndVerified(email, false)
+            .ifPresent(pendingUser -> {
+                log.info("Eliminando usuario pendiente existente para: {}", email);
+                pendingUserRepository.delete(pendingUser);
+            });
+    }
+    
+    /**
+     * Crea un usuario pendiente con datos seguros
+     */
+    private PendingUser createSecurePendingUser(RegisterRequest request, String verificationCode) {
+        return PendingUser.builder()
+            .email(request.getEmail().toLowerCase().trim()) // Normalizar email
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
+            .nombre(request.getNombre().trim())
+            .apellido(request.getApellido().trim())
+            .telefono(request.getTelefono() != null ? request.getTelefono().trim() : null)
+            .verificationCode(verificationCode)
+            .codeExpiration(LocalDateTime.now().plusMinutes(15))
+            .createdAt(LocalDateTime.now())
+            .verified(false)
+            .verificationType(PendingUser.VerificationType.REGISTRATION)
+            .build();
+    }
+    
+    @Override
+    @Transactional
+    public LoginResponse verifyEmailAndCompleteRegistration(VerifyEmailRequest request) {
+        log.info("Verificando email para: {}", request.getEmail());
+        
+        // Validar y obtener usuario pendiente
+        PendingUser pendingUser = validateAndGetPendingUser(request.getEmail(), request.getCode());
+        
+        // Verificar que sea de tipo REGISTRATION
+        validateVerificationType(pendingUser, PendingUser.VerificationType.REGISTRATION);
+        
+        // Crear usuario real con datos seguros
+        Usuario usuario = createSecureUser(pendingUser);
+        Usuario savedUsuario = usuarioRepository.save(usuario);
+        
+        // Limpiar usuario pendiente
+        pendingUserRepository.delete(pendingUser);
+        
+        // Generar token JWT seguro
+        String accessToken = jwtTokenProvider.generateToken(savedUsuario);
+        
+        // Crear respuesta de login segura
+        return createSecureLoginResponse(savedUsuario, accessToken);
+    }
+    
+    /**
+     * Valida y obtiene el usuario pendiente
+     */
+    private PendingUser validateAndGetPendingUser(String email, String code) {
+        Optional<PendingUser> pendingUserOpt = pendingUserRepository
+            .findByEmailAndVerificationCode(email.toLowerCase().trim(), code);
+        
+        if (pendingUserOpt.isEmpty()) {
+            log.warn("Intento de verificación con código incorrecto para: {}", email);
+            throw new AuthException("El código es incorrecto o no existe");
+        }
+        
+        PendingUser pendingUser = pendingUserOpt.get();
+        
+        // Verificar si el código ha expirado
+        if (pendingUser.getCodeExpiration().isBefore(LocalDateTime.now())) {
+            log.warn("Código expirado para: {} - Expiración: {}", email, pendingUser.getCodeExpiration());
+            throw new AuthException("El código ha expirado");
+        }
+        
+        return pendingUser;
+    }
+    
+    /**
+     * Valida el tipo de verificación
+     */
+    private void validateVerificationType(PendingUser pendingUser, PendingUser.VerificationType expectedType) {
+        if (pendingUser.getVerificationType() != expectedType) {
+            log.warn("Tipo de verificación incorrecto para: {} - Esperado: {}, Actual: {}", 
+                    pendingUser.getEmail(), expectedType, pendingUser.getVerificationType());
+            throw new AuthException("Código de verificación inválido para " + expectedType.name().toLowerCase());
+        }
+    }
+    
+    /**
+     * Crea un usuario seguro
+     */
+    private Usuario createSecureUser(PendingUser pendingUser) {
+        return Usuario.builder()
+            .email(pendingUser.getEmail())
+            .passwordHash(pendingUser.getPasswordHash())
+            .nombre(pendingUser.getNombre())
+            .apellido(pendingUser.getApellido())
+            .telefono(pendingUser.getTelefono())
+            .tipoUsuario(TipoUsuario.FUNCIONARIO)
+            .activo(true)
+            .emailVerificado(true) // Marcar como verificado
+            .fechaCreacion(LocalDateTime.now())
+            .build();
+    }
+    
+    /**
+     * Crea una respuesta de login segura
+     */
+    private LoginResponse createSecureLoginResponse(Usuario usuario, String accessToken) {
+        return LoginResponse.builder()
+            .accessToken(accessToken)
+            .tokenType("Bearer")
+            .expiresIn(jwtTokenProvider.getTokenValidityInSeconds())
+            .userId(usuario.getIdUsuario())
+            .nombre(usuario.getNombre())
+            .apellido(usuario.getApellido())
+            .email(usuario.getEmail())
+            .tipoUsuario(usuario.getTipoUsuario().name())
+            .require2fa(false)
+            .build();
+    }
+    
+    @Override
+    @Transactional
+    public PendingUser resendVerificationCode(String email) {
+        log.info("Reenviando código de verificación para: {}", email);
+        
+        PendingUser pendingUser = pendingUserRepository
+            .findByEmailAndVerified(email, false)
+            .orElseThrow(() -> new AuthException("No hay registro pendiente para este email"));
+        
+        // Generar nuevo código
+        String newCode = generateVerificationCode();
+        pendingUser.setVerificationCode(newCode);
+        pendingUser.setCodeExpiration(LocalDateTime.now().plusMinutes(15));
+        
+        return pendingUserRepository.save(pendingUser);
+    }
+    
+    // ========== LOGIN ==========
+    
+    @Override
+    public LoginResponse authenticateWithVerification(LoginRequest request) {
+        log.info("Autenticación con verificación para: {}", request.getEmail());
+        
+        // Verificar credenciales
+        validateCredentials(request);
+        
+        // Crear verificación de login
+        PendingUser pendingUser = createLoginVerification(request);
+        
+        // No devolver token aún, el usuario debe verificar el código
+        throw new AuthException("Se requiere verificación de código. Usa el endpoint /verify-login-code");
+    }
+    
+    @Override
+    public void validateCredentials(LoginRequest request) {
+        log.info("Validación de credenciales para email: {}", request.getEmail());
+        
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new AuthException("Credenciales inválidas"));
+            .orElseThrow(() -> new AuthException("El correo electrónico no está registrado"));
         
-        // 2. Verificar contraseña
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
-            log.warn("Intento de login fallido para email: {}", request.getEmail());
-            throw new AuthException("Credenciales inválidas");
+            throw new AuthException("La contraseña es incorrecta");
         }
         
-        // 3. Verificar que esté activo
         if (!usuario.getActivo()) {
-            throw new AuthException("Usuario desactivado. Contacte al administrador");
+            throw new AuthException("Tu cuenta ha sido desactivada. Contacta al administrador");
+        }
+    }
+    
+    @Override
+    public PendingUser createLoginVerification(LoginRequest request) {
+        log.info("Creando verificación de login para: {}", request.getEmail());
+        
+        // Verificar que el usuario existe y está activo
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new AuthException("El correo electrónico no está registrado"));
+        
+        log.info("Usuario encontrado: {} - Activo: {}", usuario.getEmail(), usuario.getActivo());
+        
+        if (!usuario.getActivo()) {
+            throw new AuthException("Tu cuenta ha sido desactivada. Contacta al administrador");
         }
         
-        // 4. Actualizar último acceso
-        usuario.setUltimoAcceso(LocalDateTime.now());
-        usuarioRepository.save(usuario);
+        // Eliminar verificaciones anteriores
+        pendingUserRepository.findByEmailAndVerified(request.getEmail(), false)
+            .ifPresent(pendingUserRepository::delete);
         
-        // 5. Generar token JWT
+        // Crear nueva verificación
+        String verificationCode = generateVerificationCode();
+        log.info("Código de verificación generado: {}", verificationCode);
+        
+        PendingUser pendingUser = PendingUser.builder()
+            .email(request.getEmail())
+            .passwordHash(usuario.getPasswordHash()) // No necesario, pero para consistencia
+            .nombre(usuario.getNombre())
+            .apellido(usuario.getApellido())
+            .telefono(usuario.getTelefono())
+            .verificationCode(verificationCode)
+            .codeExpiration(LocalDateTime.now().plusMinutes(15))
+            .createdAt(LocalDateTime.now())
+            .verified(false)
+            .verificationType(PendingUser.VerificationType.LOGIN)
+            .build();
+        
+        PendingUser savedPendingUser = pendingUserRepository.save(pendingUser);
+        log.info("Usuario pendiente guardado con ID: {}", savedPendingUser.getId());
+        
+        return savedPendingUser;
+    }
+    
+    @Override
+    @Transactional
+    public LoginResponse verifyLoginCode(VerifyEmailRequest request) {
+        log.info("Verificando código de login para: {}", request.getEmail());
+        
+        // Buscar usuario pendiente
+        log.info("🔍 Buscando usuario pendiente - Email: {}, Código: {}", request.getEmail(), request.getCode());
+        
+        Optional<PendingUser> pendingUserOpt = pendingUserRepository
+            .findByEmailAndVerificationCode(request.getEmail(), request.getCode());
+        
+        log.info("🔍 Usuario encontrado: {}", pendingUserOpt.isPresent());
+        
+        if (pendingUserOpt.isEmpty()) {
+            throw new AuthException("El código es incorrecto o no existe");
+        }
+        
+        PendingUser pendingUser = pendingUserOpt.get();
+        log.info("🔍 Usuario pendiente encontrado - ID: {}, Expiración: {}, Ahora: {}", 
+                pendingUser.getId(), pendingUser.getCodeExpiration(), LocalDateTime.now());
+        
+        // Verificar si el código ha expirado
+        if (pendingUser.getCodeExpiration().isBefore(LocalDateTime.now())) {
+            log.warn("⚠️ Código expirado - Expiración: {}, Ahora: {}", 
+                    pendingUser.getCodeExpiration(), LocalDateTime.now());
+            throw new AuthException("El código ha expirado");
+        }
+        
+        // Verificar que sea de tipo LOGIN
+        if (pendingUser.getVerificationType() != PendingUser.VerificationType.LOGIN) {
+            throw new AuthException("Código de verificación inválido para login");
+        }
+        
+        // Buscar usuario real
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new AuthException("Usuario no encontrado"));
+        
+        // Eliminar usuario pendiente
+        pendingUserRepository.delete(pendingUser);
+        
+        // Generar token JWT
         String accessToken = jwtTokenProvider.generateToken(usuario);
-        
-        // 6. Determinar URL de redirección según tipo de usuario
-        String redirectUrl = getRedirectUrlByUserType(usuario.getTipoUsuario());
-        
-        log.info("Login exitoso para usuario: {} - Tipo: {}", 
-                usuario.getEmail(), usuario.getTipoUsuario());
         
         return LoginResponse.builder()
             .accessToken(accessToken)
@@ -68,82 +325,109 @@ public class AuthServiceImpl implements AuthService {
             .nombre(usuario.getNombre())
             .apellido(usuario.getApellido())
             .email(usuario.getEmail())
-            .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
-            .require2fa(usuario.getRequire2fa())
-            .redirectUrl(redirectUrl)
-            .build();
-    }
-    
-    @Override
-    public void validateCredentials(LoginRequest request) {
-        log.info("Validación de credenciales para email: {}", request.getEmail());
-        
-        // 1. Buscar usuario por email
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new AuthException("Credenciales inválidas"));
-        
-        // 2. Verificar contraseña
-        if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
-            log.warn("Validación de credenciales fallida para email: {}", request.getEmail());
-            throw new AuthException("Credenciales inválidas");
-        }
-        
-        // 3. Verificar que esté activo
-        if (!usuario.getActivo()) {
-            throw new AuthException("Usuario desactivado. Contacte al administrador");
-        }
-        
-        log.info("Credenciales válidas para usuario: {}", usuario.getEmail());
-    }
-    
-    @Override
-    public void registerFuncionario(RegisterRequest request) {
-        log.info("Registro de nuevo funcionario: {}", request.getEmail());
-        
-        // 1. Validar que el email no exista
-        if (usuarioRepository.existsByEmail(request.getEmail())) {
-            throw new UserAlreadyExistsException("Ya existe un usuario con este email");
-        }
-        
-        // 2. Crear nuevo funcionario
-        Usuario funcionario = Usuario.builder()
-            .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .nombre(request.getNombre())
-            .apellido(request.getApellido())
-            .telefono(request.getTelefono())
-            .tipoUsuario(TipoUsuario.FUNCIONARIO)  // Fijo para auto-registro
-            .creadoPor(null)  // Auto-registro, no tiene creador
-            .activo(true)
+            .tipoUsuario(usuario.getTipoUsuario().name())
             .require2fa(false)
             .build();
+    }
+    
+    // ========== RECUPERACIÓN DE CONTRASEÑA ==========
+    
+    @Override
+    @Transactional
+    public PendingUser createPasswordResetVerification(String email) {
+        log.info("Creando verificación de reset de contraseña para: {}", email);
         
-        Usuario savedUser = usuarioRepository.save(funcionario);
+        // Verificar que el usuario existe
+        Usuario usuario = usuarioRepository.findByEmail(email)
+            .orElseThrow(() -> new AuthException("Usuario no encontrado"));
         
-        // 3. Enviar email de bienvenida
-        try {
-            emailService.sendWelcomeEmail(savedUser);
-        } catch (Exception e) {
-            log.error("Error enviando email de bienvenida a: {}", savedUser.getEmail(), e);
-            // No fallar el registro por error de email
+        // Eliminar verificaciones anteriores
+        pendingUserRepository.findByEmailAndVerified(email, false)
+            .ifPresent(pendingUserRepository::delete);
+        
+        // Crear nueva verificación
+        String verificationCode = generateVerificationCode();
+        
+        PendingUser pendingUser = PendingUser.builder()
+            .email(email)
+            .passwordHash(usuario.getPasswordHash())
+            .nombre(usuario.getNombre())
+            .apellido(usuario.getApellido())
+            .telefono(usuario.getTelefono())
+            .verificationCode(verificationCode)
+            .codeExpiration(LocalDateTime.now().plusMinutes(15))
+            .createdAt(LocalDateTime.now())
+            .verified(false)
+            .verificationType(PendingUser.VerificationType.PASSWORD_RESET)
+            .build();
+        
+        return pendingUserRepository.save(pendingUser);
+    }
+    
+    @Override
+    @Transactional
+    public void resetPasswordWithCode(ResetPasswordRequest request) {
+        log.info("Reset de contraseña con código para: {}", request.getEmail());
+        
+        // Buscar usuario pendiente
+        PendingUser pendingUser = pendingUserRepository
+            .findByEmailAndVerificationCodeAndCodeExpirationAfter(
+                request.getEmail(), 
+                request.getToken(), 
+                LocalDateTime.now()
+            )
+            .orElseThrow(() -> new AuthException("El código es incorrecto o ha expirado"));
+        
+        // Verificar que sea de tipo PASSWORD_RESET
+        if (pendingUser.getVerificationType() != PendingUser.VerificationType.PASSWORD_RESET) {
+            throw new AuthException("Código de verificación inválido para reset de contraseña");
         }
         
-        log.info("Funcionario registrado exitosamente: {}", savedUser.getEmail());
+        // Buscar usuario real
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new AuthException("Usuario no encontrado"));
+        
+        // Actualizar contraseña
+        usuario.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        usuarioRepository.save(usuario);
+        
+        // Eliminar usuario pendiente
+        pendingUserRepository.delete(pendingUser);
     }
+    
+    // ========== UTILIDADES ==========
     
     @Override
     public void logout(String token) {
         // Invalidar token (implementar blacklist si es necesario)
-        // jwtTokenProvider.invalidateToken(token);
         log.info("Usuario cerró sesión");
     }
     
-    private String getRedirectUrlByUserType(TipoUsuario tipoUsuario) {
-        return switch (tipoUsuario) {
-            case FUNCIONARIO -> "/funcionario/dashboard";
-            case TECNICO -> "/tecnico/dashboard";
-            case ADMINISTRADOR -> "/admin/dashboard";
-            case SUPERADMIN -> "/superadmin/dashboard";
-        };
+    @Override
+    public void verifyToken(String token) {
+        if (!jwtTokenProvider.validateToken(token)) {
+            throw new AuthException("Token inválido o expirado");
+        }
+    }
+    
+    /**
+     * Genera un código de verificación seguro de 6 dígitos
+     */
+    private String generateSecureVerificationCode() {
+        Random random = new Random();
+        int code = 100000 + random.nextInt(900000); // 6 dígitos
+        return String.valueOf(code);
+    }
+    
+    /**
+     * Genera un código de verificación (método legacy para compatibilidad)
+     */
+    private String generateVerificationCode() {
+        return generateSecureVerificationCode();
+    }
+    
+    @Override
+    public long getUserCount() {
+        return usuarioRepository.count();
     }
 }
