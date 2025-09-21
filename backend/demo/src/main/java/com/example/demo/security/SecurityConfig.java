@@ -65,7 +65,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register").permitAll()
                 .requestMatchers("/api/auth/verify-email").permitAll()
                 .requestMatchers("/api/auth/resend-verification").permitAll()
+                .requestMatchers("/api/auth/validate-credentials").permitAll()
+                .requestMatchers("/api/auth/request-login-code").permitAll()
+                .requestMatchers("/api/auth/verify-login-code").permitAll()
                 .requestMatchers("/api/auth/test-email").permitAll()
+                .requestMatchers("/api/auth/test-db").permitAll()
+                .requestMatchers("/api/auth/test-verify").permitAll()
+                .requestMatchers("/api/auth/verify-email-simple").permitAll()
                 .requestMatchers("/api/auth/forgot-password").permitAll()
                 .requestMatchers("/api/auth/reset-password").permitAll()
                 
@@ -83,9 +89,13 @@ public class SecurityConfig {
                 // 🎫 Endpoints de tickets - requieren autenticación
                 .requestMatchers("/api/tickets/**").authenticated()
                 
+                // 👤 Endpoints de perfil de usuario - requieren autenticación
+                .requestMatchers("/api/usuarios/profile").authenticated()
+                
                 // 🔐 Todo lo demás requiere autenticación
                 .anyRequest().authenticated()
-            );
+            )
+            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }

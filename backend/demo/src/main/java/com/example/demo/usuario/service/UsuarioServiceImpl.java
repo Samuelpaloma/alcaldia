@@ -160,6 +160,17 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setApellido(request.getApellido());
         usuario.setTelefono(request.getTelefono());
         
+        // Actualizar campos de perfil personal
+        if (request.getUbicacion() != null) {
+            usuario.setUbicacion(request.getUbicacion());
+        }
+        if (request.getDepartamento() != null) {
+            usuario.setDepartamento(request.getDepartamento());
+        }
+        if (request.getCargo() != null) {
+            usuario.setCargo(request.getCargo());
+        }
+        
         if (request.getRequire2fa() != null) {
             usuario.setRequire2fa(request.getRequire2fa());
         }

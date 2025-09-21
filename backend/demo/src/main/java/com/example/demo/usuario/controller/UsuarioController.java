@@ -5,6 +5,7 @@ import com.example.demo.usuario.dto.request.*;
 import com.example.demo.usuario.dto.response.*;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.service.UsuarioService;
+import com.example.demo.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -214,7 +215,7 @@ public class UsuarioController {
     // ========== MÉTODO AUXILIAR ==========
     
     private Long getUserIdFromAuth(Authentication auth) {
-        UserDetails userDetails = (UserDetails) auth.getPrincipal();
-        return Long.parseLong(userDetails.getUsername());
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        return userDetails.getUsuario().getIdUsuario();
     }
 }

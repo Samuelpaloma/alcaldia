@@ -38,6 +38,15 @@ public class Usuario {
     @Column(length = 20)
     private String telefono;
     
+    @Column(length = 200)
+    private String ubicacion;
+    
+    @Column(length = 100)
+    private String departamento;
+    
+    @Column(length = 100)
+    private String cargo;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo_usuario", nullable = false)
     private TipoUsuario tipoUsuario;

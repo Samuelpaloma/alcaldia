@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/i18n';
+import { useUserProfile } from './use-user-profile';
 
 export interface UserSettings {
   // Perfil
@@ -57,6 +58,7 @@ const DEFAULT_SETTINGS: UserSettings = {
 
 export const useSettings = () => {
   const { locale, setLocale } = useI18n();
+  const { profile, updateProfile } = useUserProfile();
   const [settings, setSettings] = useState<UserSettings>(() => {
     try {
       const saved = localStorage.getItem('userSettings');
@@ -104,6 +106,36 @@ export const useSettings = () => {
     }
   }, []);
 
+  // Sincronizar datos del perfil con la base de datos
+  const syncProfileWithDatabase = useCallback(async (profileData: {
+    name: string;
+    email: string;
+    department: string;
+    position: string;
+  }) => {
+    try {
+      if (profile) {
+        console.log('🔄 Sincronizando perfil con base de datos:', {
+          departamento: profileData.department,
+          cargo: profileData.position,
+          ubicacion: profile.ubicacion
+        });
+        
+        await updateProfile({
+          nombre: profileData.name.split(' ')[0] || profile.nombre,
+          apellido: profileData.name.split(' ').slice(1).join(' ') || profile.apellido,
+          ubicacion: profile.ubicacion, // Mantener ubicación actual
+          departamento: profileData.department,
+          cargo: profileData.position,
+        });
+        
+        console.log('✅ Perfil sincronizado exitosamente');
+      }
+    } catch (error) {
+      console.error('❌ Error sincronizando perfil con base de datos:', error);
+    }
+  }, [profile, updateProfile]);
+
   // Actualizar configuración individual
   const updateSetting = useCallback((key: keyof UserSettings, value: any) => {
     setSettings(prev => {
@@ -114,9 +146,19 @@ export const useSettings = () => {
         applyAppearanceSettings(newSettings);
       }
       
+      // Sincronizar cambios de perfil con la base de datos
+      if (['name', 'email', 'department', 'position'].includes(key)) {
+        syncProfileWithDatabase({
+          name: key === 'name' ? value : newSettings.name,
+          email: key === 'email' ? value : newSettings.email,
+          department: key === 'department' ? value : newSettings.department,
+          position: key === 'position' ? value : newSettings.position,
+        });
+      }
+      
       return newSettings;
     });
-  }, [applyAppearanceSettings]);
+  }, [applyAppearanceSettings, syncProfileWithDatabase]);
 
   // Actualizar múltiples configuraciones
   const updateSettings = useCallback((updates: Partial<UserSettings>) => {
@@ -151,6 +193,19 @@ export const useSettings = () => {
   useEffect(() => {
     applyAppearanceSettings(settings);
   }, [settings, applyAppearanceSettings]);
+
+  // Sincronizar datos del perfil cuando se carguen
+  useEffect(() => {
+    if (profile) {
+      setSettings(prev => ({
+        ...prev,
+        name: `${profile.nombre} ${profile.apellido}`.trim(),
+        email: profile.email,
+        department: profile.departamento || prev.department,
+        position: profile.cargo || prev.position,
+      }));
+    }
+  }, [profile]);
 
   // Sincronizar idioma cuando cambie la configuración
   useEffect(() => {

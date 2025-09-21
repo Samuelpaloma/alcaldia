@@ -176,6 +176,9 @@ export default function Login() {
         token: response.accessToken
       });
       
+      // Actualizar token en ApiClient inmediatamente
+      api.setToken(response.accessToken);
+      
       setMessage({ 
         type: "success", 
         text: `Bienvenido` 

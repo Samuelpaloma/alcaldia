@@ -19,6 +19,9 @@ public class UsuarioDTO {
     private String apellido;
     private String nombreCompleto;
     private String telefono;
+    private String ubicacion;
+    private String departamento;
+    private String cargo;
     private String tipoUsuario;        // String legible para frontend
     private Boolean activo;
     private Boolean require2fa;

@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/i18n";
-import { createTicket, Priority } from "../client_tickets/store";
+import { createTicket, Priority } from "../client_tickets/apiStore";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import { useUserInfo } from "@/hooks/use-user-info";
 import { Bot } from "lucide-react"; // Added for bot icon
 
 interface SenaOption {
@@ -26,6 +28,8 @@ interface ChatMessage {
 export default function CreateTicket() {
   const { t, locale } = useI18n();
   const { toast } = useToast();
+  const { profile, isLoading: userLoading, error: userError } = useUserProfile();
+  const { userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
 
   // Generate SENA areas using translations - regenerates when language changes
   const SENA_AREAS: SenaOption[] = useMemo(() => {
@@ -129,6 +133,50 @@ export default function CreateTicket() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [createdTicketId, setCreatedTicketId] = useState<string>("");
+
+  // Actualizar nombre y ubicación cuando se obtenga la información del usuario
+  useEffect(() => {
+    console.log('🔄 Actualizando datos del formulario:', { profile, userInfo });
+    
+    if (profile) {
+      const fullName = `${profile.nombre} ${profile.apellido}`.trim();
+      const ubicacion = profile.ubicacion || profile.departamento;
+      const finalLocation = ubicacion && ubicacion !== 'No especificada' && ubicacion !== 'No especificado' 
+        ? ubicacion 
+        : 'Departamento de Sistemas';
+      
+      console.log('📝 Datos del perfil:', {
+        nombre: fullName,
+        ubicacion: profile.ubicacion,
+        departamento: profile.departamento,
+        ubicacionFinal: finalLocation
+      });
+      
+      setName(fullName);
+      setLocation(finalLocation);
+    } else if (userInfo) {
+      // Fallback a userInfo si profile no está disponible
+      const ubicacion = userInfo.ubicacion || userInfo.departamento;
+      const finalLocation = ubicacion && ubicacion !== 'No especificada' && ubicacion !== 'No especificado' 
+        ? ubicacion 
+        : 'Departamento de Sistemas';
+      
+      console.log('📝 Datos del userInfo:', {
+        nombre: userInfo.nombre,
+        ubicacion: userInfo.ubicacion,
+        departamento: userInfo.departamento,
+        ubicacionFinal: finalLocation
+      });
+      
+      setName(userInfo.nombre);
+      setLocation(finalLocation);
+    } else {
+      // Si no se puede obtener información del usuario, usar valores por defecto
+      console.warn('⚠️ No se pudo obtener información del usuario, usando valores por defecto');
+      setName('Usuario');
+      setLocation('Departamento de Sistemas');
+    }
+  }, [profile, userInfo]);
   
   // Guided chat state
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -213,26 +261,82 @@ export default function CreateTicket() {
     return message;
   };
 
+  const getSubject = () => {
+    if (showFreeText && freeTextMessage) {
+      // Extraer las primeras palabras como asunto
+      const words = freeTextMessage.trim().split(' ');
+      return words.slice(0, 6).join(' ') + (words.length > 6 ? '...' : '');
+    }
+    if (message) {
+      // Si es una categoría seleccionada, usar el título
+      return selectedPath.length > 0 
+        ? selectedPath[selectedPath.length - 1].title
+        : message;
+    }
+    return 'Consulta General';
+  };
+
+  const getCategory = () => {
+    if (selectedPath.length > 0) {
+      return selectedPath[selectedPath.length - 1].title;
+    }
+    return 'General';
+  };
+
   const canSubmit = name && location && (message || (showFreeText && freeTextMessage)) && priority && !isLoading;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    
-    const finalMessage = getFormattedMessage();
-    const tkt = createTicket({ name, location, message: finalMessage, priority, attachmentName: fileName });
-    setCreatedTicketId(tkt.id);
-    setIsLoading(false);
-    setShowSuccessModal(true);
-    
-    setName(""); 
-    setLocation(""); 
-    setMessage(""); 
-    setPriority("medium"); 
-    setFileName(undefined);
-    resetChat();
+    try {
+      const finalMessage = getFormattedMessage();
+      const subject = getSubject();
+      const category = getCategory();
+      
+      console.log('🎫 Creando ticket:', {
+        subject,
+        category,
+        message: finalMessage,
+        priority
+      });
+      
+      const tkt = await createTicket({ 
+        name, 
+        location, 
+        message: finalMessage,
+        subject,
+        category,
+        priority, 
+        attachmentName: fileName 
+      });
+      
+      setCreatedTicketId(tkt.id);
+      setShowSuccessModal(true);
+      
+      // Limpiar formulario
+      setName(""); 
+      setLocation(""); 
+      setMessage(""); 
+      setPriority("medium"); 
+      setFileName(undefined);
+      resetChat();
+      
+      toast({
+        title: t("client.chat.success_title"),
+        description: t("client.chat.success_message") + " " + tkt.id,
+      });
+      
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      toast({
+        title: t("client.error"),
+        description: error instanceof Error ? error.message : t("client.create_error"),
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -253,11 +357,25 @@ export default function CreateTicket() {
           <form className="grid gap-3 md:grid-cols-2" onSubmit={submit}>
             <label className="grid gap-1">
               <span className="label text-sm">{t("client.form.name")}</span>
-              <Input value={name} onChange={(e)=>setName(e.target.value)} />
+              <Input 
+                value={name} 
+                disabled={true}
+                className="bg-muted"
+                placeholder={userLoading ? t("client.loading") : ""}
+              />
+              {userLoading && <span className="text-xs text-muted-foreground">{t("client.loading_user_info")}</span>}
+              {!userLoading && <span className="text-xs text-muted-foreground">{t("client.auto_filled")}</span>}
             </label>
             <label className="grid gap-1">
               <span className="label text-sm">{t("client.form.location")}</span>
-              <Input value={location} onChange={(e)=>setLocation(e.target.value)} />
+              <Input 
+                value={location} 
+                disabled={true}
+                className="bg-muted"
+                placeholder={userLoading ? t("client.loading") : ""}
+              />
+              {userLoading && <span className="text-xs text-muted-foreground">{t("client.loading_user_info")}</span>}
+              {!userLoading && <span className="text-xs text-muted-foreground">{t("client.auto_filled")}</span>}
             </label>
             <div className="grid gap-1 md:col-span-2">
               <span className="label text-sm">{t("client.chat.describe_query")}</span>

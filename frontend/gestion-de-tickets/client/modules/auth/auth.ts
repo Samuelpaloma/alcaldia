@@ -61,6 +61,21 @@ export function setAuth(state: AuthStateOrNull) {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   }
+
+  // Actualizar token en ApiClient
+  updateApiClientToken(state?.token || null);
+}
+
+/**
+ * Actualiza el token en el ApiClient
+ */
+function updateApiClientToken(token: string | null) {
+  // Importar dinámicamente para evitar dependencias circulares
+  import('@shared/api').then(({ api }) => {
+    api.setToken(token);
+  }).catch(error => {
+    console.warn('Error actualizando token en ApiClient:', error);
+  });
 }
 
 export function logout() {
