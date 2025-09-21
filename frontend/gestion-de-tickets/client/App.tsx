@@ -21,7 +21,6 @@ import Metrics from "./modules/metrics/Metrics";
 import AiClassification from "./modules/ai_classification/AiClassification";
 import Login from "./modules/auth/Login";
 import Register from "./modules/auth/Register";
-import ClientDashboard from "./modules/client_dashboard/ClientDashboard";
 import AdminDashboard from "./modules/admin/AdminDashboard";
 import { I18nProvider } from "./i18n";
 import RoleRoute from "./modules/auth/RoleRoute";
@@ -29,6 +28,7 @@ import ClientHistory from "./modules/client_history/ClientHistory";
 import ClientTracking from "./modules/client_tracking/ClientTracking";
 import CreateTicket from "./modules/client_create/CreateTicket";
 import ClientProfile from "./modules/client_profile/ClientProfile";
+import ClientTickets from "./modules/client_tickets/ClientTickets";
 
 const queryClient = new QueryClient();
 
@@ -61,11 +61,7 @@ const App = () => (
             {/* Client section (role-restricted) */}
             <Route path="/client" element={<RoleRoute role="client" />}>
               <Route element={<ClientLayout />}>
-                <Route index element={<ClientDashboard />} />
-                <Route path="create" element={<CreateTicket />} />
-                <Route path="tracking" element={<ClientTracking />} />
-                <Route path="history" element={<ClientHistory />} />
-                <Route path="profile" element={<ClientProfile />} />
+                <Route index element={<ClientTickets />} />
               </Route>
             </Route>
 

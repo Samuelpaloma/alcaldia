@@ -1,6 +1,7 @@
 package com.example.demo.auth.dto.request;
 
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -12,6 +13,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResetPasswordRequest {
+    
+    @NotBlank(message = "El email es requerido")
+    @Email(message = "El email debe tener un formato válido")
+    private String email;
     
     @NotBlank(message = "El código es requerido")
     @Size(min = 6, max = 6, message = "El código debe tener 6 dígitos")

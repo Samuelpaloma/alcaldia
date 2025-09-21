@@ -30,4 +30,9 @@ public class UpdateUsuarioRequest {
     private String area;          // Para técnicos
     private String nivel;         // Para técnicos
     private String observaciones; // Para técnicos
+    
+    // Campos de perfil personal
+    private String ubicacion;     // Ubicación del usuario
+    private String departamento;  // Departamento del usuario
+    private String cargo;         // Cargo del usuario
 }

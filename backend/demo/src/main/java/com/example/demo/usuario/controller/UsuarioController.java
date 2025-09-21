@@ -224,7 +224,7 @@ public class UsuarioController {
         
         // Si es CustomUserDetails, usar el método específico
         if (userDetails instanceof CustomUserDetails) {
-            return ((CustomUserDetails) userDetails).getUserId();
+            return ((CustomUserDetails) userDetails).getUsuario().getIdUsuario();
         }
         
         // Fallback: intentar parsear el username como ID

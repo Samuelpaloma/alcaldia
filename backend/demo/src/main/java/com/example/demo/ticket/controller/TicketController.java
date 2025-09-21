@@ -159,10 +159,16 @@ public class TicketController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailUsuario = userDetails.getEmail();
             String nombreUsuario = userDetails.getUsuario().getNombre();
+            String ubicacionUsuario = userDetails.getUsuario().getUbicacion();
+            String departamentoUsuario = userDetails.getUsuario().getDepartamento();
+            String cargoUsuario = userDetails.getUsuario().getCargo();
             
             return ResponseEntity.ok(Map.of(
                 "email", emailUsuario,
-                "nombre", nombreUsuario
+                "nombre", nombreUsuario,
+                "ubicacion", ubicacionUsuario != null ? ubicacionUsuario : "No especificada",
+                "departamento", departamentoUsuario != null ? departamentoUsuario : "No especificado",
+                "cargo", cargoUsuario != null ? cargoUsuario : "No especificado"
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
