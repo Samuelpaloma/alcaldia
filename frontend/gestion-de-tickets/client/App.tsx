@@ -22,6 +22,8 @@ import AiClassification from "./modules/ai_classification/AiClassification";
 import Login from "./modules/auth/Login";
 import Register from "./modules/auth/Register";
 import AdminDashboard from "./modules/admin/AdminDashboard";
+import SuperAdminDashboard from "./modules/superadmin/SuperAdminDashboard";
+import SuperAdminLayout from "./modules/_shared/SuperAdminLayout";
 import { I18nProvider } from "./i18n";
 import RoleRoute from "./modules/auth/RoleRoute";
 import ClientHistory from "./modules/client_history/ClientHistory";
@@ -68,7 +70,7 @@ const App = () => (
             {/* Admin section (role-restricted) */}
             <Route element={<RoleRoute role="admin" />}>
               <Route element={<AdminLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin" element={<AdminDashboard userRole="admin" />} />
                 <Route path="/tickets" element={<TicketsManagement />} />
                 <Route path="/users-roles" element={<UsersRoles />} />
                 <Route path="/notifications" element={<Notifications />} />
@@ -79,6 +81,13 @@ const App = () => (
                 <Route path="/metrics" element={<Metrics />} />
                 <Route path="/ai-classification" element={<AiClassification />} />
               </Route>
+            </Route>
+
+            {/* SuperAdmin section (role-restricted) */}
+            <Route element={<SuperAdminLayout />}>
+              <Route path="/superadmin" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/administradores" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/configuraciones" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

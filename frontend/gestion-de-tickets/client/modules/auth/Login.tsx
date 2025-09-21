@@ -37,13 +37,14 @@ const validatePassword = (password: string): string | undefined => {
 };
 
 // Función para determinar el rol basado en el tipo de usuario del backend
-const getRoleFromTipoUsuario = (tipoUsuario: string): "admin" | "client" => {
-  switch (tipoUsuario?.toLowerCase()) {
-    case "superadministrador":
-    case "administrador":
+const getRoleFromTipoUsuario = (tipoUsuario: string): "admin" | "client" | "superadmin" => {
+  switch (tipoUsuario?.toUpperCase()) {
+    case "SUPERADMIN":
+      return "superadmin";
+    case "ADMINISTRADOR":
       return "admin";
-    case "funcionario":
-    case "tecnico":
+    case "FUNCIONARIO":
+    case "TECNICO":
     default:
       return "client";
   }
@@ -184,8 +185,24 @@ export default function Login() {
         text: `Bienvenido` 
       });
       
-      // Redirigir al dashboard principal (el rol se detectará desde el token)
-      const redirectPath = "/client";
+      // Determinar la ruta de redirección basada en el tipo de usuario
+      const userRole = getRoleFromTipoUsuario(response.tipoUsuario);
+      let redirectPath = "/client"; // Default
+      
+      switch (userRole) {
+        case "superadmin":
+          redirectPath = "/superadmin";
+          break;
+        case "admin":
+          redirectPath = "/admin";
+          break;
+        case "client":
+        default:
+          redirectPath = "/client";
+          break;
+      }
+      
+      console.log(`🎯 Redirigiendo a: ${redirectPath} (rol: ${userRole})`);
       
       // Redirigir después de un breve delay
       setTimeout(() => {

@@ -6,6 +6,9 @@ import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.usuario.service.UsuarioService;
 import com.example.demo.superadmin.dto.response.EstadisticasAdministradoresResponseDTO;
+import com.example.demo.security.CustomUserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,13 +29,23 @@ public class SuperAdminUsuarioService {
     private final PasswordEncoder passwordEncoder;
     
     /**
+     * Obtener ID del usuario autenticado
+     */
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            return userDetails.getUsuario().getIdUsuario();
+        }
+        throw new RuntimeException("Super Administrador no encontrado");
+    }
+    
+    /**
      * Crear administrador
      */
     public UsuarioDTO crearAdministrador(CreateAdminRequest request) {
         log.info("Creando administrador: {}", request.getEmail());
-        // El ID del superadmin se obtendrá del contexto de seguridad
-        // Por ahora usamos un ID fijo, pero en producción debería obtenerse del token
-        Long superAdminId = 1L; // TODO: Obtener del contexto de seguridad
+        Long superAdminId = getCurrentUserId();
         return usuarioService.createAdmin(request, superAdminId);
     }
     
@@ -41,8 +55,10 @@ public class SuperAdminUsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioDTO> obtenerTodosLosAdministradores() {
         log.info("Obteniendo todos los administradores");
-        // TODO: Implementar paginación si es necesario
-        return List.of(); // Placeholder
+        List<Usuario> administradores = usuarioRepository.findByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR);
+        return administradores.stream()
+                .map(this::convertirUsuarioADTO)
+                .collect(Collectors.toList());
     }
     
     /**
@@ -59,8 +75,7 @@ public class SuperAdminUsuarioService {
      */
     public UsuarioDTO toggleEstadoAdministrador(Long id) {
         log.info("Cambiando estado del administrador: {}", id);
-        // TODO: Obtener ID del usuario actual del contexto de seguridad
-        Long currentUserId = 1L; // Placeholder
+        Long currentUserId = getCurrentUserId();
         usuarioService.toggleUserStatus(id, currentUserId);
         return usuarioService.getUserById(id);
     }

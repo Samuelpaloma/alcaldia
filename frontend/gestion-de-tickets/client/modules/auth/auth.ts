@@ -1,4 +1,4 @@
-export type Role = "admin" | "client";
+export type Role = "admin" | "client" | "superadmin";
 
 export interface UserInfo {
   userId: number;
@@ -184,12 +184,39 @@ export function detectRoleByToken(): Role {
     return auth.user.role;
   }
   
+  // Intentar extraer el rol del token JWT
+  const token = getToken();
+  if (token && !token.startsWith("mock-token")) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const tipoUsuario = payload.tipoUsuario?.toUpperCase();
+      
+      if (tipoUsuario === "SUPERADMIN") {
+        return "superadmin";
+      }
+      if (tipoUsuario === "ADMINISTRADOR") {
+        return "admin";
+      }
+      if (tipoUsuario === "TECNICO") {
+        return "admin"; // Los técnicos también pueden acceder al panel de admin
+      }
+      if (tipoUsuario === "FUNCIONARIO" || tipoUsuario === "CLIENTE") {
+        return "client";
+      }
+    } catch (error) {
+      console.error('Error decodificando token JWT:', error);
+    }
+  }
+  
   // Fallback al método anterior
   const userInfo = getUserInfo();
   if (!userInfo) return "client";
   
   const tipoUsuario = userInfo.tipoUsuario?.toUpperCase();
-  if (tipoUsuario === "ADMINISTRADOR" || tipoUsuario === "SUPERADMIN") {
+  if (tipoUsuario === "SUPERADMIN") {
+    return "superadmin";
+  }
+  if (tipoUsuario === "ADMINISTRADOR") {
     return "admin";
   }
   return "client";
