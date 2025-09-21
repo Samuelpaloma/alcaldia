@@ -219,14 +219,14 @@ public class TecnicoService {
             .filter(t -> "TERMINADO".equals(t.getEstado()))
             .count();
         
-        return EstadisticasTecnicoResponseDTO.builder()
-            .totalTickets(totalTickets)
-            .ticketsPendientes(ticketsPendientes)
-            .ticketsEnEjecucion(ticketsEnEjecucion)
-            .ticketsTerminados(ticketsTerminados)
-            .tecnicoNombre(tecnico.getNombreCompleto())
-            .tecnicoEmail(tecnico.getEmail())
-            .build();
+        EstadisticasTecnicoResponseDTO estadisticas = new EstadisticasTecnicoResponseDTO();
+        estadisticas.setTotalTickets(totalTickets);
+        estadisticas.setTicketsPendientes(ticketsPendientes);
+        estadisticas.setTicketsEnEjecucion(ticketsEnEjecucion);
+        estadisticas.setTicketsTerminados(ticketsTerminados);
+        estadisticas.setTecnicoNombre(tecnico.getNombreCompleto());
+        estadisticas.setTecnicoEmail(tecnico.getEmail());
+        return estadisticas;
     }
     
     // ========== MÉTODOS AUXILIARES ==========

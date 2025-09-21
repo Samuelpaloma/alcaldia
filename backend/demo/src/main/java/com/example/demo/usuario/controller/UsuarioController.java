@@ -216,7 +216,22 @@ public class UsuarioController {
     // ========== MÉTODO AUXILIAR ==========
     
     private Long getUserIdFromAuth(Authentication auth) {
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        return userDetails.getUsuario().getIdUsuario();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new IllegalArgumentException("Usuario no autenticado");
+        }
+        
+        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        
+        // Si es CustomUserDetails, usar el método específico
+        if (userDetails instanceof CustomUserDetails) {
+            return ((CustomUserDetails) userDetails).getUsuario().getIdUsuario();
+        }
+        
+        // Fallback: intentar parsear el username como ID
+        try {
+            return Long.parseLong(userDetails.getUsername());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("No se pudo obtener el ID del usuario autenticado");
+        }
     }
 }

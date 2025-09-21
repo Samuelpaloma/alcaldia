@@ -1,5 +1,6 @@
 package com.example.demo.superadmin.controller;
 
+import com.example.demo.admin.dto.request.ChangeTecnicoPasswordRequest;
 import com.example.demo.superadmin.dto.request.ConfiguracionRequestDTO;
 import com.example.demo.superadmin.dto.response.ConfiguracionResponseDTO;
 import com.example.demo.superadmin.service.ConfiguracionService;
@@ -307,6 +308,35 @@ public class SuperAdminController {
             log.error("Error obteniendo estadísticas de administradores", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener estadísticas: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Cambiar contraseña de administrador
+     * PUT /api/superadmin/administradores/{id}/cambiar-password
+     */
+    @PutMapping("/administradores/{id}/cambiar-password")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    public ResponseEntity<?> cambiarPasswordAdministrador(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangeTecnicoPasswordRequest request) {
+        try {
+            log.info("Cambiando contraseña del administrador: {}", id);
+            
+            // Validar que las contraseñas coincidan
+            if (!request.isPasswordMatching()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Las contraseñas no coinciden")
+                );
+            }
+            
+            UsuarioDTO administrador = superAdminUsuarioService.cambiarPasswordAdministrador(id, request.getNewPassword());
+            return ResponseEntity.ok(administrador);
+        } catch (Exception e) {
+            log.error("Error cambiando contraseña del administrador", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al cambiar contraseña: " + e.getMessage())
             );
         }
     }

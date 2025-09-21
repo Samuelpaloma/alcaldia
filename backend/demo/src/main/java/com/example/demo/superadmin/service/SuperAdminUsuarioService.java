@@ -2,8 +2,11 @@ package com.example.demo.superadmin.service;
 
 import com.example.demo.usuario.dto.request.CreateAdminRequest;
 import com.example.demo.usuario.dto.response.UsuarioDTO;
+import com.example.demo.usuario.model.Usuario;
+import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.usuario.service.UsuarioService;
 import com.example.demo.superadmin.dto.response.EstadisticasAdministradoresResponseDTO;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,8 @@ import java.util.List;
 public class SuperAdminUsuarioService {
     
     private final UsuarioService usuarioService;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
     
     /**
      * Crear administrador
@@ -71,10 +76,52 @@ public class SuperAdminUsuarioService {
         long adminsActivos = usuarioService.getActiveUsersByType(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR);
         long adminsInactivos = totalAdmins - adminsActivos;
         
-        return EstadisticasAdministradoresResponseDTO.builder()
-            .totalAdministradores(totalAdmins)
-            .administradoresActivos(adminsActivos)
-            .administradoresInactivos(adminsInactivos)
+        EstadisticasAdministradoresResponseDTO estadisticas = new EstadisticasAdministradoresResponseDTO();
+        estadisticas.setTotalAdministradores(totalAdmins);
+        estadisticas.setAdministradoresActivos(adminsActivos);
+        estadisticas.setAdministradoresInactivos(adminsInactivos);
+        return estadisticas;
+    }
+    
+    /**
+     * Cambiar contraseña de administrador
+     */
+    public UsuarioDTO cambiarPasswordAdministrador(Long adminId, String nuevaPassword) {
+        log.info("Cambiando contraseña del administrador: {}", adminId);
+        
+        // 1. Buscar administrador
+        Usuario admin = usuarioRepository.findById(adminId)
+            .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+        
+        // 2. Verificar que sea administrador
+        if (!admin.getTipoUsuario().equals(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR)) {
+            throw new RuntimeException("El usuario no es un administrador");
+        }
+        
+        // 3. Actualizar contraseña
+        admin.setPasswordHash(passwordEncoder.encode(nuevaPassword));
+        admin.setPasswordTemporal(false); // Ya no es temporal
+        usuarioRepository.save(admin);
+        
+        log.info("Contraseña del administrador {} cambiada exitosamente", admin.getEmail());
+        
+        // 4. Retornar DTO actualizado
+        return convertirUsuarioADTO(admin);
+    }
+    
+    private UsuarioDTO convertirUsuarioADTO(Usuario usuario) {
+        return UsuarioDTO.builder()
+            .id(usuario.getIdUsuario())
+            .email(usuario.getEmail())
+            .nombre(usuario.getNombre())
+            .apellido(usuario.getApellido())
+            .nombreCompleto(usuario.getNombreCompleto())
+            .telefono(usuario.getTelefono())
+            .tipoUsuario(usuario.getTipoUsuario().toString())
+            .activo(usuario.isActivo())
+            .require2fa(usuario.getRequire2fa() != null ? usuario.getRequire2fa() : false)
+            .ultimoAcceso(usuario.getUltimoAcceso())
+            .fechaCreacion(usuario.getFechaCreacion())
             .build();
     }
 }

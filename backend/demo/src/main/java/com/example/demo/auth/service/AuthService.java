@@ -21,6 +21,7 @@ public interface AuthService {
     void resetPasswordWithCode(ResetPasswordRequest request);
     
     // Utilidades
+    void changeTemporaryPassword(String token, ChangeTemporaryPasswordRequest request);
     void logout(String token);
     void verifyToken(String token);
     long getUserCount();
