@@ -309,6 +309,20 @@ class ApiClient {
     });
   }
 
+  async verifyEmail(data: VerifyEmailRequest): Promise<LoginResponse> {
+    return this.request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resendVerification(data: { email: string }): Promise<{ success: boolean; message: string }> {
+    return this.request('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Tickets - API real del backend
   async createTicket(data: TicketRequestDTO): Promise<TicketResponseDTO> {
     return this.request('/tickets/crear', {
