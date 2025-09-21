@@ -303,6 +303,8 @@ public class TecnicoService {
         switch (estadoAnterior) {
             case "PENDIENTE":
                 return "EN_EJECUCION".equals(estadoNuevo);
+            case "ASIGNADO":
+                return "EN_EJECUCION".equals(estadoNuevo);
             case "EN_EJECUCION":
                 return "TERMINADO".equals(estadoNuevo) || "PENDIENTE".equals(estadoNuevo);
             case "TERMINADO":

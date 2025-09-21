@@ -147,4 +147,24 @@ public class AdminTecnicoController {
             );
         }
     }
+    
+    /**
+     * Verificar email de técnico
+     * PUT /api/admin/tecnicos/{id}/verificar-email
+     */
+    @PutMapping("/{id}/verificar-email")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<?> verificarEmailTecnico(@PathVariable Long id) {
+        try {
+            log.info("Verificando email del técnico: {}", id);
+            
+            UsuarioDTO tecnico = adminTecnicoService.verificarEmailTecnico(id);
+            return ResponseEntity.ok(tecnico);
+        } catch (Exception e) {
+            log.error("Error verificando email del técnico", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al verificar email: " + e.getMessage())
+            );
+        }
+    }
 }
