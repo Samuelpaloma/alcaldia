@@ -398,6 +398,38 @@ public class AuthServiceImpl implements AuthService {
     // ========== UTILIDADES ==========
     
     @Override
+    public void changeTemporaryPassword(String token, ChangeTemporaryPasswordRequest request) {
+        log.info("Cambiando contraseña temporal para token: {}", token.substring(0, 10) + "...");
+        
+        // 1. Validar que las contraseñas coincidan
+        if (!request.isPasswordMatching()) {
+            throw new RuntimeException("Las contraseñas no coinciden");
+        }
+        
+        // 2. Obtener usuario del token
+        Long userId = jwtTokenProvider.getUserIdFromJWT(token);
+        Usuario usuario = usuarioRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        // 3. Verificar que la contraseña actual sea correcta
+        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPasswordHash())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+        
+        // 4. Verificar que la contraseña sea temporal
+        if (usuario.getPasswordTemporal() == null || !usuario.getPasswordTemporal()) {
+            throw new RuntimeException("Este usuario no tiene una contraseña temporal");
+        }
+        
+        // 5. Actualizar contraseña
+        usuario.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        usuario.setPasswordTemporal(false); // Ya no es temporal
+        usuarioRepository.save(usuario);
+        
+        log.info("Contraseña temporal cambiada exitosamente para usuario: {}", usuario.getEmail());
+    }
+    
+    @Override
     public void logout(String token) {
         // Invalidar token (implementar blacklist si es necesario)
         log.info("Usuario cerró sesión");

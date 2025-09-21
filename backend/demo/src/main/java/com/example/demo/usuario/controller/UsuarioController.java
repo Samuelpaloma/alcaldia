@@ -1,6 +1,7 @@
 package com.example.demo.usuario.controller;
 
 import com.example.demo.shared.dto.ApiResponse;
+import com.example.demo.shared.dto.PageResponse;
 import com.example.demo.usuario.dto.request.*;
 import com.example.demo.usuario.dto.response.*;
 import com.example.demo.usuario.model.TipoUsuario;
@@ -104,14 +105,14 @@ public class UsuarioController {
     // ========== GESTIÓN GENERAL DE USUARIOS ==========
     
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN') or @userPermissionService.canViewUser(#id, authentication.name)")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
     public ResponseEntity<UsuarioDTO> getUserById(@PathVariable Long id) {
         UsuarioDTO usuario = usuarioService.getUserById(id);
         return ResponseEntity.ok(usuario);
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN') or @userPermissionService.canEditUser(#id, authentication.name)")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
     public ResponseEntity<UsuarioDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUsuarioRequest request,

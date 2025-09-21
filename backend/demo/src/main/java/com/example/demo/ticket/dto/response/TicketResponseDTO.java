@@ -1,6 +1,7 @@
 package com.example.demo.ticket.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class TicketResponseDTO {
 
@@ -20,12 +21,19 @@ public class TicketResponseDTO {
     private String categoria;
     private String archivoAdjunto;
     private String nombreArchivo;
+    
+    // Evidencias del ticket
+    private List<EvidenciaResponseDTO> evidencias;
+    
+    // Historial de cambios de estado
+    private List<HistorialEstadoResponseDTO> historialEstados;
 
     // Constructor completo
     public TicketResponseDTO(Long id, String descripcion, String prioridad, String estado,
                              String creadorEmail, String tecnicoEmail, LocalDateTime fechaCreacion,
                              LocalDateTime fechaActualizacion, String nombre, String ubicacion,
-                             String consulta, String categoria, String archivoAdjunto, String nombreArchivo) {
+                             String consulta, String categoria, String archivoAdjunto, String nombreArchivo,
+                             List<EvidenciaResponseDTO> evidencias, List<HistorialEstadoResponseDTO> historialEstados) {
         this.id = id;
         this.descripcion = descripcion;
         this.prioridad = prioridad;
@@ -40,6 +48,8 @@ public class TicketResponseDTO {
         this.categoria = categoria;
         this.archivoAdjunto = archivoAdjunto;
         this.nombreArchivo = nombreArchivo;
+        this.evidencias = evidencias;
+        this.historialEstados = historialEstados;
     }
 
     // Constructor básico para compatibilidad
@@ -69,5 +79,10 @@ public class TicketResponseDTO {
     public String getCategoria() { return categoria; }
     public String getArchivoAdjunto() { return archivoAdjunto; }
     public String getNombreArchivo() { return nombreArchivo; }
+    public List<EvidenciaResponseDTO> getEvidencias() { return evidencias; }
+    public List<HistorialEstadoResponseDTO> getHistorialEstados() { return historialEstados; }
     
+    // Setters
+    public void setEvidencias(List<EvidenciaResponseDTO> evidencias) { this.evidencias = evidencias; }
+    public void setHistorialEstados(List<HistorialEstadoResponseDTO> historialEstados) { this.historialEstados = historialEstados; }
 }

@@ -3,6 +3,7 @@ package com.example.demo.usuario.service;
 import com.example.demo.usuario.dto.request.*;
 import com.example.demo.usuario.dto.response.*;
 import com.example.demo.usuario.model.TipoUsuario;
+import com.example.demo.shared.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;

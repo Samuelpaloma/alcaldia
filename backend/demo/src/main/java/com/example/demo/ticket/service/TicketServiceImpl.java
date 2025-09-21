@@ -1,7 +1,5 @@
 package com.example.demo.ticket.service;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,10 +12,20 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.ticket.dto.request.TicketRequestDTO;
 import com.example.demo.ticket.dto.response.HistorialTicketResponseDTO;
 import com.example.demo.ticket.dto.response.TicketResponseDTO;
+import com.example.demo.ticket.dto.response.EvidenciaResponseDTO;
+import com.example.demo.ticket.dto.response.HistorialEstadoResponseDTO;
 import com.example.demo.ticket.model.Ticket;
 import com.example.demo.ticket.repository.TicketRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
+import com.example.demo.categoria.model.Categoria;
+import com.example.demo.categoria.service.CategoriaService;
+import com.example.demo.categoria.dto.response.CategoriaSimpleDTO;
+import com.example.demo.categoria.dto.response.CategoriaResponseDTO;
+import com.example.demo.evidencia.model.Evidencia;
+import com.example.demo.evidencia.repository.EvidenciaRepository;
+import com.example.demo.ticket.model.HistorialEstadoTicket;
+import com.example.demo.ticket.repository.HistorialEstadoTicketRepository;
 
 @Service
 public class TicketServiceImpl implements TicketService {
@@ -27,6 +35,15 @@ public class TicketServiceImpl implements TicketService {
     
     @Autowired
     private UsuarioRepository usuarioRepository;
+    
+    @Autowired
+    private CategoriaService categoriaService;
+    
+    @Autowired
+    private EvidenciaRepository evidenciaRepository;
+    
+    @Autowired
+    private HistorialEstadoTicketRepository historialRepository;
 
     @Override
     @Transactional
@@ -35,13 +52,20 @@ public class TicketServiceImpl implements TicketService {
         Usuario creador = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+        // Buscar categoría por ID
+        CategoriaResponseDTO categoriaResponse = categoriaService.obtenerCategoriaPorId(request.getCategoriaId());
+        Categoria categoria = new Categoria();
+        categoria.setIdCategoria(categoriaResponse.getIdCategoria());
+        categoria.setNombre(categoriaResponse.getNombre());
+        
         // Crear ticket con todos los campos del formulario
         Ticket ticket = new Ticket();
         // El nombre se obtiene automáticamente del usuario logueado
         ticket.setUbicacion(request.getUbicacion());
         // La consulta solo se llena si el usuario selecciona "Otros" y escribe algo personalizado
         ticket.setConsulta(request.getConsulta());
-        ticket.setCategoria(request.getCategoria());
+        ticket.setCategoria(categoria);
+        ticket.setCategoriaString(categoria.getNombre()); // Para compatibilidad
         ticket.setPrioridad(request.getPrioridad() != null ? request.getPrioridad() : "MEDIA");
         ticket.setEstado("PENDIENTE");
         ticket.setCreador(creador);
@@ -54,22 +78,7 @@ public class TicketServiceImpl implements TicketService {
 
         ticketRepository.save(ticket);
 
-        return new TicketResponseDTO(
-                ticket.getId(),
-                ticket.getDescripcion(),
-                ticket.getPrioridad(),
-                ticket.getEstado(),
-                creador.getEmail(),
-                ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
-                ticket.getFechaCreacion(),
-                ticket.getFechaActualizacion(),
-                creador.getNombre(), // Nombre del usuario logueado
-                ticket.getUbicacion(),
-                ticket.getConsulta(),
-                ticket.getCategoria(),
-                ticket.getArchivoAdjunto(),
-                ticket.getNombreArchivo()
-        );
+        return convertirTicketAResponseDTO(ticket);
     }
 
     @Override
@@ -104,7 +113,7 @@ public class TicketServiceImpl implements TicketService {
                 usuario, categoria, estado, prioridad);
         
         return tickets.stream()
-                .map(this::convertirTicketAResponseDTO)
+                .map(this::convertirTicketAResponseDTOBasico)
                 .collect(Collectors.toList());
     }
 
@@ -123,12 +132,11 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public List<String> obtenerCategoriasDisponibles() {
-        return Arrays.asList(
-            "Admisiones",
-            "Programas de Formación", 
-            "Soporte Técnico",
-            "Otros"
-        );
+        // Obtener categorías dinámicamente del servicio
+        List<CategoriaSimpleDTO> categorias = categoriaService.obtenerCategoriasActivas();
+        return categorias.stream()
+                .map(CategoriaSimpleDTO::getNombre)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -139,7 +147,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     // Métodos auxiliares
-    private TicketResponseDTO convertirTicketAResponseDTO(Ticket ticket) {
+    private TicketResponseDTO convertirTicketAResponseDTOBasico(Ticket ticket) {
         return new TicketResponseDTO(
                 ticket.getId(),
                 ticket.getDescripcion(),
@@ -152,9 +160,11 @@ public class TicketServiceImpl implements TicketService {
                 ticket.getCreador().getNombre(), // Nombre del usuario logueado
                 ticket.getUbicacion(),
                 ticket.getConsulta(),
-                ticket.getCategoria(),
+                ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
                 ticket.getArchivoAdjunto(),
-                ticket.getNombreArchivo()
+                ticket.getNombreArchivo(),
+                null, // evidencias
+                null  // historialEstados
         );
     }
 
@@ -163,12 +173,79 @@ public class TicketServiceImpl implements TicketService {
                 ticket.getId(),
                 ticket.getCreador().getNombre(), // Nombre del usuario logueado
                 ticket.getUbicacion(),
-                ticket.getCategoria(),
+                ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
                 ticket.getEstado(),
                 ticket.getPrioridad(),
                 ticket.getFechaCreacion(),
                 ticket.getFechaActualizacion(),
                 ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null
         );
+    }
+    
+    /**
+     * Convertir Ticket a TicketResponseDTO con evidencias e historial
+     */
+    private TicketResponseDTO convertirTicketAResponseDTO(Ticket ticket) {
+        // Obtener evidencias
+        List<Evidencia> evidencias = evidenciaRepository.findActivasByTicket(ticket);
+        List<EvidenciaResponseDTO> evidenciasDTO = evidencias.stream()
+            .map(this::convertirEvidenciaAResponseDTO)
+            .collect(Collectors.toList());
+        
+        // Obtener historial de estados
+        List<HistorialEstadoTicket> historial = historialRepository.findByTicketOrderByFechaCambioDesc(ticket);
+        List<HistorialEstadoResponseDTO> historialDTO = historial.stream()
+            .map(this::convertirHistorialAResponseDTO)
+            .collect(Collectors.toList());
+        
+        return new TicketResponseDTO(
+            ticket.getId(),
+            ticket.getDescripcion(),
+            ticket.getPrioridad(),
+            ticket.getEstado(),
+            ticket.getCreador().getEmail(),
+            ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
+            ticket.getFechaCreacion(),
+            ticket.getFechaActualizacion(),
+            ticket.getCreador().getNombreCompleto(),
+            ticket.getUbicacion(),
+            ticket.getConsulta(),
+            ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
+            ticket.getArchivoAdjunto(),
+            ticket.getNombreArchivo(),
+            evidenciasDTO,
+            historialDTO
+        );
+    }
+    
+    private EvidenciaResponseDTO convertirEvidenciaAResponseDTO(Evidencia evidencia) {
+        return EvidenciaResponseDTO.builder()
+            .idEvidencia(evidencia.getIdEvidencia())
+            .ticketId(evidencia.getTicket().getId())
+            .tipoEvidencia(evidencia.getTipoEvidencia())
+            .descripcion(evidencia.getDescripcion())
+            .nombreArchivo(evidencia.getNombreArchivo())
+            .extensionArchivo(evidencia.getExtensionArchivo())
+            .tamanioArchivo(evidencia.getTamanioArchivo())
+            .urlArchivo(evidencia.getUrlArchivo())
+            .fechaSubida(evidencia.getFechaSubida())
+            .subidoPor(evidencia.getSubidoPor().getNombreCompleto())
+            .subidoPorEmail(evidencia.getSubidoPor().getEmail())
+            .build();
+    }
+    
+    private HistorialEstadoResponseDTO convertirHistorialAResponseDTO(HistorialEstadoTicket historial) {
+        return HistorialEstadoResponseDTO.builder()
+            .idHistorial(historial.getIdHistorial())
+            .ticketId(historial.getTicket().getId())
+            .estadoAnterior(historial.getEstadoAnterior())
+            .estadoNuevo(historial.getEstadoNuevo())
+            .comentario(historial.getComentario())
+            .observaciones(historial.getObservaciones())
+            .fechaCambio(historial.getFechaCambio())
+            .cambiadoPor(historial.getCambiadoPor().getNombreCompleto())
+            .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
+            .tipoUsuario(historial.getTipoUsuario())
+            .build();
     }
 }

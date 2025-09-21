@@ -7,6 +7,7 @@ import com.example.demo.usuario.exception.*;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
+import com.example.demo.shared.dto.PageResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +56,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             .telefono(request.getTelefono())
             .tipoUsuario(TipoUsuario.TECNICO)
             .creadoPor(admin)
-            .activo(true)
+            .passwordTemporal(true) // Marcar como contraseña temporal
             .require2fa(request.getRequire2fa())
             .build();
         
@@ -91,7 +92,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             .telefono(request.getTelefono())
             .tipoUsuario(TipoUsuario.ADMINISTRADOR)
             .creadoPor(superAdmin)
-            .activo(true)
+            .passwordTemporal(true) // Marcar como contraseña temporal
             .require2fa(request.getRequire2fa())
             .build();
         
@@ -119,7 +120,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             .map(usuarioMapper::toDTO)
             .collect(Collectors.toList());
         
-        return PageResponse.of(content, page.getNumber(), page.getSize(), page.getTotalElements());
+        return PageResponse.<UsuarioDTO>of(content, page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages(), page.isFirst(), page.isLast());
     }
     
     @Override
@@ -133,7 +134,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             .map(usuarioMapper::toDTO)
             .collect(Collectors.toList());
         
-        return PageResponse.of(content, page.getNumber(), page.getSize(), page.getTotalElements());
+        return PageResponse.<UsuarioDTO>of(content, page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages(), page.isFirst(), page.isLast());
     }
     
     @Override
