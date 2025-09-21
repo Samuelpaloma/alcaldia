@@ -1,6 +1,7 @@
 package com.example.demo.ticket.model;
 
 import com.example.demo.usuario.model.Usuario;
+import com.example.demo.categoria.model.Categoria;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -21,6 +22,11 @@ public class Ticket {
     @JoinColumn(name = "tecnico_id")
     private Usuario tecnicoAsignado;
 
+    // Categoría del ticket
+    @ManyToOne
+    @JoinColumn(name = "categoria_id")
+    private Categoria categoria;
+
     // Estado del ticket
     private String estado;
 
@@ -31,8 +37,9 @@ public class Ticket {
     @Column(name = "consulta", columnDefinition = "TEXT")
     private String consulta;
 
-    @Column(name = "categoria", nullable = false)
-    private String categoria;
+    // Campo de categoría como string (para compatibilidad temporal)
+    @Column(name = "categoria_string")
+    private String categoriaString;
 
     @Column(name = "archivo_adjunto")
     private String archivoAdjunto;
@@ -76,8 +83,11 @@ public class Ticket {
     public String getConsulta() { return consulta; }
     public void setConsulta(String consulta) { this.consulta = consulta; }
 
-    public String getCategoria() { return categoria; }
-    public void setCategoria(String categoria) { this.categoria = categoria; }
+    public Categoria getCategoria() { return categoria; }
+    public void setCategoria(Categoria categoria) { this.categoria = categoria; }
+
+    public String getCategoriaString() { return categoriaString; }
+    public void setCategoriaString(String categoriaString) { this.categoriaString = categoriaString; }
 
     public String getArchivoAdjunto() { return archivoAdjunto; }
     public void setArchivoAdjunto(String archivoAdjunto) { this.archivoAdjunto = archivoAdjunto; }

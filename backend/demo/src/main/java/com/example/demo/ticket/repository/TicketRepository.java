@@ -2,6 +2,7 @@ package com.example.demo.ticket.repository;
 
 import com.example.demo.ticket.model.Ticket;
 import com.example.demo.usuario.model.Usuario;
+import com.example.demo.categoria.model.Categoria;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,8 +32,12 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     // Buscar tickets por estado
     List<Ticket> findByEstado(String estado);
     
-    // Buscar tickets por categoría
-    List<Ticket> findByCategoria(String categoria);
+    // Buscar tickets por categoría (por nombre de categoría)
+    @Query("SELECT t FROM Ticket t WHERE t.categoria.nombre = :categoria")
+    List<Ticket> findByCategoriaNombre(@Param("categoria") String categoria);
+    
+    // Buscar tickets por categoría (usando la entidad Categoria)
+    List<Ticket> findByCategoria(Categoria categoria);
     
     // Buscar tickets por prioridad
     List<Ticket> findByPrioridad(String prioridad);
@@ -42,4 +47,16 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     
     // Contar tickets por creador
     long countByCreador(Usuario creador);
+    
+    // Buscar tickets por técnico asignado
+    List<Ticket> findByTecnicoAsignado(Usuario tecnico);
+    
+    // Buscar tickets sin asignar
+    List<Ticket> findByTecnicoAsignadoIsNull();
+    
+    // Buscar tickets asignados ordenados por fecha
+    List<Ticket> findByTecnicoAsignadoOrderByFechaCreacionDesc(Usuario tecnico);
+    
+    // Contar tickets por técnico asignado
+    long countByTecnicoAsignado(Usuario tecnico);
 }

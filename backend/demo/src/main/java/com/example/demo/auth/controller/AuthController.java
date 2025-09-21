@@ -31,7 +31,7 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final EmailService emailService;
     
-    // 🔐 LOGIN - Para todos los tipos de usuario
+    // login Para todos
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("Solicitud de login para email: {}", request.getEmail());
@@ -40,7 +40,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
     
-    // 👤 REGISTRO - Solo para funcionarios (público)
+    // registro (público)
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Solicitud de registro para email: {}", request.getEmail());
@@ -50,7 +50,7 @@ public class AuthController {
             .body(new ApiResponse("Usuario registrado exitosamente. Revisa tu email para verificar tu cuenta con el código enviado."));
     }
     
-    // ✅ VERIFICAR EMAIL CON CÓDIGO
+    //  EMAIL CON CÓDIGO
     @PostMapping("/verify-email")
     public ResponseEntity<ApiResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         log.info("Solicitud de verificación de email con código: {}", request.getCode());
@@ -61,7 +61,7 @@ public class AuthController {
         );
     }
     
-    // 🔄 REENVIAR CÓDIGO DE VERIFICACIÓN
+    // reenviar codigo de verificacion
     @PostMapping("/resend-verification")
     public ResponseEntity<ApiResponse> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         log.info("Solicitud de reenvío de código de verificación para: {}", request.getEmail());
@@ -72,7 +72,7 @@ public class AuthController {
         );
     }
     
-    // 🧪 ENDPOINT DE PRUEBA - ENVIAR EMAIL DE PRUEBA
+    // enviar email de prueba
     @PostMapping("/test-email")
     public ResponseEntity<ApiResponse> testEmail(@RequestParam String email) {
         log.info("Enviando email de prueba a: {}", email);
@@ -96,7 +96,7 @@ public class AuthController {
         }
     }
     
-    // 🔑 SOLICITAR CÓDIGO DE RECUPERACIÓN
+    // solicitar codigo de recuperacion
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         log.info("Solicitud de recuperación de contraseña para: {}", request.getEmail());
@@ -118,7 +118,7 @@ public class AuthController {
         );
     }
     
-    // 🚪 LOGOUT
+    //  LOGOUT
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
         String token = extractTokenFromRequest(request);
@@ -129,7 +129,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse("Sesión cerrada exitosamente"));
     }
     
-    // 🔍 VERIFICAR TOKEN (útil para frontend)
+    // VERIFICAR TOKEN 
     @GetMapping("/verify")
     public ResponseEntity<ApiResponse> verifyToken() {
         // Si llega aquí, el token es válido (verificado por Security)

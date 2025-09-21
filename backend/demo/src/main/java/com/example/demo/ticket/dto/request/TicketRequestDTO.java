@@ -1,6 +1,7 @@
 package com.example.demo.ticket.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class TicketRequestDTO {
     
@@ -11,7 +12,10 @@ public class TicketRequestDTO {
     // La consulta es opcional - solo se llena si selecciona "Otros" y escribe mensaje personalizado
     private String consulta;
     
-    @NotBlank(message = "La categoría es obligatoria")
+    @NotNull(message = "El ID de categoría es obligatorio")
+    private Long categoriaId;
+    
+    // Campo de compatibilidad (opcional)
     private String categoria;
     
     private String prioridad;
@@ -23,10 +27,10 @@ public class TicketRequestDTO {
     // Constructores
     public TicketRequestDTO() {}
 
-    public TicketRequestDTO(String ubicacion, String consulta, String categoria, String prioridad) {
+    public TicketRequestDTO(String ubicacion, String consulta, Long categoriaId, String prioridad) {
         this.ubicacion = ubicacion;
         this.consulta = consulta;
-        this.categoria = categoria;
+        this.categoriaId = categoriaId;
         this.prioridad = prioridad;
     }
 
@@ -36,6 +40,9 @@ public class TicketRequestDTO {
 
     public String getConsulta() { return consulta; }
     public void setConsulta(String consulta) { this.consulta = consulta; }
+
+    public Long getCategoriaId() { return categoriaId; }
+    public void setCategoriaId(Long categoriaId) { this.categoriaId = categoriaId; }
 
     public String getCategoria() { return categoria; }
     public void setCategoria(String categoria) { this.categoria = categoria; }

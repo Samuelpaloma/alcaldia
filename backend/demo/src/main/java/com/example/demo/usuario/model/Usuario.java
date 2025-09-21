@@ -93,4 +93,13 @@ public class Usuario {
     public boolean isFuncionario() {
         return TipoUsuario.FUNCIONARIO.equals(tipoUsuario);
     }
+    
+    // Métodos getter para compatibilidad con los servicios
+    public boolean isActivo() {
+        return activo != null && activo;
+    }
+    
+    public boolean isEmailVerificado() {
+        return emailVerificado != null && emailVerificado;
+    }
 }
