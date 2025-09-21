@@ -1,5 +1,6 @@
 package com.example.demo.admin.controller;
 
+import com.example.demo.admin.dto.request.ChangeTecnicoPasswordRequest;
 import com.example.demo.admin.service.AdminTecnicoService;
 import com.example.demo.usuario.dto.request.CreateTecnicoRequest;
 import com.example.demo.usuario.dto.response.UsuarioDTO;
@@ -114,6 +115,35 @@ public class AdminTecnicoController {
             log.error("Error obteniendo estadísticas de técnicos", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener estadísticas: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Cambiar contraseña de técnico
+     * PUT /api/admin/tecnicos/{id}/cambiar-password
+     */
+    @PutMapping("/{id}/cambiar-password")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<?> cambiarPasswordTecnico(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangeTecnicoPasswordRequest request) {
+        try {
+            log.info("Cambiando contraseña del técnico: {}", id);
+            
+            // Validar que las contraseñas coincidan
+            if (!request.isPasswordMatching()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error("Las contraseñas no coinciden")
+                );
+            }
+            
+            UsuarioDTO tecnico = adminTecnicoService.cambiarPasswordTecnico(id, request.getNewPassword());
+            return ResponseEntity.ok(tecnico);
+        } catch (Exception e) {
+            log.error("Error cambiando contraseña del técnico", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al cambiar contraseña: " + e.getMessage())
             );
         }
     }

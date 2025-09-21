@@ -10,6 +10,7 @@ import com.example.demo.usuario.service.UsuarioService;
 import com.example.demo.security.CustomUserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class AdminTecnicoService {
     
     private final UsuarioService usuarioService;
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
     
     /**
      * Crear técnico (solo ADMIN puede hacer esto)
@@ -106,11 +108,37 @@ public class AdminTecnicoService {
             .count();
         long tecnicosInactivos = totalTecnicos - tecnicosActivos;
         
-        return EstadisticasTecnicosResponseDTO.builder()
-            .totalTecnicos(totalTecnicos)
-            .tecnicosActivos(tecnicosActivos)
-            .tecnicosInactivos(tecnicosInactivos)
-            .build();
+        EstadisticasTecnicosResponseDTO estadisticas = new EstadisticasTecnicosResponseDTO();
+        estadisticas.setTotalTecnicos(totalTecnicos);
+        estadisticas.setTecnicosActivos(tecnicosActivos);
+        estadisticas.setTecnicosInactivos(tecnicosInactivos);
+        return estadisticas;
+    }
+    
+    /**
+     * Cambiar contraseña de técnico
+     */
+    public UsuarioDTO cambiarPasswordTecnico(Long tecnicoId, String nuevaPassword) {
+        log.info("Cambiando contraseña del técnico: {}", tecnicoId);
+        
+        // 1. Buscar técnico
+        Usuario tecnico = usuarioRepository.findById(tecnicoId)
+            .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
+        
+        // 2. Verificar que sea técnico
+        if (!tecnico.isTecnico()) {
+            throw new RuntimeException("El usuario no es un técnico");
+        }
+        
+        // 3. Actualizar contraseña
+        tecnico.setPasswordHash(passwordEncoder.encode(nuevaPassword));
+        tecnico.setPasswordTemporal(false); // Ya no es temporal
+        usuarioRepository.save(tecnico);
+        
+        log.info("Contraseña del técnico {} cambiada exitosamente", tecnico.getEmail());
+        
+        // 4. Retornar DTO actualizado
+        return convertirUsuarioADTO(tecnico);
     }
     
     // ========== MÉTODOS AUXILIARES ==========
