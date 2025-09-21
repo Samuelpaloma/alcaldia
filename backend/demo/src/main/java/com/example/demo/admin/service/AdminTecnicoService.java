@@ -7,6 +7,9 @@ import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.usuario.service.UsuarioService;
+import com.example.demo.security.CustomUserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,8 +33,11 @@ public class AdminTecnicoService {
     public UsuarioDTO crearTecnico(CreateTecnicoRequest request) {
         log.info("Creando técnico: {}", request.getEmail());
         
+        // Obtener el ID del administrador autenticado
+        Long adminId = getCurrentAdminId();
+        
         // Crear usuario como técnico usando el servicio existente
-        return usuarioService.createTechnician(request, null); // null porque no tenemos adminId aquí
+        return usuarioService.createTechnician(request, adminId);
     }
     
     /**
@@ -124,5 +130,23 @@ public class AdminTecnicoService {
             .fechaCreacion(usuario.getFechaCreacion())
             .estadoTexto(usuario.isActivo() ? "Activo" : "Inactivo")
             .build();
+    }
+    
+    /**
+     * Obtener el ID del administrador autenticado
+     */
+    private Long getCurrentAdminId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new IllegalArgumentException("Usuario no autenticado");
+        }
+        
+        if (auth.getPrincipal() instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+            return userDetails.getUserId();
+        }
+        
+        throw new IllegalArgumentException("No se pudo obtener el ID del administrador autenticado");
     }
 }

@@ -1,10 +1,12 @@
 package com.example.demo.usuario.controller;
 
 import com.example.demo.shared.dto.ApiResponse;
+import com.example.demo.shared.dto.PageResponse;
 import com.example.demo.usuario.dto.request.*;
 import com.example.demo.usuario.dto.response.*;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.service.UsuarioService;
+import com.example.demo.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -103,14 +105,14 @@ public class UsuarioController {
     // ========== GESTIÓN GENERAL DE USUARIOS ==========
     
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN') or @userPermissionService.canViewUser(#id, authentication.name)")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
     public ResponseEntity<UsuarioDTO> getUserById(@PathVariable Long id) {
         UsuarioDTO usuario = usuarioService.getUserById(id);
         return ResponseEntity.ok(usuario);
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN') or @userPermissionService.canEditUser(#id, authentication.name)")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
     public ResponseEntity<UsuarioDTO> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUsuarioRequest request,
@@ -214,7 +216,22 @@ public class UsuarioController {
     // ========== MÉTODO AUXILIAR ==========
     
     private Long getUserIdFromAuth(Authentication auth) {
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new IllegalArgumentException("Usuario no autenticado");
+        }
+        
         UserDetails userDetails = (UserDetails) auth.getPrincipal();
-        return Long.parseLong(userDetails.getUsername());
+        
+        // Si es CustomUserDetails, usar el método específico
+        if (userDetails instanceof CustomUserDetails) {
+            return ((CustomUserDetails) userDetails).getUserId();
+        }
+        
+        // Fallback: intentar parsear el username como ID
+        try {
+            return Long.parseLong(userDetails.getUsername());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("No se pudo obtener el ID del usuario autenticado");
+        }
     }
 }

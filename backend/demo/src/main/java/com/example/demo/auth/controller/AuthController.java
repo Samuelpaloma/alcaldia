@@ -1,5 +1,6 @@
 package com.example.demo.auth.controller;
 
+import com.example.demo.auth.dto.request.ChangeTemporaryPasswordRequest;
 import com.example.demo.auth.dto.request.ForgotPasswordRequest;
 import com.example.demo.auth.dto.request.LoginRequest;
 import com.example.demo.auth.dto.request.RegisterRequest;
@@ -128,6 +129,34 @@ public class AuthController {
         
         return ResponseEntity.ok(new ApiResponse("Sesión cerrada exitosamente"));
     }
+    
+    // CAMBIAR CONTRASEÑA TEMPORAL
+    @PostMapping("/change-temporary-password")
+    public ResponseEntity<ApiResponse> changeTemporaryPassword(
+            @Valid @RequestBody ChangeTemporaryPasswordRequest request,
+            HttpServletRequest httpRequest) {
+        log.info("Cambiando contraseña temporal para usuario autenticado");
+        
+        try {
+            String token = extractTokenFromRequest(httpRequest);
+            if (token == null) {
+                return ResponseEntity.badRequest().body(
+                    new ApiResponse("Token de autenticación requerido")
+                );
+            }
+            
+            authService.changeTemporaryPassword(token, request);
+            return ResponseEntity.ok(
+                new ApiResponse("Contraseña cambiada exitosamente. Ya no es temporal.")
+            );
+        } catch (Exception e) {
+            log.error("Error cambiando contraseña temporal", e);
+            return ResponseEntity.badRequest().body(
+                new ApiResponse("Error cambiando contraseña: " + e.getMessage())
+            );
+        }
+    }
+    
     
     // VERIFICAR TOKEN 
     @GetMapping("/verify")

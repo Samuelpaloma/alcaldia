@@ -43,13 +43,20 @@ public class Usuario {
     private TipoUsuario tipoUsuario;
     
     @Column(nullable = false)
+    @Builder.Default
     private Boolean activo = true;
     
     @Column(name = "require_2fa")
+    @Builder.Default
     private Boolean require2fa = false;
     
     @Column(name = "email_verificado", nullable = false)
+    @Builder.Default
     private Boolean emailVerificado = false;
+    
+    @Column(name = "password_temporal", nullable = false)
+    @Builder.Default
+    private Boolean passwordTemporal = false;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creado_por")

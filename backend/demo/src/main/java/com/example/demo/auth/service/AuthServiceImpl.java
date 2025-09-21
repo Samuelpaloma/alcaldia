@@ -1,5 +1,6 @@
 package com.example.demo.auth.service;
 
+import com.example.demo.auth.dto.request.ChangeTemporaryPasswordRequest;
 import com.example.demo.auth.dto.request.LoginRequest;
 import com.example.demo.auth.dto.request.RegisterRequest;
 import com.example.demo.auth.dto.request.VerifyEmailRequest;
@@ -55,18 +56,21 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthException("Debes verificar tu email antes de iniciar sesión. Revisa tu bandeja de entrada");
         }
         
-        // 4. Actualizar último acceso
+        // 5. Verificar si la contraseña es temporal
+        boolean requiereCambioPassword = usuario.getPasswordTemporal() != null && usuario.getPasswordTemporal();
+        
+        // 6. Actualizar último acceso
         usuario.setUltimoAcceso(LocalDateTime.now());
         usuarioRepository.save(usuario);
         
-        // 5. Generar token JWT
+        // 7. Generar token JWT
         String accessToken = jwtTokenProvider.generateToken(usuario);
         
-        // 6. Determinar URL de redirección según tipo de usuario
+        // 8. Determinar URL de redirección según tipo de usuario
         String redirectUrl = getRedirectUrlByUserType(usuario.getTipoUsuario());
         
-        log.info("Login exitoso para usuario: {} - Tipo: {}", 
-                usuario.getEmail(), usuario.getTipoUsuario());
+        log.info("Login exitoso para usuario: {} - Tipo: {} - Requiere cambio de contraseña: {}", 
+                usuario.getEmail(), usuario.getTipoUsuario(), requiereCambioPassword);
         
         return LoginResponse.builder()
             .accessToken(accessToken)
@@ -78,6 +82,7 @@ public class AuthServiceImpl implements AuthService {
             .email(usuario.getEmail())
             .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
             .require2fa(usuario.getRequire2fa())
+            .requiereCambioPassword(requiereCambioPassword)
             .redirectUrl(redirectUrl)
             .build();
     }
@@ -128,6 +133,38 @@ public class AuthServiceImpl implements AuthService {
     public void resendVerificationCode(ResendVerificationRequest request) {
         log.info("Reenviando código de verificación a: {}", request.getEmail());
         emailVerificationService.resendVerificationCode(request.getEmail());
+    }
+    
+    @Override
+    public void changeTemporaryPassword(String token, ChangeTemporaryPasswordRequest request) {
+        log.info("Cambiando contraseña temporal para token: {}", token.substring(0, 10) + "...");
+        
+        // 1. Validar que las contraseñas coincidan
+        if (!request.isPasswordMatching()) {
+            throw new RuntimeException("Las contraseñas no coinciden");
+        }
+        
+        // 2. Obtener usuario del token
+        Long userId = jwtTokenProvider.getUserIdFromJWT(token);
+        Usuario usuario = usuarioRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        // 3. Verificar que la contraseña actual sea correcta
+        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPasswordHash())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+        
+        // 4. Verificar que la contraseña sea temporal
+        if (usuario.getPasswordTemporal() == null || !usuario.getPasswordTemporal()) {
+            throw new RuntimeException("Este usuario no tiene una contraseña temporal");
+        }
+        
+        // 5. Actualizar contraseña
+        usuario.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        usuario.setPasswordTemporal(false); // Ya no es temporal
+        usuarioRepository.save(usuario);
+        
+        log.info("Contraseña temporal cambiada exitosamente para usuario: {}", usuario.getEmail());
     }
     
     @Override

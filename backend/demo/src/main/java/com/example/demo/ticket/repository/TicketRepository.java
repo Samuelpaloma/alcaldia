@@ -20,7 +20,7 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     
     // Buscar tickets por múltiples criterios
     @Query("SELECT t FROM Ticket t WHERE t.creador = :creador " +
-           "AND (:categoria IS NULL OR t.categoria = :categoria) " +
+           "AND (:categoria IS NULL OR t.categoria.nombre = :categoria) " +
            "AND (:estado IS NULL OR t.estado = :estado) " +
            "AND (:prioridad IS NULL OR t.prioridad = :prioridad)")
     List<Ticket> findByCreadorAndCategoriaAndEstadoAndPrioridad(

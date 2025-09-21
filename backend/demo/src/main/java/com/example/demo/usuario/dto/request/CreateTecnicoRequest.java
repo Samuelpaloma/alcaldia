@@ -17,7 +17,7 @@ public class CreateTecnicoRequest {
     @NotBlank(message = "La contraseña es requerida")
     @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$", 
-             message = "La contraseña debe contener al menos una mayúscula, una minúscula y un número")
+             message = "La contraseña debe tener al menos una mayúscula, una minúscula y un número")
     private String password;
     
     @NotBlank(message = "El nombre es requerido")
