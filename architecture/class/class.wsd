@@ -1,101 +1,337 @@
 @startuml
-title Ticket Management System - Class Diagram (IDs only)
-
-' ==== ENTIDADES BASE ====
-entity Usuario {
-  * id
-  * rol_id
-  * email
-  * contrasena
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam backgroundColor #FFFFFF
+skinparam class {
+  BackgroundColor #E8F4FD
+  BorderColor #2E86AB
+  FontColor #2E86AB
+}
+skinparam interface {
+  BackgroundColor #FFE5B4
+  BorderColor #FF8C00
+  FontColor #FF8C00
 }
 
-entity Rol {
-  * id
-  * nombre
+title Sistema de Gestión de Tickets - Diagrama de Clases
+
+' ========================
+' Interfaces
+' ========================
+interface IUserService {
+  + authenticate()
+  + authorize()
+  + getProfile()
 }
 
-entity Ticket {
-  * id
-  * usuario_id
-  * tecnico_id
-  * estado_ticket_id
-  * fecha_creacion
-  * fecha_cierre
+interface ITicketService {
+  + createTicket()
+  + updateTicket()
+  + assignTicket()
+  + closeTicket()
 }
 
-entity EstadoTicket {
-  * id
-  * nombre
+interface INotificationService {
+  + sendNotification()
+  + scheduleNotification()
+  + markAsRead()
 }
 
-entity Comentario {
-  * id
-  * ticket_id
-  * usuario_id
-  * fecha
+interface IReportService {
+  + generateReport()
+  + exportReport()
+  + scheduleReport()
 }
 
-entity Evidencia {
-  * id
-  * ticket_id
-  * tipo (foto/video)
-  * archivo
-  * fecha
+' ========================
+' Enums
+' ========================
+enum Role {
+  FUNCTIONARY
+  TECHNICIAN
+  ADMINISTRATOR
+  SUPER_ADMINISTRATOR
 }
 
-entity Notificacion {
-  * id
-  * usuario_id
-  * ticket_id
-  * fecha
-  * tipo
+enum TicketStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  REOPENED
 }
 
-entity EncuestaSatisfaccion {
-  * id
-  * ticket_id
-  * usuario_id
-  * calificacion
-  * comentario
+enum NotificationType {
+  EMAIL
+  SMS
+  IN_APP
+  PUSH
 }
 
-' ==== REPORTES Y DASHBOARD ====
-entity Reporte {
-  * id
-  * admin_id
-  * tipo (PDF/Excel)
-  * periodo
+' ========================
+' Core User Domain
+' ========================
+class User {
+  - id : int
+  - name : string
+  - email : string
+  - passwordHash : string
+  - role : Role
+  - isActive : boolean
+  - lastLogin : DateTime
+  - createdAt : DateTime
+  --
+  + login(credentials)
+  + logout()
+  + editProfile(data)
+  + changePassword(oldPass, newPass)
+  + isAuthenticated()
+  + hasPermission(permission)
 }
 
-entity Dashboard {
-  * id
-  * admin_id
+class Functionary {
+  - employeeId : string
+  - department : string
+  - phone : string
+  --
+  + createTicket(ticketData)
+  + viewMyTickets()
+  + updateTicket(ticketId, data)
+  + evaluateService(ticketId, rating)
 }
 
-' ==== MODULO DE AUTOMATIZACIÓN E IA ====
-entity ReglaAutomatizacion {
-  * id
-  * descripcion
-  * condicion
-  * accion
+class Technician {
+  - specialization : string
+  - experience : int
+  - workload : int
+  --
+  + viewAssignedTickets()
+  + updateTicketStatus(ticketId, status)
+  + addComment(ticketId, comment)
+  + attachEvidence(ticketId, evidence)
+  + resolveTicket(ticketId, solution)
 }
 
-entity MotorIA {
-  * id
-  * version
+class Administrator {
+  - accessLevel : int
+  - department : string
+  --
+  + generateReports(period, type)
+  + viewDashboards()
+  + assignTickets()
+  + monitorPerformance()
+  + manageTechnicians()
 }
 
-' ==== RELACIONES ====
-Usuario }o--o{ Rol : pertenece >
-Usuario ||--o{ Ticket : crea >
-Ticket }o--|| EstadoTicket : estado >
-Ticket ||--o{ Comentario : tiene >
-Ticket ||--o{ Evidencia : adjunta >
-Ticket ||--o{ Notificacion : genera >
-Ticket ||--o{ EncuestaSatisfaccion : recibe >
-Usuario ||--o{ Reporte : genera >
-Usuario ||--o{ Dashboard : consulta >
-MotorIA ||--o{ Ticket : clasifica >
-ReglaAutomatizacion ||--o{ Ticket : aplica >
+class SuperAdministrator {
+  - systemAccess : boolean
+  - auditLevel : int
+  --
+  + configureSystem(settings)
+  + manageUsers()
+  + manageRoles()
+  + auditSystem()
+  + backupSystem()
+}
+
+' ========================
+' Core Ticket Domain
+' ========================
+class Ticket {
+  - id : int
+  - title : string
+  - description : string
+  - priority : int
+  - category : string
+  - creationDate : DateTime
+  - closeDate : DateTime
+  - status : TicketStatus
+  - estimatedTime : int
+  - actualTime : int
+  --
+  + updateStatus(newStatus)
+  + assignTechnician(technicianId)
+  + closeTicket(solution)
+  + reopenTicket(reason)
+  + addComment(comment)
+  + attachEvidence(evidence)
+  + calculateSLA()
+}
+
+class Evidence {
+  - id : int
+  - fileName : string
+  - filePath : string
+  - fileSize : long
+  - mimeType : string
+  - uploadDate : DateTime
+  - uploadedBy : User
+  --
+  + validateFile()
+  + compressFile()
+  + generateThumbnail()
+}
+
+class Comment {
+  - id : int
+  - text : string
+  - date : DateTime
+  - author : User
+  - isInternal : boolean
+  - isSystem : boolean
+  --
+  + formatText()
+  + notifyUsers()
+  + archiveComment()
+}
+
+class Notification {
+  - id : int
+  - type : NotificationType
+  - title : string
+  - content : string
+  - date : DateTime
+  - isRead : boolean
+  - recipient : User
+  --
+  + send()
+  + markAsRead()
+  + schedule()
+  + cancel()
+}
+
+class SatisfactionSurvey {
+  - id : int
+  - rating : int
+  - comment : string
+  - date : DateTime
+  - ticketId : int
+  - respondent : User
+  --
+  + calculateScore()
+  + generateReport()
+  + archive()
+}
+
+' ========================
+' Administrative / Analytics
+' ========================
+class Report {
+  - id : int
+  - name : string
+  - type : string
+  - period : string
+  - format : string
+  - generatedDate : DateTime
+  - generatedBy : User
+  --
+  + generate()
+  + export(format)
+  + schedule()
+  + archive()
+}
+
+class Dashboard {
+  - id : int
+  - name : string
+  - layout : string
+  - refreshRate : int
+  - isPublic : boolean
+  --
+  + updateMetrics()
+  + customizeLayout()
+  + share()
+  + archive()
+}
+
+class Metric {
+  - id : int
+  - name : string
+  - value : double
+  - unit : string
+  - date : DateTime
+  - category : string
+  --
+  + calculate()
+  + compare(metric)
+  + trend()
+}
+
+' ========================
+' Automation / AI
+' ========================
+class AutomationRule {
+  - id : int
+  - name : string
+  - description : string
+  - condition : string
+  - action : string
+  - isActive : boolean
+  - priority : int
+  --
+  + evaluate()
+  + execute()
+  + activate()
+  + deactivate()
+}
+
+class AIEngine {
+  - id : int
+  - name : string
+  - version : string
+  - model : string
+  - accuracy : double
+  - lastTraining : DateTime
+  --
+  + classify(ticket)
+  + predict(metrics)
+  + train(data)
+  + evaluate()
+}
+
+' ========================
+' Relationships with Labels
+' ========================
+
+' User Inheritance
+User <|-- Functionary : extends
+User <|-- Technician : extends
+User <|-- Administrator : extends
+User <|-- SuperAdministrator : extends
+
+' User Interfaces
+User ..|> IUserService : implements
+Functionary ..|> ITicketService : implements
+Technician ..|> ITicketService : implements
+Administrator ..|> IReportService : implements
+
+' Enum Relationships (Entidades E)
+User "1" -- "1" Role : has
+Ticket "1" -- "1" TicketStatus : has
+Notification "1" -- "1" NotificationType : has
+
+' Ticket Relationships
+Functionary "1" -- "0..*" Ticket : creates
+Technician "1" -- "0..*" Ticket : assigned to
+Ticket "1" -- "0..*" Evidence : contains
+Ticket "1" -- "0..*" Comment : has
+Ticket "1" -- "0..*" Notification : generates
+Ticket "1" -- "0..1" SatisfactionSurvey : receives
+
+' Administrative Relationships
+Administrator "1" -- "0..*" Report : generates
+Administrator "1" -- "0..*" Dashboard : views
+Dashboard "1" -- "0..*" Metric : displays
+Report "1" -- "0..*" Metric : includes
+
+' Automation Relationships
+AutomationRule "0..*" -- "0..*" Ticket : applies to
+AIEngine "1" -- "0..*" Ticket : classifies
+AIEngine "1" -- "0..*" Metric : predicts
+
+' Notification Service
+Notification ..|> INotificationService : implements
+User "1" -- "0..*" Notification : receives
 
 @enduml

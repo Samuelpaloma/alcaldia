@@ -1,0 +1,52 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #E8F4FD
+  BorderColor #2E86AB
+  FontColor #2E86AB
+}
+skinparam actor {
+  BackgroundColor #FFE5B4
+  BorderColor #FF8C00
+  FontColor #FF8C00
+}
+
+title Casos de Uso: Funcionario
+
+left to right direction
+
+actor "Funcionario" as F
+
+package "Portal Web" {
+  usecase "Iniciar Sesión" as Login
+  usecase "Crear Ticket" as Crear
+  usecase "Consultar Estado" as Consultar
+  usecase "Ver Historial" as Historial
+  usecase "Completar Encuesta" as Encuesta
+  usecase "Reabrir Ticket" as Reabrir
+  usecase "2FA" as 2FA
+  usecase "Recuperar Contraseña" as Recuperar
+}
+
+package "Notificaciones" {
+  usecase "Recibir Email" as Email
+}
+
+' === Relaciones ===
+F --> Login
+F --> Crear
+F --> Consultar
+F --> Historial
+F --> Encuesta
+F --> Reabrir
+
+' === Include ===
+Crear ..> Email : "<<include>>"
+Reabrir ..> Email : "<<include>>"
+
+' === Extend ===
+Login ..> 2FA : "<<extend>>\n(opcional)"
+Login ..> Recuperar : "<<extend>>\n(opcional)"
+
+@enduml

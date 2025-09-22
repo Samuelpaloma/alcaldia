@@ -1,40 +1,41 @@
 @startuml
-skinparam componentStyle rectangle
-skinparam node {
-  BackgroundColor #F9F9F9
-  BorderColor Black
+title Sistema de Gestión de Tickets - Diagrama de Despliegue
+
+' === Nodos de cliente ===
+node "Dispositivo del Funcionario" {
+  artifact "Navegador Web" as navegadorF
 }
 
-node "Cliente - Funcionario/Admin" as ClienteWeb {
-  [Navegador Web]  
+node "Dispositivo del Administrador" {
+  artifact "Navegador Web" as navegadorA
 }
 
-node "Cliente - Técnico" as ClienteMovil {
-  [Aplicación Móvil Android]
+node "Dispositivo del Super Administrador" {
+  artifact "Navegador Web" as navegadorSA
 }
 
-node "Servidor de Aplicaciones" as Servidor {
-  [API REST / Backend]  
-  [Módulo de Autenticación (Login + 2FA)]  
-  [Módulo de Gestión de Tickets]  
-  [Módulo de Reportes y Dashboard]  
-  [Módulo de Gestión de Usuarios/Roles]
+node "Dispositivo del Técnico" {
+  artifact "App Móvil Android" as appMovil
 }
 
-node "Base de Datos" as BD {
-  [PostgreSQL / MySQL]  
+' === Nodo Servidor Web / Backend ===
+node "Servidor de Aplicaciones" {
+  component "Portal Web" as portal
+  component "API REST Backend" as api
 }
 
-node "Servicios Externos" as Externos {
-  [Módulo de IA (Clasificación / Respuestas)]  
-  [Servidor de Correo / Notificaciones]  
+' === Nodo Servidor de Base de Datos ===
+node "Servidor de Base de Datos" {
+  database "Base de Datos" as db
 }
 
-' Relaciones
-ClienteWeb --> Servidor : HTTPS (Navegador ↔ API)
-ClienteMovil --> Servidor : HTTPS (App ↔ API)
+' === Relaciones ===
+navegadorF --> portal : HTTPS
+navegadorA --> portal : HTTPS
+navegadorSA --> portal : HTTPS
+appMovil --> api : HTTPS
 
-Servidor --> BD : JDBC / SQL
-Servidor --> Externos : API REST
+portal --> api : HTTP interno
+api --> db : Conexión JDBC/SQL
 
 @enduml

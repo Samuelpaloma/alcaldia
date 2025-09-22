@@ -1,50 +1,169 @@
 @startuml
-title Ticket Management System - Package Diagram
-
-' ==== Paquete de Seguridad y Usuarios ====
-package "Security & Users" {
-  class Usuario
-  class Rol
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam package {
+  BackgroundColor #E8F4FD
+  BorderColor #2E86AB
+  FontColor #2E86AB
 }
 
-' ==== Paquete de Gestión de Tickets ====
-package "Ticket Management" {
-  class Ticket
-  class EstadoTicket
-  class Comentario
-  class Evidencia
+title Sistema de Gestión de Tickets - Diagrama de Paquetes
+
+package "Capa de Presentación" {
+  package "Portal Web" {
+    [UI Funcionarios]
+    [UI Administradores]
+    [UI Super Administradores]
+    [Módulo Autenticación Web]
+  }
+  
+  package "App Móvil Android" {
+    [UI Técnicos]
+    [Módulo Autenticación Móvil]
+  }
 }
 
-' ==== Paquete de Comunicación ====
-package "Communication" {
-  class Notificacion
-  class EncuestaSatisfaccion
+package "Capa de Aplicación" {
+  package "Servicios de Aplicación" {
+    [Servicio de Autenticación]
+    [Servicio de Gestión de Usuarios]
+    [Servicio de Gestión de Tickets]
+    [Servicio de Notificaciones]
+    [Servicio de Reportes]
+    [Servicio de Configuración]
+  }
+  
+  package "Controladores REST" {
+    [AuthController]
+    [UserController]
+    [TicketController]
+    [NotificationController]
+    [ReportController]
+    [ConfigController]
+  }
 }
 
-' ==== Paquete de Reportes y Panel ====
-package "Reports & Dashboard" {
-  class Reporte
-  class Dashboard
+package "Capa de Dominio" {
+  package "Entidades de Dominio" {
+    [User]
+    [Ticket]
+    [Evidence]
+    [Comment]
+    [Notification]
+    [SatisfactionSurvey]
+    [Report]
+  }
+  
+  package "Servicios de Dominio" {
+    [Gestión de Sesiones]
+    [Gestión de Usuarios y Roles]
+    [Gestión de Tickets]
+    [Motor de Reglas Automáticas]
+    [Motor de IA Clasificación]
+    [Gestión de Notificaciones]
+    [Gestión de Encuestas]
+    [Generación de Reportes]
+  }
+  
+  package "Interfaces de Dominio" {
+    [IUserRepository]
+    [ITicketRepository]
+    [INotificationService]
+    [IReportService]
+  }
 }
 
-' ==== Paquete de Automatización e IA ====
-package "Automation & AI" {
-  class ReglaAutomatizacion
-  class MotorIA
+package "Capa de Infraestructura" {
+  package "Repositorios" {
+    [UserRepository]
+    [TicketRepository]
+    [EvidenceRepository]
+    [CommentRepository]
+    [NotificationRepository]
+    [SurveyRepository]
+    [ReportRepository]
+  }
+  
+  package "Servicios Externos" {
+    [Email Service]
+    [SMS Service]
+    [Push Notification Service]
+  }
+  
+  package "Persistencia" {
+    [Base de Datos PostgreSQL]
+    [ORM Hibernate]
+    [Connection Pool]
+  }
 }
 
-' ==== RELACIONES ENTRE PAQUETES ====
-Usuario --> Rol
-Usuario --> Ticket
-Ticket --> EstadoTicket
-Ticket --> Comentario
-Ticket --> Evidencia
-Ticket --> Notificacion
-Ticket --> EncuestaSatisfaccion
+' === Dependencias de Presentación ===
+[UI Funcionarios] --> [Módulo Autenticación Web]
+[UI Administradores] --> [Módulo Autenticación Web]
+[UI Super Administradores] --> [Módulo Autenticación Web]
+[UI Técnicos] --> [Módulo Autenticación Móvil]
 
-Usuario --> Reporte
-Usuario --> Dashboard
+[Módulo Autenticación Web] --> [AuthController]
+[Módulo Autenticación Móvil] --> [AuthController]
 
-MotorIA --> Ticket
-ReglaAutomatizacion --> Ticket
+' === Dependencias de Aplicación ===
+[UI Funcionarios] --> [TicketController]
+[UI Administradores] --> [TicketController]
+[UI Administradores] --> [UserController]
+[UI Administradores] --> [ReportController]
+[UI Super Administradores] --> [UserController]
+[UI Super Administradores] --> [ConfigController]
+[UI Técnicos] --> [TicketController]
+
+[AuthController] --> [Servicio de Autenticación]
+[UserController] --> [Servicio de Gestión de Usuarios]
+[TicketController] --> [Servicio de Gestión de Tickets]
+[NotificationController] --> [Servicio de Notificaciones]
+[ReportController] --> [Servicio de Reportes]
+[ConfigController] --> [Servicio de Configuración]
+
+' === Dependencias de Dominio ===
+[Servicio de Autenticación] --> [Gestión de Sesiones]
+[Servicio de Gestión de Usuarios] --> [Gestión de Usuarios y Roles]
+[Servicio de Gestión de Tickets] --> [Gestión de Tickets]
+[Servicio de Notificaciones] --> [Gestión de Notificaciones]
+[Servicio de Reportes] --> [Generación de Reportes]
+
+[Gestión de Tickets] --> [Motor de Reglas Automáticas]
+[Gestión de Tickets] --> [Motor de IA Clasificación]
+[Gestión de Tickets] --> [Gestión de Notificaciones]
+
+' === Dependencias de Infraestructura ===
+[Gestión de Sesiones] --> [IUserRepository]
+[Gestión de Usuarios y Roles] --> [IUserRepository]
+[Gestión de Tickets] --> [ITicketRepository]
+[Gestión de Notificaciones] --> [INotificationService]
+[Generación de Reportes] --> [IReportService]
+
+[IUserRepository] --> [UserRepository]
+[ITicketRepository] --> [TicketRepository]
+[INotificationService] --> [Email Service]
+[INotificationService] --> [SMS Service]
+[INotificationService] --> [Push Notification Service]
+[IReportService] --> [ReportRepository]
+
+[UserRepository] --> [Base de Datos PostgreSQL]
+[TicketRepository] --> [Base de Datos PostgreSQL]
+[EvidenceRepository] --> [Base de Datos PostgreSQL]
+[CommentRepository] --> [Base de Datos PostgreSQL]
+[NotificationRepository] --> [Base de Datos PostgreSQL]
+[SurveyRepository] --> [Base de Datos PostgreSQL]
+[ReportRepository] --> [Base de Datos PostgreSQL]
+
+[UserRepository] --> [ORM Hibernate]
+[TicketRepository] --> [ORM Hibernate]
+[EvidenceRepository] --> [ORM Hibernate]
+[CommentRepository] --> [ORM Hibernate]
+[NotificationRepository] --> [ORM Hibernate]
+[SurveyRepository] --> [ORM Hibernate]
+[ReportRepository] --> [ORM Hibernate]
+
+[ORM Hibernate] --> [Connection Pool]
+[Connection Pool] --> [Base de Datos PostgreSQL]
+
 @enduml

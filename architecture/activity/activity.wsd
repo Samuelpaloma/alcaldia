@@ -1,0 +1,82 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam activity {
+  BackgroundColor #E8F4FD
+  BorderColor #2E86AB
+  FontColor #2E86AB
+}
+skinparam activityDiamond {
+  BackgroundColor #FFE5B4
+  BorderColor #FF8C00
+  FontColor #FF8C00
+}
+
+title Sistema de Gestión de Tickets - Diagrama de Actividades
+
+start
+
+:Usuario accede al sistema;
+:Ingresar credenciales;
+:Validar credenciales;
+
+if (¿Credenciales válidas?) then (sí)
+  :Crear sesión de usuario;
+  :Obtener rol del usuario;
+  
+  if (¿Rol = Funcionario?) then (sí)
+    :Acceder al panel de tickets;
+    :Crear nuevo ticket;
+    :Consultar estado de tickets;
+    :Evaluar servicio recibido;
+  else (no)
+    if (¿Rol = Técnico?) then (sí)
+      :Acceder al panel de trabajo;
+      :Ver tickets asignados;
+      :Resolver ticket;
+      :Notificar resolución;
+    else (no)
+      if (¿Rol = Administrador?) then (sí)
+        :Acceder al panel de gestión;
+        :Asignar técnicos a tickets;
+        :Generar reportes;
+        :Supervisar calidad del servicio;
+      else (no)
+        if (¿Rol = Super Admin?) then (sí)
+          :Acceder al panel de administración;
+          :Gestionar usuarios del sistema;
+          :Configurar parámetros del sistema;
+          :Administrar seguridad;
+        else (no)
+          :Mostrar error de rol no válido;
+          :Registrar intento de acceso no autorizado;
+        endif
+      endif
+    endif
+  endif
+  
+  :Procesar acciones del usuario;
+  if (¿Ticket resuelto?) then (sí)
+    :Enviar notificación de cierre;
+    :Solicitar encuesta de satisfacción;
+  else (no)
+    :Continuar procesamiento normal;
+  endif
+  
+  :Registrar actividad en logs;
+  :Usuario finaliza sesión;
+  :Destruir sesión activa;
+  
+else (no)
+  :Mostrar mensaje de error;
+  :Incrementar contador de intentos;
+  if (¿Máximo de intentos alcanzado?) then (sí)
+    :Bloquear cuenta temporalmente;
+    :Enviar notificación de seguridad;
+  else (no)
+    :Usuario accede al sistema;
+  endif
+endif
+
+stop
+@enduml
