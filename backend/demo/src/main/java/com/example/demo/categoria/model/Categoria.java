@@ -22,7 +22,7 @@ public class Categoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_categoria")
-    private Long idCategoria;
+    private Long id;
     
     @Column(nullable = false, length = 100, unique = true)
     private String nombre;
@@ -53,7 +53,7 @@ public class Categoria {
     private LocalDateTime fechaActualizacion;
     
     // Relación con tickets (opcional, para estadísticas)
-    @OneToMany(mappedBy = "categoria", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "categoriaObjeto", fetch = FetchType.LAZY)
     private List<com.example.demo.ticket.model.Ticket> tickets;
     
     // Métodos de utilidad
@@ -63,5 +63,15 @@ public class Categoria {
     
     public String getNombreCompleto() {
         return nombre + (descripcion != null ? " - " + descripcion : "");
+    }
+    
+    // Getter para compatibilidad con código existente
+    public Long getIdCategoria() {
+        return id;
+    }
+    
+    // Setter para compatibilidad con código existente
+    public void setIdCategoria(Long idCategoria) {
+        this.id = idCategoria;
     }
 }

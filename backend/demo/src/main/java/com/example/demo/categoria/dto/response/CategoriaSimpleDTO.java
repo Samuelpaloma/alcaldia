@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CategoriaSimpleDTO {
     
-    private Long idCategoria;
+    private Long id;
     private String nombre;
     private String colorHex;
     private String icono;

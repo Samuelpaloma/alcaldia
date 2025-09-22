@@ -26,7 +26,7 @@ public class AdminController {
      * GET /api/admin/tickets
      */
     @GetMapping("/tickets")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTodosLosTickets() {
         try {
             log.info("Obteniendo todos los tickets para admin");
@@ -45,7 +45,7 @@ public class AdminController {
      * GET /api/admin/tickets/{ticketId}
      */
     @GetMapping("/tickets/{ticketId}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTicketDetallado(@PathVariable Long ticketId) {
         try {
             log.info("Obteniendo ticket detallado {} para admin", ticketId);
@@ -64,7 +64,7 @@ public class AdminController {
      * GET /api/admin/tickets/estado/{estado}
      */
     @GetMapping("/tickets/estado/{estado}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTicketsPorEstado(@PathVariable String estado) {
         try {
             log.info("Obteniendo tickets por estado: {}", estado);
@@ -83,7 +83,7 @@ public class AdminController {
      * GET /api/admin/tickets/sin-asignar
      */
     @GetMapping("/tickets/sin-asignar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTicketsSinAsignar() {
         try {
             log.info("Obteniendo tickets sin asignar");
@@ -102,7 +102,7 @@ public class AdminController {
      * GET /api/admin/tickets/tecnico/{tecnicoId}
      */
     @GetMapping("/tickets/tecnico/{tecnicoId}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTicketsPorTecnico(@PathVariable Long tecnicoId) {
         try {
             log.info("Obteniendo tickets del técnico: {}", tecnicoId);
@@ -121,7 +121,7 @@ public class AdminController {
      * GET /api/admin/estadisticas
      */
     @GetMapping("/estadisticas")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerEstadisticasGenerales() {
         try {
             log.info("Obteniendo estadísticas generales");

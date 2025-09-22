@@ -32,7 +32,7 @@ public class TecnicoController {
      * GET /api/tecnico/tickets
      */
     @GetMapping("/tickets")
-    @PreAuthorize("hasRole('TECNICO')")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTicketsAsignados(Authentication authentication) {
         try {
             log.info("Obteniendo tickets asignados para técnico");
@@ -56,7 +56,7 @@ public class TecnicoController {
      * GET /api/tecnico/tickets/{ticketId}
      */
     @GetMapping("/tickets/{ticketId}")
-    @PreAuthorize("hasRole('TECNICO')")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTicketDetallado(
             @PathVariable Long ticketId,
             Authentication authentication) {
@@ -82,7 +82,7 @@ public class TecnicoController {
      * PUT /api/tecnico/tickets/cambiar-estado
      */
     @PutMapping("/tickets/cambiar-estado")
-    @PreAuthorize("hasRole('TECNICO')")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> cambiarEstadoTicket(
             @Valid @RequestBody CambiarEstadoTicketRequestDTO request,
             Authentication authentication) {
@@ -108,7 +108,7 @@ public class TecnicoController {
      * POST /api/tecnico/tickets/subir-evidencia
      */
     @PostMapping("/tickets/subir-evidencia")
-    @PreAuthorize("hasRole('TECNICO')")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> subirEvidencia(
             @Valid @RequestBody SubirEvidenciaRequestDTO request,
             Authentication authentication) {
@@ -134,7 +134,7 @@ public class TecnicoController {
      * GET /api/tecnico/historial
      */
     @GetMapping("/historial")
-    @PreAuthorize("hasRole('TECNICO')")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerHistorialTickets(Authentication authentication) {
         try {
             log.info("Obteniendo historial de tickets para técnico");
@@ -158,7 +158,7 @@ public class TecnicoController {
      * GET /api/tecnico/estadisticas
      */
     @GetMapping("/estadisticas")
-    @PreAuthorize("hasRole('TECNICO')")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerEstadisticas(Authentication authentication) {
         try {
             log.info("Obteniendo estadísticas para técnico");

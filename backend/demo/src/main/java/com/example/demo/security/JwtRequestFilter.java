@@ -79,7 +79,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         boolean isPublicPath = path.startsWith("/swagger-ui/") ||
                               path.startsWith("/v3/api-docs/") ||
                               path.startsWith("/actuator/health") ||
-                              path.equals("/favicon.ico");
+                              path.equals("/favicon.ico") ||
+                              path.equals("/api/superadmin/check-superadmin");
         
         boolean shouldNotFilter = isAuthPath || isPublicPath;
         

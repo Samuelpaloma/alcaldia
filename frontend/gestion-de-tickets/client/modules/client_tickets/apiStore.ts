@@ -93,10 +93,36 @@ function convertToRequestDTO(input: {
   priority: Priority;
   attachmentName?: string;
 }): TicketRequestDTO {
+  // Mapear categorías de texto a IDs numéricos basado en la base de datos
+  const categoryMap: { [key: string]: number } = {
+    "Atención al Ciudadano": 1,
+    "Quejas y Reclamos": 2,
+    "Solicitudes": 3,
+    "General": 4,
+    "Administración y Gestión": 5,
+    "Contabilidad": 6,
+    "Recursos Humanos": 7,
+    "Gestión Documental": 8,
+    "Tecnología e IT": 9,
+    "Sistemas de Información": 10,
+    "Redes y Comunicaciones": 11,
+    "Desarrollo de Software": 12,
+    "Infraestructura y Mantenimiento": 13,
+    "Mantenimiento": 14,
+    "Servicios Generales": 15,
+    "Hardware": 16,
+    "Software": 17,
+    "Redes": 18,
+    "Soporte Técnico": 19
+  };
+  
+  // Obtener el ID de la categoría seleccionada o usar 1 por defecto
+  const categoriaId = input.category ? categoryMap[input.category] || 1 : 1;
+  
   return {
     ubicacion: input.location,
     consulta: input.message,
-    categoria: input.category || "General",
+    categoriaId: categoriaId, // Usar el ID correcto de la categoría seleccionada
     prioridad: input.priority,
     nombreArchivo: input.attachmentName
   };

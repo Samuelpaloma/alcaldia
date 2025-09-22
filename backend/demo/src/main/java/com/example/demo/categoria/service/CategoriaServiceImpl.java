@@ -29,7 +29,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         log.info("Creando nueva categoría: {}", request.getNombre());
         
         // 1. Validar que no exista otra categoría con el mismo nombre
-        if (categoriaRepository.existsByNombreIgnoreCaseAndIdCategoriaNot(request.getNombre(), 0L)) {
+        if (categoriaRepository.existsByNombreIgnoreCaseAndIdNot(request.getNombre(), 0L)) {
             throw new RuntimeException("Ya existe una categoría con el nombre: " + request.getNombre());
         }
         
@@ -45,7 +45,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         
         Categoria savedCategoria = categoriaRepository.save(categoria);
         
-        log.info("Categoría creada exitosamente: {} (ID: {})", savedCategoria.getNombre(), savedCategoria.getIdCategoria());
+        log.info("Categoría creada exitosamente: {} (ID: {})", savedCategoria.getNombre(), savedCategoria.getId());
         
         return convertirACategoriaResponseDTO(savedCategoria);
     }
@@ -70,7 +70,7 @@ public class CategoriaServiceImpl implements CategoriaService {
             .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
         
         // 2. Validar que no exista otra categoría con el mismo nombre
-        if (categoriaRepository.existsByNombreIgnoreCaseAndIdCategoriaNot(request.getNombre(), id)) {
+        if (categoriaRepository.existsByNombreIgnoreCaseAndIdNot(request.getNombre(), id)) {
             throw new RuntimeException("Ya existe otra categoría con el nombre: " + request.getNombre());
         }
         
@@ -84,7 +84,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         
         Categoria updatedCategoria = categoriaRepository.save(categoria);
         
-        log.info("Categoría actualizada exitosamente: {} (ID: {})", updatedCategoria.getNombre(), updatedCategoria.getIdCategoria());
+        log.info("Categoría actualizada exitosamente: {} (ID: {})", updatedCategoria.getNombre(), updatedCategoria.getId());
         
         return convertirACategoriaResponseDTO(updatedCategoria);
     }
@@ -100,7 +100,7 @@ public class CategoriaServiceImpl implements CategoriaService {
         categoria.setActiva(false);
         categoriaRepository.save(categoria);
         
-        log.info("Categoría desactivada exitosamente: {} (ID: {})", categoria.getNombre(), categoria.getIdCategoria());
+        log.info("Categoría desactivada exitosamente: {} (ID: {})", categoria.getNombre(), categoria.getId());
     }
     
     @Override
@@ -167,13 +167,13 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Override
     @Transactional(readOnly = true)
     public boolean existeCategoriaPorNombre(String nombre) {
-        return categoriaRepository.existsByNombreIgnoreCaseAndIdCategoriaNot(nombre, 0L);
+        return categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, 0L);
     }
     
     @Override
     @Transactional(readOnly = true)
     public boolean existeCategoriaPorNombreExcluyendoId(String nombre, Long id) {
-        return categoriaRepository.existsByNombreIgnoreCaseAndIdCategoriaNot(nombre, id);
+        return categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id);
     }
     
     @Override
@@ -192,7 +192,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     
     private CategoriaResponseDTO convertirACategoriaResponseDTO(Categoria categoria) {
         return CategoriaResponseDTO.builder()
-            .idCategoria(categoria.getIdCategoria())
+            .id(categoria.getId())
             .nombre(categoria.getNombre())
             .descripcion(categoria.getDescripcion())
             .activa(categoria.getActiva())
@@ -207,7 +207,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     
     private CategoriaSimpleDTO convertirACategoriaSimpleDTO(Categoria categoria) {
         return CategoriaSimpleDTO.builder()
-            .idCategoria(categoria.getIdCategoria())
+            .id(categoria.getId())
             .nombre(categoria.getNombre())
             .colorHex(categoria.getColorHex())
             .icono(categoria.getIcono())

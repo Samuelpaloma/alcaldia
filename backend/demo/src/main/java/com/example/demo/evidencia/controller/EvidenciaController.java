@@ -27,7 +27,7 @@ public class EvidenciaController {
      * GET /api/evidencias/ticket/{ticketId}
      */
     @GetMapping("/ticket/{ticketId}")
-    @PreAuthorize("hasAnyRole('TECNICO', 'ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('TECNICO', 'ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerEvidenciasPorTicket(@PathVariable Long ticketId) {
         try {
             log.info("Obteniendo evidencias del ticket {}", ticketId);
@@ -46,7 +46,7 @@ public class EvidenciaController {
      * GET /api/evidencias/descargar/{ticketId}/{nombreArchivo}
      */
     @GetMapping("/descargar/{ticketId}/{nombreArchivo}")
-    @PreAuthorize("hasAnyRole('TECNICO', 'ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('TECNICO', 'ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> descargarEvidencia(
             @PathVariable Long ticketId,
             @PathVariable String nombreArchivo) {

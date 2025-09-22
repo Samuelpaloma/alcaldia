@@ -25,7 +25,7 @@ public class Ticket {
     // Categoría del ticket
     @ManyToOne
     @JoinColumn(name = "categoria_id")
-    private Categoria categoria;
+    private Categoria categoriaObjeto;
 
     // Estado del ticket
     private String estado;
@@ -40,6 +40,10 @@ public class Ticket {
     // Campo de categoría como string (para compatibilidad temporal)
     @Column(name = "categoria_string")
     private String categoriaString;
+
+    // Campo de categoría (requerido por la tabla)
+    @Column(name = "categoria")
+    private String categoriaNombre;
 
     @Column(name = "archivo_adjunto")
     private String archivoAdjunto;
@@ -83,11 +87,14 @@ public class Ticket {
     public String getConsulta() { return consulta; }
     public void setConsulta(String consulta) { this.consulta = consulta; }
 
-    public Categoria getCategoria() { return categoria; }
-    public void setCategoria(Categoria categoria) { this.categoria = categoria; }
+    public Categoria getCategoria() { return categoriaObjeto; }
+    public void setCategoria(Categoria categoria) { this.categoriaObjeto = categoria; }
 
     public String getCategoriaString() { return categoriaString; }
     public void setCategoriaString(String categoriaString) { this.categoriaString = categoriaString; }
+
+    public String getCategoriaNombre() { return categoriaNombre; }
+    public void setCategoriaNombre(String categoriaNombre) { this.categoriaNombre = categoriaNombre; }
 
     public String getArchivoAdjunto() { return archivoAdjunto; }
     public void setArchivoAdjunto(String archivoAdjunto) { this.archivoAdjunto = archivoAdjunto; }

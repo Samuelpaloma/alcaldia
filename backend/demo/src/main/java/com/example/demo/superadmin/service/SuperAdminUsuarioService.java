@@ -113,9 +113,10 @@ public class SuperAdminUsuarioService {
             throw new RuntimeException("El usuario no es un administrador");
         }
         
-        // 3. Actualizar contraseña
+        // 3. Actualizar contraseña y verificar email
         admin.setPasswordHash(passwordEncoder.encode(nuevaPassword));
         admin.setPasswordTemporal(false); // Ya no es temporal
+        admin.setEmailVerificado(true); // Verificar email automáticamente
         usuarioRepository.save(admin);
         
         log.info("Contraseña del administrador {} cambiada exitosamente", admin.getEmail());

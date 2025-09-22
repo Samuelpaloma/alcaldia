@@ -25,16 +25,23 @@ const TicketsManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       
+      console.log('🔍 TicketsManagement: Cargando datos...');
+      
       const [ticketsData, tecnicosData] = await Promise.all([
         api.getTodosLosTickets(),
         api.getTechnicians(0, 100)
       ]);
       
+      console.log('📊 TicketsManagement: Datos recibidos:', {
+        tickets: ticketsData,
+        tecnicos: tecnicosData
+      });
+      
       setTickets(ticketsData);
       setTecnicos(tecnicosData.content || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar datos');
-      console.error('Error cargando datos:', err);
+      console.error('❌ TicketsManagement: Error cargando datos:', err);
     } finally {
       setLoading(false);
     }
@@ -47,7 +54,7 @@ const TicketsManagement: React.FC = () => {
   // Filtrar tickets
   const ticketsFiltrados = tickets.filter(ticket => {
     const cumpleEstado = !filtros.estado || ticket.estado === filtros.estado;
-    const cumpleTecnico = !filtros.tecnico || ticket.tecnicoAsignado === filtros.tecnico;
+    const cumpleTecnico = !filtros.tecnico || ticket.tecnicoEmail === filtros.tecnico;
     const cumpleBusqueda = !filtros.busqueda || 
       ticket.asunto.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
       ticket.descripcion.toLowerCase().includes(filtros.busqueda.toLowerCase());
@@ -110,6 +117,13 @@ const TicketsManagement: React.FC = () => {
       </div>
     );
   }
+
+  console.log('🎯 TicketsManagement: Renderizando con', {
+    tickets: tickets.length,
+    ticketsFiltrados: ticketsFiltrados.length,
+    loading,
+    error
+  });
 
   return (
     <div className="tickets-management">
@@ -208,7 +222,7 @@ const TicketsManagement: React.FC = () => {
                       <div className="ticket-info">
                         <span className="ticket-label">Técnico:</span>
                         <span className="ticket-value">
-                          {ticket.tecnicoAsignado || 'Sin asignar'}
+                          {ticket.tecnicoEmail || 'Sin asignar'}
                         </span>
                       </div>
                       <div className="ticket-info">
@@ -227,10 +241,10 @@ const TicketsManagement: React.FC = () => {
                         setMostrarModal(true);
                       }}
                       className="btn-assign"
-                      disabled={!!ticket.tecnicoAsignado}
+                      disabled={!!ticket.tecnicoEmail}
                     >
                       <i className="fas fa-user-plus mr-2"></i>
-                      {ticket.tecnicoAsignado ? 'Reasignar' : 'Asignar'}
+                      {ticket.tecnicoEmail ? 'Reasignar' : 'Asignar'}
                     </button>
                     
                     <button

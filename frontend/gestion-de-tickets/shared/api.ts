@@ -45,6 +45,15 @@ export interface RegisterResponse {
   message: string;
 }
 
+// Tipos para estadísticas del sistema
+export interface SystemStatsResponse {
+  totalUsuarios: number;
+  totalSuperAdmins: number;
+  totalAdmins: number;
+  totalTecnicos: number;
+  totalFuncionarios: number;
+}
+
 // Tipos para tickets (basados en el backend)
 export interface Ticket {
   id: number;
@@ -80,25 +89,22 @@ export interface TicketRequestDTO {
 
 export interface TicketResponseDTO {
   id: number;
+  asunto: string;
+  descripcion?: string;
   ubicacion: string;
   consulta?: string;
   categoria: string;
   prioridad: 'low' | 'medium' | 'high';
-  estado: 'open' | 'in_progress' | 'resolved' | 'closed';
+  estado: 'open' | 'in_progress' | 'resolved' | 'closed' | 'PENDIENTE' | 'EN_EJECUCION' | 'TERMINADO' | 'CERRADO';
   archivoAdjunto?: string;
   nombreArchivo?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
-  creador?: {
-    id: number;
-    nombre: string;
-    email: string;
-  };
-  tecnicoAsignado?: {
-    id: number;
-    nombre: string;
-    email: string;
-  };
+  creadorEmail: string;
+  tecnicoEmail?: string;
+  nombre: string;
+  evidencias?: any[];
+  historialEstados?: any[];
 }
 
 export interface HistorialTicketResponseDTO {
@@ -172,9 +178,10 @@ export interface CreateTecnicoRequest {
   nombre: string;
   apellido: string;
   telefono?: string;
-  ubicacion?: string;
-  departamento?: string;
-  cargo?: string;
+  require2fa?: boolean;
+  area?: string;
+  nivel?: string;
+  observaciones?: string;
 }
 
 export interface CreateAdminRequest {
@@ -487,6 +494,10 @@ class ApiClient {
 
   reloadToken() {
     this.loadToken();
+  }
+
+  getToken(): string | null {
+    return this.token;
   }
 
   private async request<T>(
@@ -1221,7 +1232,7 @@ class ApiClient {
    * Crear técnico
    */
   async createTechnician(request: CreateTecnicoRequest): Promise<UsuarioDTO> {
-    return this.request('/admin/tecnicos', {
+    return this.request('/usuarios/tecnico', {
       method: 'POST',
       body: JSON.stringify(request)
     });
@@ -1483,14 +1494,128 @@ class ApiClient {
     return this.request('/tecnico/estadisticas');
   }
 
-  // ========== MÉTRICAS Y ESTADÍSTICAS ==========
+// ========== CATEGORÍAS ==========
 
-  /**
-   * Obtener estadísticas del sistema (SuperAdmin)
-   */
-  async getSystemStats(): Promise<SystemStatsResponse> {
-    return this.request('/superadmin/estadisticas');
-  }
+/**
+ * Obtener categorías activas para selects
+ */
+async getActiveCategories(): Promise<CategoriaSimpleDTO[]> {
+  return this.request('/categorias/activas');
+}
+
+/**
+ * Crear nueva categoría
+ */
+async createCategory(request: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
+  return this.request('/categorias', {
+    method: 'POST',
+    body: JSON.stringify(request)
+  });
+}
+
+/**
+ * Obtener categoría por ID
+ */
+async getCategoryById(id: number): Promise<CategoriaResponseDTO> {
+  return this.request(`/categorias/${id}`);
+}
+
+/**
+ * Actualizar categoría
+ */
+async updateCategory(id: number, request: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
+  return this.request(`/categorias/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(request)
+  });
+}
+
+/**
+ * Eliminar categoría
+ */
+async deleteCategory(id: number): Promise<ApiResponse> {
+  return this.request(`/categorias/${id}`, {
+    method: 'DELETE'
+  });
+}
+
+/**
+ * Activar/Desactivar categoría
+ */
+async toggleCategoryStatus(id: number): Promise<CategoriaResponseDTO> {
+  return this.request(`/categorias/${id}/toggle`, {
+    method: 'PATCH'
+  });
+}
+
+/**
+ * Obtener todas las categorías con paginación
+ */
+async getAllCategories(
+  page: number = 0,
+  size: number = 10,
+  sortBy: string = 'orden',
+  sortDir: string = 'asc',
+  activa?: boolean,
+  nombre?: string
+): Promise<PageResponse<CategoriaResponseDTO>> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    size: size.toString(),
+    sortBy,
+    sortDir
+  });
+  if (activa !== undefined) params.append('activa', activa.toString());
+  if (nombre) params.append('nombre', nombre);
+  
+  return this.request(`/categorias?${params}`);
+}
+
+/**
+ * Buscar categorías por nombre
+ */
+async searchCategoriesByName(nombre: string): Promise<CategoriaSimpleDTO[]> {
+  return this.request(`/categorias/buscar?nombre=${encodeURIComponent(nombre)}`);
+}
+
+/**
+ * Obtener estadísticas de categorías
+ */
+async getCategoryStats(): Promise<any> {
+  return this.request('/categorias/estadisticas');
+}
+
+// ========== EVIDENCIAS ==========
+
+/**
+ * Obtener evidencias de un ticket
+ */
+async getTicketEvidences(ticketId: number): Promise<Evidencia[]> {
+  return this.request(`/evidencias/ticket/${ticketId}`);
+}
+
+/**
+ * Descargar evidencia
+ */
+async downloadEvidence(ticketId: number, nombreArchivo: string): Promise<Blob> {
+  return this.request(`/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`);
+}
+
+// ========== MÉTRICAS Y ESTADÍSTICAS ==========
+
+/**
+ * Obtener estadísticas del sistema (SuperAdmin)
+ */
+async getSystemStats(): Promise<SystemStatsResponse> {
+  return this.request('/superadmin/estadisticas');
+}
+
+/**
+ * Obtener estadísticas para Admin
+ */
+async getAdminStats(): Promise<any> {
+  return this.request('/admin/estadisticas');
+}
 
   /**
    * Obtener estadísticas de tickets

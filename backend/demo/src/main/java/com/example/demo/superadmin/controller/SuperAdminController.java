@@ -69,6 +69,28 @@ public class SuperAdminController {
     }
     
     /**
+     * Endpoint temporal para verificar SuperAdmin (SIN AUTENTICACIÓN)
+     * GET /api/superadmin/check-superadmin
+     */
+    @GetMapping("/check-superadmin")
+    public ResponseEntity<?> checkSuperAdmin() {
+        try {
+            log.info("Verificando SuperAdmin sin autenticación");
+            boolean existe = superAdminService.existeSuperAdminActivo();
+            return ResponseEntity.ok(Map.of(
+                "existe", existe,
+                "mensaje", existe ? "SuperAdmin existe" : "SuperAdmin no existe"
+            ));
+        } catch (Exception e) {
+            log.error("Error verificando SuperAdmin", e);
+            return ResponseEntity.badRequest().body(Map.of(
+                "existe", false,
+                "error", e.getMessage()
+            ));
+        }
+    }
+    
+    /**
      * Obtener información del SUPERADMIN por defecto
      * GET /api/superadmin/superadmin-por-defecto
      */

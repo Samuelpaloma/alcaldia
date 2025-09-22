@@ -10,7 +10,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientLayout from "./modules/_shared/ClientLayout";
 import AdminLayout from "./modules/_shared/AdminLayout";
-import TicketsManagement from "./modules/tickets_management/TicketsManagement";
+import TicketsManagement from "./modules/admin/TicketsManagement";
 import UsersRoles from "./modules/users_roles/UsersRoles";
 import Notifications from "./modules/notifications/Notifications";
 import Evidences from "./modules/evidences/Evidences";
@@ -68,20 +68,20 @@ const App = () => (
             </Route>
 
             {/* Admin section (role-restricted) */}
-            <Route element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route path="/admin" element={<AdminDashboard userRole="admin" />} />
-                <Route path="/tickets" element={<TicketsManagement />} />
-                <Route path="/users-roles" element={<UsersRoles />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/evidences" element={<Evidences />} />
-                <Route path="/system-configuration" element={<SystemConfiguration />} />
-                <Route path="/assignment-rules" element={<AssignmentRules />} />
-                <Route path="/tickets-history" element={<TicketsHistory />} />
-                <Route path="/metrics" element={<Metrics />} />
-                <Route path="/ai-classification" element={<AiClassification />} />
-              </Route>
-            </Route>
+        <Route element={<RoleRoute role="admin" />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminDashboard userRole="admin" />} />
+            <Route path="/tickets" element={<AdminDashboard userRole="admin" />} />
+            <Route path="/users-roles" element={<AdminDashboard userRole="admin" />} />
+            <Route path="/evidences" element={<AdminDashboard userRole="admin" />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/system-configuration" element={<SystemConfiguration />} />
+            <Route path="/assignment-rules" element={<AssignmentRules />} />
+            <Route path="/tickets-history" element={<TicketsHistory />} />
+            <Route path="/metrics" element={<Metrics />} />
+            <Route path="/ai-classification" element={<AiClassification />} />
+          </Route>
+        </Route>
 
             {/* SuperAdmin section (role-restricted) */}
             <Route element={<SuperAdminLayout />}>

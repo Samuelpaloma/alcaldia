@@ -60,7 +60,7 @@ public class CategoriaController {
      * POST /api/categorias
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> crearCategoria(@Valid @RequestBody CategoriaRequestDTO request) {
         try {
             log.info("Creando categoría: {}", request.getNombre());
@@ -79,7 +79,7 @@ public class CategoriaController {
      * GET /api/categorias/{id}
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerCategoriaPorId(@PathVariable Long id) {
         try {
             log.info("Obteniendo categoría ID: {}", id);
@@ -98,7 +98,7 @@ public class CategoriaController {
      * PUT /api/categorias/{id}
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> actualizarCategoria(
             @PathVariable Long id,
             @Valid @RequestBody CategoriaRequestDTO request) {
@@ -119,7 +119,7 @@ public class CategoriaController {
      * DELETE /api/categorias/{id}
      */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> eliminarCategoria(@PathVariable Long id) {
         try {
             log.info("Eliminando categoría ID: {}", id);
@@ -138,7 +138,7 @@ public class CategoriaController {
      * PATCH /api/categorias/{id}/toggle
      */
     @PatchMapping("/{id}/toggle")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> toggleEstadoCategoria(@PathVariable Long id) {
         try {
             log.info("Cambiando estado de categoría ID: {}", id);
@@ -157,7 +157,7 @@ public class CategoriaController {
      * GET /api/categorias?page=0&size=10&activa=true&nombre=...
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<PageResponse<CategoriaResponseDTO>> obtenerTodasLasCategorias(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -186,7 +186,7 @@ public class CategoriaController {
      * GET /api/categorias/estadisticas
      */
     @GetMapping("/estadisticas")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerEstadisticas() {
         try {
             log.info("Obteniendo estadísticas de categorías");

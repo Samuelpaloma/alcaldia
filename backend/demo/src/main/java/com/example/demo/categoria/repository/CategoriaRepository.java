@@ -18,7 +18,7 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     Optional<Categoria> findByNombreIgnoreCase(String nombre);
     
     // Verificar si existe por nombre (excluyendo un ID específico)
-    boolean existsByNombreIgnoreCaseAndIdCategoriaNot(String nombre, Long idCategoria);
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
     
     // Buscar categorías activas
     List<Categoria> findByActivaTrueOrderByOrdenAsc();

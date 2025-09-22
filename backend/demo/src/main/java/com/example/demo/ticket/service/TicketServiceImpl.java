@@ -55,7 +55,7 @@ public class TicketServiceImpl implements TicketService {
         // Buscar categoría por ID
         CategoriaResponseDTO categoriaResponse = categoriaService.obtenerCategoriaPorId(request.getCategoriaId());
         Categoria categoria = new Categoria();
-        categoria.setIdCategoria(categoriaResponse.getIdCategoria());
+        categoria.setId(categoriaResponse.getId());
         categoria.setNombre(categoriaResponse.getNombre());
         
         // Crear ticket con todos los campos del formulario
@@ -66,6 +66,7 @@ public class TicketServiceImpl implements TicketService {
         ticket.setConsulta(request.getConsulta());
         ticket.setCategoria(categoria);
         ticket.setCategoriaString(categoria.getNombre()); // Para compatibilidad
+        ticket.setCategoriaNombre(categoria.getNombre()); // Campo requerido por la tabla
         ticket.setPrioridad(request.getPrioridad() != null ? request.getPrioridad() : "MEDIA");
         ticket.setEstado("PENDIENTE");
         ticket.setCreador(creador);
@@ -150,6 +151,7 @@ public class TicketServiceImpl implements TicketService {
     private TicketResponseDTO convertirTicketAResponseDTOBasico(Ticket ticket) {
         return new TicketResponseDTO(
                 ticket.getId(),
+                ticket.getConsulta(), // asunto
                 ticket.getDescripcion(),
                 ticket.getPrioridad(),
                 ticket.getEstado(),
@@ -200,6 +202,7 @@ public class TicketServiceImpl implements TicketService {
         
         return new TicketResponseDTO(
             ticket.getId(),
+            ticket.getConsulta(), // asunto
             ticket.getDescripcion(),
             ticket.getPrioridad(),
             ticket.getEstado(),

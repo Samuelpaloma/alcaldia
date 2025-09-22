@@ -130,12 +130,38 @@ public class AdminTecnicoService {
             throw new RuntimeException("El usuario no es un técnico");
         }
         
-        // 3. Actualizar contraseña
+        // 3. Actualizar contraseña y verificar email
         tecnico.setPasswordHash(passwordEncoder.encode(nuevaPassword));
         tecnico.setPasswordTemporal(false); // Ya no es temporal
+        tecnico.setEmailVerificado(true); // Verificar email automáticamente
         usuarioRepository.save(tecnico);
         
         log.info("Contraseña del técnico {} cambiada exitosamente", tecnico.getEmail());
+        
+        // 4. Retornar DTO actualizado
+        return convertirUsuarioADTO(tecnico);
+    }
+    
+    /**
+     * Verificar email de técnico
+     */
+    public UsuarioDTO verificarEmailTecnico(Long tecnicoId) {
+        log.info("Verificando email del técnico: {}", tecnicoId);
+        
+        // 1. Buscar técnico
+        Usuario tecnico = usuarioRepository.findById(tecnicoId)
+            .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
+        
+        // 2. Verificar que sea técnico
+        if (!tecnico.isTecnico()) {
+            throw new RuntimeException("El usuario no es un técnico");
+        }
+        
+        // 3. Verificar email
+        tecnico.setEmailVerificado(true);
+        usuarioRepository.save(tecnico);
+        
+        log.info("Email del técnico {} verificado exitosamente", tecnico.getEmail());
         
         // 4. Retornar DTO actualizado
         return convertirUsuarioADTO(tecnico);

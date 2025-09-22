@@ -149,6 +149,7 @@ public class AdminService {
         
         return new TicketResponseDTO(
             ticket.getId(),
+            ticket.getConsulta(), // Usar consulta como asunto
             ticket.getDescripcion(),
             ticket.getPrioridad(),
             ticket.getEstado(),

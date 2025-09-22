@@ -6,6 +6,7 @@ import java.util.List;
 public class TicketResponseDTO {
 
     private Long id;
+    private String asunto;
     private String descripcion;
     private String prioridad;
     private String estado;
@@ -29,12 +30,13 @@ public class TicketResponseDTO {
     private List<HistorialEstadoResponseDTO> historialEstados;
 
     // Constructor completo
-    public TicketResponseDTO(Long id, String descripcion, String prioridad, String estado,
+    public TicketResponseDTO(Long id, String asunto, String descripcion, String prioridad, String estado,
                              String creadorEmail, String tecnicoEmail, LocalDateTime fechaCreacion,
                              LocalDateTime fechaActualizacion, String nombre, String ubicacion,
                              String consulta, String categoria, String archivoAdjunto, String nombreArchivo,
                              List<EvidenciaResponseDTO> evidencias, List<HistorialEstadoResponseDTO> historialEstados) {
         this.id = id;
+        this.asunto = asunto;
         this.descripcion = descripcion;
         this.prioridad = prioridad;
         this.estado = estado;
@@ -53,9 +55,10 @@ public class TicketResponseDTO {
     }
 
     // Constructor básico para compatibilidad
-    public TicketResponseDTO(Long id, String descripcion, String prioridad, String estado,
+    public TicketResponseDTO(Long id, String asunto, String descripcion, String prioridad, String estado,
                              String creadorEmail, String tecnicoEmail, LocalDateTime fechaCreacion) {
         this.id = id;
+        this.asunto = asunto;
         this.descripcion = descripcion;
         this.prioridad = prioridad;
         this.estado = estado;
@@ -66,6 +69,7 @@ public class TicketResponseDTO {
 
     // Getters
     public Long getId() { return id; }
+    public String getAsunto() { return asunto; }
     public String getDescripcion() { return descripcion; }
     public String getPrioridad() { return prioridad; }
     public String getEstado() { return estado; }

@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CategoriaResponseDTO {
     
-    private Long idCategoria;
+    private Long id;
     private String nombre;
     private String descripcion;
     private Boolean activa;
