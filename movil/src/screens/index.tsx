@@ -13,7 +13,8 @@ import {
   TextInput
 } from 'react-native';
 import * as DocumentPicker from "expo-document-picker";
-import Header from "../screens/Header";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 interface Adjunto {
   id: number;
@@ -33,12 +34,21 @@ interface Solicitud {
   adjuntos?: Adjunto[]; // Nuevo campo para adjuntos
 }
 
+interface UserInfo {
+    userId: number;
+    email: string;
+    nombre: string;
+    apellido?: string;
+  }
+
 export default function SolicitudesScreen(): React.JSX.Element {
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null);
   const [showAdjuntoModal, setShowAdjuntoModal] = useState(false);
   const [mensajeAdjunto, setMensajeAdjunto] = useState('');
   const [archivoAdjunto, setArchivoAdjunto] = useState<string | null>(null);
+  const navigation = useNavigation<any>();
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
   const seleccionarArchivo = () => {
     // Aquí luego integras react-native-document-picker o expo-image-picker
@@ -113,6 +123,147 @@ export default function SolicitudesScreen(): React.JSX.Element {
     }
   ];
 
+  // Verificar sesión cuando la pantalla se enfoca
+  useFocusEffect(
+    React.useCallback(() => {
+      checkAuthStatus();
+    }, [])
+  );
+
+  const checkAuthStatus = async () => {
+    console.log('🔍 [SESIÓN] Verificando estado de autenticación...');
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      const userInfoStr = await AsyncStorage.getItem('userInfo');
+      
+      console.log('🔍 [SESIÓN] Token encontrado:', token ? `${token.substring(0, 20)}...` : 'null');
+      console.log('🔍 [SESIÓN] UserInfo encontrado:', userInfoStr ? 'Sí' : 'No');
+      
+      if (!token) {
+        console.log('❌ [SESIÓN] Sin token - Redirigiendo a Login');
+        navigation.navigate('Login');
+        return;
+      }
+
+      // Verificar si el token sigue válido
+      console.log('🔍 [SESIÓN] Verificando validez del token con el servidor...');
+      const response = await fetch('http://localhost:8080/api/auth/verify', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('🔍 [SESIÓN] Respuesta del servidor:', response.status);
+
+      if (response.ok) {
+        console.log('✅ [SESIÓN] Token válido - Sesión mantenida');
+        if (userInfoStr) {
+          const userInfo = JSON.parse(userInfoStr);
+          console.log('✅ [SESIÓN] Información del usuario cargada:', {
+            userId: userInfo.userId,
+            email: userInfo.email,
+            nombre: userInfo.nombre
+          });
+          setUserInfo(userInfo);
+        }
+        console.log('✅ [SESIÓN] Usuario autenticado correctamente');
+      } else {
+        console.log('❌ [SESIÓN] Token expirado o inválido');
+        console.log('🔄 [SESIÓN] Limpiando almacenamiento local...');
+        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('userInfo');
+        console.log('🔄 [SESIÓN] Redirigiendo a Login');
+        navigation.navigate('Login');
+      }
+    } catch (error) {
+      console.error('❌ [SESIÓN] Error verificando sesión:', error);
+      console.log('🔄 [SESIÓN] Error de conexión - Redirigiendo a Login');
+      navigation.navigate('Login');
+    }
+  };
+
+  const handleLogout = async () => {
+    console.log('🚪 [LOGOUT] Iniciando proceso de logout...');
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
+      [
+        { 
+          text: 'Cancelar', 
+          style: 'cancel',
+          onPress: () => console.log('🚪 [LOGOUT] Logout cancelado por el usuario')
+        },
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('authToken');
+              console.log('🚪 [LOGOUT] Token antes del logout:', token ? `${token.substring(0, 20)}...` : 'null');
+              
+              // Llamar endpoint de logout
+              console.log('🔄 [LOGOUT] Notificando al servidor...');
+              await fetch('http://localhost:8080/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+              console.log('✅ [LOGOUT] Servidor notificado exitosamente');
+            } catch (error) {
+              console.error('❌ [LOGOUT] Error notificando al servidor:', error);
+            } finally {
+              // Limpiar almacenamiento local
+              console.log('🔄 [LOGOUT] Limpiando almacenamiento local...');
+              await AsyncStorage.removeItem('authToken');
+              await AsyncStorage.removeItem('userInfo');
+              console.log('✅ [LOGOUT] Almacenamiento limpiado');
+              
+              // Ir a Login
+              console.log('🔄 [LOGOUT] Redirigiendo a Login');
+              navigation.navigate('Login');
+              console.log('✅ [LOGOUT] Logout completado exitosamente');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // También agrega logs al useFocusEffect
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('🏠 [HOME] Pantalla Home enfocada - Verificando sesión...');
+      checkAuthStatus();
+    }, [])
+  );
+
+  // Función para hacer requests autenticados
+  const authenticatedFetch = async (url: string, options: any = {}) => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...(options.headers || {})  // Corregido
+        }
+      });
+
+      if (response.status === 401) {
+        await handleLogout();
+        return null;
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error en request autenticado:', error);
+      return null;
+    }
+  };
+
   const showSolicitudDetail = (solicitud: Solicitud): void => {
     setSelectedSolicitud(solicitud);
     setShowInfoModal(true);
@@ -139,6 +290,15 @@ export default function SolicitudesScreen(): React.JSX.Element {
     if (tipo.includes('spreadsheet') || tipo.includes('excel')) return '📊';
     return '📎';
   };
+
+  console.log('🏠 [HOME] Estado actual de la sesión:', {
+    userInfo: userInfo ? {
+      userId: userInfo.userId,
+      nombre: userInfo.nombre,
+      email: userInfo.email
+    } : null,
+    timestamp: new Date().toISOString()
+  });
 
   const renderSolicitudCard = (solicitud: Solicitud): React.JSX.Element => {
     return (
@@ -197,8 +357,25 @@ export default function SolicitudesScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <View style={styles.mainHeader}>
+          <View style={styles.logoContainer}>
+            <View style={styles.logoPlaceholder}>
+              <Text style={styles.logoText}>TicketFlow</Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity
+            style={styles.userButton}
+            onPress={handleLogout}
+          >
+            <View style={styles.userIcon}>
+              <Text style={styles.userIconText}>
+                {userInfo ? userInfo.nombre?.charAt(0).toUpperCase() : '👤'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
         {/* Header principal con logo SENA y usuario */}
-        <Header />
 
         <ScrollView 
           style={styles.scrollView}

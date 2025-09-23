@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/usuarios")
 @CrossOrigin(origins = "http://localhost:8081")
 public class UserController {
     @Autowired
@@ -42,23 +42,51 @@ public class UserController {
     @PostMapping("/mobile/login")
     public ResponseEntity<LoginResponseDTO> mobileLogin(@RequestBody LoginRequestDTO loginRequest) {
         
-        if (!isValidCredentials(loginRequest)) {
+        // Validación de campos vacíos
+        if (loginRequest.getEmail() == null || loginRequest.getEmail().trim().isEmpty()) {
             return ResponseEntity.badRequest()
-                .body(new LoginResponseDTO(false, "Credenciales inválidas", null, null));
+                .body(new LoginResponseDTO(false, "El campo correo es obligatorio", null, null));
+        }
+        
+        if (loginRequest.getPassword() == null || loginRequest.getPassword().trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body(new LoginResponseDTO(false, "El campo contraseña es obligatorio", null, null));
         }
 
-        LoginResponseDTO response = userService.authenticateForMobile(loginRequest);
-        
-        return response.isSuccess() ? 
-            ResponseEntity.ok(response) : 
-            new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+        // Validación de formato de email
+        if (!loginRequest.getEmail().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            return ResponseEntity.badRequest()
+                .body(new LoginResponseDTO(false, "El formato del correo electrónico no es válido", null, null));
+        }
+
+        // Validación de formato de contraseña
+        if (!loginRequest.getPassword().matches("^\\d{1,10}$")) {
+            return ResponseEntity.badRequest()
+                .body(new LoginResponseDTO(false, "La contraseña debe contener solo números y máximo 10 dígitos", null, null));
+        }
+
+        // Intentar autenticación
+        try {
+            LoginResponseDTO response = userService.authenticateForMobile(loginRequest);
+            
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                // Si el servicio devuelve error, usar el mensaje específico
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+        } catch (Exception e) {
+            // Error interno del servidor
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new LoginResponseDTO(false, "Error interno del servidor. Inténtelo más tarde.", null, null));
+        }
     }
-    
+
     private boolean isValidCredentials(LoginRequestDTO request) {
         String email = request.getEmail();
         String password = request.getPassword();
         
-        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$") &&
-               password != null && password.matches("^\\d{1,10}$");
+        return email != null && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$") 
+            && password != null && password.matches("^\\d{1,10}$");
     }
 }

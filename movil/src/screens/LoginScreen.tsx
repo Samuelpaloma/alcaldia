@@ -1,64 +1,109 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  Modal
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
+  const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [generalError, setGeneralError] = useState('');
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Por favor complete todos los campos');
+    // Limpiar errores previos
+    setEmailError('');
+    setPasswordError('');
+    setGeneralError('');
+
+    // Validación básica en el frontend
+    let hasErrors = false;
+
+    if (!email || !email.trim()) {
+      setEmailError('El campo correo es obligatorio');
+      hasErrors = true;
+    } else if (!email.includes('@') || !email.match(/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/)) {
+      setEmailError('Por favor ingrese un correo electrónico válido');
+      hasErrors = true;
+    }
+
+    if (!password || !password.trim()) {
+      setPasswordError('El campo contraseña es obligatorio');
+      hasErrors = true;
+    } else if (!password.match(/^\d{1,10}$/)) {
+      setPasswordError('La contraseña debe contener solo números (máximo 10 dígitos)');
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
       return;
     }
 
     setLoading(true);
-    
     try {
-      const response = await fetch('http://localhost:8080/api/auth/mobile/login', {
+      const response = await fetch('http://localhost:8080/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: email,
-          password: password
+          email: email.trim(),
+          password: password.trim()
         })
       });
 
       const data = await response.json();
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response data:', data);
 
-      if (response.ok && data.success) {
-        // Login exitoso
-        Alert.alert('Éxito', data.message, [
-        {
-          text: 'OK',
-          onPress: () => {
-            window.location.href = 'http://localhost:8081/Home';
-          }
+      // PRIMERO: Verificar si requiere verificación de email
+      if (data.requireEmailVerification) {
+        console.log('📧 Email no verificado, navegando a VerifyEmailScreen');
+        navigation.navigate('VerifyEmailScreen', {
+          email: data.email
+        });
+        return;
+      }
+
+      // SEGUNDO: Si response es OK, manejar casos exitosos
+      if (response.ok) {
+        if (data.accessToken) {
+          // Login directo exitoso - GUARDAR TOKEN AQUÍ
+          console.log('✅ Login directo exitoso, guardando token y navegando a Home');
+          await AsyncStorage.setItem('authToken', data.accessToken);
+          await AsyncStorage.setItem('userInfo', JSON.stringify({
+            userId: data.userId,
+            email: data.email,
+            nombre: data.nombre
+          }));
+          navigation.navigate('Home');
+        } else if (data.require2fa) {
+          // Login requiere 2FA - NO guardar token todavía
+          console.log('🔐 Login requiere 2FA, navegando a Verify2FA');
+          navigation.navigate('Verify2FA', { 
+            userId: data.userId,
+            userEmail: data.email,
+            userName: data.nombre 
+          });
         }
-      ]);
       } else {
-        // Error de autenticación
-        Alert.alert('Error de acceso', data.message || 'Credenciales incorrectas');
+        // Errores normales
+        const errorMessage = data.message || 'Credenciales incorrectas';
+        if (errorMessage.includes('correo') || errorMessage.includes('email')) {
+          setEmailError(errorMessage);
+        } else if (errorMessage.includes('contraseña') || errorMessage.includes('password')) {
+          setPasswordError(errorMessage);
+        } else {
+          setGeneralError(errorMessage);
+        }
       }
     } catch (error) {
       console.error('Error de conexión:', error);
-      Alert.alert('Error', 'No se pudo conectar con el servidor. Verifique su conexión.');
+      setGeneralError('No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.');
     } finally {
       setLoading(false);
     }
@@ -67,50 +112,54 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoid}
         >
           <View style={styles.formContainer}>
-            
-            {/* Ícono de información en la esquina superior derecha */}
-            <TouchableOpacity 
-              style={styles.infoButton}
-              onPress={() => setShowInfoModal(true)}
-            >
-              <Text style={styles.infoIcon}>!</Text>
-            </TouchableOpacity>
-            
             <View style={styles.headerSection}>
               <View style={styles.logoContainer}>
-                <Image
-                  source={require('../../assets/Logo-del-sena-Verde-300x300-1-removebg-preview 2.png')}
-                  style={styles.logoImage}
-                />
+                {/* Reemplazamos la imagen por texto TicketFlow */}
+                <Text style={styles.logoText}>TicketFlow</Text>
               </View>
+              {/* Agregamos el texto descriptivo */}
+              <Text style={styles.subtitleText}>Inicia sesión para continuar</Text>
             </View>
-            <Text style={styles.welcomeText}>¡Bienvenido a la app!</Text>
 
             <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>Usuario</Text>
+              {/* Error general */}
+              {generalError ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{generalError}</Text>
+                </View>
+              ) : null}
+
+              <Text style={styles.inputLabel}>Correo</Text>
               <TextInput
-                style={styles.input}
-                placeholder="tecnico@alcaldianevila.gov.co"
+                style={[styles.input, emailError ? styles.inputError : null]}
+                placeholder="tu@empresa.com"
                 placeholderTextColor="#888"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (emailError) setEmailError(''); // Limpiar error al escribir
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
               <Text style={styles.inputLabel}>Contraseña</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  style={styles.passwordInput}
+                  style={[styles.passwordInput, passwordError ? styles.inputError : null]}
                   placeholder="••••••••••••"
                   placeholderTextColor="#888"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError(''); // Limpiar error al escribir
+                  }}
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
@@ -120,15 +169,16 @@ export default function LoginScreen() {
                   <Image
                     source={
                       showPassword
-                        ? require("../../assets/eye-open.png")   // 👁️ ojo abierto
-                        : require("../../assets/eye-closed.png") // 👁️ ojo cerrado
+                        ? require("../../assets/eye-open.png")
+                        : require("../../assets/eye-closed.png")
                     }
                     style={styles.eyeIcon}
                   />
                 </TouchableOpacity>
               </View>
+              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.loginButton, loading && styles.buttonDisabled]}
                 onPress={handleLogin}
                 disabled={loading}
@@ -140,29 +190,6 @@ export default function LoginScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
-
-        {/* Modal de información */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={showInfoModal}
-          onRequestClose={() => setShowInfoModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Información</Text>
-              <Text style={styles.modalText}>
-                Sus credenciales de acceso están en posesión del administrador
-              </Text>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => setShowInfoModal(false)}
-              >
-                <Text style={styles.modalButtonText}>Entendido</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -171,7 +198,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(48, 105, 46, 0.4)',
+    backgroundColor: '#f5f5f5',
   },
   safeArea: {
     flex: 1,
@@ -180,25 +207,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 60,
+    padding: 20,
   },
   formContainer: {
-    width: 350,
-    height: 580,
-    backgroundColor: '#FFFFFf',
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#ffffff',
     borderRadius: 15,
-    padding: 20,
-    shadowColor: '#000000cc',
+    padding: 40,
+    shadowColor: '#000000',
     shadowOffset: {
-      width: 10,
-      height: 8,
+      width: 0,
+      height: 4,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 5.84,
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 8,
     position: 'relative',
-    borderWidth: 1,
-    borderColor: '#000'
   },
   // Estilos para el ícono de información
   infoButton: {
@@ -220,79 +245,94 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     alignItems: 'center',
+    marginBottom: 40,
   },
   logoContainer: {
     alignItems: 'center',
     marginBottom: 15,
   },
-  logoPlaceholder: {
-    width: 60,
-    height: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  logoImage: {
-    width: 150,
-    height: 150
-  },
   logoText: {
-    fontSize: 24,
-    color: 'white',
-  },
-  alcaldiaText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    lineHeight: 16,
-  },
-  welcomeText: {
-    height: 30,
-    alignContent: 'center',
-    justifyContent: 'flex-start',
-    color: "#30692E",
-    fontSize: 18,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'left'
+    color: '#333333',
+    marginBottom: 10,
   },
   subtitleText: {
-    color: 'white',
-    fontSize: 12,
+    color: '#666666',
+    fontSize: 16,
     textAlign: 'center',
-    lineHeight: 16,
-    opacity: 0.9,
+    marginBottom: 10,
   },
   inputSection: {
     width: '100%',
   },
   inputLabel: {
-    color: 'black',
+    color: '#333333',
     fontSize: 14,
     fontWeight: '500',
-    marginBottom: 6,
-    marginTop: 10,
+    marginBottom: 8,
+    marginTop: 15,
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: 15,
+  },
+  passwordInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 15,
+    paddingRight: 50,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 15,
+    top: 15,
+    padding: 4,
+  },
+  eyeIcon: {
+    width: 20,
+    height: 20,
+  },
+  // Estilos para mensajes de error
+  errorContainer: {
+    backgroundColor: '#ffe6e6',
     borderRadius: 8,
     padding: 12,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff4444',
+  },
+  errorText: {
+    color: '#cc0000',
     fontSize: 14,
-    marginBottom: 8,
+    marginTop: 5,
+    marginBottom: 10,
+  },
+  inputError: {
+    borderColor: '#ff4444',
     borderWidth: 2,
-    borderColor: '#30692E',
   },
   loginButton: {
-    backgroundColor: '#5a7c5a',
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
     marginTop: 20,
   },
   buttonDisabled: {
-    backgroundColor: '#888',
+    backgroundColor: '#888888',
   },
   loginButtonText: {
     color: 'white',
@@ -346,27 +386,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  passwordContainer: {
-    position: 'relative',
-    marginBottom: 8,
-  },
-  passwordInput: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 12,
-    paddingRight: 45,
-    fontSize: 14,
-    borderWidth: 2,
-    borderColor: '#30692E',
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 12,
-    top: 9,
-    padding: 4,
-  },
-  eyeIcon: {
-    width: 20,
-    height: 20,
-  }
 });

@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
-import Header from "../screens/Header";
 import ModalSelector from 'react-native-modal-selector';
 
 const DatosTecnicoScreen = () => {
