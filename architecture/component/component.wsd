@@ -1,0 +1,83 @@
+@startuml
+title Sistema de Gestión de Tickets - Diagrama de Componentes
+
+' === Portal Web ===
+package "Portal Web" {
+  [Interfaz Funcionarios]
+  [Interfaz Administradores]
+  [Interfaz Super Administradores]
+  [Módulo Autenticación Web]
+  [Gestión de Tickets Web]
+  [Gestión de Usuarios Web]
+  [Configuración del Sistema Web]
+}
+
+' === Aplicación Móvil Android ===
+package "App Móvil Técnicos (Android)" {
+  [Interfaz Técnicos]
+  [Módulo Autenticación Móvil]
+  [Gestión de Tickets Móvil]
+}
+
+' === Backend / API REST Central ===
+package "Backend Central (API REST)" {
+  [Servicio de Autenticación]
+  [Servicio de Gestión de Usuarios]
+  [Servicio de Gestión de Tickets]
+  [Servicio de Notificaciones]
+  [Servicio de Reportes / Estadísticas]
+  [Servicio de Configuración del Sistema]
+}
+
+' === Servicios Externos ===
+package "Servicios Externos" {
+  [Email Service]
+  [Push Notification Service]
+}
+
+' === Base de Datos ===
+database "Base de Datos" as DB
+
+' === Relaciones de Autenticación ===
+[Interfaz Funcionarios] --> [Módulo Autenticación Web] : authenticates
+[Interfaz Administradores] --> [Módulo Autenticación Web] : authenticates
+[Interfaz Super Administradores] --> [Módulo Autenticación Web] : authenticates
+[Interfaz Técnicos] --> [Módulo Autenticación Móvil] : authenticates
+
+[Módulo Autenticación Web] --> [Servicio de Autenticación] : validates credentials
+[Módulo Autenticación Móvil] --> [Servicio de Autenticación] : validates credentials
+
+' === Relaciones de Funcionalidades ===
+[Interfaz Funcionarios] --> [Gestión de Tickets Web] : creates/views tickets
+[Interfaz Administradores] --> [Gestión de Tickets Web] : manages tickets
+[Interfaz Administradores] --> [Gestión de Usuarios Web] : manages users
+[Interfaz Super Administradores] --> [Gestión de Usuarios Web] : manages all users
+[Interfaz Super Administradores] --> [Configuración del Sistema Web] : configures system
+[Interfaz Técnicos] --> [Gestión de Tickets Móvil] : resolves tickets
+
+[Gestión de Tickets Web] --> [Servicio de Gestión de Tickets] : processes ticket operations
+[Gestión de Tickets Móvil] --> [Servicio de Gestión de Tickets] : processes mobile ticket operations
+[Gestión de Usuarios Web] --> [Servicio de Gestión de Usuarios] : processes user operations
+[Configuración del Sistema Web] --> [Servicio de Configuración del Sistema] : processes system config
+
+' === Relaciones con Base de Datos ===
+[Servicio de Autenticación] --> DB : stores/retrieves user credentials
+[Servicio de Gestión de Usuarios] --> DB : stores/retrieves user data
+[Servicio de Gestión de Tickets] --> DB : stores/retrieves ticket data
+[Servicio de Reportes / Estadísticas] --> DB : queries data for reports
+[Servicio de Configuración del Sistema] --> DB : stores/retrieves system settings
+
+' === Relaciones entre Servicios ===
+[Servicio de Gestión de Tickets] --> [Servicio de Notificaciones] : triggers notifications
+[Servicio de Gestión de Usuarios] --> [Servicio de Notificaciones] : sends user notifications
+[Servicio de Configuración del Sistema] --> [Servicio de Notificaciones] : configures notification settings
+
+' === Relaciones con Servicios Externos ===
+[Servicio de Notificaciones] --> [Email Service] : sends emails
+[Servicio de Notificaciones] --> [Push Notification Service] : sends push notifications
+
+' === Relaciones de Reportes ===
+[Interfaz Administradores] --> [Servicio de Reportes / Estadísticas] : requests reports
+[Interfaz Super Administradores] --> [Servicio de Reportes / Estadísticas] : requests system reports
+
+@enduml

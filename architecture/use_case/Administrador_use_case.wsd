@@ -1,0 +1,56 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #E8F4FD
+  BorderColor #2E86AB
+  FontColor #2E86AB
+}
+skinparam actor {
+  BackgroundColor #FFE5B4
+  BorderColor #FF8C00
+  FontColor #FF8C00
+}
+
+title Casos de Uso: Administrador
+
+left to right direction
+
+actor "Administrador" as A
+
+package "Panel de Control" {
+  usecase "Iniciar Sesión" as Login
+  usecase "Ver Dashboard" as Dashboard
+  usecase "Gestionar Tickets" as Tickets
+  usecase "Gestionar Técnicos" as Tecnicos
+  usecase "Gestionar Usuarios" as Usuarios
+  usecase "Generar Reportes" as Reportes
+  usecase "Configurar Automatización" as Automatizacion
+  usecase "2FA" as 2FA
+  usecase "Recuperar Contraseña" as Recuperar
+}
+
+package "Notificaciones" {
+  usecase "Recibir notificacion push" as Email
+}
+
+' === Relaciones ===
+A --> Login
+A --> Dashboard
+A --> Tickets
+A --> Tecnicos
+A --> Usuarios
+A --> Reportes
+A --> Automatizacion
+
+' === Include ===
+Tickets ..> Email : "<<include>>"
+Tecnicos ..> Email : "<<include>>"
+Usuarios ..> Email : "<<include>>"
+
+' === Extend ===
+Login ..> 2FA : "<<extend>>\n(opcional)"
+Login ..> Recuperar : "<<extend>>\n(opcional)"
+Reportes ..> Dashboard : "<<extend>>\n(opcional)"
+
+@enduml

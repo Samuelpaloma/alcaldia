@@ -1,0 +1,54 @@
+@startuml
+!theme plain
+skinparam backgroundColor #FFFFFF
+skinparam usecase {
+  BackgroundColor #E8F4FD
+  BorderColor #2E86AB
+  FontColor #2E86AB
+}
+skinparam actor {
+  BackgroundColor #FFE5B4
+  BorderColor #FF8C00
+  FontColor #FF8C00
+}
+
+title Casos de Uso: Super Administrador
+
+left to right direction
+
+actor "Super Administrador" as SA
+
+package "Configuración Avanzada" {
+  usecase "Iniciar Sesión" as Login
+  usecase "Personalizar Sistema" as Personalizar
+  usecase "Gestionar Administradores" as GestionarAdmins
+  usecase "Configurar Seguridad" as Seguridad
+  usecase "Supervisar Sistema" as Supervisar
+  usecase "Configurar Parámetros" as Parametros
+  usecase "2FA" as 2FA
+  usecase "Recuperar Contraseña" as Recuperar
+}
+
+package "Notificaciones" {
+  usecase "Recibir notificacion push" as Email
+}
+
+' === Relaciones ===
+SA --> Login
+SA --> Personalizar
+SA --> GestionarAdmins
+SA --> Seguridad
+SA --> Supervisar
+SA --> Parametros
+
+' === Include ===
+GestionarAdmins ..> Email : "<<include>>"
+Seguridad ..> Email : "<<include>>"
+Supervisar ..> Email : "<<include>>"
+
+' === Extend ===
+Login ..> 2FA : "<<extend>>\n(opcional)"
+Login ..> Recuperar : "<<extend>>\n(opcional)"
+Personalizar ..> Seguridad : "<<extend>>\n(opcional)"
+
+@enduml
