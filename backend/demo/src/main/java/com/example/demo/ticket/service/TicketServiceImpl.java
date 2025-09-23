@@ -64,6 +64,8 @@ public class TicketServiceImpl implements TicketService {
         ticket.setUbicacion(request.getUbicacion());
         // La consulta solo se llena si el usuario selecciona "Otros" y escribe algo personalizado
         ticket.setConsulta(request.getConsulta());
+        // La descripción es obligatoria
+        ticket.setDescripcion(request.getDescripcion());
         ticket.setCategoria(categoria);
         ticket.setCategoriaString(categoria.getNombre()); // Para compatibilidad
         ticket.setPrioridad(request.getPrioridad() != null ? request.getPrioridad() : "MEDIA");
@@ -71,7 +73,7 @@ public class TicketServiceImpl implements TicketService {
         ticket.setCreador(creador);
         
         // Manejar archivo adjunto si existe
-        if (request.getArchivoAdjunto() != null) {
+        if (request.getArchivoAdjunto() != null && !request.getArchivoAdjunto().trim().isEmpty()) {
             ticket.setArchivoAdjunto(request.getArchivoAdjunto());
             ticket.setNombreArchivo(request.getNombreArchivo());
         }

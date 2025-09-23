@@ -34,7 +34,7 @@ public class CreateTecnicoRequest {
     private Boolean require2fa = false;
     
     // Campos opcionales para especialización
-    private String area;          // Área de especialización
-    private String nivel;         // Junior, Senior, etc.
-    private String observaciones; // Notas adicionales
+    private String areaEspecializacion;  // Área de especialización
+    private String nivelTecnico;         // BAJO, MEDIO, ALTO
+    private String observaciones;        // Notas adicionales
 }

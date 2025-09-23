@@ -204,6 +204,34 @@ public class AuthServiceImpl implements AuthService {
     // ========== LOGIN ==========
     
     @Override
+    public LoginResponse login(LoginRequest request) {
+        log.info("Login directo para email: {}", request.getEmail());
+        
+        // Verificar credenciales
+        validateCredentials(request);
+        
+        // Obtener usuario
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new AuthException("Usuario no encontrado"));
+        
+        // Generar token JWT
+        String accessToken = jwtTokenProvider.generateToken(usuario);
+        
+        // Crear respuesta usando el mismo formato que otros métodos
+        return LoginResponse.builder()
+            .accessToken(accessToken)
+            .tokenType("Bearer")
+            .expiresIn(jwtTokenProvider.getTokenValidityInSeconds())
+            .userId(usuario.getIdUsuario())
+            .nombre(usuario.getNombre())
+            .apellido(usuario.getApellido())
+            .email(usuario.getEmail())
+            .tipoUsuario(usuario.getTipoUsuario().name())
+            .require2fa(false)
+            .build();
+    }
+    
+    @Override
     public LoginResponse authenticateWithVerification(LoginRequest request) {
         log.info("Autenticación con verificación para: {}", request.getEmail());
         
@@ -211,7 +239,7 @@ public class AuthServiceImpl implements AuthService {
         validateCredentials(request);
         
         // Crear verificación de login
-        PendingUser pendingUser = createLoginVerification(request);
+        createLoginVerification(request);
         
         // No devolver token aún, el usuario debe verificar el código
         throw new AuthException("Se requiere verificación de código. Usa el endpoint /verify-login-code");

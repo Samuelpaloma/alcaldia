@@ -6,6 +6,7 @@ import com.example.demo.usuario.dto.response.*;
 import com.example.demo.usuario.exception.*;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.model.Usuario;
+import com.example.demo.usuario.model.NivelTecnico;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.shared.dto.PageResponse;
 
@@ -58,6 +59,9 @@ public class UsuarioServiceImpl implements UsuarioService {
             .creadoPor(admin)
             .passwordTemporal(true) // Marcar como contraseña temporal
             .require2fa(request.getRequire2fa())
+            .nivelTecnico(parseNivelTecnico(request.getNivelTecnico()))
+            .areaEspecializacion(request.getAreaEspecializacion())
+            .observaciones(request.getObservaciones())
             .build();
         
         Usuario savedTecnico = usuarioRepository.save(tecnico);
@@ -398,5 +402,20 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         
         return false;
+    }
+    
+    // ========== MÉTODOS AUXILIARES PARA TÉCNICOS ==========
+    
+    private com.example.demo.usuario.model.NivelTecnico parseNivelTecnico(String nivelTecnico) {
+        if (nivelTecnico == null || nivelTecnico.trim().isEmpty()) {
+            return com.example.demo.usuario.model.NivelTecnico.BAJO; // Nivel por defecto
+        }
+        
+        try {
+            return com.example.demo.usuario.model.NivelTecnico.fromDescripcion(nivelTecnico.trim());
+        } catch (IllegalArgumentException e) {
+            log.warn("Nivel de técnico inválido '{}', usando nivel BAJO por defecto", nivelTecnico);
+            return com.example.demo.usuario.model.NivelTecnico.BAJO;
+        }
     }
 }

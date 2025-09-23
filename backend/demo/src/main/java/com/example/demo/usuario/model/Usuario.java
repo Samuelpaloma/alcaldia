@@ -82,13 +82,24 @@ public class Usuario {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
     
-        // Tickets donde el usuario es el técnico asignado
-        @OneToMany(mappedBy = "tecnicoAsignado")
-        private java.util.List<com.example.demo.ticket.model.Ticket> ticketsAsignados;
+    // Campos específicos para técnicos
+    @Enumerated(EnumType.STRING)
+    @Column(name = "nivel_tecnico")
+    private NivelTecnico nivelTecnico;
+    
+    @Column(name = "area_especializacion", length = 100)
+    private String areaEspecializacion;
+    
+    @Column(name = "observaciones", length = 500)
+    private String observaciones;
+    
+    // Tickets donde el usuario es el técnico asignado
+    @OneToMany(mappedBy = "tecnicoAsignado")
+    private java.util.List<com.example.demo.ticket.model.Ticket> ticketsAsignados;
 
-        // Tickets creados por el usuario
-        @OneToMany(mappedBy = "creador")
-        private java.util.List<com.example.demo.ticket.model.Ticket> ticketsCreados;
+    // Tickets creados por el usuario
+    @OneToMany(mappedBy = "creador")
+    private java.util.List<com.example.demo.ticket.model.Ticket> ticketsCreados;
     // Métodos de utilidad
     public String getNombreCompleto() {
         return nombre + " " + apellido;
@@ -117,5 +128,26 @@ public class Usuario {
     
     public boolean isEmailVerificado() {
         return emailVerificado != null && emailVerificado;
+    }
+    
+    // Métodos específicos para técnicos
+    public boolean tieneNivelTecnico() {
+        return isTecnico() && nivelTecnico != null;
+    }
+    
+    public boolean esTecnicoNivelAlto() {
+        return isTecnico() && NivelTecnico.ALTO.equals(nivelTecnico);
+    }
+    
+    public boolean esTecnicoNivelMedio() {
+        return isTecnico() && NivelTecnico.MEDIO.equals(nivelTecnico);
+    }
+    
+    public boolean esTecnicoNivelBajo() {
+        return isTecnico() && NivelTecnico.BAJO.equals(nivelTecnico);
+    }
+    
+    public boolean puedeEscalarA(NivelTecnico nivelDestino) {
+        return isTecnico() && nivelTecnico != null && nivelTecnico.esMenorQue(nivelDestino);
     }
 }

@@ -26,3 +26,7 @@ public class ChangeTemporaryPasswordRequest {
         return newPassword != null && newPassword.equals(confirmPassword);
     }
 }
+
+
+
+

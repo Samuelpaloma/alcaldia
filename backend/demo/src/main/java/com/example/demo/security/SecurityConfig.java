@@ -80,6 +80,10 @@ public class SecurityConfig {
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/favicon.ico").permitAll()
                 
+                // 📊 Endpoints de sesiones y actividades (temporalmente públicos)
+                .requestMatchers("/api/sessions/**").permitAll()
+                .requestMatchers("/api/activities/**").permitAll()
+                
                 // 🔐 Endpoints específicos por rol
                 .requestMatchers("/api/usuarios/admin").hasRole("SUPERADMIN")
                 .requestMatchers("/api/usuarios/tecnico").hasRole("ADMINISTRADOR")

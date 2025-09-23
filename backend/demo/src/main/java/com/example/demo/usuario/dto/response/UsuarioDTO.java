@@ -29,6 +29,11 @@ public class UsuarioDTO {
     private LocalDateTime ultimoAcceso;
     private LocalDateTime fechaCreacion;
     
+    // Campos específicos para técnicos
+    private String nivelTecnico;       // BAJO, MEDIO, ALTO
+    private String areaEspecializacion;
+    private String observaciones;
+    
     // Campos calculados para el frontend
     private String estadoTexto;        // "Activo" / "Inactivo"
     private String tiempoSinAcceso;    // "Hace 2 días"

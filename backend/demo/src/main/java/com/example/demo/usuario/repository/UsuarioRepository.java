@@ -2,6 +2,7 @@ package com.example.demo.usuario.repository;
 
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.model.Usuario;
+import com.example.demo.usuario.model.NivelTecnico;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -83,4 +84,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
            "FROM Usuario u WHERE u.tipoUsuario = :tipo AND u.activo = true " +
            "ORDER BY u.nombre, u.apellido")
     List<UsuarioSummaryDTO> findSummaryByTipo(@Param("tipo") TipoUsuario tipo);
+    
+    // 🔧 Consultas para escalamiento
+    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = :tipoUsuario AND u.nivelTecnico = :nivelTecnico AND u.activo = true")
+    List<Usuario> findByTipoUsuarioAndNivelTecnicoAndActivoTrue(@Param("tipoUsuario") TipoUsuario tipoUsuario, @Param("nivelTecnico") NivelTecnico nivelTecnico);
 }

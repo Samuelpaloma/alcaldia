@@ -23,3 +23,7 @@ public class ChangeTecnicoPasswordRequest {
         return newPassword != null && newPassword.equals(confirmPassword);
     }
 }
+
+
+
+

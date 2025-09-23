@@ -40,10 +40,8 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
     private final JwtTokenProvider jwtTokenProvider;
     
-    // ========== REGISTRO ==========
-    
     /**
-     * Registro inicial - Solo crea usuario pendiente de verificación
+     *  crea usuario pendiente de verificación
      */
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegisterRequest request) {
@@ -58,7 +56,7 @@ public class AuthController {
     }
     
     /**
-     * Verificar email con código - Completa el registro
+     * Verificar email con código 
      */
     @PostMapping("/verify-email")
     public ResponseEntity<LoginResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
@@ -69,7 +67,7 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error verificando email: {}", e.getMessage());
-            throw e; // Re-lanzar para que el frontend maneje el error
+            throw e; 
         }
     }
     
@@ -93,18 +91,21 @@ public class AuthController {
         }
     }
     
-    // ========== LOGIN ==========
     
     /**
-     * Login directo - DESHABILITADO (usar validate-credentials + request-login-code + verify-login-code)
+     * Login directo
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Intento de login directo para email: {} - REDIRIGIENDO A FLUJO DE VERIFICACIÓN", request.getEmail());
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        log.info("Login directo para email: {}", request.getEmail());
         
-        return ResponseEntity.badRequest().body(new ApiResponse(
-            "El login directo no está disponible. Usa el flujo de verificación: validate-credentials → request-login-code → verify-login-code"
-        ));
+        try {
+            LoginResponse response = authService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error en login directo: {}", e.getMessage());
+            throw e; // Re-lanzar para que el frontend maneje el error
+        }
     }
     
     /**
@@ -219,6 +220,14 @@ public class AuthController {
     }
     
     // ========== MÉTODOS AUXILIARES ==========
+    
+    /**
+     * Endpoint de prueba simple
+     */
+    @GetMapping("/test")
+    public ResponseEntity<ApiResponse> test() {
+        return ResponseEntity.ok(new ApiResponse("API funcionando correctamente"));
+    }
     
     /**
      * Endpoint de prueba para verificar el envío de correos

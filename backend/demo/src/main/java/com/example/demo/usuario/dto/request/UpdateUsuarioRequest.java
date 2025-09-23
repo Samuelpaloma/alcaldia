@@ -27,9 +27,9 @@ public class UpdateUsuarioRequest {
     private Boolean activo;
     
     // Campos adicionales según tipo
-    private String area;          // Para técnicos
-    private String nivel;         // Para técnicos
-    private String observaciones; // Para técnicos
+    private String areaEspecializacion;  // Para técnicos
+    private String nivelTecnico;         // Para técnicos
+    private String observaciones;        // Para técnicos
     
     // Campos de perfil personal
     private String ubicacion;     // Ubicación del usuario

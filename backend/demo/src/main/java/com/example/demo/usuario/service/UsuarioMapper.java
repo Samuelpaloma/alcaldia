@@ -36,6 +36,9 @@ public class UsuarioMapper {
             .tiempoSinAcceso(formatTiempoSinAcceso(usuario.getUltimoAcceso()))
             .puedeEditar(true) // Se calculará en el servicio según permisos
             .puedeEliminar(true) // Se calculará en el servicio según permisos
+            .nivelTecnico(usuario.getNivelTecnico() != null ? usuario.getNivelTecnico().getDescripcion() : null)
+            .areaEspecializacion(usuario.getAreaEspecializacion())
+            .observaciones(usuario.getObservaciones())
             .build();
     }
     

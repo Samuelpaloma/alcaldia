@@ -6,6 +6,9 @@ import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.usuario.service.UsuarioService;
 import com.example.demo.superadmin.dto.response.EstadisticasAdministradoresResponseDTO;
+import com.example.demo.security.CustomUserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +32,8 @@ public class SuperAdminUsuarioService {
      */
     public UsuarioDTO crearAdministrador(CreateAdminRequest request) {
         log.info("Creando administrador: {}", request.getEmail());
-        // El ID del superadmin se obtendrá del contexto de seguridad
-        // Por ahora usamos un ID fijo, pero en producción debería obtenerse del token
-        Long superAdminId = 1L; // TODO: Obtener del contexto de seguridad
+        // Obtener el ID del superadmin desde el contexto de seguridad
+        Long superAdminId = getCurrentSuperAdminId();
         return usuarioService.createAdmin(request, superAdminId);
     }
     
@@ -59,8 +61,7 @@ public class SuperAdminUsuarioService {
      */
     public UsuarioDTO toggleEstadoAdministrador(Long id) {
         log.info("Cambiando estado del administrador: {}", id);
-        // TODO: Obtener ID del usuario actual del contexto de seguridad
-        Long currentUserId = 1L; // Placeholder
+        Long currentUserId = getCurrentSuperAdminId();
         usuarioService.toggleUserStatus(id, currentUserId);
         return usuarioService.getUserById(id);
     }
@@ -124,5 +125,22 @@ public class SuperAdminUsuarioService {
             .ultimoAcceso(usuario.getUltimoAcceso())
             .fechaCreacion(usuario.getFechaCreacion())
             .build();
+    }
+    
+    /**
+     * Obtener el ID del superadmin actual desde el contexto de seguridad
+     */
+    private Long getCurrentSuperAdminId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new IllegalArgumentException("Usuario no autenticado");
+        }
+        
+        if (auth.getPrincipal() instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+            return userDetails.getUserId();
+        }
+        
+        throw new IllegalArgumentException("No se pudo obtener el ID del superadmin autenticado");
     }
 }

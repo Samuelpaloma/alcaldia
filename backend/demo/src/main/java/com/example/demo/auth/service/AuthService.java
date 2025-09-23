@@ -11,6 +11,7 @@ public interface AuthService {
     PendingUser resendVerificationCode(String email);
     
     // Login
+    LoginResponse login(LoginRequest request);
     LoginResponse authenticateWithVerification(LoginRequest request);
     void validateCredentials(LoginRequest request);
     PendingUser createLoginVerification(LoginRequest request);

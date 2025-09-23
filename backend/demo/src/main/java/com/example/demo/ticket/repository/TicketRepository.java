@@ -2,6 +2,7 @@ package com.example.demo.ticket.repository;
 
 import com.example.demo.ticket.model.Ticket;
 import com.example.demo.usuario.model.Usuario;
+import com.example.demo.usuario.model.NivelTecnico;
 import com.example.demo.categoria.model.Categoria;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -59,4 +60,10 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     
     // Contar tickets por técnico asignado
     long countByTecnicoAsignado(Usuario tecnico);
+    
+    // Métodos para escalamiento
+    long countByTecnicoAsignadoAndEstadoIn(Usuario tecnico, List<String> estados);
+    
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.nivelTecnico = :nivelTecnico AND t.estado IN :estados")
+    long countByTecnicoAsignadoNivelTecnicoAndEstadoIn(@Param("nivelTecnico") NivelTecnico nivelTecnico, @Param("estados") List<String> estados);
 }
