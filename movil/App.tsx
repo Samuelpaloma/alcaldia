@@ -11,13 +11,17 @@ import IndexScreen from './src/screens/index';
 import ConfigScreen from './src/screens/config';
 import VerifyScreen from './src/screens/VerifyScreen';
 import VerifyEmailScreen from './src/screens/verifyEmailScreen'; // NUEVO
+import ForgotPasswordScreen  from './src/screens/ForgotPasswordScreen'; // NUEVO
+import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
 type RootStackParamList = {
   Login: undefined;
   Home: undefined;
   Config: undefined;
-  Verify2FA?: { userId: number; userEmail: string; userName: string };
-  VerifyEmailScreen?: { email: string };
+  Verify2FA: { userId: number; userEmail: string; userName: string };
+  VerifyEmailScreen: { email: string };
+  ForgotPasswordScreen: undefined;
+  ResetPasswordScreen: { email: string }; // 👈 aquí estaba faltando
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -90,6 +94,16 @@ export default function App() {
           name="VerifyEmailScreen" 
           component={VerifyEmailScreen}
           options={{ title: 'Verificar Email' }}
+        />
+        <Stack.Screen 
+          name="ForgotPasswordScreen" 
+          component={ForgotPasswordScreen}
+          options={{ title: 'Olvide mi contraseña' }}
+        />
+        <Stack.Screen 
+          name="ResetPasswordScreen"
+          component={ResetPasswordScreen}
+          options={{ title: 'Nueva contraseña' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

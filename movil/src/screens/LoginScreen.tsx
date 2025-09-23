@@ -34,10 +34,13 @@ export default function LoginScreen() {
     if (!password || !password.trim()) {
       setPasswordError('El campo contraseña es obligatorio');
       hasErrors = true;
-    } else if (!password.match(/^\d{1,10}$/)) {
-      setPasswordError('La contraseña debe contener solo números (máximo 10 dígitos)');
+    } else if (!password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/)) {
+      setPasswordError(
+        'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas y números'
+      );
       hasErrors = true;
     }
+
 
     if (hasErrors) {
       return;
@@ -107,6 +110,11 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    // Navegar a la pantalla de recuperación de contraseña
+    navigation.navigate('ForgotPasswordScreen');
   };
 
   return (
@@ -186,6 +194,14 @@ export default function LoginScreen() {
                 <Text style={styles.loginButtonText}>
                   {loading ? 'Ingresando...' : 'Ingresar'}
                 </Text>
+              </TouchableOpacity>
+
+              {/* Enlace "Olvidé mi contraseña" */}
+              <TouchableOpacity
+                style={styles.forgotPasswordButton}
+                onPress={handleForgotPassword}
+              >
+                <Text style={styles.forgotPasswordText}>Olvidé mi contraseña</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -338,6 +354,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Estilos para "Olvidé mi contraseña"
+  forgotPasswordButton: {
+    alignItems: 'center',
+    marginTop: 15,
+    paddingVertical: 10,
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   // Estilos para el modal
   modalOverlay: {
