@@ -1,8 +1,6 @@
 package com.example.demo.notificacion.dto.request;
 
-import com.example.demo.notificacion.model.Notificacion;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -14,11 +12,11 @@ public class CreateNotificacionRequest {
     @NotBlank(message = "El mensaje es obligatorio")
     private String mensaje;
     
-    @NotNull(message = "El tipo de notificación es obligatorio")
-    private Notificacion.TipoNotificacion tipo;
+    @NotBlank(message = "El tipo es obligatorio")
+    private String tipo;
     
-    @NotNull(message = "El ID del usuario es obligatorio")
-    private Long usuarioId;
+    @NotBlank(message = "El email del usuario es obligatorio")
+    private String usuarioEmail;
     
     private Long ticketId;
 }

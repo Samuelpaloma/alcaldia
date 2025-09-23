@@ -97,39 +97,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userRole }) => {
 
   return (
     <div className="admin-dashboard">
-      <div className="tabs-container">
-        <div className="tabs-nav">
-          <button
-            className={`tab-button ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => handleTabChange('dashboard')}
-          >
-            <i className="fas fa-chart-pie mr-2"></i>
-            Dashboard
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'tickets' ? 'active' : ''}`}
-            onClick={() => handleTabChange('tickets')}
-          >
-            <i className="fas fa-ticket-alt mr-2"></i>
-            Gestión de Tickets
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'usuarios' ? 'active' : ''}`}
-            onClick={() => handleTabChange('usuarios')}
-          >
-            <i className="fas fa-users mr-2"></i>
-            Gestión de Usuarios
-          </button>
-          <button
-            className={`tab-button ${activeTab === 'evidencias' ? 'active' : ''}`}
-            onClick={() => handleTabChange('evidencias')}
-          >
-            <i className="fas fa-file-alt mr-2"></i>
-            Gestión de Evidencias
-          </button>
-        </div>
-      </div>
-
       <div className="tab-content">
         {activeTab === 'dashboard' && <DashboardModule userRole={userRole} />}
         {activeTab === 'tickets' && <TicketsModule userRole={userRole} />}

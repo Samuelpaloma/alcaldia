@@ -26,16 +26,17 @@ public class Notificacion {
     @Column(columnDefinition = "TEXT")
     private String mensaje;
     
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoNotificacion tipo;
+    private String tipo;
     
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EstadoNotificacion estado = EstadoNotificacion.NO_LEIDA;
+    private Boolean leida = false;
     
-    @Column(name = "usuario_id", nullable = false)
-    private Long usuarioId;
+    @Column(name = "usuario_email", nullable = false)
+    private String usuarioEmail;
+    
+    @Column(name = "creador_email")
+    private String creadorEmail;
     
     @Column(name = "ticket_id")
     private Long ticketId;
@@ -44,29 +45,21 @@ public class Notificacion {
     @CreationTimestamp
     private LocalDateTime fechaCreacion;
     
-    @Column(name = "fecha_lectura")
-    private LocalDateTime fechaLectura;
+    @Column(name = "fecha_leida")
+    private LocalDateTime fechaLeida;
     
     @Column(name = "fecha_actualizacion")
     @UpdateTimestamp
     private LocalDateTime fechaActualizacion;
     
-    // Enums
-    public enum TipoNotificacion {
-        TICKET_CREADO,
-        TICKET_ASIGNADO,
-        TICKET_ACTUALIZADO,
-        TICKET_RESUELTO,
-        TICKET_CERRADO,
-        USUARIO_CREADO,
-        USUARIO_ACTUALIZADO,
-        SISTEMA_ALERTA,
-        SISTEMA_MANTENIMIENTO
-    }
-    
-    public enum EstadoNotificacion {
-        NO_LEIDA,
-        LEIDA,
-        ARCHIVADA
-    }
+    // Constantes para tipos de notificación
+    public static final String TIPO_TICKET_CREADO = "TICKET_CREADO";
+    public static final String TIPO_TICKET_ASIGNADO = "TICKET_ASIGNADO";
+    public static final String TIPO_TICKET_ACTUALIZADO = "TICKET_ACTUALIZADO";
+    public static final String TIPO_TICKET_RESUELTO = "TICKET_RESUELTO";
+    public static final String TIPO_TICKET_CERRADO = "TICKET_CERRADO";
+    public static final String TIPO_USUARIO_CREADO = "USUARIO_CREADO";
+    public static final String TIPO_USUARIO_ACTUALIZADO = "USUARIO_ACTUALIZADO";
+    public static final String TIPO_SISTEMA_ALERTA = "SISTEMA_ALERTA";
+    public static final String TIPO_SISTEMA_MANTENIMIENTO = "SISTEMA_MANTENIMIENTO";
 }

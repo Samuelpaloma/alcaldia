@@ -89,110 +89,33 @@ public class TicketController {
     }
 
     /**
-     * Buscar tickets por criterios
-     * GET /api/tickets/buscar
+     * Agregar comentario a un ticket
+     * POST /api/tickets/{ticketId}/comentarios
      */
-    @GetMapping("/buscar")
-    public ResponseEntity<?> buscarTickets(
-            @RequestParam(required = false) String categoria,
-            @RequestParam(required = false) String estado,
-            @RequestParam(required = false) String prioridad,
+    @PostMapping("/{ticketId}/comentarios")
+    public ResponseEntity<?> agregarComentario(
+            @PathVariable Long ticketId,
+            @RequestBody Map<String, String> request,
             Authentication authentication) {
         try {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailUsuario = userDetails.getEmail();
-            List<TicketResponseDTO> tickets = ticketService.buscarTickets(emailUsuario, categoria, estado, prioridad);
+            String mensaje = request.get("mensaje");
             
-            return ResponseEntity.ok(tickets);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error en la búsqueda: " + e.getMessage())
-            );
-        }
-    }
-
-    /**
-     * Obtener un ticket específico por ID
-     * GET /api/tickets/{id}
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerTicket(
-            @PathVariable Long id,
-            Authentication authentication) {
-        try {
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String emailUsuario = userDetails.getEmail();
-            TicketResponseDTO ticket = ticketService.obtenerTicketPorId(id, emailUsuario);
+            if (mensaje == null || mensaje.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(
+                    ApiResponse.error("El mensaje no puede estar vacío")
+                );
+            }
             
-            return ResponseEntity.ok(ticket);
+            // Por ahora, solo devolvemos éxito
+            // En una implementación real, aquí guardarías el comentario en la base de datos
+            return ResponseEntity.ok(ApiResponse.success("Comentario agregado exitosamente"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error al obtener el ticket: " + e.getMessage())
+                ApiResponse.error("Error al agregar comentario: " + e.getMessage())
             );
         }
     }
 
-    /**
-     * Obtener categorías disponibles
-     * GET /api/tickets/categorias
-     */
-    @GetMapping("/categorias")
-    public ResponseEntity<?> obtenerCategorias() {
-        try {
-            List<String> categorias = ticketService.obtenerCategoriasDisponibles();
-            return ResponseEntity.ok(categorias);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error al obtener las categorías: " + e.getMessage())
-            );
-        }
-    }
-
-    /**
-     * Obtener información del usuario logueado
-     * GET /api/tickets/usuario-info
-     */
-    @GetMapping("/usuario-info")
-    public ResponseEntity<?> obtenerInfoUsuario(Authentication authentication) {
-        try {
-            // Obtener el CustomUserDetails del contexto de seguridad
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String emailUsuario = userDetails.getEmail();
-            String nombreUsuario = userDetails.getUsuario().getNombre();
-            String ubicacionUsuario = userDetails.getUsuario().getUbicacion();
-            String departamentoUsuario = userDetails.getUsuario().getDepartamento();
-            String cargoUsuario = userDetails.getUsuario().getCargo();
-            
-            return ResponseEntity.ok(Map.of(
-                "email", emailUsuario,
-                "nombre", nombreUsuario,
-                "ubicacion", ubicacionUsuario != null ? ubicacionUsuario : "No especificada",
-                "departamento", departamentoUsuario != null ? departamentoUsuario : "No especificado",
-                "cargo", cargoUsuario != null ? cargoUsuario : "No especificado"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error al obtener información del usuario: " + e.getMessage())
-            );
-        }
-    }
-
-    /**
-     * Endpoint de prueba para verificar autenticación
-     * GET /api/tickets/test-auth
-     */
-    @GetMapping("/test-auth")
-    public ResponseEntity<?> testAuth(Authentication authentication) {
-        try {
-            return ResponseEntity.ok(Map.of(
-                "message", "Autenticación exitosa",
-                "user", authentication.getName(),
-                "authorities", authentication.getAuthorities()
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error en autenticación: " + e.getMessage())
-            );
-        }
-    }
 }

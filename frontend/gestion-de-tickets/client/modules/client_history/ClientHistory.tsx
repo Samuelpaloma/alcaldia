@@ -4,22 +4,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/i18n";
-import { getTickets, subscribe, Ticket, reopenTicket, loadTickets, getLoadingState } from "../client_tickets/apiStore";
+import { useTickets } from "../../hooks/use-tickets";
+import { reopenTicket } from "../client_tickets/apiStore";
 import { isAuthenticated } from "../auth/auth";
+import { useNavigate } from "react-router-dom";
 import { 
   Clock, 
   CheckCircle, 
   XCircle, 
   AlertCircle, 
   Wrench,
-  Eye,
-  MessageSquare
+  Eye
 } from "lucide-react";
 
 export default function ClientHistory(){
   const { t } = useI18n();
-  const [tickets, setTickets] = useState<Ticket[]>(getTickets());
-  const { isLoading, error } = getLoadingState();
+  const navigate = useNavigate();
+  const { tickets, isLoading, error } = useTickets();
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
@@ -82,19 +83,11 @@ export default function ClientHistory(){
       day: '2-digit'
     });
   };
-  
-  useEffect(() => {
-    const unsubscribe = subscribe(() => setTickets(getTickets()));
-    
-    // Solo cargar tickets si el usuario está autenticado
-    if (isAuthenticated()) {
-      loadTickets();
-    }
-    
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+
+  const scrollToTracking = (ticketId: string) => {
+    // Navegar a la página de seguimiento con el ticket seleccionado
+    navigate(`/client/seguimiento?ticket=${ticketId}`);
+  };
   return (
     <div className="section grid gap-6">
       <div>
@@ -147,7 +140,7 @@ export default function ClientHistory(){
                     </TableCell>
                     <TableCell>
                       <Badge className={getPriorityColor(ticket.priority)}>
-                        {ticket.priority.toUpperCase()}
+                        {ticket.priority === 'medium' ? 'MEDIA' : ticket.priority.toUpperCase()}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -171,26 +164,20 @@ export default function ClientHistory(){
                           size="sm" 
                           variant="outline" 
                           className="flex items-center gap-1"
-                          title="Ver detalles"
+                          title="Ver seguimiento del ticket"
+                          onClick={() => scrollToTracking(ticket.id.toString())}
                         >
                           <Eye className="w-3 h-3" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex items-center gap-1"
-                          title="Chat"
-                        >
-                          <MessageSquare className="w-3 h-3" />
-                        </Button>
-                        {ticket.status === "closed" && (
+                        {(ticket.status === "closed" || ticket.status === "resolved") && (
                           <Button 
                             size="sm" 
                             variant="outline" 
                             onClick={()=>reopenTicket(ticket.id)}
                             className="text-xs"
+                            title="Reabrir ticket"
                           >
-                            {t("client.reopen")}
+                            Reabrir
                           </Button>
                         )}
                       </div>

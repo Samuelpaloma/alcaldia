@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -149,22 +150,24 @@ public class AdminService {
         
         return new TicketResponseDTO(
             ticket.getId(),
-            ticket.getConsulta(), // Usar consulta como asunto
+            ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
             ticket.getDescripcion(),
             ticket.getPrioridad(),
             ticket.getEstado(),
             ticket.getCreador().getEmail(),
+            ticket.getCreador().getNombreCompleto(), // Nombre del creador
             ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
             ticket.getFechaCreacion(),
             ticket.getFechaActualizacion(),
-            ticket.getCreador().getNombreCompleto(),
+            ticket.getCreador().getNombreCompleto(), // Nombre del formulario (mismo que creador)
             ticket.getUbicacion(),
-            ticket.getConsulta(),
+            ticket.getConsulta(), // consulta completa para descripción
             ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
             ticket.getArchivoAdjunto(),
             ticket.getNombreArchivo(),
             evidenciasDTO,
-            historialDTO
+            historialDTO,
+            new ArrayList<>() // historialAsignaciones vacío por ahora
         );
     }
     

@@ -8,13 +8,14 @@ import { useI18n } from "@/i18n";
 import { createTicket, Priority } from "../client_tickets/apiStore";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { useUserInfo } from "@/hooks/use-user-info";
-import { Bot } from "lucide-react"; // Added for bot icon
+import { Bot, Building, Calculator, Users, Folder, Monitor, Database, Wifi, Code, Wrench, Shield, User, MessageSquare, Info, FileText, Upload, Send, CheckCircle, AlertCircle, Clock, X, Loader2 } from "lucide-react";
 
 interface SenaOption {
   id: string;
   title: string;
   description?: string;
   children?: SenaOption[];
+  icon?: React.ComponentType<{ className?: string }>;
 }
 
 interface ChatMessage {
@@ -39,21 +40,25 @@ export default function CreateTicket() {
         id: "administracion",
         title: t("sena.administration"),
         description: t("sena.administration.desc"),
+        icon: Building,
         children: [
           {
             id: "contabilidad",
             title: t("sena.accounting"),
-            description: t("sena.accounting.desc")
+            description: t("sena.accounting.desc"),
+            icon: Calculator
           },
           {
             id: "recursos_humanos",
             title: t("sena.human_resources"),
-            description: t("sena.human_resources.desc")
+            description: t("sena.human_resources.desc"),
+            icon: Users
           },
           {
             id: "gestion_documental",
             title: t("sena.document_management"),
-            description: t("sena.document_management.desc")
+            description: t("sena.document_management.desc"),
+            icon: Folder
           }
         ]
       },
@@ -61,21 +66,25 @@ export default function CreateTicket() {
         id: "tecnologia",
         title: t("sena.technology"),
         description: t("sena.technology.desc"),
+        icon: Monitor,
         children: [
           {
             id: "sistemas",
             title: t("sena.information_systems"),
-            description: t("sena.information_systems.desc")
+            description: t("sena.information_systems.desc"),
+            icon: Database
           },
           {
             id: "redes",
             title: t("sena.networks"),
-            description: t("sena.networks.desc")
+            description: t("sena.networks.desc"),
+            icon: Wifi
           },
           {
             id: "desarrollo",
             title: t("sena.development"),
-            description: t("sena.development.desc")
+            description: t("sena.development.desc"),
+            icon: Code
           }
         ]
       },
@@ -83,21 +92,25 @@ export default function CreateTicket() {
         id: "infraestructura",
         title: t("sena.infrastructure"),
         description: t("sena.infrastructure.desc"),
+        icon: Wrench,
         children: [
           {
             id: "mantenimiento",
             title: t("sena.maintenance"),
-            description: t("sena.maintenance.desc")
+            description: t("sena.maintenance.desc"),
+            icon: Wrench
           },
           {
             id: "limpieza",
             title: t("sena.cleaning"),
-            description: t("sena.cleaning.desc")
+            description: t("sena.cleaning.desc"),
+            icon: Shield
           },
           {
             id: "seguridad",
             title: t("sena.security"),
-            description: t("sena.security.desc")
+            description: t("sena.security.desc"),
+            icon: Shield
           }
         ]
       },
@@ -105,21 +118,25 @@ export default function CreateTicket() {
         id: "atencion_ciudadana",
         title: t("sena.citizen_service"),
         description: t("sena.citizen_service.desc"),
+        icon: User,
         children: [
           {
             id: "tramites",
             title: t("sena.procedures"),
-            description: t("sena.procedures.desc")
+            description: t("sena.procedures.desc"),
+            icon: FileText
           },
           {
             id: "quejas",
             title: t("sena.complaints"),
-            description: t("sena.complaints.desc")
+            description: t("sena.complaints.desc"),
+            icon: MessageSquare
           },
           {
             id: "informacion",
             title: t("sena.information"),
-            description: t("sena.information.desc")
+            description: t("sena.information.desc"),
+            icon: Info
           }
         ]
       }
@@ -364,10 +381,18 @@ export default function CreateTicket() {
                 placeholder={userLoading ? t("client.loading") : ""}
               />
               {userLoading && <span className="text-xs text-muted-foreground">{t("client.loading_user_info")}</span>}
-              {!userLoading && <span className="text-xs text-muted-foreground">{t("client.auto_filled")}</span>}
             </label>
             <label className="grid gap-1">
-              <span className="label text-sm">{t("client.form.location")}</span>
+              <span className="label text-sm flex items-center gap-2">
+                {t("client.form.location")}
+                <div className="group relative">
+                  <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    Para cambiar el departamento o área, dirígete a Configuración → Perfil → Ubicación, y selecciona el área donde actualmente te encuentras.
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </span>
               <Input 
                 value={location} 
                 disabled={true}
@@ -375,7 +400,6 @@ export default function CreateTicket() {
                 placeholder={userLoading ? t("client.loading") : ""}
               />
               {userLoading && <span className="text-xs text-muted-foreground">{t("client.loading_user_info")}</span>}
-              {!userLoading && <span className="text-xs text-muted-foreground">{t("client.auto_filled")}</span>}
             </label>
             <div className="grid gap-1 md:col-span-2">
               <span className="label text-sm">{t("client.chat.describe_query")}</span>
@@ -416,10 +440,19 @@ export default function CreateTicket() {
                         onClick={() => handleOptionSelect(option)}
                         className="w-full text-left p-3 border border-border rounded-lg hover:bg-primary/10 hover:border-primary transition-colors bg-background"
                       >
-                        <div className="font-medium text-foreground">{option.title}</div>
-                        {option.description && (
-                          <div className="text-sm text-muted-foreground mt-1">{option.description}</div>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {option.icon && (
+                            <div className="flex-shrink-0">
+                              <option.icon className="h-5 w-5 text-primary" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-foreground">{option.title}</div>
+                            {option.description && (
+                              <div className="text-sm text-muted-foreground mt-1">{option.description}</div>
+                            )}
+                          </div>
+                        </div>
                       </button>
                     ))}
                     

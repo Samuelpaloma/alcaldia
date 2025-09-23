@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api, TicketResponseDTO, UsuarioDTO, CategoriaSimpleDTO, AsignarTicketRequestDTO } from '../../../shared/api';
+import { api, TicketResponseDTO, UsuarioDTO, CategoriaSimpleDTO } from '../../../shared/api';
 import { 
   Search, 
   Filter, 
@@ -16,6 +16,7 @@ import {
   FileText,
   Eye,
   UserPlus,
+  UserCheck,
   X,
   MessageSquare,
   Send
@@ -77,8 +78,10 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
   }, []);
 
   const filteredTickets = (tickets || []).filter(ticket => {
+    // Buscar solo en asunto y descripción manual (si existe)
+    const descripcion = ticket.descripcion || '';
     const matchesSearch = ticket.asunto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (ticket.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
+                         descripcion.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'TODOS' || ticket.estado === statusFilter;
     const matchesPriority = priorityFilter === 'TODAS' || ticket.prioridad === priorityFilter;
     
@@ -89,18 +92,19 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
     if (!selectedTicket || !selectedTecnico) return;
     
     try {
-      const request: AsignarTicketRequestDTO = {
-        ticketId: selectedTicket.id,
-        tecnicoId: parseInt(selectedTecnico)
-      };
+      // Si ya tiene técnico asignado, es una escalación
+      if (selectedTicket.tecnicoEmail) {
+        await api.escalarTicket(selectedTicket.id, parseInt(selectedTecnico));
+      } else {
+        await api.asignarTicket(selectedTicket.id, parseInt(selectedTecnico));
+      }
       
-      await api.assignTicket(request);
       await loadData(); // Recargar datos
       setShowAssignModal(false);
       setSelectedTicket(null);
       setSelectedTecnico('');
     } catch (err) {
-      console.error('Error asignando ticket:', err);
+      console.error('Error asignando/escalando ticket:', err);
     }
   };
 
@@ -275,15 +279,21 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                   
                   <div className="mb-4 flex-1">
                     <h3 className="font-semibold text-foreground mb-2 text-base leading-tight">{ticket.asunto}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                      {ticket.descripcion && ticket.descripcion.length > 100 
-                        ? `${ticket.descripcion.substring(0, 100)}...` 
-                        : ticket.descripcion || 'Sin descripción'
-                      }
-                    </p>
+                    {ticket.descripcion && (
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {ticket.descripcion.length > 100 
+                          ? `${ticket.descripcion.substring(0, 100)}...` 
+                          : ticket.descripcion}
+                      </p>
+                    )}
                   </div>
                   
                   <div className="space-y-2 mb-4">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-medium">Creador:</span>
+                      <span className="text-foreground font-medium">{ticket.creadorNombre || ticket.nombre || 'N/A'}</span>
+                    </div>
+                    
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-muted-foreground font-medium">Prioridad:</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-semibold uppercase ${getPriorityColor(ticket.prioridad)}`}>
@@ -303,12 +313,12 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                       </span>
                     </div>
                     
-                    {ticket.tecnicoAsignado && (
-                      <div className="meta-item">
-                        <span className="meta-label">Técnico:</span>
-                        <span className="meta-value">{ticket.tecnicoAsignado}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground font-medium">Técnico:</span>
+                      <span className="text-foreground font-medium">
+                        {ticket.tecnicoEmail || 'Sin asignar'}
+                      </span>
+                    </div>
                   </div>
                   
                   <div className="flex gap-2 mt-auto pt-4">
@@ -321,8 +331,17 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                       }}
                       className="flex-1 h-8 text-xs font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
                     >
-                      <UserPlus className="w-3 h-3 mr-1.5" />
-                      Asignar
+                      {ticket.tecnicoEmail ? (
+                        <>
+                          <UserCheck className="w-3 h-3 mr-1.5" />
+                          Escalar
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-3 h-3 mr-1.5" />
+                          Asignar
+                        </>
+                      )}
                     </Button>
                     
                     <Button
@@ -347,7 +366,9 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3 className="modal-title">Asignar Ticket #{selectedTicket.id}</h3>
+              <h3 className="modal-title">
+                {selectedTicket.tecnicoEmail ? 'Escalar Ticket' : 'Asignar Ticket'} #{selectedTicket.id}
+              </h3>
               <button
                 onClick={() => setShowAssignModal(false)}
                 className="modal-close"
@@ -395,8 +416,17 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                 disabled={!selectedTecnico}
                 className="btn-primary"
               >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Asignar Ticket
+                {selectedTicket.tecnicoEmail ? (
+                  <>
+                    <UserCheck className="w-4 h-4 mr-2" />
+                    Escalar Ticket
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Asignar Ticket
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -464,12 +494,14 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                     </p>
                   </div>
 
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Descripción</label>
-                    <p className="text-sm text-foreground mt-1">
-                      {selectedTicket.descripcion || 'Sin descripción'}
-                    </p>
-                  </div>
+                  {selectedTicket.descripcion && (
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Descripción</label>
+                      <p className="text-sm text-foreground mt-1">
+                        {selectedTicket.descripcion}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/i18n";
 import { api } from "@shared/api";
-import { getTickets, subscribe, Ticket } from "../client_tickets/apiStore";
+import { useTickets } from "../../hooks/use-tickets";
+import { addComment } from "../client_tickets/apiStore";
+import { useSearchParams } from "react-router-dom";
 import { 
   Clock, 
   User, 
@@ -19,6 +21,7 @@ import {
   FileText,
   Send
 } from "lucide-react";
+import ChatSystem from "./ChatSystem";
 
 interface TicketTracking {
   id: number;
@@ -40,7 +43,8 @@ interface TicketTracking {
 
 export default function ClientTracking() {
   const { t } = useI18n();
-  const [tickets, setTickets] = useState<Ticket[]>(getTickets());
+  const [searchParams] = useSearchParams();
+  const { tickets, isLoading: ticketsLoading, error: ticketsError } = useTickets();
   const [selected, setSelected] = useState<string | undefined>(tickets[0]?.id?.toString());
   const [trackingData, setTrackingData] = useState<TicketTracking | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,20 +53,34 @@ export default function ClientTracking() {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const unsub = subscribe(() => setTickets(getTickets()));
-    return () => unsub();
-  }, []);
-
   const ticket = useMemo(() => tickets.find(t => t.id.toString() === selected), [tickets, selected]);
 
   // Cargar datos de seguimiento cuando se selecciona un ticket
   useEffect(() => {
     if (selected) {
-      // Por ahora, no cargamos datos del backend, usamos los datos locales
-      // loadTrackingData(parseInt(selected));
+      // Cargar automáticamente los datos del ticket seleccionado
+      loadTrackingData(parseInt(selected));
     }
   }, [selected]);
+
+  // Cargar automáticamente el primer ticket si hay tickets disponibles
+  useEffect(() => {
+    if (tickets.length > 0 && !selected) {
+      setSelected(tickets[0].id.toString());
+    }
+  }, [tickets, selected]);
+
+  // Detectar parámetro de ticket en la URL y seleccionarlo
+  useEffect(() => {
+    const ticketParam = searchParams.get('ticket');
+    if (ticketParam && tickets.length > 0) {
+      // Verificar si el ticket existe en la lista
+      const ticketExists = tickets.some(ticket => ticket.id.toString() === ticketParam);
+      if (ticketExists) {
+        setSelected(ticketParam);
+      }
+    }
+  }, [searchParams, tickets]);
 
   const loadTrackingData = async (ticketId: number) => {
     try {
@@ -151,26 +169,11 @@ export default function ClientTracking() {
     setIsSending(true);
 
     try {
-      // TODO: Implementar envío de mensaje al backend
-      // await api.sendTicketMessage(parseInt(selected), messageText);
+      // Enviar mensaje al backend
+      await api.enviarComentario(parseInt(selected), messageText);
       
-      // Por ahora, agregamos el mensaje localmente a los eventos del ticket
-      const newEvent = {
-        at: new Date().toISOString(),
-        author: 'client' as const,
-        message: messageText,
-        type: 'comment' as const
-      };
-
-      // Actualizar el ticket en el store local
-      const updatedTickets = tickets.map(t => 
-        t.id.toString() === selected 
-          ? { ...t, events: [...(t.events || []), newEvent] }
-          : t
-      );
-      
-      // Actualizar el estado local
-      setTickets(updatedTickets);
+      // Agregar comentario localmente usando el apiStore
+      addComment(selected, 'client', messageText);
       
     } catch (error) {
       console.error('Error enviando mensaje:', error);
@@ -193,7 +196,7 @@ export default function ClientTracking() {
   }, [ticket?.events]);
 
   return (
-    <div className="section grid gap-6">
+    <div className="section grid gap-6" data-section="tracking">
       <div>
         <h1 className="page-title">{t("client.tracking_title")}</h1>
         <p className="page-subtitle">{t("client.tracking_desc")}</p>
@@ -223,12 +226,12 @@ export default function ClientTracking() {
           {/* Información del Ticket Seleccionado */}
           <div className="lg:col-span-1 space-y-4">
             <Card>
-              <CardHeader>
+            <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="w-5 h-5" />
                   Información del ticket
                 </CardTitle>
-              </CardHeader>
+            </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between">
@@ -266,7 +269,7 @@ export default function ClientTracking() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Ubicación:</span>
                     <span className="text-sm">{ticket.location}</span>
-                  </div>
+                </div>
                 </div>
               </CardContent>
             </Card>
@@ -288,10 +291,10 @@ export default function ClientTracking() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Cerrado:</span>
                     <span className="text-sm">{formatTimestamp(ticket.closedAt)}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+              )}
+            </CardContent>
+          </Card>
           </div>
 
           {/* Chat y Comunicación */}
@@ -378,15 +381,15 @@ export default function ClientTracking() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center text-sm text-muted-foreground">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center text-sm text-muted-foreground">
               <MessageSquare className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <p>Selecciona un ticket para ver su seguimiento</p>
               <p className="text-xs mt-1">Usa el dropdown de arriba para elegir un ticket</p>
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </CardContent>
+              </Card>
       )}
     </div>
   );

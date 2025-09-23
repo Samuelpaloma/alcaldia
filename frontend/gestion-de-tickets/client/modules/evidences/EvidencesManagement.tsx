@@ -1,152 +1,168 @@
 import React, { useState, useEffect } from 'react';
-import { api, EvidenciaResponseDTO } from '../../../shared/api';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { api, TicketResponseDTO } from '../../../shared/api';
 import './EvidencesManagement.css';
+import { 
+  Download, 
+  Eye, 
+  FileText, 
+  Image, 
+  File, 
+  Calendar,
+  User,
+  Search,
+  Filter,
+  Upload,
+  Trash2,
+  AlertCircle
+} from 'lucide-react';
 
 interface EvidencesManagementProps {
   userRole: string;
-  ticketId?: number;
 }
 
-const EvidencesManagement: React.FC<EvidencesManagementProps> = ({ userRole, ticketId }) => {
-  const [evidencias, setEvidencias] = useState<EvidenciaResponseDTO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+interface Evidencia {
+  id: number;
+  nombreArchivo: string;
+  descripcion: string;
+  fechaSubida: string;
+  subidoPor: string;
+  tipoArchivo: string;
+  tamaño: number;
+  ticketId: number;
+}
 
-  // Cargar evidencias
-  const loadEvidencias = async () => {
-    if (!ticketId) return;
-    
+export const EvidencesManagement: React.FC<EvidencesManagementProps> = ({ userRole }) => {
+  const { toast } = useToast();
+  const [tickets, setTickets] = useState<TicketResponseDTO[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<TicketResponseDTO | null>(null);
+  const [evidencias, setEvidencias] = useState<Evidencia[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'images' | 'documents' | 'other'>('all');
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [uploadData, setUploadData] = useState({
+    archivo: null as File | null,
+    descripcion: ''
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const loadTickets = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      const response = await api.getEvidenciasPorTicket(ticketId);
-      setEvidencias(response);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar evidencias');
-      console.error('Error cargando evidencias:', err);
+      const ticketsData = await api.getTodosLosTickets();
+      setTickets(ticketsData);
+    } catch (error) {
+      console.error('Error cargando tickets:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los tickets",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Cargar evidencias al montar el componente
-  useEffect(() => {
-    loadEvidencias();
-  }, [ticketId]);
-
-  // Manejar selección de archivo
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validar tamaño del archivo (máximo 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        setError('El archivo es demasiado grande. Máximo 10MB.');
-        return;
-      }
-      
-      // Validar tipo de archivo
-      const allowedTypes = [
-        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-        'application/pdf', 'text/plain', 'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ];
-      
-      if (!allowedTypes.includes(file.type)) {
-        setError('Tipo de archivo no permitido. Solo se permiten imágenes, PDFs y documentos de Office.');
-        return;
-      }
-      
-      setSelectedFile(file);
-      setError(null);
+  const loadEvidencias = async (ticketId: number) => {
+    try {
+      const evidenciasData = await api.getEvidenciasPorTicket(ticketId);
+      setEvidencias(evidenciasData);
+    } catch (error) {
+      console.error('Error cargando evidencias:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las evidencias",
+        variant: "destructive",
+      });
     }
   };
 
-  // Subir evidencia
-  const handleUpload = async () => {
-    if (!selectedFile || !ticketId) return;
-
+  const handleDownload = async (ticketId: number, nombreArchivo: string) => {
     try {
-      setUploading(true);
-      setError(null);
-
-      // Convertir archivo a base64
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const base64Content = reader.result as string;
-          const base64Data = base64Content.split(',')[1]; // Remover el prefijo data:type;base64,
-          
-          await api.subirEvidencia({
-            ticketId,
-            nombreArchivo: selectedFile.name,
-            tipoArchivo: selectedFile.type,
-            contenidoArchivo: base64Data
-          });
-
-          setShowUploadModal(false);
-          setSelectedFile(null);
-          loadEvidencias();
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Error al subir evidencia');
-          console.error('Error subiendo evidencia:', err);
-        } finally {
-          setUploading(false);
-        }
-      };
-      
-      reader.readAsDataURL(selectedFile);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al procesar archivo');
-      console.error('Error procesando archivo:', err);
-      setUploading(false);
-    }
-  };
-
-  // Descargar evidencia
-  const handleDownload = async (evidencia: EvidenciaResponseDTO) => {
-    try {
-      const response = await api.descargarEvidencia(evidencia.ticketId, evidencia.nombreArchivo);
-      
-      // Crear enlace de descarga
-      const blob = new Blob([response], { type: evidencia.tipoArchivo });
+      const blob = await api.descargarEvidencia(ticketId, nombreArchivo);
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = evidencia.nombreCompletoArchivo;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreArchivo;
+      document.body.appendChild(a);
+      a.click();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al descargar evidencia');
-      console.error('Error descargando evidencia:', err);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error descargando archivo:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo descargar el archivo",
+        variant: "destructive",
+      });
     }
   };
 
-  // Obtener icono según tipo de archivo
+  const handleUpload = async () => {
+    if (!selectedTicket || !uploadData.archivo) return;
+
+    try {
+      setSaving(true);
+      await api.subirEvidencia(
+        selectedTicket.id,
+        uploadData.archivo,
+        uploadData.descripcion
+      );
+      await loadEvidencias(selectedTicket.id);
+      setShowUploadDialog(false);
+      setUploadData({ archivo: null, descripcion: '' });
+      toast({
+        title: "Evidencia subida",
+        description: "La evidencia se subió correctamente",
+      });
+    } catch (error) {
+      console.error('Error subiendo evidencia:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo subir la evidencia",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getFileIcon = (tipoArchivo: string) => {
     if (tipoArchivo.startsWith('image/')) {
-      return 'fas fa-image';
-    } else if (tipoArchivo === 'application/pdf') {
-      return 'fas fa-file-pdf';
+      return <Image className="h-5 w-5 text-blue-500" />;
+    } else if (tipoArchivo.includes('pdf')) {
+      return <FileText className="h-5 w-5 text-red-500" />;
     } else if (tipoArchivo.includes('word') || tipoArchivo.includes('document')) {
-      return 'fas fa-file-word';
-    } else if (tipoArchivo.includes('excel') || tipoArchivo.includes('spreadsheet')) {
-      return 'fas fa-file-excel';
-    } else if (tipoArchivo === 'text/plain') {
-      return 'fas fa-file-alt';
+      return <FileText className="h-5 w-5 text-blue-500" />;
     } else {
-      return 'fas fa-file';
+      return <File className="h-5 w-5 text-gray-500" />;
     }
   };
 
-  // Formatear tamaño de archivo
+  const getFileTypeColor = (tipoArchivo: string) => {
+    if (tipoArchivo.startsWith('image/')) {
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    } else if (tipoArchivo.includes('pdf')) {
+      return 'bg-red-100 text-red-800 border-red-200';
+    } else if (tipoArchivo.includes('word') || tipoArchivo.includes('document')) {
+      return 'bg-green-100 text-green-800 border-green-200';
+    } else {
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -155,172 +171,272 @@ const EvidencesManagement: React.FC<EvidencesManagementProps> = ({ userRole, tic
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Verificar permisos
-  const canManage = userRole === 'TECNICO' || userRole === 'ADMINISTRADOR' || userRole === 'SUPERADMIN';
-
-  if (!ticketId) {
-    return (
-      <div className="evidences-management">
-        <div className="no-ticket">
-          <i className="fas fa-exclamation-triangle"></i>
-          <h3>No hay ticket seleccionado</h3>
-          <p>Selecciona un ticket para ver sus evidencias.</p>
-        </div>
-      </div>
-    );
-  }
+  const filteredEvidencias = evidencias.filter(evidencia => {
+    const matchesSearch = evidencia.nombreArchivo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         evidencia.descripcion.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFilter = filterType === 'all' ||
+                         (filterType === 'images' && evidencia.tipoArchivo.startsWith('image/')) ||
+                         (filterType === 'documents' && (evidencia.tipoArchivo.includes('pdf') || evidencia.tipoArchivo.includes('document'))) ||
+                         (filterType === 'other' && !evidencia.tipoArchivo.startsWith('image/') && !evidencia.tipoArchivo.includes('pdf') && !evidencia.tipoArchivo.includes('document'));
+    
+    return matchesSearch && matchesFilter;
+  });
 
   return (
-    <div className="evidences-management">
-      <div className="evidences-header">
-        <h3>Evidencias del Ticket #{ticketId}</h3>
-        {canManage && (
-          <button 
-            className="btn btn-primary"
-            onClick={() => setShowUploadModal(true)}
-          >
-            <i className="fas fa-upload"></i> Subir Evidencia
-          </button>
-        )}
-      </div>
-
-      {error && (
-        <div className="alert alert-error">
-          <i className="fas fa-exclamation-circle"></i>
-          {error}
+    <div className="evidences-module">
+      <div className="module-header">
+        <div className="header-content">
+          <h1 className="page-title">Gestión de Evidencias</h1>
+          <p className="page-subtitle">Administra las evidencias de los tickets</p>
         </div>
-      )}
-
-      {/* Lista de evidencias */}
-      <div className="evidences-list">
-        {loading ? (
-          <div className="loading">
-            <i className="fas fa-spinner fa-spin"></i>
-            Cargando evidencias...
-          </div>
-        ) : evidencias.length === 0 ? (
-          <div className="empty-state">
-            <i className="fas fa-folder-open"></i>
-            <h4>No hay evidencias</h4>
-            <p>Este ticket no tiene evidencias adjuntas.</p>
-            {canManage && (
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowUploadModal(true)}
-              >
-                <i className="fas fa-upload"></i> Subir Primera Evidencia
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="evidences-grid">
-            {evidencias.map((evidencia) => (
-              <div key={evidencia.idEvidencia} className="evidence-card">
-                <div className="evidence-icon">
-                  <i className={getFileIcon(evidencia.tipoArchivo)}></i>
-                </div>
-                
-                <div className="evidence-info">
-                  <h4 className="evidence-name">{evidencia.nombreArchivo}</h4>
-                  <p className="evidence-details">
-                    <span className="evidence-type">{evidencia.tipoArchivo}</span>
-                    <span className="evidence-size">{formatFileSize(evidencia.tamañoArchivo)}</span>
-                  </p>
-                  <p className="evidence-date">
-                    Subido el {new Date(evidencia.fechaSubida).toLocaleDateString()} por {evidencia.subidoPor.nombre}
-                  </p>
-                </div>
-                
-                <div className="evidence-actions">
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() => handleDownload(evidencia)}
-                    title="Descargar"
-                  >
-                    <i className="fas fa-download"></i>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="header-actions">
+          {selectedTicket && (
+            <Button onClick={() => setShowUploadDialog(true)} className="upload-btn">
+              <Upload className="h-4 w-4" />
+              Subir Evidencia
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Modal de subir evidencia */}
-      {showUploadModal && (
-        <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Subir Evidencia</h3>
-              <button 
-                className="modal-close" 
-                onClick={() => setShowUploadModal(false)}
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="file-upload-area">
-                <input
-                  type="file"
-                  id="file-upload"
-                  onChange={handleFileSelect}
-                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                  style={{ display: 'none' }}
-                />
-                <label htmlFor="file-upload" className="file-upload-label">
-                  <i className="fas fa-cloud-upload-alt"></i>
-                  <span>Seleccionar archivo</span>
-                  <small>Máximo 10MB. Formatos: imágenes, PDF, Word, Excel, texto</small>
-                </label>
-                
-                {selectedFile && (
-                  <div className="selected-file">
-                    <i className={getFileIcon(selectedFile.type)}></i>
-                    <div className="file-info">
-                      <span className="file-name">{selectedFile.name}</span>
-                      <span className="file-size">{formatFileSize(selectedFile.size)}</span>
-                    </div>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => setSelectedFile(null)}
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Lista de Tickets */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tickets</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-96 overflow-y-auto">
+                {loading ? (
+                  <div className="p-4 space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="animate-pulse">
+                        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-muted rounded w-1/2"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : tickets.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    <FileText className="h-8 w-8 mx-auto mb-2" />
+                    <p>No hay tickets disponibles</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {tickets.map((ticket) => (
+                      <button
+                        key={ticket.id}
+                        onClick={() => {
+                          setSelectedTicket(ticket);
+                          loadEvidencias(ticket.id);
+                        }}
+                        className={`w-full text-left p-3 hover:bg-muted transition-colors ${
+                          selectedTicket?.id === ticket.id ? 'bg-muted border-r-2 border-primary' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium text-sm">#{ticket.id}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-1">
+                          {ticket.asunto}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(ticket.fechaCreacion).toLocaleDateString()}
+                        </p>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Evidencias del Ticket Seleccionado */}
+        <div className="lg:col-span-2">
+          {selectedTicket ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Evidencias - Ticket #{selectedTicket.id}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{selectedTicket.asunto}</p>
+              </CardHeader>
+              <CardContent>
+                {/* Filtros */}
+                <div className="flex flex-col md:flex-row gap-4 mb-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar evidencias..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={filterType === 'all' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('all')}
+                      size="sm"
+                    >
+                      Todas
+                    </Button>
+                    <Button
+                      variant={filterType === 'images' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('images')}
+                      size="sm"
+                    >
+                      Imágenes
+                    </Button>
+                    <Button
+                      variant={filterType === 'documents' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('documents')}
+                      size="sm"
+                    >
+                      Documentos
+                    </Button>
+                    <Button
+                      variant={filterType === 'other' ? 'default' : 'outline'}
+                      onClick={() => setFilterType('other')}
+                      size="sm"
+                    >
+                      Otros
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Lista de Evidencias */}
+                <div className="space-y-3">
+                  {filteredEvidencias.length === 0 ? (
+                    <div className="text-center py-8">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No hay evidencias para este ticket</p>
+                    </div>
+                  ) : (
+                    filteredEvidencias.map((evidencia) => (
+                      <div key={evidencia.id} className="flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-shrink-0">
+                          {getFileIcon(evidencia.tipoArchivo)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-medium text-sm truncate">{evidencia.nombreArchivo}</p>
+                            <Badge className={getFileTypeColor(evidencia.tipoArchivo)}>
+                              {evidencia.tipoArchivo.split('/')[1]?.toUpperCase() || 'FILE'}
+                            </Badge>
+                          </div>
+                          {evidencia.descripcion && (
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {evidencia.descripcion}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {evidencia.subidoPor}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(evidencia.fechaSubida).toLocaleDateString()}
+                            </span>
+                            <span>{formatFileSize(evidencia.tamaño)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownload(evidencia.ticketId, evidencia.nombreArchivo)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              // Aquí podrías implementar una vista previa
+                              toast({
+                                title: "Vista previa",
+                                description: "Función de vista previa en desarrollo",
+                              });
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Selecciona un ticket para ver sus evidencias</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* Dialog Subir Evidencia */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Subir Evidencia</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="archivo">Archivo</Label>
+              <Input
+                id="archivo"
+                type="file"
+                onChange={(e) => setUploadData({
+                  ...uploadData,
+                  archivo: e.target.files?.[0] || null
+                })}
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt"
+              />
+              <p className="text-xs text-muted-foreground">
+                Formatos permitidos: PDF, DOC, DOCX, JPG, PNG, GIF, TXT (máx. 10MB)
+              </p>
             </div>
-            
-            <div className="modal-footer">
-              <button 
-                className="btn btn-secondary" 
-                onClick={() => setShowUploadModal(false)}
-              >
+            <div className="space-y-2">
+              <Label htmlFor="descripcion">Descripción</Label>
+              <Textarea
+                id="descripcion"
+                value={uploadData.descripcion}
+                onChange={(e) => setUploadData({
+                  ...uploadData,
+                  descripcion: e.target.value
+                })}
+                placeholder="Describe el contenido de la evidencia"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button onClick={() => setShowUploadDialog(false)} variant="outline">
                 Cancelar
-              </button>
-              <button 
-                className="btn btn-primary" 
-                onClick={handleUpload}
-                disabled={!selectedFile || uploading}
+              </Button>
+              <Button 
+                onClick={handleUpload} 
+                disabled={saving || !uploadData.archivo}
               >
-                {uploading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i> Subiendo...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-upload"></i> Subir
-                  </>
-                )}
-              </button>
+                {saving ? 'Subiendo...' : 'Subir Evidencia'}
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
-
-export default EvidencesManagement;

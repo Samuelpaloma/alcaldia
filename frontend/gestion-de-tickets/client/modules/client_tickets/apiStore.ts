@@ -1,6 +1,6 @@
 import { api, TicketResponseDTO, TicketRequestDTO, HistorialTicketResponseDTO } from '@shared/api';
 
-export type TicketStatus = "open" | "in_progress" | "pending" | "resolved" | "closed";
+export type TicketStatus = "open" | "in_progress" | "pending" | "resolved" | "closed" | "ASIGNADO" | "ESCALADO" | "PENDIENTE" | "EN_EJECUCION" | "TERMINADO" | "CERRADO";
 export type Priority = "high" | "medium" | "low";
 
 // Adaptador para convertir TicketResponseDTO a Ticket del frontend
@@ -55,6 +55,36 @@ export function getLoadingState() {
 
 // Función para convertir TicketResponseDTO a Ticket
 function convertToTicket(dto: TicketResponseDTO): Ticket {
+  const events: TicketEvent[] = [
+    {
+      at: dto.fechaCreacion,
+      author: "system",
+      message: "Ticket creado",
+      type: "status"
+    }
+  ];
+
+  // Agregar eventos de asignación y escalación basados en el estado
+  if (dto.tecnicoAsignado) {
+    // Siempre mostrar la asignación inicial
+    events.push({
+      at: dto.fechaCreacion,
+      author: "system",
+      message: `Asignado a ${dto.tecnicoAsignado}`,
+      type: "status"
+    });
+    
+    // Si el estado es ESCALADO, mostrar mensaje de escalación
+    if (dto.estado === "ESCALADO") {
+      events.push({
+        at: dto.fechaActualizacion,
+        author: "system",
+        message: `Escalado a ${dto.tecnicoAsignado}`,
+        type: "status"
+      });
+    }
+  }
+
   return {
     id: dto.id.toString(),
     name: dto.creador?.nombre || 'Usuario',
@@ -63,23 +93,10 @@ function convertToTicket(dto: TicketResponseDTO): Ticket {
     priority: dto.prioridad,
     attachmentName: dto.nombreArchivo,
     status: dto.estado as TicketStatus,
-    technician: dto.tecnicoAsignado?.nombre || 'Sin asignar',
+    technician: dto.tecnicoAsignado || 'Sin asignar',
     createdAt: dto.fechaCreacion,
     closedAt: dto.estado === 'closed' ? dto.fechaActualizacion : undefined,
-    events: [
-      {
-        at: dto.fechaCreacion,
-        author: "system",
-        message: "Ticket creado",
-        type: "status"
-      },
-      ...(dto.tecnicoAsignado ? [{
-        at: dto.fechaCreacion,
-        author: "system" as const,
-        message: `Asignado a ${dto.tecnicoAsignado.nombre}`,
-        type: "status" as const
-      }] : [])
-    ]
+    events
   };
 }
 
@@ -216,6 +233,13 @@ export async function reopenTicket(id: string) {
   if (!ticket) return;
 
   try {
+    isLoading = true;
+    error = null;
+    notify();
+    
+    // Llamar a la API para reabrir el ticket
+    await api.reabrirTicket(parseInt(id));
+    
     // Actualizar el estado local
     ticket.status = "open";
     ticket.closedAt = undefined;
@@ -228,12 +252,15 @@ export async function reopenTicket(id: string) {
     
     notify();
     
-    // Aquí podrías agregar una llamada a la API para reabrir el ticket
-    // await api.reopenTicket(parseInt(id));
+    // Recargar la lista para obtener el estado actualizado del backend
+    await loadTickets();
     
   } catch (err) {
     error = err instanceof Error ? err.message : 'Error al reabrir ticket';
     console.error('Error reopening ticket:', err);
+    notify();
+  } finally {
+    isLoading = false;
     notify();
   }
 }

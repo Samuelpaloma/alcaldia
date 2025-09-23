@@ -77,6 +77,32 @@ public class AsignacionController {
     }
     
     /**
+     * Escalar ticket a otro técnico (escalación por dificultad)
+     * POST /api/asignaciones/escalar
+     */
+    @PostMapping("/escalar")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN', 'TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> escalarTicket(
+            @Valid @RequestBody AsignarTicketRequestDTO request,
+            Authentication authentication) {
+        try {
+            log.info("Escalando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailEscalador = userDetails.getEmail();
+            
+            AsignacionResponseDTO asignacion = asignacionService.escalarTicket(request, emailEscalador);
+            
+            return ResponseEntity.ok(asignacion);
+        } catch (Exception e) {
+            log.error("Error escalando ticket", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al escalar ticket: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
      * Desasignar ticket
      * DELETE /api/asignaciones/desasignar/{ticketId}
      */
@@ -136,6 +162,32 @@ public class AsignacionController {
             log.error("Error obteniendo tickets sin asignar", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener tickets sin asignar: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Reabrir ticket cerrado
+     * POST /api/asignaciones/reabrir/{ticketId}
+     */
+    @PostMapping("/reabrir/{ticketId}")
+    // @PreAuthorize("hasAnyRole('CLIENTE', 'ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
+    public ResponseEntity<?> reabrirTicket(
+            @PathVariable Long ticketId,
+            Authentication authentication) {
+        try {
+            log.info("Reabriendo ticket {}", ticketId);
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailReabridor = userDetails.getEmail();
+            
+            AsignacionResponseDTO asignacion = asignacionService.reabrirTicket(ticketId, emailReabridor);
+            
+            return ResponseEntity.ok(asignacion);
+        } catch (Exception e) {
+            log.error("Error reabriendo ticket", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al reabrir ticket: " + e.getMessage())
             );
         }
     }

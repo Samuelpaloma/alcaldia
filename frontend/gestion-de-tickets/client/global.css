@@ -157,3 +157,16 @@
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   transform: translateY(-2px);
 }
+
+/* Estilos para secciones de módulos */
+.section {
+  @apply p-6;
+}
+
+.page-title {
+  @apply text-2xl font-bold text-foreground mb-2;
+}
+
+.page-subtitle {
+  @apply text-muted-foreground text-sm;
+}

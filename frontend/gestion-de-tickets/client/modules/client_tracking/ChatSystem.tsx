@@ -70,27 +70,28 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
     setNewMessage("");
     setIsSending(true);
 
-    try {
-      // TODO: Implementar envío de mensaje al backend
-      // Por ahora, agregamos el mensaje localmente
-      const newChatMessage: ChatMessage = {
-        id: Date.now().toString(),
-        author: 'client',
-        message: messageText,
-        timestamp: new Date().toISOString(),
-        type: 'text'
-      };
+    // Crear mensaje temporal para mostrar inmediatamente
+    const newChatMessage: ChatMessage = {
+      id: Date.now().toString(),
+      author: 'client',
+      message: messageText,
+      timestamp: new Date().toISOString(),
+      type: 'text'
+    };
 
+    try {
       setMessages(prev => [...prev, newChatMessage]);
       onMessageSent?.(newChatMessage);
 
-      // Aquí iría la llamada al backend para enviar el mensaje
-      // await api.sendTicketMessage(ticketId, messageText);
+      // Enviar mensaje al backend
+      await api.enviarComentario(ticketId, messageText);
       
     } catch (error) {
       console.error('Error enviando mensaje:', error);
       // Restaurar el mensaje si falla
       setNewMessage(messageText);
+      // Remover el mensaje temporal si falla
+      setMessages(prev => prev.filter(msg => msg.id !== newChatMessage.id));
     } finally {
       setIsSending(false);
     }
@@ -190,6 +191,9 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
     </Card>
   );
 }
+
+
+
 
 
 

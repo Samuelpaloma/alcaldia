@@ -1,6 +1,5 @@
 package com.example.demo.superadmin.controller;
 
-import com.example.demo.admin.dto.request.ChangeTecnicoPasswordRequest;
 import com.example.demo.superadmin.dto.request.ConfiguracionRequestDTO;
 import com.example.demo.superadmin.dto.response.ConfiguracionResponseDTO;
 import com.example.demo.superadmin.service.ConfiguracionService;
@@ -342,18 +341,21 @@ public class SuperAdminController {
     @PreAuthorize("hasRole('SUPERADMIN')")
     public ResponseEntity<?> cambiarPasswordAdministrador(
             @PathVariable Long id,
-            @Valid @RequestBody ChangeTecnicoPasswordRequest request) {
+            @RequestBody Map<String, String> request) {
         try {
             log.info("Cambiando contraseña del administrador: {}", id);
             
+            String newPassword = request.get("newPassword");
+            String confirmPassword = request.get("confirmPassword");
+            
             // Validar que las contraseñas coincidan
-            if (!request.isPasswordMatching()) {
+            if (newPassword == null || confirmPassword == null || !newPassword.equals(confirmPassword)) {
                 return ResponseEntity.badRequest().body(
                     ApiResponse.error("Las contraseñas no coinciden")
                 );
             }
             
-            UsuarioDTO administrador = superAdminUsuarioService.cambiarPasswordAdministrador(id, request.getNewPassword());
+            UsuarioDTO administrador = superAdminUsuarioService.cambiarPasswordAdministrador(id, newPassword);
             return ResponseEntity.ok(administrador);
         } catch (Exception e) {
             log.error("Error cambiando contraseña del administrador", e);

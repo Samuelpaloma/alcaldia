@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Settings, X, User, Bell, Palette, Shield, Globe, AlertTriangle, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, X, User, Bell, Palette, Shield, Globe, AlertTriangle, Trash2, Mail, Phone, MapPin, Building, Calendar, Save, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useI18n } from "@/i18n";
 import { useSettings } from "@/hooks/use-settings";
+import { useToast } from "@/hooks/use-toast";
+import { api, UsuarioDTO, ChangePasswordRequest } from "../../../shared/api";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -18,9 +20,128 @@ interface SettingsModalProps {
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { t } = useI18n();
   const { settings, updateSetting } = useSettings();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  
+  // Estados para el perfil
+  const [profile, setProfile] = useState<UsuarioDTO | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editData, setEditData] = useState<Partial<UsuarioDTO>>({});
+  
+  // Estados para cambio de contraseña
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  // Cargar perfil cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && activeTab === "profile") {
+      loadProfile();
+    }
+  }, [isOpen, activeTab]);
+
+  const loadProfile = async () => {
+    try {
+      const profileData = await api.getMyProfile();
+      setProfile(profileData);
+      setEditData(profileData);
+    } catch (error) {
+      console.error('Error cargando perfil:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el perfil del usuario",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEdit = () => {
+    setEditing(true);
+    setEditData(profile || {});
+  };
+
+  const handleCancel = () => {
+    setEditing(false);
+    setEditData(profile || {});
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const updatedProfile = await api.updateMyProfile(editData);
+      setProfile(updatedProfile);
+      setEditing(false);
+      toast({
+        title: "Perfil actualizado",
+        description: "Los cambios se guardaron correctamente",
+      });
+    } catch (error) {
+      console.error('Error actualizando perfil:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el perfil",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const request: ChangePasswordRequest = {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword
+      };
+      
+      await api.changePassword(request);
+      
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      toast({
+        title: "Contraseña actualizada",
+        description: "La contraseña se cambió correctamente",
+      });
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo cambiar la contraseña",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleDeactivateAccount = () => {
     // Lógica para desactivar cuenta
@@ -90,50 +211,126 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <TabsContent value="profile" className="space-y-3">
                 <Card className="bg-card border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-foreground text-sm">{t("settings.personal_info")}</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-foreground text-sm">{t("settings.personal_info")}</CardTitle>
+                      {!editing && (
+                        <Button onClick={handleEdit} size="sm" variant="outline" className="h-7">
+                          <Edit3 className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                      )}
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="name" className="text-muted-foreground text-xs">{t("settings.full_name")}</Label>
-                        <Input
-                          id="name"
-                          value={settings.name}
-                          disabled
-                          className="bg-muted border-border text-muted-foreground cursor-not-allowed text-xs h-8"
-                        />
-                            <p className="text-xs text-muted-foreground mt-1">{t("settings.cannot_modify")}</p>
+                    {profile ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="nombre" className="text-muted-foreground text-xs">Nombre</Label>
+                          {editing ? (
+                            <Input
+                              id="nombre"
+                              value={editData.nombre || ''}
+                              onChange={(e) => setEditData({ ...editData, nombre: e.target.value })}
+                              className="bg-background border-input text-foreground text-xs h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
+                              <User className="h-3 w-3 text-muted-foreground" />
+                              <span>{profile.nombre}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="apellido" className="text-muted-foreground text-xs">Apellido</Label>
+                          {editing ? (
+                            <Input
+                              id="apellido"
+                              value={editData.apellido || ''}
+                              onChange={(e) => setEditData({ ...editData, apellido: e.target.value })}
+                              className="bg-background border-input text-foreground text-xs h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
+                              <User className="h-3 w-3 text-muted-foreground" />
+                              <span>{profile.apellido}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="email" className="text-muted-foreground text-xs">Email</Label>
+                          <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            <span>{profile.email}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">No se puede cambiar</p>
+                        </div>
+                        <div>
+                          <Label htmlFor="telefono" className="text-muted-foreground text-xs">Teléfono</Label>
+                          {editing ? (
+                            <Input
+                              id="telefono"
+                              value={editData.telefono || ''}
+                              onChange={(e) => setEditData({ ...editData, telefono: e.target.value })}
+                              className="bg-background border-input text-foreground text-xs h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
+                              <Phone className="h-3 w-3 text-muted-foreground" />
+                              <span>{profile.telefono || 'No especificado'}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="ubicacion" className="text-muted-foreground text-xs">Ubicación</Label>
+                          {editing ? (
+                            <Input
+                              id="ubicacion"
+                              value={editData.ubicacion || ''}
+                              onChange={(e) => setEditData({ ...editData, ubicacion: e.target.value })}
+                              className="bg-background border-input text-foreground text-xs h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
+                              <span>{profile.ubicacion || 'No especificada'}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="departamento" className="text-muted-foreground text-xs">Departamento</Label>
+                          {editing ? (
+                            <Input
+                              id="departamento"
+                              value={editData.departamento || ''}
+                              onChange={(e) => setEditData({ ...editData, departamento: e.target.value })}
+                              className="bg-background border-input text-foreground text-xs h-8"
+                            />
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
+                              <Building className="h-3 w-3 text-muted-foreground" />
+                              <span>{profile.departamento || 'No especificado'}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="email" className="text-muted-foreground text-xs">{t("settings.email")}</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={settings.email}
-                          disabled
-                          className="bg-muted border-border text-muted-foreground cursor-not-allowed text-xs h-8"
-                        />
-                            <p className="text-xs text-muted-foreground mt-1">{t("settings.cannot_modify")}</p>
+                    ) : (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+                        <p className="text-xs text-muted-foreground">Cargando perfil...</p>
                       </div>
-                      <div>
-                        <Label htmlFor="department" className="text-muted-foreground text-xs">{t("settings.department")}</Label>
-                        <Input
-                          id="department"
-                          value={settings.department}
-                          onChange={(e) => updateSetting("department", e.target.value)}
-                          className="bg-background border-input text-foreground text-xs h-8"
-                        />
+                    )}
+                    
+                    {editing && (
+                      <div className="flex gap-2 pt-2">
+                        <Button onClick={handleSave} disabled={saving} size="sm" className="h-7">
+                          <Save className="h-3 w-3 mr-1" />
+                          {saving ? 'Guardando...' : 'Guardar'}
+                        </Button>
+                        <Button onClick={handleCancel} variant="outline" size="sm" className="h-7">
+                          Cancelar
+                        </Button>
                       </div>
-                      <div>
-                        <Label htmlFor="position" className="text-muted-foreground text-xs">{t("settings.position")}</Label>
-                        <Input
-                          id="position"
-                          value={settings.position}
-                          onChange={(e) => updateSetting("position", e.target.value)}
-                          className="bg-background border-input text-foreground text-xs h-8"
-                        />
-                      </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -260,6 +457,58 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
               {/* Seguridad */}
               <TabsContent value="security" className="space-y-3">
+                {/* Cambio de Contraseña */}
+                <Card className="bg-card border-border">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-foreground text-sm">Cambio de Contraseña</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <Label htmlFor="currentPassword" className="text-muted-foreground text-xs">Contraseña Actual</Label>
+                      <Input
+                        id="currentPassword"
+                        type="password"
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                        className="bg-background border-input text-foreground text-xs h-8"
+                        placeholder="Ingresa tu contraseña actual"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newPassword" className="text-muted-foreground text-xs">Nueva Contraseña</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        className="bg-background border-input text-foreground text-xs h-8"
+                        placeholder="Ingresa tu nueva contraseña"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="confirmPassword" className="text-muted-foreground text-xs">Confirmar Nueva Contraseña</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        className="bg-background border-input text-foreground text-xs h-8"
+                        placeholder="Confirma tu nueva contraseña"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleChangePassword} 
+                      disabled={saving || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+                      size="sm" 
+                      className="h-7"
+                    >
+                      <Shield className="h-3 w-3 mr-1" />
+                      {saving ? 'Cambiando...' : 'Cambiar Contraseña'}
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Configuración de Seguridad */}
                 <Card className="bg-card border-border">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-foreground text-sm">{t("settings.security_config")}</CardTitle>

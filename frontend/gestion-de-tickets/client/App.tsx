@@ -31,6 +31,17 @@ import ClientTracking from "./modules/client_tracking/ClientTracking";
 import CreateTicket from "./modules/client_create/CreateTicket";
 import ClientProfile from "./modules/client_profile/ClientProfile";
 import ClientTickets from "./modules/client_tickets/ClientTickets";
+import CreateTicketPage from "./modules/client_pages/CreateTicketPage";
+import TrackingPage from "./modules/client_pages/TrackingPage";
+import HistoryPage from "./modules/client_pages/HistoryPage";
+import DashboardPage from "./modules/client_pages/DashboardPage";
+import { UserProfile } from "./modules/profile/UserProfile";
+import { CategoriesManagement } from "./modules/categories/CategoriesManagement";
+import { TechnicianOperations } from "./modules/technician/TechnicianOperations";
+import { TechnicianDashboard } from "./modules/technician/TechnicianDashboard";
+import { EvidencesManagement } from "./modules/evidences/EvidencesManagement";
+import { NotificationsCenter } from "./modules/notifications/NotificationsCenter";
+import TechnicianLayout from "./modules/_shared/TechnicianLayout";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +74,11 @@ const App = () => (
             {/* Client section (role-restricted) */}
             <Route path="/client" element={<RoleRoute role="client" />}>
               <Route element={<ClientLayout />}>
-                <Route index element={<ClientTickets />} />
+                <Route index element={<DashboardPage />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="crear" element={<CreateTicketPage />} />
+                <Route path="seguimiento" element={<TrackingPage />} />
+                <Route path="historial" element={<HistoryPage />} />
               </Route>
             </Route>
 
@@ -73,21 +88,32 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard userRole="admin" />} />
             <Route path="/tickets" element={<AdminDashboard userRole="admin" />} />
             <Route path="/users-roles" element={<AdminDashboard userRole="admin" />} />
-            <Route path="/evidences" element={<AdminDashboard userRole="admin" />} />
-            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/evidences" element={<EvidencesManagement userRole="admin" />} />
+            <Route path="/notifications" element={<NotificationsCenter userRole="admin" />} />
             <Route path="/system-configuration" element={<SystemConfiguration />} />
             <Route path="/assignment-rules" element={<AssignmentRules />} />
             <Route path="/tickets-history" element={<TicketsHistory />} />
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/ai-classification" element={<AiClassification />} />
+            <Route path="/categories" element={<CategoriesManagement userRole="admin" />} />
           </Route>
         </Route>
+
+            {/* Technician section (role-restricted) */}
+            <Route element={<RoleRoute role="tecnico" />}>
+              <Route element={<TechnicianLayout />}>
+                <Route path="/technician" element={<TechnicianDashboard userRole="tecnico" />} />
+                <Route path="/technician/tickets" element={<TechnicianOperations userRole="tecnico" />} />
+                <Route path="/technician/evidences" element={<EvidencesManagement userRole="tecnico" />} />
+              </Route>
+            </Route>
 
             {/* SuperAdmin section (role-restricted) */}
             <Route element={<SuperAdminLayout />}>
               <Route path="/superadmin" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
               <Route path="/superadmin/administradores" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
               <Route path="/superadmin/configuraciones" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/categories" element={<CategoriesManagement userRole="SUPERADMIN" />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

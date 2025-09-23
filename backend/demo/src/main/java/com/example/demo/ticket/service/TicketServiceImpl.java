@@ -26,6 +26,9 @@ import com.example.demo.evidencia.model.Evidencia;
 import com.example.demo.evidencia.repository.EvidenciaRepository;
 import com.example.demo.ticket.model.HistorialEstadoTicket;
 import com.example.demo.ticket.repository.HistorialEstadoTicketRepository;
+import com.example.demo.asignacion.model.HistorialAsignacion;
+import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
+import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
 
 @Service
 public class TicketServiceImpl implements TicketService {
@@ -44,6 +47,9 @@ public class TicketServiceImpl implements TicketService {
     
     @Autowired
     private HistorialEstadoTicketRepository historialRepository;
+    
+    @Autowired
+    private HistorialAsignacionRepository historialAsignacionRepository;
 
     @Override
     @Transactional
@@ -151,22 +157,24 @@ public class TicketServiceImpl implements TicketService {
     private TicketResponseDTO convertirTicketAResponseDTOBasico(Ticket ticket) {
         return new TicketResponseDTO(
                 ticket.getId(),
-                ticket.getConsulta(), // asunto
+                ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
                 ticket.getDescripcion(),
                 ticket.getPrioridad(),
                 ticket.getEstado(),
                 ticket.getCreador().getEmail(),
+                ticket.getCreador().getNombreCompleto(), // Nombre del creador
                 ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
                 ticket.getFechaCreacion(),
                 ticket.getFechaActualizacion(),
-                ticket.getCreador().getNombre(), // Nombre del usuario logueado
+                ticket.getCreador().getNombreCompleto(), // Nombre del formulario
                 ticket.getUbicacion(),
-                ticket.getConsulta(),
+                ticket.getConsulta(), // consulta completa para descripción
                 ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
                 ticket.getArchivoAdjunto(),
                 ticket.getNombreArchivo(),
                 null, // evidencias
-                null  // historialEstados
+                null, // historialEstados
+                null  // historialAsignaciones
         );
     }
 
@@ -200,24 +208,32 @@ public class TicketServiceImpl implements TicketService {
             .map(this::convertirHistorialAResponseDTO)
             .collect(Collectors.toList());
         
+        // Obtener historial de asignaciones
+        List<HistorialAsignacion> historialAsignaciones = historialAsignacionRepository.findByTicketIdOrderByFechaOperacionAsc(ticket.getId());
+        List<AsignacionResponseDTO> historialAsignacionesDTO = historialAsignaciones.stream()
+            .map(this::convertirHistorialAsignacionAResponseDTO)
+            .collect(Collectors.toList());
+        
         return new TicketResponseDTO(
             ticket.getId(),
-            ticket.getConsulta(), // asunto
+            ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
             ticket.getDescripcion(),
             ticket.getPrioridad(),
             ticket.getEstado(),
             ticket.getCreador().getEmail(),
+            ticket.getCreador().getNombreCompleto(), // Nombre del creador
             ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
             ticket.getFechaCreacion(),
             ticket.getFechaActualizacion(),
-            ticket.getCreador().getNombreCompleto(),
+            ticket.getCreador().getNombreCompleto(), // Nombre del formulario
             ticket.getUbicacion(),
-            ticket.getConsulta(),
+            ticket.getConsulta(), // consulta completa para descripción
             ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
             ticket.getArchivoAdjunto(),
             ticket.getNombreArchivo(),
             evidenciasDTO,
-            historialDTO
+            historialDTO,
+            historialAsignacionesDTO
         );
     }
     
@@ -234,6 +250,24 @@ public class TicketServiceImpl implements TicketService {
             .fechaSubida(evidencia.getFechaSubida())
             .subidoPor(evidencia.getSubidoPor().getNombreCompleto())
             .subidoPorEmail(evidencia.getSubidoPor().getEmail())
+            .build();
+    }
+    
+    private AsignacionResponseDTO convertirHistorialAsignacionAResponseDTO(HistorialAsignacion historial) {
+        return AsignacionResponseDTO.builder()
+            .ticketId(historial.getTicket().getId())
+            .ticketTitulo(historial.getTicket().getCategoria() != null ? 
+                         historial.getTicket().getCategoria().getNombre() : "Ticket")
+            .tecnicoId(historial.getTecnico() != null ? historial.getTecnico().getIdUsuario() : null)
+            .tecnicoNombre(historial.getTecnico() != null ? historial.getTecnico().getNombreCompleto() : null)
+            .tecnicoEmail(historial.getTecnico() != null ? historial.getTecnico().getEmail() : null)
+            .estadoAnterior(historial.getEstadoAnterior())
+            .estadoNuevo(historial.getEstadoNuevo())
+            .prioridad(historial.getTicket().getPrioridad())
+            .comentario(historial.getComentario())
+            .fechaAsignacion(historial.getFechaOperacion())
+            .asignadoPor(historial.getUsuarioQueAsigna().getNombreCompleto())
+            .tipoOperacion(historial.getTipoOperacion().name())
             .build();
     }
     

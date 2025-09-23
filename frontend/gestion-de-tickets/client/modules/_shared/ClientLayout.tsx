@@ -1,17 +1,19 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useI18n } from "@/i18n";
-import { Bell, Settings, LogOut } from "lucide-react";
+import { Bell, Settings, LogOut, X } from "lucide-react";
 import { logout, getAuth } from "../auth/auth";
-import NotificationsModal from "../notifications/NotificationsModal";
 import SettingsModal from "../system_configuration/SettingsModal";
 import LogoutModal from "../auth/LogoutModal";
 import { useSettings } from "@/hooks/use-settings";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import ClientNotifications from "../client_notifications/ClientNotifications";
 import "./AppLayout.css";
 
 export default function ClientLayout() {
   const { t, locale, setLocale } = useI18n();
   const { settings, updateSetting } = useSettings();
+  const { profile, isLoading: profileLoading } = useUserProfile();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -20,6 +22,20 @@ export default function ClientLayout() {
   
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
+  
+  // Obtener nombre completo del usuario desde el perfil
+  const getUserDisplayName = () => {
+    if (profile?.nombre && profile?.apellido) {
+      return `${profile.nombre} ${profile.apellido}`;
+    } else if (profile?.nombre) {
+      return profile.nombre;
+    } else if (auth?.user?.name) {
+      return auth.user.name;
+    }
+    return "Usuario";
+  };
+  
+  const userDisplayName = getUserDisplayName();
   
   const handleLogout = () => {
     logout();
@@ -34,9 +50,35 @@ export default function ClientLayout() {
             </div>
         <nav className="p-2 space-y-4 overflow-y-auto">
           <div>
-            <div className="nav-section text-xs text-muted-foreground mb-2">{t("nav.client")}</div>
+            <div className="nav-section text-xs text-muted-foreground mb-2">
+              {profileLoading ? "Cargando..." : userDisplayName}
+            </div>
             <div className="grid gap-1">
-              <NavLink to="/client" className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>{t("nav.my_tickets")}</NavLink>
+              <NavLink 
+                to="/client" 
+                end
+                className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              >
+                Dashboard
+              </NavLink>
+              <NavLink 
+                to="/client/crear" 
+                className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              >
+                Crear Ticket
+              </NavLink>
+              <NavLink 
+                to="/client/seguimiento" 
+                className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              >
+                Seguimiento de Ticket
+              </NavLink>
+              <NavLink 
+                to="/client/historial" 
+                className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
+              >
+                Historial de Tickets
+              </NavLink>
             </div>
           </div>
         </nav>
@@ -89,14 +131,38 @@ export default function ClientLayout() {
         <nav className="md:hidden bg-card border-b border-border shadow-lg">
           <div className="p-3 space-y-3">
                 <div>
-                  <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">{t("nav.client")}</div>
+                  <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+                    {profileLoading ? "Cargando..." : userDisplayName}
+                  </div>
                   <div className="space-y-1">
                     <NavLink
                       to="/client"
+                      end
                       className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {t("nav.my_tickets")}
+                      Dashboard
+                    </NavLink>
+                    <NavLink
+                      to="/client/crear"
+                      className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Crear Ticket
+                    </NavLink>
+                    <NavLink
+                      to="/client/seguimiento"
+                      className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Seguimiento de Ticket
+                    </NavLink>
+                    <NavLink
+                      to="/client/historial"
+                      className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Historial de Tickets
                     </NavLink>
                   </div>
                 </div>
@@ -137,10 +203,24 @@ export default function ClientLayout() {
         </div>
 
         {/* Modales */}
-        <NotificationsModal 
-          isOpen={showNotifications} 
-          onClose={() => setShowNotifications(false)} 
-        />
+        {showNotifications && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              <div className="p-4 border-b border-border flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Notificaciones</h2>
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="p-2 hover:bg-muted rounded-md transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-4 overflow-y-auto max-h-[60vh]">
+                <ClientNotifications />
+              </div>
+            </div>
+          </div>
+        )}
         <SettingsModal 
           isOpen={showSettings} 
           onClose={() => setShowSettings(false)} 

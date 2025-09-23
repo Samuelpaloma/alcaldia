@@ -10,28 +10,41 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface NotificacionRepository extends JpaRepository<Notificacion, Long> {
     
-    // Obtener notificaciones por usuario
-    Page<Notificacion> findByUsuarioIdOrderByFechaCreacionDesc(Long usuarioId, Pageable pageable);
+    // Obtener notificaciones por email de usuario
+    Page<Notificacion> findByUsuarioEmailOrderByFechaCreacionDesc(String usuarioEmail, Pageable pageable);
     
-    // Obtener notificaciones no leídas por usuario
-    List<Notificacion> findByUsuarioIdAndEstadoOrderByFechaCreacionDesc(Long usuarioId, Notificacion.EstadoNotificacion estado);
+    // Obtener notificaciones por email de usuario y estado de leída
+    Page<Notificacion> findByUsuarioEmailAndLeidaOrderByFechaCreacionDesc(String usuarioEmail, Boolean leida, Pageable pageable);
     
-    // Contar notificaciones no leídas por usuario
-    long countByUsuarioIdAndEstado(Long usuarioId, Notificacion.EstadoNotificacion estado);
+    // Obtener notificaciones no leídas por email de usuario
+    List<Notificacion> findByUsuarioEmailAndLeidaFalseOrderByFechaCreacionDesc(String usuarioEmail);
+    
+    // Contar notificaciones por email de usuario
+    long countByUsuarioEmail(String usuarioEmail);
+    
+    // Contar notificaciones no leídas por email de usuario
+    long countByUsuarioEmailAndLeidaFalse(String usuarioEmail);
+    
+    // Contar notificaciones por email de usuario y fecha posterior
+    long countByUsuarioEmailAndFechaCreacionAfter(String usuarioEmail, LocalDateTime fecha);
+    
+    // Obtener notificación por ID y email de usuario
+    Optional<Notificacion> findByIdAndUsuarioEmail(Long id, String usuarioEmail);
     
     // Obtener notificaciones por tipo
-    Page<Notificacion> findByUsuarioIdAndTipoOrderByFechaCreacionDesc(Long usuarioId, Notificacion.TipoNotificacion tipo, Pageable pageable);
+    Page<Notificacion> findByUsuarioEmailAndTipoOrderByFechaCreacionDesc(String usuarioEmail, String tipo, Pageable pageable);
     
     // Obtener notificaciones por rango de fechas
-    @Query("SELECT n FROM Notificacion n WHERE n.usuarioId = :usuarioId AND n.fechaCreacion BETWEEN :fechaInicio AND :fechaFin ORDER BY n.fechaCreacion DESC")
-    Page<Notificacion> findByUsuarioIdAndFechaCreacionBetween(@Param("usuarioId") Long usuarioId, 
-                                                              @Param("fechaInicio") LocalDateTime fechaInicio, 
-                                                              @Param("fechaFin") LocalDateTime fechaFin, 
-                                                              Pageable pageable);
+    @Query("SELECT n FROM Notificacion n WHERE n.usuarioEmail = :usuarioEmail AND n.fechaCreacion BETWEEN :fechaInicio AND :fechaFin ORDER BY n.fechaCreacion DESC")
+    Page<Notificacion> findByUsuarioEmailAndFechaCreacionBetween(@Param("usuarioEmail") String usuarioEmail, 
+                                                               @Param("fechaInicio") LocalDateTime fechaInicio, 
+                                                               @Param("fechaFin") LocalDateTime fechaFin, 
+                                                               Pageable pageable);
     
     // Obtener notificaciones relacionadas con un ticket
     List<Notificacion> findByTicketIdOrderByFechaCreacionDesc(Long ticketId);
@@ -40,11 +53,7 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     @Query("SELECT n FROM Notificacion n WHERE n.tipo IN ('SISTEMA_ALERTA', 'SISTEMA_MANTENIMIENTO') ORDER BY n.fechaCreacion DESC")
     Page<Notificacion> findSystemNotifications(Pageable pageable);
     
-    // Marcar notificaciones como leídas
-    @Query("UPDATE Notificacion n SET n.estado = 'LEIDA', n.fechaLectura = :fechaLectura WHERE n.id IN :ids")
-    void markAsRead(@Param("ids") List<Long> ids, @Param("fechaLectura") LocalDateTime fechaLectura);
-    
     // Archivar notificaciones antiguas
-    @Query("UPDATE Notificacion n SET n.estado = 'ARCHIVADA' WHERE n.fechaCreacion < :fechaAntigua AND n.estado = 'LEIDA'")
+    @Query("UPDATE Notificacion n SET n.leida = true WHERE n.fechaCreacion < :fechaAntigua AND n.leida = false")
     void archiveOldNotifications(@Param("fechaAntigua") LocalDateTime fechaAntigua);
 }

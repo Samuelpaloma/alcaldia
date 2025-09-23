@@ -95,16 +95,20 @@ export interface TicketResponseDTO {
   consulta?: string;
   categoria: string;
   prioridad: 'low' | 'medium' | 'high';
-  estado: 'open' | 'in_progress' | 'resolved' | 'closed' | 'PENDIENTE' | 'EN_EJECUCION' | 'TERMINADO' | 'CERRADO';
+  estado: 'open' | 'in_progress' | 'resolved' | 'closed' | 'PENDIENTE' | 'ASIGNADO' | 'ESCALADO' | 'EN_EJECUCION' | 'TERMINADO' | 'CERRADO';
   archivoAdjunto?: string;
   nombreArchivo?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
   creadorEmail: string;
+  creadorNombre?: string;
   tecnicoEmail?: string;
-  nombre: string;
+  tecnicoAsignado?: string;
+  creador?: {
+    nombre: string;
+  };
   evidencias?: any[];
-  historialEstados?: any[];
+  historialEstados?: AsignacionResponseDTO[];
 }
 
 export interface HistorialTicketResponseDTO {
@@ -275,21 +279,19 @@ export interface EvidenciaResponseDTO {
 // ========== TIPOS PARA ASIGNACIONES ==========
 
 export interface AsignacionResponseDTO {
-  idAsignacion: number;
+  idAsignacion?: number;
   ticketId: number;
+  ticketTitulo: string;
   tecnicoId: number;
-  tecnico: {
-    idUsuario: number;
-    nombre: string;
-    email: string;
-  };
-  asignadoPor: {
-    idUsuario: number;
-    nombre: string;
-    email: string;
-  };
+  tecnicoNombre: string;
+  tecnicoEmail: string;
+  estadoAnterior: string;
+  estadoNuevo: string;
+  prioridad: string;
+  comentario?: string;
   fechaAsignacion: string;
-  estado: string;
+  asignadoPor: string;
+  tipoOperacion: string;
 }
 
 export interface AsignarTicketRequestDTO {
@@ -874,8 +876,66 @@ class ApiClient {
     return this.request(`/evidencias/ticket/${ticketId}`);
   }
 
+  async subirEvidencia(ticketId: number, archivo: File, descripcion: string): Promise<ApiResponse> {
+    const formData = new FormData();
+    formData.append('ticketId', ticketId.toString());
+    formData.append('archivo', archivo);
+    formData.append('descripcion', descripcion);
+    
+    return this.request('/evidencias/subir', {
+      method: 'POST',
+      body: formData
+    });
+  }
+
   async descargarEvidencia(ticketId: number, nombreArchivo: string): Promise<any> {
     return this.request(`/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`);
+  }
+
+  // ========== GESTIÓN DE NOTIFICACIONES ==========
+
+  async getNotificaciones(page: number = 0, size: number = 10, leida?: boolean): Promise<PageResponse<any>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString()
+    });
+    if (leida !== undefined) {
+      params.append('leida', leida.toString());
+    }
+    return this.request(`/notificaciones?${params.toString()}`);
+  }
+
+  async getNotificacionesNoLeidas(): Promise<any[]> {
+    return this.request('/notificaciones/no-leidas');
+  }
+
+  async marcarNotificacionComoLeida(id: number): Promise<any> {
+    return this.request(`/notificaciones/${id}/marcar-leida`, {
+      method: 'PUT'
+    });
+  }
+
+  async marcarTodasComoLeidas(): Promise<ApiResponse> {
+    return this.request('/notificaciones/marcar-todas-leidas', {
+      method: 'PUT'
+    });
+  }
+
+  async crearNotificacion(data: any): Promise<any> {
+    return this.request('/notificaciones', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async eliminarNotificacion(id: number): Promise<ApiResponse> {
+    return this.request(`/notificaciones/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getEstadisticasNotificaciones(): Promise<any> {
+    return this.request('/notificaciones/estadisticas');
   }
 
   // ========== GESTIÓN DE ASIGNACIONES ==========
@@ -906,6 +966,19 @@ class ApiClient {
 
   async getTicketsSinAsignar(): Promise<AsignacionResponseDTO[]> {
     return this.request('/asignaciones/sin-asignar');
+  }
+
+  async reabrirTicket(ticketId: number): Promise<AsignacionResponseDTO> {
+    return this.request(`/asignaciones/reabrir/${ticketId}`, {
+      method: 'POST',
+    });
+  }
+
+  async enviarComentario(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    return this.request(`/tickets/${ticketId}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify({ mensaje })
+    });
   }
 
   // ========== GESTIÓN DE TÉCNICOS ==========
@@ -1494,156 +1567,267 @@ class ApiClient {
     return this.request('/tecnico/estadisticas');
   }
 
-// ========== CATEGORÍAS ==========
+  // ========== MÉTODOS FALTANTES ==========
 
-/**
- * Obtener categorías activas para selects
- */
-async getActiveCategories(): Promise<CategoriaSimpleDTO[]> {
-  return this.request('/categorias/activas');
-}
+  /**
+   * Obtener seguimiento de un ticket específico
+   */
+  async getTicketTracking(ticketId: number): Promise<{
+    id: number;
+    asunto: string;
+    descripcion: string;
+    categoria: string;
+    estado: string;
+    prioridad: string;
+    tecnicoAsignado?: string;
+    fechaCreacion: string;
+    fechaActualizacion: string;
+    comentarios?: Array<{
+      id: number;
+      autor: string;
+      mensaje: string;
+      fechaCreacion: string;
+    }>;
+  }> {
+    return this.request(`/tickets/seguimiento/${ticketId}`);
+  }
 
-/**
- * Crear nueva categoría
- */
-async createCategory(request: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
-  return this.request('/categorias', {
-    method: 'POST',
-    body: JSON.stringify(request)
-  });
-}
+  /**
+   * Obtener todos los tickets para administradores
+   */
+  async getTodosLosTickets(): Promise<TicketResponseDTO[]> {
+    return this.request('/admin/tickets');
+  }
 
-/**
- * Obtener categoría por ID
- */
-async getCategoryById(id: number): Promise<CategoriaResponseDTO> {
-  return this.request(`/categorias/${id}`);
-}
+  /**
+   * Obtener estadísticas para administradores
+   */
+  async getAdminStats(): Promise<EstadisticasAdminResponseDTO> {
+    return this.request('/admin/estadisticas');
+  }
 
-/**
- * Actualizar categoría
- */
-async updateCategory(id: number, request: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
-  return this.request(`/categorias/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(request)
-  });
-}
+  /**
+   * Obtener categorías activas
+   */
+  async getActiveCategories(): Promise<CategoriaSimpleDTO[]> {
+    return this.request('/categorias/activas');
+  }
 
-/**
- * Eliminar categoría
- */
-async deleteCategory(id: number): Promise<ApiResponse> {
-  return this.request(`/categorias/${id}`, {
-    method: 'DELETE'
-  });
-}
+  /**
+   * Obtener técnicos para select
+   */
+  async getTechniciansForSelect(): Promise<UsuarioSummaryDTO[]> {
+    return this.request('/usuarios/tecnicos/select');
+  }
 
-/**
- * Activar/Desactivar categoría
- */
-async toggleCategoryStatus(id: number): Promise<CategoriaResponseDTO> {
-  return this.request(`/categorias/${id}/toggle`, {
-    method: 'PATCH'
-  });
-}
-
-/**
- * Obtener todas las categorías con paginación
- */
-async getAllCategories(
-  page: number = 0,
-  size: number = 10,
-  sortBy: string = 'orden',
-  sortDir: string = 'asc',
-  activa?: boolean,
-  nombre?: string
-): Promise<PageResponse<CategoriaResponseDTO>> {
-  const params = new URLSearchParams({
-    page: page.toString(),
-    size: size.toString(),
-    sortBy,
-    sortDir
-  });
-  if (activa !== undefined) params.append('activa', activa.toString());
-  if (nombre) params.append('nombre', nombre);
+  // ========== GESTIÓN DE PERFIL DE USUARIO ==========
   
-  return this.request(`/categorias?${params}`);
-}
-
-/**
- * Buscar categorías por nombre
- */
-async searchCategoriesByName(nombre: string): Promise<CategoriaSimpleDTO[]> {
-  return this.request(`/categorias/buscar?nombre=${encodeURIComponent(nombre)}`);
-}
-
-/**
- * Obtener estadísticas de categorías
- */
-async getCategoryStats(): Promise<any> {
-  return this.request('/categorias/estadisticas');
-}
-
-// ========== EVIDENCIAS ==========
-
-/**
- * Obtener evidencias de un ticket
- */
-async getTicketEvidences(ticketId: number): Promise<Evidencia[]> {
-  return this.request(`/evidencias/ticket/${ticketId}`);
-}
-
-/**
- * Descargar evidencia
- */
-async downloadEvidence(ticketId: number, nombreArchivo: string): Promise<Blob> {
-  return this.request(`/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`);
-}
-
-// ========== MÉTRICAS Y ESTADÍSTICAS ==========
-
-/**
- * Obtener estadísticas del sistema (SuperAdmin)
- */
-async getSystemStats(): Promise<SystemStatsResponse> {
-  return this.request('/superadmin/estadisticas');
-}
-
-/**
- * Obtener estadísticas para Admin
- */
-async getAdminStats(): Promise<any> {
-  return this.request('/admin/estadisticas');
-}
-
   /**
-   * Obtener estadísticas de tickets
+   * Obtener perfil del usuario actual
    */
-  async getTicketStats(): Promise<any> {
-    return this.request('/tickets/estadisticas');
+  async getMyProfile(): Promise<UsuarioDTO> {
+    return this.request('/usuarios/profile');
   }
 
   /**
-   * Obtener estadísticas de usuarios
+   * Actualizar perfil del usuario actual
    */
-  async getUserStats(): Promise<any> {
-    return this.request('/usuarios/estadisticas');
+  async updateMyProfile(profileData: Partial<UsuarioDTO>): Promise<UsuarioDTO> {
+    return this.request('/usuarios/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData)
+    });
   }
 
   /**
-   * Obtener métricas de administradores
+   * Cambiar contraseña del usuario actual
    */
-  async getAdminStats(): Promise<any> {
-    return this.request('/usuarios/metrics/total/ADMINISTRADOR');
+  async changePassword(request: ChangePasswordRequest): Promise<ApiResponse> {
+    return this.request('/usuarios/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(request)
+    });
+  }
+
+  // ========== GESTIÓN DE CATEGORÍAS ==========
+  
+  /**
+   * Obtener todas las categorías (con paginación)
+   */
+  async getTodasLasCategorias(page: number = 0, size: number = 20): Promise<PageResponse<CategoriaResponseDTO>> {
+    return this.request(`/categorias?page=${page}&size=${size}`);
   }
 
   /**
-   * Obtener métricas de técnicos
+   * Crear nueva categoría
    */
-  async getTechnicianStats(): Promise<any> {
-    return this.request('/usuarios/metrics/total/TECNICO');
+  async createCategoria(categoriaData: any): Promise<CategoriaResponseDTO> {
+    return this.request('/categorias', {
+      method: 'POST',
+      body: JSON.stringify(categoriaData)
+    });
   }
+
+  /**
+   * Actualizar categoría
+   */
+  async updateCategoria(id: number, categoriaData: any): Promise<CategoriaResponseDTO> {
+    return this.request(`/categorias/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoriaData)
+    });
+  }
+
+  /**
+   * Eliminar categoría
+   */
+  async deleteCategoria(id: number): Promise<ApiResponse> {
+    return this.request(`/categorias/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Obtener estadísticas de categorías
+   */
+  async getCategoriaStats(): Promise<any> {
+    return this.request('/categorias/estadisticas');
+  }
+
+  // ========== GESTIÓN DE ASIGNACIONES ==========
+  
+  /**
+   * Asignar ticket a técnico
+   */
+  async asignarTicket(ticketId: number, tecnicoId: number): Promise<ApiResponse> {
+    return this.request('/asignaciones/asignar', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId, tecnicoId })
+    });
+  }
+
+  /**
+   * Reasignar ticket a otro técnico
+   */
+  async reasignarTicket(ticketId: number, tecnicoId: number): Promise<ApiResponse> {
+    return this.request('/asignaciones/reasignar', {
+      method: 'PUT',
+      body: JSON.stringify({ ticketId, tecnicoId })
+    });
+  }
+
+  /**
+   * Escalar ticket a otro técnico (escalación por dificultad)
+   */
+  async escalarTicket(ticketId: number, tecnicoId: number): Promise<ApiResponse> {
+    return this.request('/asignaciones/escalar', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId, tecnicoId })
+    });
+  }
+
+  /**
+   * Desasignar ticket
+   */
+  async desasignarTicket(ticketId: number): Promise<ApiResponse> {
+    return this.request(`/asignaciones/desasignar/${ticketId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Reabrir ticket cerrado
+   */
+  async reabrirTicket(ticketId: number): Promise<ApiResponse> {
+    return this.request(`/asignaciones/reabrir/${ticketId}`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Enviar comentario a un ticket
+   */
+  async enviarComentario(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    return this.request(`/tickets/${ticketId}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify({ mensaje })
+    });
+  }
+
+  /**
+   * Obtener tickets sin asignar
+   */
+  async getTicketsSinAsignar(): Promise<TicketResponseDTO[]> {
+    return this.request('/asignaciones/sin-asignar');
+  }
+
+  // ========== OPERACIONES DE TÉCNICO ==========
+  
+  /**
+   * Obtener tickets asignados al técnico actual
+   */
+  async getTicketsAsignadosTecnico(): Promise<TicketResponseDTO[]> {
+    return this.request('/tecnico/tickets');
+  }
+
+  /**
+   * Cambiar estado de ticket (técnico)
+   */
+  async cambiarEstadoTicket(ticketId: number, nuevoEstado: string): Promise<ApiResponse> {
+    return this.request('/tecnico/tickets/cambiar-estado', {
+      method: 'PUT',
+      body: JSON.stringify({ ticketId, nuevoEstado })
+    });
+  }
+
+  /**
+   * Subir evidencia a ticket
+   */
+  async subirEvidencia(ticketId: number, archivo: File, descripcion: string): Promise<ApiResponse> {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    formData.append('descripcion', descripcion);
+    
+    return this.request(`/tecnico/tickets/subir-evidencia?ticketId=${ticketId}`, {
+      method: 'POST',
+      body: formData,
+      headers: {} // No establecer Content-Type, el navegador lo hará automáticamente
+    });
+  }
+
+  /**
+   * Obtener estadísticas del técnico
+   */
+  async getEstadisticasTecnico(): Promise<any> {
+    return this.request('/tecnico/estadisticas');
+  }
+
+  // ========== GESTIÓN DE EVIDENCIAS ==========
+  
+  /**
+   * Obtener evidencias de un ticket
+   */
+  async getEvidenciasPorTicket(ticketId: number): Promise<any[]> {
+    return this.request(`/evidencias/ticket/${ticketId}`);
+  }
+
+  /**
+   * Descargar evidencia
+   */
+  async descargarEvidencia(ticketId: number, nombreArchivo: string): Promise<Blob> {
+    const response = await fetch(`${this.baseURL}/evidencias/descargar/${ticketId}/${nombreArchivo}`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error descargando evidencia');
+    }
+    
+    return response.blob();
+  }
+
 }
 
 // Exportar instancia única del cliente API

@@ -25,6 +25,7 @@ public class AsignacionResponseDTO {
     private String comentario;
     private LocalDateTime fechaAsignacion;
     private String asignadoPor; // Quien hizo la asignación
+    private String tipoOperacion; // "ASIGNAR", "REASIGNAR", "ESCALAR", "DESASIGNAR", "REABRIR"
 }
 
 
