@@ -32,7 +32,6 @@ package "Backend Central (API REST)" {
 ' === Servicios Externos ===
 package "Servicios Externos" {
   [Email Service]
-  [SMS Service]
   [Push Notification Service]
 }
 
@@ -75,7 +74,6 @@ database "Base de Datos" as DB
 
 ' === Relaciones con Servicios Externos ===
 [Servicio de Notificaciones] --> [Email Service] : sends emails
-[Servicio de Notificaciones] --> [SMS Service] : sends SMS
 [Servicio de Notificaciones] --> [Push Notification Service] : sends push notifications
 
 ' === Relaciones de Reportes ===

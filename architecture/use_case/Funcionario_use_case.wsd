@@ -20,33 +20,33 @@ actor "Funcionario" as F
 
 package "Portal Web" {
   usecase "Iniciar Sesión" as Login
-  usecase "Crear Ticket" as Crear
-  usecase "Consultar Estado" as Consultar
+  usecase "Crear Ticket" as CrearTicket
+  usecase "Ver Mis Tickets" as VerTickets
+  usecase "Evaluar Servicio" as Evaluar
   usecase "Ver Historial" as Historial
-  usecase "Completar Encuesta" as Encuesta
-  usecase "Reabrir Ticket" as Reabrir
   usecase "2FA" as 2FA
   usecase "Recuperar Contraseña" as Recuperar
 }
 
 package "Notificaciones" {
-  usecase "Recibir Email" as Email
+  usecase "Recibir notificacion push" as Email
 }
 
 ' === Relaciones ===
 F --> Login
-F --> Crear
-F --> Consultar
+F --> CrearTicket
+F --> VerTickets
+F --> Evaluar
 F --> Historial
-F --> Encuesta
-F --> Reabrir
 
 ' === Include ===
-Crear ..> Email : "<<include>>"
-Reabrir ..> Email : "<<include>>"
+CrearTicket ..> Email : "<<include>>"
+VerTickets ..> Email : "<<include>>"
+Evaluar ..> Email : "<<include>>"
 
 ' === Extend ===
 Login ..> 2FA : "<<extend>>\n(opcional)"
 Login ..> Recuperar : "<<extend>>\n(opcional)"
+VerTickets ..> Historial : "<<extend>>\n(opcional)"
 
 @enduml

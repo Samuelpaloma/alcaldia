@@ -30,7 +30,7 @@ package "Configuración Avanzada" {
 }
 
 package "Notificaciones" {
-  usecase "Recibir Email" as Email
+  usecase "Recibir notificacion push" as Email
 }
 
 ' === Relaciones ===

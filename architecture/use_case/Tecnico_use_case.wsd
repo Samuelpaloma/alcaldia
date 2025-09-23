@@ -29,7 +29,7 @@ package "App Móvil" {
 }
 
 package "Notificaciones" {
-  usecase "Push Notification" as Push
+  usecase "Recibir notificacion push" as Push
   usecase "SMS" as SMS
 }
 
