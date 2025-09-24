@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StyleSheet } from 'react-native';
 
-// Pantallas
+// Importar tus pantallas
 import LoginScreen from './src/screens/LoginScreen';
 import IndexScreen from './src/screens/TecnicoDashboard';
 import ConfigScreen from './src/screens/config';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import VerifyScreen from './src/screens/VerifyScreen';
-import VerifyEmailScreen from './src/screens/verifyEmailScreen';
-import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import VerifyEmailScreen from './src/screens/verifyEmailScreen'; // NUEVO
+import ForgotPasswordScreen  from './src/screens/ForgotPasswordScreen'; // NUEVO
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
 type RootStackParamList = {
@@ -23,14 +23,13 @@ type RootStackParamList = {
   Verify2FA: { userId: number; userEmail: string; userName: string };
   VerifyEmailScreen: { email: string };
   ForgotPasswordScreen: undefined;
-  ResetPasswordScreen: { email: string };
+  ResetPasswordScreen: { email: string }; // 👈 aquí estaba faltando
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function App() {
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+// Navigation ref to navigate outside components
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const checkAuthStatus = async () => {
   try {
@@ -89,6 +88,11 @@ export default function App() {
           options={{ title: 'Configuración' }}
         />
         <Stack.Screen 
+          name="ChangePassword" 
+          component={ChangePasswordScreen}
+          options={{ title: 'Cambiar contraseña' }}
+        />
+        <Stack.Screen 
           name="Verify2FA" 
           component={VerifyScreen}
           options={{ title: 'Verificación 2FA' }}
@@ -114,9 +118,11 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  loaderContainer: {
+  container: {
     flex: 1,
+    backgroundColor: '#fff',
+    paddingStart: 0,
+    paddingEnd: 0,
     justifyContent: 'center',
-    alignItems: 'center',
   },
 });

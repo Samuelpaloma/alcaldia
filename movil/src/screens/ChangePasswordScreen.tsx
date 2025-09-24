@@ -25,6 +25,9 @@ const ChangePasswordScreen = () => {
   const [resultType, setResultType] = useState<'success' | 'error'>('success');
   const [resultMessage, setResultMessage] = useState('');
   const [resultDetails, setResultDetails] = useState('');
+  
+  // Estado para el sidebar
+  const [sidebarVisible, setSidebarVisible] = useState(false);
 
   const navigation = useNavigation<any>();
 
@@ -157,7 +160,10 @@ const ChangePasswordScreen = () => {
       {/* Header con TicketFlow */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>TicketFlow - Técnico</Text>
-        <TouchableOpacity style={styles.menuButton}>
+        <TouchableOpacity 
+          style={styles.menuButton}
+          onPress={() => setSidebarVisible(true)}
+        >
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
       </View>
@@ -299,6 +305,91 @@ const ChangePasswordScreen = () => {
           </View>
         </View>
       </Modal>
+      
+      {/* Sidebar */}
+      {sidebarVisible && (
+        <View style={styles.sidebarOverlay}>
+          <View style={styles.sidebar}>
+            <View style={styles.sidebarHeader}>
+              <Text style={styles.sidebarTitle}>TicketFlow</Text>
+              <TouchableOpacity onPress={() => setSidebarVisible(false)}>
+                <Text style={styles.sidebarCloseButton}>×</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.sidebarSection}>
+              <Text style={styles.sidebarSectionTitle}>TÉCNICO</Text>
+              
+              <TouchableOpacity 
+                style={styles.sidebarMenuItem}
+                onPress={() => {
+                  setSidebarVisible(false);
+                  navigation.navigate('Home');
+                }}
+              >
+                <Text style={styles.sidebarMenuIcon}>🎫</Text>
+                <Text style={styles.sidebarMenuText}>Mis Tickets</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.sidebarMenuItem}
+                onPress={() => {
+                  setSidebarVisible(false);
+                  // Aquí puedes agregar navegación a notificaciones
+                }}
+              >
+                <Text style={styles.sidebarMenuIcon}>🔔</Text>
+                <Text style={styles.sidebarMenuText}>Notificaciones</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.sidebarMenuItem}
+                onPress={() => {
+                  setSidebarVisible(false);
+                  // Aquí puedes agregar navegación a evidencias
+                }}
+              >
+                <Text style={styles.sidebarMenuIcon}>📄</Text>
+                <Text style={styles.sidebarMenuText}>Evidencias</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.sidebarMenuItem}
+                onPress={() => {
+                  setSidebarVisible(false);
+                  // Aquí puedes agregar navegación al historial
+                }}
+              >
+                <Text style={styles.sidebarMenuIcon}>🔄</Text>
+                <Text style={styles.sidebarMenuText}>Historial por área</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.sidebarMenuItem}
+                onPress={() => {
+                  setSidebarVisible(false);
+                  // Ya estamos en cambiar contraseña, no hacer nada
+                }}
+              >
+                <Text style={styles.sidebarMenuIcon}>⚙️</Text>
+                <Text style={styles.sidebarMenuText}>Cambiar contraseña</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.sidebarLogout}
+              onPress={async () => {
+                await AsyncStorage.removeItem('authToken');
+                await AsyncStorage.removeItem('userInfo');
+                navigation.navigate('Login');
+              }}
+            >
+              <Text style={styles.sidebarLogoutIcon}>→</Text>
+              <Text style={styles.sidebarLogoutText}>Cerrar sesión</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -482,6 +573,105 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+
+  // Estilos para el sidebar
+  sidebarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 1000,
+  },
+  sidebar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '70%',
+    height: '100%',
+    backgroundColor: 'white',
+    paddingTop: 50,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 2,
+      height: 0,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  sidebarTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  sidebarCloseButton: {
+    fontSize: 24,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  sidebarSection: {
+    paddingTop: 20,
+  },
+  sidebarSectionTitle: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  sidebarMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
+  },
+  sidebarMenuIcon: {
+    fontSize: 20,
+    marginRight: 15,
+    width: 25,
+    textAlign: 'center',
+  },
+  sidebarMenuText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+  },
+  sidebarLogout: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
+  },
+  sidebarLogoutIcon: {
+    fontSize: 20,
+    marginRight: 15,
+    color: '#ff4444',
+    width: 25,
+    textAlign: 'center',
+  },
+  sidebarLogoutText: {
+    fontSize: 16,
+    color: '#ff4444',
+    fontWeight: '500',
   },
 });
 

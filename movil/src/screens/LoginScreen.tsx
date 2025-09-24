@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import TwoFactorAuthScreen from './TwoFactorAuthScreen';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -13,6 +14,38 @@ export default function LoginScreen() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [generalError, setGeneralError] = useState('');
+  
+  // Estados para modales de resultado
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  // Estados para autenticación de dos pasos
+  const [showTwoFactor, setShowTwoFactor] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+
+  const handleTwoFactorSuccess = async () => {
+    console.log('✅ 2FA verificado exitosamente');
+    setShowTwoFactor(false);
+    
+    // Navegar al dashboard correspondiente
+    const userRole = await AsyncStorage.getItem('userRole');
+    if (userRole === 'TECNICO') {
+      navigation.navigate('TecnicoDashboard');
+    } else if (userRole === 'ADMIN') {
+      navigation.navigate('AdminDashboard');
+    } else {
+      navigation.navigate('ClientDashboard');
+    }
+  };
+
+  const handleTwoFactorCancel = () => {
+    console.log('❌ 2FA cancelado');
+    setShowTwoFactor(false);
+    // Limpiar datos de sesión
+    AsyncStorage.removeItem('authToken');
+    AsyncStorage.removeItem('userEmail');
+    AsyncStorage.removeItem('userRole');
+  };
 
   const handleLogin = async () => {
     // Limpiar errores previos
@@ -83,8 +116,10 @@ export default function LoginScreen() {
             email: data.email,
             nombre: data.nombre
           }));
-          // No navegar manualmente - App.tsx detectará automáticamente el cambio
-          console.log('✅ Login exitoso, App.tsx detectará automáticamente la autenticación');
+          
+          // Redirección automática a Home después del login exitoso
+          console.log('✅ Login exitoso, redirigiendo automáticamente a Home');
+          navigation.navigate('Home');
         } else if (data.require2fa) {
           // Login requiere 2FA - NO guardar token todavía
           console.log('🔐 Login requiere 2FA, navegando a Verify2FA');
@@ -95,19 +130,15 @@ export default function LoginScreen() {
           });
         }
       } else {
-        // Errores normales
-        const errorMessage = data.message || 'Credenciales incorrectas';
-        if (errorMessage.includes('correo') || errorMessage.includes('email')) {
-          setEmailError(errorMessage);
-        } else if (errorMessage.includes('contraseña') || errorMessage.includes('password')) {
-          setPasswordError(errorMessage);
-        } else {
-          setGeneralError(errorMessage);
-        }
+        // Errores normales - mostrar modal de error
+        const errorMsg = data.message || 'Credenciales incorrectas';
+        setErrorMessage(errorMsg);
+        setShowErrorModal(true);
       }
     } catch (error) {
       console.error('Error de conexión:', error);
-      setGeneralError('No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.');
+      setErrorMessage('No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.');
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -208,6 +239,42 @@ export default function LoginScreen() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      
+
+      {/* Modal de error */}
+      <Modal
+        visible={showErrorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.resultModalContent}>
+            <View style={styles.errorIconContainer}>
+              <Text style={styles.errorIcon}>❌</Text>
+            </View>
+            <Text style={styles.errorTitle}>Error al iniciar sesión</Text>
+            <Text style={styles.resultMessage}>
+              {errorMessage}
+            </Text>
+            <TouchableOpacity
+              style={styles.errorButton}
+              onPress={() => setShowErrorModal(false)}
+            >
+              <Text style={styles.resultButtonText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de autenticación de dos pasos */}
+      {showTwoFactor && (
+        <TwoFactorAuthScreen
+          onVerificationSuccess={handleTwoFactorSuccess}
+          onCancel={handleTwoFactorCancel}
+          userEmail={userEmail}
+        />
+      )}
     </View>
   );
 }
@@ -413,5 +480,90 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+
+  // Estilos para modales de resultado
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  resultModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 25,
+    alignItems: 'center',
+    maxWidth: 350,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  successIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#d4edda',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  successIcon: {
+    fontSize: 30,
+  },
+  errorIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#f8d7da',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  errorIcon: {
+    fontSize: 30,
+  },
+  resultTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  successTitle: {
+    color: '#28a745',
+  },
+  errorTitle: {
+    color: '#dc3545',
+  },
+  resultMessage: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  successButton: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  errorButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 120,
+  },
+  resultButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
