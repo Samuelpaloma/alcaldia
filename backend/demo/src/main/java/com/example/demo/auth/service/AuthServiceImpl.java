@@ -252,9 +252,17 @@ public class AuthServiceImpl implements AuthService {
     
     @Override
     public void logout(String token) {
-        // Invalidar token (implementar blacklist si es necesario)
-        // jwtTokenProvider.invalidateToken(token);
-        log.info("Usuario cerró sesión");
+        log.info("🚪 [LOGOUT] Procesando logout para token: {}", token.substring(0, 20) + "...");
+        
+        // Verificar que el token sea válido antes de procesar
+        if (jwtTokenProvider.validateToken(token)) {
+            log.info("✅ [LOGOUT] Token válido - Procesando logout");
+            // Aquí podrías implementar una blacklist de tokens si es necesario
+            // jwtTokenProvider.invalidateToken(token);
+            log.info("✅ [LOGOUT] Usuario cerró sesión exitosamente");
+        } else {
+            log.warn("⚠️ [LOGOUT] Token inválido o expirado");
+        }
     }
     
     private String getRedirectUrlByUserType(TipoUsuario tipoUsuario) {
@@ -264,5 +272,52 @@ public class AuthServiceImpl implements AuthService {
             case ADMINISTRADOR -> "/admin/dashboard";
             case SUPERADMIN -> "/superadmin/dashboard";
         };
+    }
+    
+    @Override
+    public void changePassword(String token, String currentPassword, String newPassword) {
+        log.info("Cambiando contraseña para token: {}", token.substring(0, 10) + "...");
+        
+        try {
+            // 1. Validar y extraer información del token
+            if (!jwtTokenProvider.validateToken(token)) {
+                throw new AuthException("Token inválido o expirado");
+            }
+            
+            String email = jwtTokenProvider.getEmailFromJWT(token);
+            if (email == null) {
+                throw new AuthException("No se pudo extraer el email del token");
+            }
+            
+            // 2. Buscar usuario
+            User usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new AuthException("Usuario no encontrado"));
+            
+            // 3. Verificar contraseña actual
+            if (!passwordEncoder.matches(currentPassword, usuario.getPassword())) {
+                throw new AuthException("La contraseña actual es incorrecta");
+            }
+            
+            // 4. Validar que la nueva contraseña sea diferente
+            if (passwordEncoder.matches(newPassword, usuario.getPassword())) {
+                throw new AuthException("La nueva contraseña debe ser diferente a la actual");
+            }
+            
+            // 5. Actualizar contraseña
+            String oldPasswordHash = usuario.getPassword();
+            usuario.setPassword(passwordEncoder.encode(newPassword));
+            User savedUser = usuarioRepository.save(usuario);
+            
+            log.info("Contraseña cambiada exitosamente para usuario: {}", email);
+            log.info("Hash anterior: {}...", oldPasswordHash.substring(0, 20));
+            log.info("Hash nuevo: {}...", savedUser.getPassword().substring(0, 20));
+            log.info("Usuario guardado en BD con ID: {}", savedUser.getId());
+            
+        } catch (AuthException e) {
+            throw e; // Re-lanzar excepciones de autenticación
+        } catch (Exception e) {
+            log.error("Error inesperado cambiando contraseña", e);
+            throw new AuthException("Error interno del servidor");
+        }
     }
 }

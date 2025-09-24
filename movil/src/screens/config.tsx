@@ -12,6 +12,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 import ModalSelector from 'react-native-modal-selector';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DatosTecnicoScreen = () => {
   const [nombre, setNombre] = useState("Julian David Naranjo Pascuas");
@@ -54,8 +55,24 @@ const DatosTecnicoScreen = () => {
     const [especialidadActual] = useState("Electricidad");
     const [dependenciaActual] = useState("Sena Industrial");
 
-    // Control del modal
-    const [modalVisible, setModalVisible] = useState(false);
+  // Control del modal
+  const [modalVisible, setModalVisible] = useState(false);
+  
+  // Estados para el modal de cambio de contraseña
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  // Estados para el modal de resultado
+  const [showPasswordResultModal, setShowPasswordResultModal] = useState(false);
+  const [passwordResultType, setPasswordResultType] = useState<'success' | 'error'>('success');
+  const [passwordResultMessage, setPasswordResultMessage] = useState('');
+  const [passwordResultDetails, setPasswordResultDetails] = useState('');
 
   const handleConfirmar = () => {
     setNombre(nombreTemp); // actualizar nombre definitivo
@@ -82,6 +99,131 @@ const DatosTecnicoScreen = () => {
   const handleCancelar = () => {
     setNombreTemp(nombre); // restaurar valor anterior
     setNombreEditando(false);
+  };
+
+  // Funciones para el cambio de contraseña
+  const validatePassword = (password: string) => {
+    // Mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/;
+    return regex.test(password);
+  };
+
+  const handleChangePassword = async () => {
+    // Validaciones
+    if (!currentPassword.trim()) {
+      Alert.alert("Error", "Por favor ingresa tu contraseña actual");
+      return;
+    }
+
+    if (!newPassword.trim()) {
+      Alert.alert("Error", "Por favor ingresa una nueva contraseña");
+      return;
+    }
+
+    if (!validatePassword(newPassword)) {
+      Alert.alert(
+        "Error", 
+        "La nueva contraseña debe tener al menos 8 caracteres, incluir una mayúscula, una minúscula y un número"
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "Las contraseñas nuevas no coinciden");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      Alert.alert("Error", "La nueva contraseña debe ser diferente a la actual");
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      
+      console.log('🔑 Enviando datos de cambio de contraseña:', {
+        currentPassword: currentPassword ? '[PROVIDED]' : '[EMPTY]',
+        newPassword: newPassword ? '[PROVIDED]' : '[EMPTY]',
+        confirmPassword: confirmPassword ? '[PROVIDED]' : '[EMPTY]',
+        token: token ? '[PROVIDED]' : '[EMPTY]'
+      });
+      
+      const response = await fetch('http://localhost:8080/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword
+        })
+      });
+
+      console.log('🔍 Respuesta del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (response.ok) {
+        showPasswordModal('success', '¡Contraseña cambiada exitosamente!', 'Tu contraseña ha sido actualizada correctamente. Ya puedes usar tu nueva contraseña para iniciar sesión.');
+      } else {
+        let errorMessage = "Error al cambiar la contraseña";
+        let errorDetails = "";
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          
+          // Detalles específicos según el tipo de error
+          if (response.status === 400) {
+            errorDetails = "Verifica que la contraseña actual sea correcta y que la nueva contraseña cumpla con los requisitos.";
+          } else if (response.status === 401) {
+            errorDetails = "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.";
+          } else if (response.status === 500) {
+            errorDetails = "Error interno del servidor. Intenta nuevamente en unos minutos.";
+          }
+        } catch (e) {
+          errorDetails = `Error de conexión con el servidor (Código: ${response.status}). Verifica tu conexión a internet.`;
+        }
+        
+        showPasswordModal('error', errorMessage, errorDetails);
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      showPasswordModal('error', 'Error de conexión', 'No se pudo conectar con el servidor. Verifica tu conexión a internet y que el servidor esté funcionando.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const resetPasswordForm = () => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const showPasswordModal = (type: 'success' | 'error', message: string, details: string = '') => {
+    setPasswordResultType(type);
+    setPasswordResultMessage(message);
+    setPasswordResultDetails(details);
+    setShowPasswordResultModal(true);
+  };
+
+  const handleClosePasswordResultModal = () => {
+    setShowPasswordResultModal(false);
+    if (passwordResultType === 'success') {
+      setPasswordModalVisible(false);
+      resetPasswordForm();
+    }
   };
 
   return (
@@ -190,6 +332,17 @@ const DatosTecnicoScreen = () => {
         {/* Botón Cambiar */}
         <TouchableOpacity style={styles.cambiarBtn} onPress={() => setModalVisible(true)}>
             <Text style={styles.btnText}>CAMBIAR</Text>
+        </TouchableOpacity>
+
+        {/* Botón Cambiar Contraseña */}
+        <TouchableOpacity 
+          style={styles.passwordBtn} 
+          onPress={() => {
+            resetPasswordForm();
+            setPasswordModalVisible(true);
+          }}
+        >
+            <Text style={styles.btnText}>CAMBIAR CONTRASEÑA</Text>
         </TouchableOpacity>
 
       </View>
@@ -356,6 +509,175 @@ const DatosTecnicoScreen = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Cambio de Contraseña */}
+      <Modal
+        transparent
+        visible={passwordModalVisible}
+        animationType="fade"
+        onRequestClose={() => setPasswordModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.passwordModalContent}>
+            <Text style={styles.passwordModalTitle}>Cambiar contraseña</Text>
+
+            {/* Contraseña actual */}
+            <Text style={styles.label}>Contraseña actual</Text>
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                placeholder="Ingresa tu contraseña actual"
+                secureTextEntry={!showCurrentPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+              >
+                <Text style={styles.eyeText}>{showCurrentPassword ? "👁️" : "🙈"}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Nueva contraseña */}
+            <Text style={styles.label}>Nueva contraseña</Text>
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                style={[
+                  styles.passwordInput,
+                  newPassword && !validatePassword(newPassword) && styles.invalidInput
+                ]}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="Ingresa tu nueva contraseña"
+                secureTextEntry={!showNewPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowNewPassword(!showNewPassword)}
+              >
+                <Text style={styles.eyeText}>{showNewPassword ? "👁️" : "🙈"}</Text>
+              </TouchableOpacity>
+            </View>
+            {newPassword && !validatePassword(newPassword) && (
+              <Text style={styles.passwordHint}>
+                Mínimo 8 caracteres, incluir mayúscula, minúscula y número
+              </Text>
+            )}
+
+            {/* Confirmar nueva contraseña */}
+            <Text style={styles.label}>Confirmar nueva contraseña</Text>
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                style={[
+                  styles.passwordInput,
+                  confirmPassword && newPassword !== confirmPassword && styles.invalidInput
+                ]}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirma tu nueva contraseña"
+                secureTextEntry={!showConfirmPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                <Text style={styles.eyeText}>{showConfirmPassword ? "👁️" : "🙈"}</Text>
+              </TouchableOpacity>
+            </View>
+            {confirmPassword && newPassword !== confirmPassword && (
+              <Text style={styles.errorText}>Las contraseñas no coinciden</Text>
+            )}
+
+            {/* Botón Guardar */}
+            <TouchableOpacity
+              style={[
+                styles.savePasswordBtn,
+                isChangingPassword && styles.disabledBtn
+              ]}
+              onPress={handleChangePassword}
+              disabled={isChangingPassword}
+            >
+              <Text style={styles.btnText}>
+                {isChangingPassword ? "GUARDANDO..." : "GUARDAR"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Botón Cancelar */}
+            <TouchableOpacity
+              style={styles.cancelPasswordBtn}
+              onPress={() => {
+                setPasswordModalVisible(false);
+                resetPasswordForm();
+              }}
+            >
+              <Text style={styles.cancelBtnText}>CANCELAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de Resultado para Cambio de Contraseña */}
+      <Modal
+        visible={showPasswordResultModal}
+        transparent
+        animationType="fade"
+        onRequestClose={handleClosePasswordResultModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.resultModalContent}>
+            {/* Icono */}
+            <View style={[
+              styles.resultIconContainer,
+              passwordResultType === 'success' ? styles.successIcon : styles.errorIcon
+            ]}>
+              <Text style={styles.resultIcon}>
+                {passwordResultType === 'success' ? '✅' : '❌'}
+              </Text>
+            </View>
+
+            {/* Título */}
+            <Text style={[
+              styles.resultTitle,
+              passwordResultType === 'success' ? styles.successTitle : styles.errorTitle
+            ]}>
+              {passwordResultType === 'success' ? '¡Éxito!' : 'Error'}
+            </Text>
+
+            {/* Mensaje principal */}
+            <Text style={styles.resultMessage}>
+              {passwordResultMessage}
+            </Text>
+
+            {/* Detalles del error */}
+            {passwordResultDetails && (
+              <View style={styles.detailsContainer}>
+                <Text style={styles.detailsLabel}>Detalles:</Text>
+                <Text style={styles.detailsText}>{passwordResultDetails}</Text>
+              </View>
+            )}
+
+            {/* Botón de acción */}
+            <TouchableOpacity
+              style={[
+                styles.resultButton,
+                passwordResultType === 'success' ? styles.successButton : styles.errorButton
+              ]}
+              onPress={handleClosePasswordResultModal}
+            >
+              <Text style={styles.resultButtonText}>
+                {passwordResultType === 'success' ? 'Continuar' : 'Entendido'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -598,6 +920,173 @@ const styles = StyleSheet.create({
     
     overlayStyle: {
       backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    // Estilos para el modal de cambio de contraseña
+    passwordModalContent: {
+      backgroundColor: "#fff",
+      width: "100%",
+      maxWidth: 400,
+      borderRadius: 10,
+      padding: 20,
+      margin: 20,
+    },
+    passwordModalTitle: {
+      fontSize: 20,
+      fontWeight: "bold",
+      textAlign: "center",
+      marginBottom: 20,
+      color: "#333",
+    },
+    passwordInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "#fff",
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: "#ccc",
+      marginBottom: 15,
+    },
+    passwordInput: {
+      flex: 1,
+      padding: 12,
+      fontSize: 16,
+      color: "#333",
+    },
+    eyeButton: {
+      padding: 12,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    eyeText: {
+      fontSize: 18,
+    },
+    invalidInput: {
+      borderColor: "red",
+      backgroundColor: "#ffeaea",
+    },
+    passwordHint: {
+      fontSize: 12,
+      color: "#666",
+      marginTop: -10,
+      marginBottom: 10,
+      fontStyle: "italic",
+    },
+    savePasswordBtn: {
+      backgroundColor: "#000",
+      padding: 15,
+      borderRadius: 6,
+      alignItems: "center",
+      marginTop: 10,
+      marginBottom: 10,
+    },
+    disabledBtn: {
+      backgroundColor: "#666",
+      opacity: 0.6,
+    },
+    cancelPasswordBtn: {
+      backgroundColor: "transparent",
+      padding: 12,
+      borderRadius: 6,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "#ccc",
+    },
+    cancelBtnText: {
+      color: "#666",
+      fontWeight: "bold",
+    },
+    passwordBtn: {
+      backgroundColor: "#2c3e50",
+      padding: 15,
+      borderRadius: 6,
+      alignItems: "center",
+      marginTop: 12,
+    },
+    // Estilos para el modal de resultado
+    resultModalContent: {
+      backgroundColor: 'white',
+      borderRadius: 15,
+      padding: 25,
+      alignItems: 'center',
+      maxWidth: 350,
+      width: '100%',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    resultIconContainer: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 15,
+    },
+    successIcon: {
+      backgroundColor: '#d4edda',
+    },
+    errorIcon: {
+      backgroundColor: '#f8d7da',
+    },
+    resultIcon: {
+      fontSize: 30,
+    },
+    resultTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      textAlign: 'center',
+    },
+    successTitle: {
+      color: '#28a745',
+    },
+    errorTitle: {
+      color: '#dc3545',
+    },
+    resultMessage: {
+      fontSize: 16,
+      color: '#333',
+      textAlign: 'center',
+      marginBottom: 15,
+      lineHeight: 22,
+    },
+    detailsContainer: {
+      backgroundColor: '#f8f9fa',
+      borderRadius: 8,
+      padding: 15,
+      marginBottom: 20,
+      width: '100%',
+    },
+    detailsLabel: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: '#495057',
+      marginBottom: 5,
+    },
+    detailsText: {
+      fontSize: 13,
+      color: '#6c757d',
+      lineHeight: 18,
+    },
+    resultButton: {
+      paddingHorizontal: 30,
+      paddingVertical: 12,
+      borderRadius: 8,
+      minWidth: 120,
+    },
+    successButton: {
+      backgroundColor: '#28a745',
+    },
+    errorButton: {
+      backgroundColor: '#dc3545',
+    },
+    resultButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: 'bold',
+      textAlign: 'center',
     },
 });
 

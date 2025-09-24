@@ -6,6 +6,7 @@ import com.example.demo.auth.dto.request.RegisterRequest;
 import com.example.demo.auth.dto.request.ResetPasswordRequest;
 import com.example.demo.auth.dto.request.VerifyEmailRequest;
 import com.example.demo.auth.dto.request.ResendVerificationRequest;
+import com.example.demo.usuario.DTO.request.ChangePasswordRequest;
 import com.example.demo.auth.dto.response.ApiResponse;
 import com.example.demo.auth.dto.response.LoginResponse;
 import com.example.demo.auth.service.AuthService;
@@ -333,9 +334,15 @@ public class AuthController {
     // 🚪 LOGOUT
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
+        log.info("🚪 [LOGOUT] Solicitud de logout recibida");
         String token = extractTokenFromRequest(request);
+        log.info("🚪 [LOGOUT] Token extraído: {}", token != null ? token.substring(0, 20) + "..." : "null");
+        
         if (token != null) {
             authService.logout(token);
+            log.info("✅ [LOGOUT] Logout procesado exitosamente");
+        } else {
+            log.warn("⚠️ [LOGOUT] No se encontró token en la petición");
         }
         
         return ResponseEntity.ok(new ApiResponse("Sesión cerrada exitosamente"));
@@ -345,6 +352,39 @@ public class AuthController {
     @GetMapping("/verify")
     public ResponseEntity<ApiResponse> verifyToken() {
         return ResponseEntity.ok(new ApiResponse("Token válido"));
+    }
+    
+    // 🔑 CAMBIAR CONTRASEÑA
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, HttpServletRequest httpRequest) {
+        log.info("Solicitud de cambio de contraseña");
+        log.info("Request data - currentPassword: {}, newPassword: {}, confirmPassword: {}", 
+                request.getCurrentPassword() != null ? "[PROVIDED]" : "[NULL]",
+                request.getNewPassword() != null ? "[PROVIDED]" : "[NULL]",
+                request.getConfirmPassword() != null ? "[PROVIDED]" : "[NULL]");
+        
+        try {
+            String token = extractTokenFromRequest(httpRequest);
+            if (token == null) {
+                log.error("Token de autorización no encontrado en la petición");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ApiResponse("Token de autorización requerido"));
+            }
+            
+            log.info("Token extraído correctamente: {}", token.substring(0, 10) + "...");
+            authService.changePassword(token, request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok(
+                new ApiResponse("Contraseña cambiada exitosamente")
+            );
+        } catch (AuthException e) {
+            log.error("Error cambiando contraseña: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse("Error: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error inesperado cambiando contraseña", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse("Error interno del servidor"));
+        }
     }
     
     // 📊 OBTENER ESTADO 2FA

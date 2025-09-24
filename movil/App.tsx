@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from './src/screens/LoginScreen';
 import IndexScreen from './src/screens/index';
 import ConfigScreen from './src/screens/config';
+import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import VerifyScreen from './src/screens/VerifyScreen';
 import VerifyEmailScreen from './src/screens/verifyEmailScreen'; // NUEVO
 import ForgotPasswordScreen  from './src/screens/ForgotPasswordScreen'; // NUEVO
@@ -18,6 +19,7 @@ type RootStackParamList = {
   Login: undefined;
   Home: undefined;
   Config: undefined;
+  ChangePassword: undefined;
   Verify2FA: { userId: number; userEmail: string; userName: string };
   VerifyEmailScreen: { email: string };
   ForgotPasswordScreen: undefined;
@@ -30,9 +32,13 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 const checkAuthStatus = async () => {
+  console.log('🔍 [APP] Verificando estado de autenticación al iniciar...');
   try {
     const token = await AsyncStorage.getItem('authToken');
+    console.log('🔍 [APP] Token encontrado:', token ? 'SÍ' : 'NO');
+    
     if (token) {
+      console.log('🔍 [APP] Verificando validez del token...');
       // Verificar si el token sigue válido
       const response = await fetch('http://localhost:8080/api/auth/verify', {
         headers: {
@@ -40,25 +46,32 @@ const checkAuthStatus = async () => {
         }
       });
       
+      console.log('🔍 [APP] Respuesta del servidor:', response.status);
+      
       if (response.ok) {
+        console.log('✅ [APP] Token válido - Navegando a Home');
         // Token válido, ir directo a Home
         if (navigationRef.isReady()) {
           navigationRef.navigate('Home');
         }
       } else {
+        console.log('❌ [APP] Token expirado - Navegando a Login');
         // Token expirado, ir a Login
         await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('userInfo');
         if (navigationRef.isReady()) {
           navigationRef.navigate('Login');
         }
       }
     } else {
+      console.log('❌ [APP] Sin token - Navegando a Login');
       // Sin token, ir a Login
       if (navigationRef.isReady()) {
         navigationRef.navigate('Login');
       }
     }
   } catch (error) {
+    console.error('❌ [APP] Error verificando autenticación:', error);
     if (navigationRef.isReady()) {
       navigationRef.navigate('Login');
     }
@@ -84,6 +97,11 @@ export default function App() {
           name="Config" 
           component={ConfigScreen}
           options={{ title: 'Configuración' }}
+        />
+        <Stack.Screen 
+          name="ChangePassword" 
+          component={ChangePasswordScreen}
+          options={{ title: 'Cambiar contraseña' }}
         />
         <Stack.Screen 
           name="Verify2FA" 

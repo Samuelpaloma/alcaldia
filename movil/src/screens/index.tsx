@@ -42,6 +42,9 @@ interface UserInfo {
   }
 
 export default function SolicitudesScreen(): React.JSX.Element {
+  console.log('🏠 [HOME] Componente SolicitudesScreen renderizado');
+  console.log('🏠 [HOME] Timestamp:', new Date().toISOString());
+  
   const [showInfoModal, setShowInfoModal] = useState<boolean>(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState<Solicitud | null>(null);
   const [showAdjuntoModal, setShowAdjuntoModal] = useState(false);
@@ -183,57 +186,35 @@ export default function SolicitudesScreen(): React.JSX.Element {
   };
 
   const handleLogout = async () => {
-    console.log('🚪 [LOGOUT] Iniciando proceso de logout...');
-    Alert.alert(
-      'Cerrar sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
-      [
-        { 
-          text: 'Cancelar', 
-          style: 'cancel',
-          onPress: () => console.log('🚪 [LOGOUT] Logout cancelado por el usuario')
-        },
-        {
-          text: 'Cerrar sesión',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem('authToken');
-              console.log('🚪 [LOGOUT] Token antes del logout:', token ? `${token.substring(0, 20)}...` : 'null');
-              
-              // Llamar endpoint de logout
-              console.log('🔄 [LOGOUT] Notificando al servidor...');
-              await fetch('http://localhost:8080/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`
-                }
-              });
-              console.log('✅ [LOGOUT] Servidor notificado exitosamente');
-            } catch (error) {
-              console.error('❌ [LOGOUT] Error notificando al servidor:', error);
-            } finally {
-              // Limpiar almacenamiento local
-              console.log('🔄 [LOGOUT] Limpiando almacenamiento local...');
-              await AsyncStorage.removeItem('authToken');
-              await AsyncStorage.removeItem('userInfo');
-              console.log('✅ [LOGOUT] Almacenamiento limpiado');
-              
-              // Ir a Login
-              console.log('🔄 [LOGOUT] Redirigiendo a Login');
-              navigation.navigate('Login');
-              console.log('✅ [LOGOUT] Logout completado exitosamente');
-            }
-          }
-        }
-      ]
-    );
+    console.log('🚪 [LOGOUT] Función handleLogout ejecutándose...');
+    alert('Función handleLogout ejecutándose!');
+    
+    try {
+      // Limpiar almacenamiento local
+      console.log('🔄 [LOGOUT] Limpiando almacenamiento...');
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userInfo');
+      console.log('✅ [LOGOUT] Almacenamiento limpiado');
+      
+      // Navegar a Login
+      console.log('🔄 [LOGOUT] Navegando a Login...');
+      navigation.navigate('Login');
+      console.log('✅ [LOGOUT] Logout completado');
+      
+    } catch (error) {
+      console.error('❌ [LOGOUT] Error:', error);
+      // Limpiar almacenamiento incluso si hay error
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userInfo');
+      navigation.navigate('Login');
+    }
   };
 
   // También agrega logs al useFocusEffect
   useFocusEffect(
     React.useCallback(() => {
       console.log('🏠 [HOME] Pantalla Home enfocada - Verificando sesión...');
+      console.log('🏠 [HOME] Timestamp:', new Date().toISOString());
       checkAuthStatus();
     }, [])
   );
@@ -248,7 +229,7 @@ export default function SolicitudesScreen(): React.JSX.Element {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          ...(options.headers || {})  // Corregido
+          ...(options.headers || {})
         }
       });
 
@@ -354,6 +335,11 @@ export default function SolicitudesScreen(): React.JSX.Element {
     );
   };
 
+  console.log('🏠 [HOME] Renderizando componente Home');
+  console.log('🏠 [HOME] UserInfo:', userInfo);
+  console.log('🏠 [HOME] Navigation:', navigation ? 'DISPONIBLE' : 'NO DISPONIBLE');
+  console.log('🏠 [HOME] handleLogout function:', typeof handleLogout);
+  
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -382,6 +368,41 @@ export default function SolicitudesScreen(): React.JSX.Element {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Sección de Acciones Rápidas */}
+          <View style={styles.quickActionsSection}>
+            <Text style={styles.sectionTitle}>Acciones rápidas</Text>
+            {console.log('🏠 [HOME] Renderizando sección de acciones rápidas')}
+            <View style={styles.quickActionsContainer}>
+              <TouchableOpacity 
+                style={styles.quickActionButton}
+                onPress={() => navigation.navigate('Config')}
+              >
+                <Text style={styles.quickActionIcon}>⚙️</Text>
+                <Text style={styles.quickActionText}>Configuración</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.quickActionButton}
+                onPress={() => navigation.navigate('ChangePassword')}
+              >
+                <Text style={styles.quickActionIcon}>🔒</Text>
+                <Text style={styles.quickActionText}>Cambiar contraseña</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.quickActionButton}
+                onPress={() => {
+                  alert('Botón de logout presionado!');
+                  console.log('🚪 [BOTÓN] Botón de logout presionado');
+                  handleLogout();
+                }}
+              >
+                <Text style={styles.quickActionIcon}>🚪</Text>
+                <Text style={styles.quickActionText}>Cerrar sesión</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           {/* Sección de Solicitudes Pendientes */}
           {renderSection("Solicitudes pendientes", solicitudesPendientes, "No hay solicitudes pendientes")}
           
@@ -976,5 +997,42 @@ const styles = StyleSheet.create({
   },
   userModalCloseText: {
     display: 'none',
+  },
+  // Estilos para acciones rápidas
+  quickActionsSection: {
+    marginBottom: 30,
+  },
+  quickActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(48, 105, 46, 0.4)',
+    borderRadius: 15,
+    padding: 15,
+    marginHorizontal: 0,
+    flexWrap: 'wrap',
+  },
+  quickActionButton: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickActionIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
   },
 });

@@ -13,4 +13,5 @@ public interface AuthService {
     void resendVerificationCode(ResendVerificationRequest request);
     void logout(String token);
     LoginResponse verify2FAAndCompleteLogin(int userId, String code);
+    void changePassword(String token, String currentPassword, String newPassword);
 }

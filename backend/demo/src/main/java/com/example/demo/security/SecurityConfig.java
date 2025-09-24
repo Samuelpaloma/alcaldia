@@ -89,6 +89,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/usuarios/admins").hasRole("SUPERADMIN")
                 .requestMatchers("/api/usuarios/tecnicos").hasAnyRole("ADMINISTRADOR", "SUPERADMIN")
                 
+                // 🔐 Endpoints que requieren autenticación JWT
+                .requestMatchers("/api/auth/change-password").authenticated()
+                .requestMatchers("/api/auth/verify").authenticated()
+                .requestMatchers("/api/auth/logout").authenticated()
+                
                 // 🔐 Todo lo demás requiere autenticación
                 .anyRequest().authenticated()
             );
