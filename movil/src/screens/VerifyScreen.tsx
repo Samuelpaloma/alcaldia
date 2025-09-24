@@ -55,15 +55,19 @@ export default function VerifyScreen() {
       console.log('🔍 Verify 2FA Data:', data);
 
       if (response.ok && data.accessToken) {
-        // 2FA verificado exitosamente - ir a Home
+        // 2FA verificado exitosamente
+        console.log('✅ 2FA verificado exitosamente, guardando token...');
+        
         await AsyncStorage.setItem('authToken', data.accessToken);
         await AsyncStorage.setItem('userInfo', JSON.stringify({
           userId: data.userId,
           email: data.email,
           nombre: data.nombre
         }));
-        console.log('✅ 2FA verificado, navegando a Home');
-        navigation.navigate('Home');
+        
+        // No navegar manualmente - App.tsx detectará automáticamente el cambio
+        console.log('✅ 2FA verificado, App.tsx detectará automáticamente la autenticación');
+        
       } else {
         // Error en verificación
         const errorMessage = data.message || 'Código de verificación inválido';
@@ -89,7 +93,6 @@ export default function VerifyScreen() {
     try {
       console.log('🔄 Reenviando código 2FA para usuario:', userId);
 
-      // Simular reenvío (deberías tener un endpoint para esto)
       const response = await fetch('http://localhost:8080/api/auth/resend-2fa-code', {
         method: 'POST',
         headers: {

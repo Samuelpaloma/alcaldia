@@ -83,7 +83,8 @@ export default function LoginScreen() {
             email: data.email,
             nombre: data.nombre
           }));
-          navigation.navigate('Home');
+          // No navegar manualmente - App.tsx detectará automáticamente el cambio
+          console.log('✅ Login exitoso, App.tsx detectará automáticamente la autenticación');
         } else if (data.require2fa) {
           // Login requiere 2FA - NO guardar token todavía
           console.log('🔐 Login requiere 2FA, navegando a Verify2FA');

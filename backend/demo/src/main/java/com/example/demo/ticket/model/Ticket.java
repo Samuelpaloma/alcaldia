@@ -102,4 +102,16 @@ public class Ticket {
     protected void onUpdate() {
         fechaActualizacion = LocalDateTime.now();
     }
+    
+    @Override
+    public String toString() {
+        return "Ticket{" +
+                "id=" + id +
+                ", estado='" + estado + '\'' +
+                ", ubicacion='" + ubicacion + '\'' +
+                ", categoria='" + categoria + '\'' +
+                ", prioridad='" + prioridad + '\'' +
+                ", fechaCreacion=" + fechaCreacion +
+                '}';
+    }
 }

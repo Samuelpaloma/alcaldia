@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet } from 'react-native';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Importar tus pantallas
+// Pantallas
 import LoginScreen from './src/screens/LoginScreen';
-import IndexScreen from './src/screens/index';
+import IndexScreen from './src/screens/TecnicoDashboard';
 import ConfigScreen from './src/screens/config';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
 import VerifyScreen from './src/screens/VerifyScreen';
-import VerifyEmailScreen from './src/screens/verifyEmailScreen'; // NUEVO
-import ForgotPasswordScreen  from './src/screens/ForgotPasswordScreen'; // NUEVO
+import VerifyEmailScreen from './src/screens/verifyEmailScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 
 type RootStackParamList = {
@@ -23,22 +23,19 @@ type RootStackParamList = {
   Verify2FA: { userId: number; userEmail: string; userName: string };
   VerifyEmailScreen: { email: string };
   ForgotPasswordScreen: undefined;
-  ResetPasswordScreen: { email: string }; // 👈 aquí estaba faltando
+  ResetPasswordScreen: { email: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Navigation ref to navigate outside components
-const navigationRef = createNavigationContainerRef<RootStackParamList>();
+export default function App() {
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
 const checkAuthStatus = async () => {
-  console.log('🔍 [APP] Verificando estado de autenticación al iniciar...');
   try {
     const token = await AsyncStorage.getItem('authToken');
-    console.log('🔍 [APP] Token encontrado:', token ? 'SÍ' : 'NO');
-    
     if (token) {
-      console.log('🔍 [APP] Verificando validez del token...');
       // Verificar si el token sigue válido
       const response = await fetch('http://localhost:8080/api/auth/verify', {
         headers: {
@@ -46,32 +43,25 @@ const checkAuthStatus = async () => {
         }
       });
       
-      console.log('🔍 [APP] Respuesta del servidor:', response.status);
-      
       if (response.ok) {
-        console.log('✅ [APP] Token válido - Navegando a Home');
         // Token válido, ir directo a Home
         if (navigationRef.isReady()) {
           navigationRef.navigate('Home');
         }
       } else {
-        console.log('❌ [APP] Token expirado - Navegando a Login');
         // Token expirado, ir a Login
         await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('userInfo');
         if (navigationRef.isReady()) {
           navigationRef.navigate('Login');
         }
       }
     } else {
-      console.log('❌ [APP] Sin token - Navegando a Login');
       // Sin token, ir a Login
       if (navigationRef.isReady()) {
         navigationRef.navigate('Login');
       }
     }
   } catch (error) {
-    console.error('❌ [APP] Error verificando autenticación:', error);
     if (navigationRef.isReady()) {
       navigationRef.navigate('Login');
     }
@@ -99,11 +89,6 @@ export default function App() {
           options={{ title: 'Configuración' }}
         />
         <Stack.Screen 
-          name="ChangePassword" 
-          component={ChangePasswordScreen}
-          options={{ title: 'Cambiar contraseña' }}
-        />
-        <Stack.Screen 
           name="Verify2FA" 
           component={VerifyScreen}
           options={{ title: 'Verificación 2FA' }}
@@ -129,11 +114,9 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  loaderContainer: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingStart: 0,
-    paddingEnd: 0,
     justifyContent: 'center',
+    alignItems: 'center',
   },
 });
