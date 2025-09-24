@@ -2,8 +2,9 @@ package com.example.demo.usuario.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -13,7 +14,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "user")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -94,5 +96,17 @@ public class User {
     
     public boolean isFuncionario() {
         return TipoUsuario.FUNCIONARIO.equals(tipoUsuario);
+    }
+    
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", email='" + email + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", apellido='" + apellido + '\'' +
+                ", tipoUsuario=" + tipoUsuario +
+                ", activo=" + activo +
+                '}';
     }
 }
