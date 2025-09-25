@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <div id="status">Desconectado</div>
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Escribe un mensaje">
+    <button onclick="sendMessage()">Enviar</button>
+
+    <script>
+        let client = null;
+        let connected = false;
+
+        function connect() {
+            const socket = new SockJS('http://localhost:8080/ws');
+            client = new StompJs.Client({
+                webSocketFactory: () => socket,
+                debug: (str) => {
+                    console.log('STOMP Debug:', str);
+                },
+                onConnect: (frame) => {
+                    console.log('Conectado:', frame);
+                    document.getElementById('status').textContent = 'Conectado';
+                    connected = true;
+                    
+                    // Suscribirse a mensajes de prueba
+                    client.subscribe('/topic/test', (message) => {
+                        const data = JSON.parse(message.body);
+                        document.getElementById('messages').innerHTML += '<div>Recibido: ' + data + '</div>';
+                    });
+                },
+                onStompError: (frame) => {
+                    console.error('Error STOMP:', frame);
+                    document.getElementById('status').textContent = 'Error: ' + frame.headers.message;
+                },
+                onWebSocketClose: () => {
+                    console.log('WebSocket cerrado');
+                    document.getElementById('status').textContent = 'Desconectado';
+                    connected = false;
+                }
+            });
+            
+            client.activate();
+        }
+
+        function sendMessage() {
+            if (client && connected) {
+                const message = document.getElementById('messageInput').value;
+                client.publish({
+                    destination: '/app/test',
+                    body: message
+                });
+                document.getElementById('messageInput').value = '';
+            }
+        }
+
+        // Conectar automáticamente
+        connect();
+    </script>
+</body>
+</html>

@@ -1,28 +1,887 @@
-/* Tickets module specific styles */
-.page-title { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
-.page-subtitle { color: hsl(var(--muted-foreground)); }
+/* Tickets Management - Diseño Moderno */
 
-.btn-contrast { background: hsl(var(--foreground)); color: hsl(var(--background)); }
-.btn-contrast:hover { background: hsl(var(--foreground) / 0.9); }
+.tickets-management {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem;
+}
 
-.generic-select {
-  height: 2.5rem;
+/* Header Gradient */
+.header-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1rem;
+  padding: 2rem;
+  color: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Cards Modernas */
+.ticket-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.ticket-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Badges Mejorados */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  background: hsl(var(--background));
-  border: 1px solid hsl(var(--input));
-  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid;
 }
-.generic-select:focus { outline: none; box-shadow: 0 0 0 2px hsl(var(--ring)); }
 
-.status-pill, .priority-pill {
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 9999px; padding: 0.125rem 0.5rem; font-size: 0.75rem; font-weight: 600;
-  border: 1px solid hsl(var(--border));
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid;
 }
-.status-pill.open { background: hsl(var(--background)); }
-.status-pill.in_progress { background: hsl(var(--muted)); }
-.status-pill.resolved { background: hsl(var(--accent)); }
 
-.priority-pill.low { background: hsl(var(--background)); }
-.priority-pill.medium { background: hsl(var(--muted)); }
-.priority-pill.high { background: hsl(var(--foreground)); color: hsl(var(--background)); }
+/* Estados */
+.status-asignado {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
+.status-escalado {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.status-pendiente {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+.status-resuelto {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: #22c55e;
+}
+
+/* Prioridades */
+.priority-high {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.priority-medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+.priority-low {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: #22c55e;
+}
+
+/* Grid Responsivo */
+.tickets-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+@media (min-width: 640px) {
+  .tickets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tickets-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .tickets-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Stats Cards */
+.stats-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card-blue {
+  border-left-color: #3b82f6;
+}
+
+.stats-card-yellow {
+  border-left-color: #f59e0b;
+}
+
+.stats-card-green {
+  border-left-color: #22c55e;
+}
+
+.stats-card-red {
+  border-left-color: #ef4444;
+}
+
+/* Filtros */
+.filters-section {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Botones de Acción */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.action-button-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.action-button-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.action-button-secondary {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.action-button-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ticket-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tickets-management {
+    padding: 1rem;
+  }
+  
+  .tickets-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-gradient {
+    padding: 1.5rem;
+  }
+  
+  .stats-card {
+    padding: 1rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .tickets-management {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  }
+  
+  .ticket-card {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .stats-card {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .filters-section {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+}
+
+/* Utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Focus States */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.focus-ring:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Badges Mejorados */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid;
+}
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid;
+}
+
+/* Estados */
+.status-asignado {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
+.status-escalado {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.status-pendiente {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+.status-resuelto {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: #22c55e;
+}
+
+/* Prioridades */
+.priority-high {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.priority-medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+.priority-low {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: #22c55e;
+}
+
+/* Grid Responsivo */
+.tickets-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+@media (min-width: 640px) {
+  .tickets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tickets-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .tickets-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Stats Cards */
+.stats-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card-blue {
+  border-left-color: #3b82f6;
+}
+
+.stats-card-yellow {
+  border-left-color: #f59e0b;
+}
+
+.stats-card-green {
+  border-left-color: #22c55e;
+}
+
+.stats-card-red {
+  border-left-color: #ef4444;
+}
+
+/* Filtros */
+.filters-section {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Botones de Acción */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.action-button-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.action-button-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.action-button-secondary {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.action-button-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ticket-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tickets-management {
+    padding: 1rem;
+  }
+  
+  .tickets-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-gradient {
+    padding: 1.5rem;
+  }
+  
+  .stats-card {
+    padding: 1rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .tickets-management {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  }
+  
+  .ticket-card {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .stats-card {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .filters-section {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+}
+
+/* Utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Focus States */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.focus-ring:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Badges Mejorados */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid;
+}
+
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 2px solid;
+}
+
+/* Estados */
+.status-asignado {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+  border-color: #3b82f6;
+}
+
+.status-escalado {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.status-pendiente {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+.status-resuelto {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: #22c55e;
+}
+
+/* Prioridades */
+.priority-high {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border-color: #ef4444;
+}
+
+.priority-medium {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+.priority-low {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  border-color: #22c55e;
+}
+
+/* Grid Responsivo */
+.tickets-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+@media (min-width: 640px) {
+  .tickets-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tickets-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .tickets-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Stats Cards */
+.stats-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card-blue {
+  border-left-color: #3b82f6;
+}
+
+.stats-card-yellow {
+  border-left-color: #f59e0b;
+}
+
+.stats-card-green {
+  border-left-color: #22c55e;
+}
+
+.stats-card-red {
+  border-left-color: #ef4444;
+}
+
+/* Filtros */
+.filters-section {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Botones de Acción */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.action-button-primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.action-button-primary:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.action-button-secondary {
+  background: white;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.action-button-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ticket-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tickets-management {
+    padding: 1rem;
+  }
+  
+  .tickets-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header-gradient {
+    padding: 1.5rem;
+  }
+  
+  .stats-card {
+    padding: 1rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .tickets-management {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  }
+  
+  .ticket-card {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .stats-card {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .filters-section {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+}
+
+/* Utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Focus States */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.focus-ring:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

@@ -10,7 +10,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ClientLayout from "./modules/_shared/ClientLayout";
 import AdminLayout from "./modules/_shared/AdminLayout";
-import TicketsManagement from "./modules/tickets_management/TicketsManagement";
+import TicketsManagement from "./modules/admin/TicketsManagement";
 import UsersRoles from "./modules/users_roles/UsersRoles";
 import Notifications from "./modules/notifications/Notifications";
 import Evidences from "./modules/evidences/Evidences";
@@ -21,14 +21,35 @@ import Metrics from "./modules/metrics/Metrics";
 import AiClassification from "./modules/ai_classification/AiClassification";
 import Login from "./modules/auth/Login";
 import Register from "./modules/auth/Register";
-import ClientDashboard from "./modules/client_dashboard/ClientDashboard";
 import AdminDashboard from "./modules/admin/AdminDashboard";
+import UnifiedDashboard from "./modules/admin/UnifiedDashboard";
+import SuperAdminDashboard from "./modules/superadmin/SuperAdminDashboard";
+import SuperAdminLayout from "./modules/_shared/SuperAdminLayout";
 import { I18nProvider } from "./i18n";
 import RoleRoute from "./modules/auth/RoleRoute";
 import ClientHistory from "./modules/client_history/ClientHistory";
 import ClientTracking from "./modules/client_tracking/ClientTracking";
 import CreateTicket from "./modules/client_create/CreateTicket";
 import ClientProfile from "./modules/client_profile/ClientProfile";
+import ClientTickets from "./modules/client_tickets/ClientTickets";
+import CreateTicketPage from "./modules/client_pages/CreateTicketPage";
+import TrackingPage from "./modules/client_pages/TrackingPage";
+import HistoryPage from "./modules/client_pages/HistoryPage";
+import DashboardPage from "./modules/client_pages/DashboardPage";
+import { UserProfile } from "./modules/profile/UserProfile";
+import { CategoriesManagement } from "./modules/categories/CategoriesManagement";
+import { TechnicianOperations } from "./modules/technician/TechnicianOperations";
+import { TechnicianDashboard } from "./modules/technician/TechnicianDashboard";
+import { EvidencesManagement } from "./modules/evidences/EvidencesManagement";
+import NotificationsCenter from "./modules/notifications/NotificationsCenter";
+import TechnicianLayout from "./modules/_shared/TechnicianLayout";
+// Nuevos módulos implementados
+import AutomationRules from "./modules/automation_rules/AutomationRules";
+import AdvancedDashboard from "./modules/advanced_dashboard/AdvancedDashboard";
+import SatisfactionSurvey from "./modules/satisfaction_survey/SatisfactionSurvey";
+import Reports from "./modules/reports/Reports";
+import TrendsAnalysis from "./modules/analytics/TrendsAnalysis";
+import UnifiedAnalytics from "./modules/analytics/UnifiedAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -61,28 +82,48 @@ const App = () => (
             {/* Client section (role-restricted) */}
             <Route path="/client" element={<RoleRoute role="client" />}>
               <Route element={<ClientLayout />}>
-                <Route index element={<ClientDashboard />} />
-                <Route path="create" element={<CreateTicket />} />
-                <Route path="tracking" element={<ClientTracking />} />
-                <Route path="history" element={<ClientHistory />} />
-                <Route path="profile" element={<ClientProfile />} />
+                <Route index element={<DashboardPage />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="crear" element={<CreateTicketPage />} />
+                <Route path="seguimiento" element={<TrackingPage />} />
+                <Route path="historial" element={<HistoryPage />} />
               </Route>
             </Route>
 
             {/* Admin section (role-restricted) */}
+        <Route element={<RoleRoute role="admin" />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<UnifiedDashboard />} />
+            <Route path="/tickets" element={<TicketsManagement />} />
+            <Route path="/users-roles" element={<AdminDashboard userRole="admin" />} />
+            <Route path="/notifications" element={<NotificationsCenter />} />
+            <Route path="/system-configuration" element={<SystemConfiguration />} />
+            <Route path="/assignment-rules" element={<AssignmentRules />} />
+            <Route path="/tickets-history" element={<TicketsHistory />} />
+            <Route path="/metrics" element={<Metrics />} />
+            <Route path="/ai-classification" element={<AiClassification ticketId={0} onClassificationComplete={() => {}} />} />
+            <Route path="/categories" element={<CategoriesManagement userRole="admin" />} />
+            {/* Módulos especializados */}
+            <Route path="/automation-rules" element={<AutomationRules />} />
+            <Route path="/analytics" element={<UnifiedAnalytics />} />
+          </Route>
+        </Route>
+
+            {/* Technician section (role-restricted) */}
             <Route element={<RoleRoute role="admin" />}>
-              <Route element={<AdminLayout />}>
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/tickets" element={<TicketsManagement />} />
-                <Route path="/users-roles" element={<UsersRoles />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/evidences" element={<Evidences />} />
-                <Route path="/system-configuration" element={<SystemConfiguration />} />
-                <Route path="/assignment-rules" element={<AssignmentRules />} />
-                <Route path="/tickets-history" element={<TicketsHistory />} />
-                <Route path="/metrics" element={<Metrics />} />
-                <Route path="/ai-classification" element={<AiClassification />} />
+              <Route element={<TechnicianLayout />}>
+                <Route path="/technician" element={<TechnicianDashboard userRole="tecnico" />} />
+                <Route path="/technician/tickets" element={<TechnicianOperations userRole="tecnico" />} />
+                <Route path="/technician/evidences" element={<EvidencesManagement userRole="tecnico" />} />
               </Route>
+            </Route>
+
+            {/* SuperAdmin section (role-restricted) */}
+            <Route element={<SuperAdminLayout />}>
+              <Route path="/superadmin" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/administradores" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/configuraciones" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/categories" element={<CategoriesManagement userRole="SUPERADMIN" />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

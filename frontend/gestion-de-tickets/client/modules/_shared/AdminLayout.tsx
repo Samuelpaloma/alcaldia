@@ -2,14 +2,26 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
-import { logout } from "../auth/auth";
+import { Bell, Settings, LogOut } from "lucide-react";
+import { logout, getAuth } from "../auth/auth";
+import NotificationsModal from "../notifications/NotificationsModal";
+import SettingsModal from "../system_configuration/SettingsModal";
+import LogoutModal from "../auth/LogoutModal";
 import "./AppLayout.css";
 
 export default function AdminLayout() {
   const { t, locale, setLocale } = useI18n();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
+  
+  const auth = getAuth();
+  const userName = auth?.user?.name || t("auth.user");
+  
   const onLogout = () => { logout(); navigate("/login", { replace: true }); };
+  
   return (
     <div className="app-container grid md:grid-cols-[240px_1fr]">
       <aside className="hidden md:flex md:flex-col md:h-screen md:sticky md:top-0 border-r bg-background">
@@ -26,14 +38,13 @@ export default function AdminLayout() {
           <div>
             <div className="nav-section">{t("nav.admin_section")}</div>
             <div className="grid gap-1">
-              <NavLink to="/admin" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.admin_dashboard")}</NavLink>
-              <NavLink to="/tickets" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.tickets")}</NavLink>
-              <NavLink to="/users-roles" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.users_roles")}</NavLink>
-              <NavLink to="/evidences" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.evidences")}</NavLink>
-              <NavLink to="/assignment-rules" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.assignment_rules")}</NavLink>
-              <NavLink to="/tickets-history" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.tickets_history")}</NavLink>
-              <NavLink to="/metrics" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.metrics")}</NavLink>
-              <NavLink to="/ai-classification" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("nav.ai_classification")}</NavLink>
+              <NavLink to="/admin" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Dashboard</NavLink>
+              <NavLink to="/tickets" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Gestión de Tickets</NavLink>
+              <NavLink to="/users-roles" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Gestión de Usuarios</NavLink>
+              <NavLink to="/categories" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Categorías</NavLink>
+              {/* Módulos especializados */}
+              <NavLink to="/automation-rules" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Reglas de Automatización</NavLink>
+              <NavLink to="/analytics" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Análisis y Reportes</NavLink>
               <NavLink to="/logout" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("auth.logout")}</NavLink>
             </div>
           </div>
@@ -48,148 +59,92 @@ export default function AdminLayout() {
               className="p-2 hover:bg-gray-100 rounded-md transition-colors"
               aria-label="Toggle menu"
             >
-              <div className="w-6 h-5 flex flex-col justify-between">
-                <span className="block h-0.5 w-full bg-gray-600"></span>
-                <span className="block h-0.5 w-full bg-gray-600"></span>
-                <span className="block h-0.5 w-full bg-gray-600"></span>
-              </div>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
             <Link to="/admin" className="font-extrabold tracking-tight text-xl">{t("brand.name")}</Link>
           </div>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => navigate("/notifications")}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              aria-label="Notifications"
-              title="Notificaciones"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-              </svg>
-            </button>
-            <button 
-              onClick={() => navigate("/system-configuration")}
-              className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-              aria-label="Configuration"
-              title="Configuración"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
+            <select aria-label="language" value={locale} onChange={(e)=>setLocale(e.target.value as any)} className="h-8 rounded-md border px-2 text-xs bg-background">
+              <option value="es">ES</option>
+              <option value="en">EN</option>
+            </select>
+            <Button variant="ghost" size="sm" onClick={onLogout}>
+              {t("auth.logout")}
+            </Button>
           </div>
         </div>
       </header>
 
+      {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <nav className="md:hidden bg-background border-b shadow-lg">
-          <div className="p-4 space-y-4">
-            <div>
-              <div className="text-sm font-medium text-gray-500 mb-2">{t("nav.admin_section")}</div>
-              <div className="space-y-2">
-                <NavLink 
-                  to="/admin" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.admin_dashboard")}
-                </NavLink>
-                <NavLink 
-                  to="/tickets" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.tickets")}
-                </NavLink>
-                <NavLink 
-                  to="/users-roles" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.users_roles")}
-                </NavLink>
-                <NavLink 
-                  to="/evidences" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.evidences")}
-                </NavLink>
-                <NavLink 
-                  to="/assignment-rules" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.assignment_rules")}
-                </NavLink>
-                <NavLink 
-                  to="/tickets-history" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.tickets_history")}
-                </NavLink>
-                <NavLink 
-                  to="/metrics" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.metrics")}
-                </NavLink>
-                <NavLink 
-                  to="/ai-classification" 
-                  className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'}`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {t("nav.ai_classification")}
-                </NavLink>
-                <button 
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    onLogout();
-                  }}
-                  className="block w-full text-left py-2 px-3 rounded-md text-sm hover:bg-gray-100 transition-colors text-red-600"
-                >
-                  {t("auth.logout")}
-                </button>
-              </div>
+        <div className="md:hidden border-b bg-background">
+          <nav className="p-4 space-y-2">
+            <div className="nav-section">{t("nav.admin_section")}</div>
+            <div className="grid gap-1">
+              <NavLink to="/admin" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</NavLink>
+              <NavLink to="/tickets" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Gestión de Tickets</NavLink>
+              <NavLink to="/users-roles" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Gestión de Usuarios</NavLink>
+              <NavLink to="/evidences" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Gestión de Evidencias</NavLink>
+              <NavLink to="/logout" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>{t("auth.logout")}</NavLink>
             </div>
-          </div>
-        </nav>
+          </nav>
+        </div>
       )}
 
-      <main className="main-content">
+      <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
-      <footer className="border-t text-center text-xs text-muted-foreground py-6 md:col-span-2">© {new Date().getFullYear()} {t("brand.name")}</footer>
       
-      {/* Botones flotantes solo en desktop */}
-      <div className="hidden md:flex fixed bottom-6 right-6 flex-col gap-3 z-50">
+      {/* Botones flotantes en la esquina superior derecha - solo en desktop */}
+      <div className="hidden md:flex fixed top-4 right-4 flex items-center gap-2 z-50">
         <button 
-          onClick={() => navigate("/notifications")}
-          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
-          aria-label="Notifications"
-          title="Notificaciones"
+          className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-lg border border-blue-700 flex items-center gap-2"
+          onClick={() => window.location.reload()}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
-            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
-          </svg>
+          <i className="fas fa-sync-alt"></i> Actualizar
         </button>
         <button 
-          onClick={() => navigate("/system-configuration")}
-          className="w-14 h-14 bg-gray-600 hover:bg-gray-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center"
-          aria-label="Configuration"
-          title="Configuración"
+          aria-label="Notifications" 
+          onClick={() => setShowNotifications(true)}
+          className="p-2 hover:bg-muted rounded-md transition-colors bg-card shadow-lg border border-border relative"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
+          <Bell className="w-5 h-5 text-foreground" />
+          {/* Indicador de notificaciones no leídas */}
+          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+        </button>
+        <button 
+          aria-label="Settings" 
+          onClick={() => setShowSettings(true)}
+          className="p-2 hover:bg-muted rounded-md transition-colors bg-card shadow-lg border border-border"
+        >
+          <Settings className="w-5 h-5 text-foreground" />
+        </button>
+        <button 
+          aria-label="Logout" 
+          onClick={() => setShowLogout(true)}
+          className="p-2 hover:bg-muted rounded-md transition-colors text-red-500 bg-card shadow-lg border border-border"
+        >
+          <LogOut className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Modales */}
+      <NotificationsModal 
+        isOpen={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
+      />
+      <SettingsModal 
+        isOpen={showSettings} 
+        onClose={() => setShowSettings(false)} 
+      />
+      <LogoutModal 
+        isOpen={showLogout} 
+        onClose={() => setShowLogout(false)}
+        onConfirm={onLogout}
+        userName={userName}
+      />
     </div>
   );
 }

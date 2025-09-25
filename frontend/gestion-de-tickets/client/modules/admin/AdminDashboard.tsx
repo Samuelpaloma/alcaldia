@@ -1,35 +1,110 @@
-import "./AdminDashboard.css";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { useI18n } from "@/i18n";
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { detectRoleByToken, getAuth } from '../auth/auth';
+import DashboardModule from './DashboardModule';
+import TicketsModule from './TicketsModule';
+import UsersModule from './UsersModule';
+import EvidencesModule from './EvidencesModule';
+import './AdminDashboard.css';
 
-export default function AdminDashboard() {
-  const { t } = useI18n();
-  const links = [
-    { to: "/tickets", label: t("nav.tickets") },
-    { to: "/users-roles", label: t("nav.users_roles") },
-    { to: "/notifications", label: t("nav.notifications") },
-    { to: "/metrics", label: t("nav.metrics") },
-    { to: "/ai-classification", label: t("nav.ai_classification") },
-  ];
-  return (
-    <div className="section grid gap-6">
-      <div>
-        <h1 className="page-title">{t("admin.title")}</h1>
-        <p className="page-subtitle">{t("admin.subtitle")}</p>
+interface AdminDashboardProps {
+  userRole: string;
+}
+
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ userRole }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'tickets' | 'usuarios' | 'evidencias'>('dashboard');
+
+  // Detectar pestaña activa basada en la URL
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/admin') {
+      setActiveTab('dashboard');
+    } else if (path === '/tickets') {
+      setActiveTab('tickets');
+    } else if (path === '/users-roles') {
+      setActiveTab('usuarios');
+    } else if (path === '/evidences') {
+      setActiveTab('evidencias');
+    } else {
+      setActiveTab('dashboard');
+    }
+  }, [location.pathname]);
+
+  // Función para cambiar de pestaña
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as any);
+    switch (tab) {
+      case 'dashboard':
+        navigate('/admin');
+        break;
+      case 'tickets':
+        navigate('/tickets');
+        break;
+      case 'usuarios':
+        navigate('/users-roles');
+        break;
+      case 'evidencias':
+        navigate('/evidences');
+        break;
+      default:
+        navigate('/admin');
+    }
+  };
+
+  // Debug: Mostrar información del rol
+  useEffect(() => {
+    const auth = getAuth();
+    const detectedRole = detectRoleByToken();
+    console.log('🔍 Debug AdminDashboard:');
+    console.log('  - userRole prop:', userRole);
+    console.log('  - detectedRole:', detectedRole);
+    console.log('  - auth:', auth);
+    console.log('  - token:', auth?.token);
+  }, [userRole]);
+
+  const detectedRole = detectRoleByToken();
+  const hasAccess = userRole === 'admin' || userRole === 'superadmin' || 
+                   detectedRole === 'admin' || detectedRole === 'superadmin';
+  
+  if (!hasAccess) {
+    return (
+      <div className="admin-dashboard">
+        <div className="access-denied">
+          <div className="access-denied-content">
+            <i className="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+            <p className="text-gray-600 mb-4">
+              No tienes permisos para acceder al dashboard de administradores.
+            </p>
+            <div className="debug-info text-sm text-gray-500 mb-6">
+              <p>Rol recibido: {userRole}</p>
+              <p>Rol detectado: {detectedRole}</p>
+            </div>
+            <button 
+              onClick={() => window.history.back()}
+              className="btn btn-primary"
+            >
+              <i className="fas fa-arrow-left mr-2"></i>
+              Volver
+            </button>
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {links.map((l) => (
-          <Card key={l.to} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle className="text-base">{l.label}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link to={l.to} className="inline-block nav-link active">{t("admin.open")}</Link>
-            </CardContent>
-          </Card>
-        ))}
+    );
+  }
+
+  return (
+    <div className="admin-dashboard">
+      <div className="tab-content">
+        {activeTab === 'dashboard' && <DashboardModule userRole={userRole} />}
+        {activeTab === 'tickets' && <TicketsModule userRole={userRole} />}
+        {activeTab === 'usuarios' && <UsersModule userRole={userRole} />}
+        {activeTab === 'evidencias' && <EvidencesModule userRole={userRole} />}
       </div>
     </div>
   );
-}
+};
+
+export default AdminDashboard;
