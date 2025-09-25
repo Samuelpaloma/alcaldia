@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +13,11 @@ import {
   Info, 
   CheckCircle,
   Clock,
-  Search
+  Search,
+  RefreshCw
 } from 'lucide-react';
+import { api } from '@shared/api';
+import { useNotifications } from '../_shared/GlobalWebSocket';
 
 interface Notification {
   id: number;
@@ -24,14 +27,20 @@ interface Notification {
   leida: boolean;
   fechaCreacion: string;
   fechaLectura?: string;
-  ticketId?: number;
+  ticketId?: number | null;
   usuarioId?: number;
 }
 
 const NotificationsCenter: React.FC = () => {
-  const [notificaciones, setNotificaciones] = useState<Notification[]>([]);
+  const { notificaciones, updateNotificacion, removeNotificacion } = useNotifications();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Debug: Log cuando cambia el estado de notificaciones
+  useEffect(() => {
+    console.log('🔔 [DEBUG] Estado de notificaciones actualizado:', notificaciones);
+    console.log('🔔 [DEBUG] Cantidad de notificaciones:', notificaciones.length);
+  }, [notificaciones]);
   const [filtros, setFiltros] = useState({
     busqueda: '',
     tipo: '',
@@ -43,46 +52,67 @@ const NotificationsCenter: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      // Simular datos por ahora
+      
+      console.log('🔔 [DEBUG] Cargando notificaciones desde API...');
+      const response = await api.getNotificaciones();
+      console.log('🔔 [DEBUG] Respuesta de notificaciones:', response);
+      console.log('🔔 [DEBUG] Contenido de notificaciones:', response?.content);
+      console.log('🔔 [DEBUG] Total de notificaciones:', response?.totalElements);
+      
+      if (response && response.content) {
+        const notificacionesData = response.content.map((notif: any) => ({
+          id: notif.id,
+          titulo: notif.titulo,
+          mensaje: notif.mensaje,
+          tipo: notif.tipo,
+          leida: notif.leida,
+          fechaCreacion: notif.fechaCreacion,
+          fechaLectura: notif.fechaLectura,
+          ticketId: notif.ticketId || null,
+          usuarioId: notif.usuarioId
+        }));
+        console.log('🔔 [DEBUG] Notificaciones mapeadas:', notificacionesData);
+        // Las notificaciones se manejan globalmente ahora
+        console.log('🔔 [DEBUG] Estado de notificaciones actualizado');
+      } else {
+        // Fallback con datos de ejemplo si no hay respuesta
+        const notificacionesData = [
+          {
+            id: 1,
+            titulo: 'Sistema Iniciado',
+            mensaje: 'El sistema de tickets ha sido iniciado correctamente',
+            tipo: 'info' as const,
+            leida: false,
+            fechaCreacion: new Date().toISOString(),
+            ticketId: null
+          }
+        ];
+        // Las notificaciones se manejan globalmente ahora
+      }
+    } catch (err) {
+      console.error('🔔 Error cargando notificaciones:', err);
+      setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
+      
+      // Fallback con datos de ejemplo en caso de error
       const notificacionesData = [
         {
           id: 1,
-          titulo: 'Nuevo ticket creado',
-          mensaje: 'Se ha creado un nuevo ticket de alta prioridad',
+          titulo: 'Sistema Iniciado',
+          mensaje: 'El sistema de tickets ha sido iniciado correctamente',
           tipo: 'info' as const,
           leida: false,
           fechaCreacion: new Date().toISOString(),
-          ticketId: 123
-        },
-        {
-          id: 2,
-          titulo: 'Ticket asignado',
-          mensaje: 'El ticket #456 ha sido asignado a Juan Pérez',
-          tipo: 'success' as const,
-          leida: true,
-          fechaCreacion: new Date(Date.now() - 3600000).toISOString(),
-          ticketId: 456
-        },
-        {
-          id: 3,
-          titulo: 'Ticket escalado',
-          mensaje: 'El ticket #789 requiere atención inmediata',
-          tipo: 'warning' as const,
-          leida: false,
-          fechaCreacion: new Date(Date.now() - 7200000).toISOString(),
-          ticketId: 789
+          ticketId: null
         }
       ];
-      setNotificaciones(notificacionesData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
-      console.error('Error cargando notificaciones:', err);
+        // Las notificaciones se manejan globalmente ahora
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('🔔 NotificationsCenter montado - iniciando carga...');
     loadNotificaciones();
   }, []);
 
@@ -102,39 +132,58 @@ const NotificationsCenter: React.FC = () => {
   // Marcar como leída
   const marcarComoLeida = async (id: number) => {
     try {
-      setNotificaciones(prev => 
-        prev.map(notif => 
-          notif.id === id 
-            ? { ...notif, leida: true, fechaLectura: new Date().toISOString() }
-            : notif
-        )
-      );
+      console.log('🔔 Marcando notificación como leída:', id);
+      await api.marcarNotificacionComoLeida(id);
+      
+      updateNotificacion(id, { 
+        leida: true, 
+        fechaLectura: new Date().toISOString() 
+      });
     } catch (err) {
-      console.error('Error marcando notificación como leída:', err);
+      console.error('🔔 Error marcando notificación como leída:', err);
+      // Actualizar localmente aunque falle la API
+      updateNotificacion(id, { 
+        leida: true, 
+        fechaLectura: new Date().toISOString() 
+      });
     }
   };
 
   // Marcar todas como leídas
   const marcarTodasComoLeidas = async () => {
     try {
-      setNotificaciones(prev => 
-        prev.map(notif => ({ 
-          ...notif, 
+      console.log('🔔 Marcando todas las notificaciones como leídas...');
+      await api.marcarTodasComoLeidas();
+      
+      notificaciones.forEach(notif => {
+        updateNotificacion(notif.id, { 
           leida: true, 
           fechaLectura: new Date().toISOString() 
-        }))
-      );
+        });
+      });
     } catch (err) {
-      console.error('Error marcando todas como leídas:', err);
+      console.error('🔔 Error marcando todas como leídas:', err);
+      // Actualizar localmente aunque falle la API
+      notificaciones.forEach(notif => {
+        updateNotificacion(notif.id, { 
+          leida: true, 
+          fechaLectura: new Date().toISOString() 
+        });
+      });
     }
   };
 
   // Eliminar notificación
   const eliminarNotificacion = async (id: number) => {
     try {
-      setNotificaciones(prev => prev.filter(notif => notif.id !== id));
+      console.log('🔔 Eliminando notificación:', id);
+      await api.eliminarNotificacion(id);
+      
+      removeNotificacion(id);
     } catch (err) {
-      console.error('Error eliminando notificación:', err);
+      console.error('🔔 Error eliminando notificación:', err);
+      // Eliminar localmente aunque falle la API
+      removeNotificacion(id);
     }
   };
 
@@ -171,6 +220,8 @@ const NotificationsCenter: React.FC = () => {
     );
   }
 
+  console.log('🔔 [DEBUG] Renderizando NotificationsCenter con', notificaciones.length, 'notificaciones');
+  
   return (
     <div className="notifications-center">
       {/* Header */}
@@ -178,8 +229,18 @@ const NotificationsCenter: React.FC = () => {
         <div className="header-content">
           <h1 className="notifications-title">Centro de Notificaciones</h1>
           <p className="notifications-subtitle">Gestiona todas las notificaciones del sistema</p>
+          <div className="connection-status">
+            <div className="status-indicator connected">
+              <div className="status-dot"></div>
+              <span>Conectado en tiempo real</span>
+            </div>
+          </div>
         </div>
         <div className="header-actions">
+          <Button onClick={loadNotificaciones} variant="outline" disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Recargar
+          </Button>
           <Button onClick={marcarTodasComoLeidas} variant="outline">
             <Check className="w-4 h-4 mr-2" />
             Marcar todas como leídas

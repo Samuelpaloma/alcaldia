@@ -32,6 +32,9 @@ public class Notificacion {
     @Column(nullable = false)
     private Boolean leida = false;
     
+    @Column(name = "usuario_id")
+    private Long usuarioId;
+    
     @Column(name = "usuario_email", nullable = false)
     private String usuarioEmail;
     

@@ -7,7 +7,7 @@ import SettingsModal from "../system_configuration/SettingsModal";
 import LogoutModal from "../auth/LogoutModal";
 import { useSettings } from "@/hooks/use-settings";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import ClientNotifications from "../client_notifications/ClientNotifications";
+import NotificacionInteligenteModal from "../notifications/NotificacionInteligenteModal";
 import "./AppLayout.css";
 
 export default function ClientLayout() {
@@ -216,7 +216,10 @@ export default function ClientLayout() {
                 </button>
               </div>
               <div className="p-4 overflow-y-auto max-h-[60vh]">
-                <ClientNotifications />
+        <NotificacionInteligenteModal 
+          isOpen={showNotifications} 
+          onClose={() => setShowNotifications(false)} 
+        />
               </div>
             </div>
           </div>

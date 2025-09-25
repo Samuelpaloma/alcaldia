@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useI18n } from "@/i18n";
-import { useNotifications } from "@/hooks/use-notifications";
+import { useNotifications } from "../_shared/GlobalWebSocket";
 
 interface NotificationsModalProps {
   isOpen: boolean;
@@ -14,18 +14,50 @@ interface NotificationsModalProps {
 
 export default function NotificationsModal({ isOpen, onClose }: NotificationsModalProps) {
   const { t } = useI18n();
-  const {
-    notifications,
-    unreadCount,
-    filter,
-    setFilter,
-    sortBy,
-    setSortBy,
-    markAsRead,
-    markAllAsRead,
-    removeNotification,
-    removeAllRead
-  } = useNotifications();
+  const { notificaciones, updateNotificacion, removeNotificacion } = useNotifications();
+  
+  // Estado local para filtros
+  const [filter, setFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  
+  // Calcular notificaciones no leídas
+  const unreadCount = notificaciones.filter(notif => !notif.leida).length;
+  
+  // Filtrar y ordenar notificaciones
+  const filteredNotifications = notificaciones.filter(notif => {
+    if (filter === 'unread') return !notif.leida;
+    if (filter === 'read') return notif.leida;
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'newest') return new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime();
+    if (sortBy === 'oldest') return new Date(a.fechaCreacion).getTime() - new Date(b.fechaCreacion).getTime();
+    return 0;
+  });
+  
+  // Funciones para manejar notificaciones
+  const markAsRead = (id: number) => {
+    updateNotificacion(id, { leida: true, fechaLectura: new Date().toISOString() });
+  };
+  
+  const markAllAsRead = () => {
+    notificaciones.forEach(notif => {
+      if (!notif.leida) {
+        updateNotificacion(notif.id, { leida: true, fechaLectura: new Date().toISOString() });
+      }
+    });
+  };
+  
+  const removeNotification = (id: number) => {
+    removeNotificacion(id);
+  };
+  
+  const removeAllRead = () => {
+    notificaciones.forEach(notif => {
+      if (notif.leida) {
+        removeNotificacion(notif.id);
+      }
+    });
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -66,9 +98,10 @@ export default function NotificationsModal({ isOpen, onClose }: NotificationsMod
     }
   };
 
-  const formatTimeAgo = (timestamp: Date) => {
+  const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60));
+    const date = new Date(timestamp);
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
     if (diffInMinutes < 1) return 'Ahora mismo';
     if (diffInMinutes < 60) return `Hace ${diffInMinutes} min`;
@@ -154,7 +187,7 @@ export default function NotificationsModal({ isOpen, onClose }: NotificationsMod
 
         {/* Notifications List */}
         <div className="flex-1 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {filteredNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
               <Bell className="w-12 h-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">{t("notifications.no_notifications")}</h3>
@@ -167,38 +200,38 @@ export default function NotificationsModal({ isOpen, onClose }: NotificationsMod
             </div>
           ) : (
             <div className="p-4 space-y-3">
-              {notifications.map((notification) => (
+              {filteredNotifications.map((notification) => (
                 <Card
                   key={notification.id}
                   className={`bg-card border-border transition-all duration-200 hover:shadow-md ${
-                    !notification.read ? 'ring-2 ring-primary/20 bg-primary/5' : ''
+                    !notification.leida ? 'ring-2 ring-primary/20 bg-primary/5' : ''
                   }`}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 mt-1">
-                        {getNotificationIcon(notification.type)}
+                        {getNotificationIcon(notification.tipo)}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
-                            <h4 className={`font-medium text-sm ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {notification.title}
+                            <h4 className={`font-medium text-sm ${!notification.leida ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              {notification.titulo}
                             </h4>
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {notification.message}
+                              {notification.mensaje}
                             </p>
                           </div>
                           
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <Badge 
                               variant="outline" 
-                              className={`text-xs ${getPriorityColor(notification.priority)}`}
+                              className={`text-xs ${getPriorityColor(notification.priority || 'medium')}`}
                             >
-                              {getPriorityText(notification.priority)}
+                              {getPriorityText(notification.priority || 'medium')}
                             </Badge>
-                            {!notification.read && (
+                            {!notification.leida && (
                               <div className="w-2 h-2 bg-primary rounded-full"></div>
                             )}
                           </div>
@@ -207,11 +240,11 @@ export default function NotificationsModal({ isOpen, onClose }: NotificationsMod
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
-                            <span>{formatTimeAgo(notification.timestamp)}</span>
+                            <span>{formatTimeAgo(notification.fechaCreacion)}</span>
                           </div>
                           
                           <div className="flex items-center gap-1">
-                            {!notification.read && (
+                            {!notification.leida && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -245,7 +278,7 @@ export default function NotificationsModal({ isOpen, onClose }: NotificationsMod
         <div className="p-4 border-t border-border bg-card">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
-              {notifications.length} {notifications.length !== 1 ? t("notifications.notifications") : t("notifications.notification")} 
+              {notificaciones.length} {notificaciones.length !== 1 ? t("notifications.notifications") : t("notifications.notification")} 
               {unreadCount > 0 && ` (${unreadCount} ${t("notifications.unread")})`}
             </span>
             <Button

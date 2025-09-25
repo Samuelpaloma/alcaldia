@@ -42,6 +42,7 @@ import { TechnicianOperations } from "./modules/technician/TechnicianOperations"
 import { TechnicianDashboard } from "./modules/technician/TechnicianDashboard";
 import { EvidencesManagement } from "./modules/evidences/EvidencesManagement";
 import NotificationsCenter from "./modules/notifications/NotificationsCenter";
+import GlobalWebSocket, { NotificationProvider } from "./modules/_shared/GlobalWebSocket";
 import TechnicianLayout from "./modules/_shared/TechnicianLayout";
 // Nuevos módulos implementados
 import AutomationRules from "./modules/automation_rules/AutomationRules";
@@ -72,8 +73,10 @@ const App = () => (
       <Toaster />
       <Sonner />
       <I18nProvider>
-        <BrowserRouter>
-          <Routes>
+        <NotificationProvider>
+          <BrowserRouter>
+            <GlobalWebSocket />
+            <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/" element={<Login />} />
@@ -129,6 +132,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </NotificationProvider>
       </I18nProvider>
     </TooltipProvider>
   </QueryClientProvider>

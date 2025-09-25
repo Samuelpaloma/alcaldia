@@ -52,6 +52,8 @@ export default function TicketsManagement() {
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showEscalateModal, setShowEscalateModal] = useState(false);
+  const [showAssignSuccess, setShowAssignSuccess] = useState(false);
+  const [showEscalateSuccess, setShowEscalateSuccess] = useState(false);
   const [tecnicos, setTecnicos] = useState<any[]>([]);
   const [selectedTecnico, setSelectedTecnico] = useState("");
   
@@ -515,8 +517,31 @@ export default function TicketsManagement() {
                    : ticket
                ));
         
-        setShowAssignModal(false);
+        // NO cerrar el modal - mantenerlo abierto para acciones en tiempo real
+        // setShowAssignModal(false);
         setSelectedTecnico("");
+        setShowAssignSuccess(true);
+        
+        // Actualizar el ticket seleccionado si está abierto
+        if (showTicketModal && selectedTicket.id === currentTicketId) {
+          setSelectedTicket(prev => ({
+            ...prev,
+            estado: 'ASIGNADO',
+            tecnicoEmail: tecnicoEmail,
+            tecnicoAsignado: tecnicoSeleccionado?.nombre || 'Técnico'
+          }));
+        }
+        
+        // Enviar notificación WebSocket para actualización en tiempo real
+        if (window.ticketWebSocket && window.ticketWebSocket.readyState === WebSocket.OPEN) {
+          const notification = {
+            type: 'ticket_assigned',
+            ticketId: selectedTicket.id,
+            tecnicoEmail: tecnicoEmail,
+            timestamp: new Date().toISOString()
+          };
+          window.ticketWebSocket.send(JSON.stringify(notification));
+        }
         
         // Recargar datos para asegurar consistencia
         await loadTickets();
@@ -552,7 +577,27 @@ export default function TicketsManagement() {
             : ticket
         ));
         
-        setShowEscalateModal(false);
+        // NO cerrar el modal - mantenerlo abierto para acciones en tiempo real
+        // setShowEscalateModal(false);
+        setShowEscalateSuccess(true);
+        
+        // Actualizar el ticket seleccionado si está abierto
+        if (showTicketModal && selectedTicket.id === currentTicketId) {
+          setSelectedTicket(prev => ({
+            ...prev,
+            estado: 'ESCALADO'
+          }));
+        }
+        
+        // Enviar notificación WebSocket para actualización en tiempo real
+        if (window.ticketWebSocket && window.ticketWebSocket.readyState === WebSocket.OPEN) {
+          const notification = {
+            type: 'ticket_escalated',
+            ticketId: selectedTicket.id,
+            timestamp: new Date().toISOString()
+          };
+          window.ticketWebSocket.send(JSON.stringify(notification));
+        }
         
         // Mostrar notificación de éxito
         toast({
@@ -1019,22 +1064,52 @@ export default function TicketsManagement() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex space-x-2">
-                <Button 
-                  className="flex-1" 
-                  onClick={confirmAssign}
-                  disabled={!selectedTecnico}
-                >
-                  Asignar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowAssignModal(false)}
-                >
-                  Cancelar
-                </Button>
-              </div>
+              {!showAssignSuccess ? (
+                <div className="flex space-x-2">
+                  <Button 
+                    className="flex-1" 
+                    onClick={confirmAssign}
+                    disabled={!selectedTecnico || isLoading}
+                  >
+                    {isLoading ? "Asignando..." : "Asignar"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setShowAssignModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 text-green-600">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-medium">¡Ticket asignado exitosamente!</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      className="flex-1" 
+                      onClick={() => {
+                        setShowAssignModal(false);
+                        setShowAssignSuccess(false);
+                      }}
+                    >
+                      Cerrar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        setShowAssignSuccess(false);
+                        setSelectedTecnico("");
+                      }}
+                    >
+                      Asignar Otro
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1051,21 +1126,51 @@ export default function TicketsManagement() {
               <p className="text-muted-foreground">
                 ¿Estás seguro de que quieres escalar este ticket? Esta acción notificará a los supervisores.
               </p>
-              <div className="flex space-x-2">
-                <Button 
-                  className="flex-1" 
-                  onClick={confirmEscalate}
-                >
-                  Escalar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowEscalateModal(false)}
-                >
-                  Cancelar
-                </Button>
-              </div>
+              {!showEscalateSuccess ? (
+                <div className="flex space-x-2">
+                  <Button 
+                    className="flex-1" 
+                    onClick={confirmEscalate}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Escalando..." : "Escalar"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setShowEscalateModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 text-orange-600">
+                    <AlertTriangle className="w-5 h-5" />
+                    <span className="font-medium">¡Ticket escalado exitosamente!</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button 
+                      className="flex-1" 
+                      onClick={() => {
+                        setShowEscalateModal(false);
+                        setShowEscalateSuccess(false);
+                      }}
+                    >
+                      Cerrar
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        setShowEscalateSuccess(false);
+                      }}
+                    >
+                      Escalar Otro
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1362,16 +1467,6 @@ export default function TicketsManagement() {
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
 
 
 

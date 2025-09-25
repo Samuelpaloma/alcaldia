@@ -22,6 +22,8 @@ import com.example.demo.categoria.model.Categoria;
 import com.example.demo.categoria.service.CategoriaService;
 import com.example.demo.categoria.dto.response.CategoriaSimpleDTO;
 import com.example.demo.categoria.dto.response.CategoriaResponseDTO;
+import com.example.demo.notificacion.service.SmartNotificationService;
+import com.example.demo.notificacion.service.NotificacionInteligenteService;
 import com.example.demo.evidencia.model.Evidencia;
 import com.example.demo.evidencia.repository.EvidenciaRepository;
 import com.example.demo.ticket.model.HistorialEstadoTicket;
@@ -29,7 +31,6 @@ import com.example.demo.ticket.repository.HistorialEstadoTicketRepository;
 import com.example.demo.asignacion.model.HistorialAsignacion;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
-import com.example.demo.ticket.service.ComentarioService;
 import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 
 @Service
@@ -54,11 +55,21 @@ public class TicketServiceImpl implements TicketService {
     private HistorialAsignacionRepository historialAsignacionRepository;
     
     @Autowired
+    private SmartNotificationService smartNotificationService;
+    
+    @Autowired
+    private NotificacionInteligenteService notificacionInteligenteService;
+    
+    @Autowired
     private ComentarioService comentarioService;
 
     @Override
     @Transactional
     public TicketResponseDTO crearTicket(TicketRequestDTO request, String emailUsuario) {
+        System.out.println("🔔 [DEBUG] ===== TICKET SERVICE IMPL - CREAR TICKET =====");
+        System.out.println("🔔 [DEBUG] Email usuario: " + emailUsuario);
+        System.out.println("🔔 [DEBUG] Request: " + request);
+        
         // Buscar usuario creador
         Usuario creador = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -89,6 +100,25 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticketRepository.save(ticket);
+        
+        // Enviar notificación inteligente a los administradores
+        System.out.println("🔔 [DEBUG] ===== ENVIANDO NOTIFICACIÓN INTELIGENTE =====");
+        System.out.println("🔔 [DEBUG] Ticket ID: " + ticket.getId());
+        System.out.println("🔔 [DEBUG] NotificacionInteligenteService: " + (notificacionInteligenteService != null ? "INYECTADO" : "NULL"));
+        
+        try {
+            // Usar el nuevo sistema inteligente
+            notificacionInteligenteService.notificarTicketCreado(ticket, creador);
+            System.out.println("🔔 [DEBUG] ✅ Notificación inteligente enviada exitosamente");
+            
+            // También mantener el sistema viejo por compatibilidad temporal
+            smartNotificationService.notificarTicketCreado(ticket);
+            System.out.println("🔔 [DEBUG] ✅ Notificación vieja también enviada");
+        } catch (Exception e) {
+            // Log del error pero no fallar la creación del ticket
+            System.err.println("❌ Error enviando notificación: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         return convertirTicketAResponseDTO(ticket);
     }

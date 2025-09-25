@@ -1,4 +1,4 @@
-package com.example.demo.automation.controller;
+        package com.example.demo.automation.controller;
 
 import com.example.demo.automation.dto.request.ReglaAutomatizacionRequestDTO;
 import com.example.demo.automation.dto.response.ReglaAutomatizacionResponseDTO;
