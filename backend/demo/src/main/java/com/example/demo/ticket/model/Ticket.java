@@ -21,6 +21,10 @@ public class Ticket {
     @ManyToOne
     @JoinColumn(name = "tecnico_id")
     private Usuario tecnicoAsignado;
+    
+    // Email del técnico asignado (para compatibilidad)
+    @Column(name = "tecnico_email")
+    private String tecnicoEmail;
 
     // Categoría del ticket
     @ManyToOne
@@ -58,6 +62,7 @@ public class Ticket {
     private LocalDateTime fechaActualizacion;
 
     // Campos existentes
+    private String asunto;
     private String descripcion;
     private String prioridad;
 
@@ -70,9 +75,15 @@ public class Ticket {
 
     public Usuario getTecnicoAsignado() { return tecnicoAsignado; }
     public void setTecnicoAsignado(Usuario tecnicoAsignado) { this.tecnicoAsignado = tecnicoAsignado; }
+    
+    public String getTecnicoEmail() { return tecnicoEmail; }
+    public void setTecnicoEmail(String tecnicoEmail) { this.tecnicoEmail = tecnicoEmail; }
 
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
+
+    public String getAsunto() { return asunto; }
+    public void setAsunto(String asunto) { this.asunto = asunto; }
 
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }

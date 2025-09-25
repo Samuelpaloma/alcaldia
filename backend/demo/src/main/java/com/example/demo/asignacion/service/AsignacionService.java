@@ -2,404 +2,279 @@ package com.example.demo.asignacion.service;
 
 import com.example.demo.asignacion.dto.request.AsignarTicketRequestDTO;
 import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
+import com.example.demo.asignacion.model.AsignacionTicket;
 import com.example.demo.asignacion.model.HistorialAsignacion;
+import com.example.demo.asignacion.repository.AsignacionTicketRepository;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.ticket.model.Ticket;
-import com.example.demo.ticket.model.TicketAcceso;
 import com.example.demo.ticket.repository.TicketRepository;
-import com.example.demo.ticket.repository.TicketAccesoRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
-@Slf4j
 public class AsignacionService {
     
-    private final TicketRepository ticketRepository;
-    private final UsuarioRepository usuarioRepository;
-    private final HistorialAsignacionRepository historialAsignacionRepository;
-    private final TicketAccesoRepository ticketAccesoRepository;
+    @Autowired
+    private AsignacionTicketRepository asignacionTicketRepository;
     
-    /**
-     * Asignar ticket a técnico
-     */
+    @Autowired
+    private HistorialAsignacionRepository historialAsignacionRepository;
+    
+    @Autowired
+    private TicketRepository ticketRepository;
+    
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+    
     public AsignacionResponseDTO asignarTicket(AsignarTicketRequestDTO request, String emailAsignador) {
-        log.info("Asignando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
-        
-        // 1. Buscar ticket
-        Ticket ticket = ticketRepository.findById(request.getTicketId())
-            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
-        
-        // 2. Buscar técnico
-        Usuario tecnico = usuarioRepository.findById(request.getTecnicoId())
-            .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
-        
-        // 3. Verificar que sea técnico
-        if (!tecnico.isTecnico()) {
-            throw new RuntimeException("El usuario no es un técnico");
+        Optional<Ticket> ticketOpt = ticketRepository.findById(request.getTicketId());
+        if (ticketOpt.isEmpty()) {
+            throw new RuntimeException("Ticket no encontrado con ID: " + request.getTicketId());
         }
         
-        // 4. Buscar quien asigna
-        Usuario asignador = usuarioRepository.findByEmail(emailAsignador)
-            .orElseThrow(() -> new RuntimeException("Usuario asignador no encontrado"));
+        Optional<Usuario> tecnicoOpt = usuarioRepository.findById(request.getTecnicoId());
+        if (tecnicoOpt.isEmpty()) {
+            throw new RuntimeException("Técnico no encontrado con ID: " + request.getTecnicoId());
+        }
         
-        // 5. Guardar estado anterior
-        String estadoAnterior = ticket.getEstado();
+        Ticket ticket = ticketOpt.get();
+        Usuario tecnico = tecnicoOpt.get();
         
-        // 6. Asignar ticket
-        ticket.setTecnicoAsignado(tecnico);
+        Optional<AsignacionTicket> asignacionExistente = asignacionTicketRepository
+            .findByTicketIdAndActivaTrue(request.getTicketId());
+        
+        if (asignacionExistente.isPresent()) {
+            throw new RuntimeException("El ticket ya está asignado a otro técnico");
+        }
+        
+        AsignacionTicket asignacion = new AsignacionTicket();
+        asignacion.setTicketId(request.getTicketId());
+        asignacion.setTecnicoId(request.getTecnicoId());
+        asignacion.setFechaAsignacion(LocalDateTime.now());
+        asignacion.setActiva(true);
+        asignacion.setComentario(request.getComentario());
+        
+        AsignacionTicket asignacionGuardada = asignacionTicketRepository.save(asignacion);
+        
         ticket.setEstado("ASIGNADO");
-        
-        // 7. Actualizar prioridad si se proporciona
-        if (request.getPrioridad() != null) {
-            ticket.setPrioridad(request.getPrioridad());
-        }
-        
-        // 8. Actualizar fecha de actualización
-        ticket.setFechaActualizacion(LocalDateTime.now());
-        
-        // 9. Guardar ticket
+        ticket.setTecnicoAsignado(tecnico);
+        ticket.setTecnicoEmail(tecnico.getEmail());
         ticketRepository.save(ticket);
         
-        // 10. Crear acceso del técnico al ticket
-        crearAccesoTicket(ticket, tecnico, TicketAcceso.TipoAcceso.ASIGNADO, "Asignación inicial");
+        guardarHistorialAsignacion(request.getTicketId(), request.getTecnicoId(), 
+                                 emailAsignador, "ASIGNACION", request.getComentario());
         
-        // 11. Guardar en historial
-        guardarHistorialAsignacion(ticket, tecnico, asignador, HistorialAsignacion.TipoOperacion.ASIGNAR, 
-                                 estadoAnterior, "ASIGNADO", request.getComentario());
-        
-        log.info("Ticket {} asignado exitosamente a técnico {}", ticket.getId(), tecnico.getEmail());
-        
-        // 10. Crear respuesta
-        return AsignacionResponseDTO.builder()
-            .ticketId(ticket.getId())
-            .ticketTitulo(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Ticket")
-            .tecnicoId(tecnico.getIdUsuario())
-            .tecnicoNombre(tecnico.getNombreCompleto())
-            .tecnicoEmail(tecnico.getEmail())
-            .estadoAnterior(estadoAnterior)
-            .estadoNuevo("ASIGNADO")
-            .prioridad(ticket.getPrioridad())
-            .comentario(request.getComentario())
-            .fechaAsignacion(LocalDateTime.now())
-            .asignadoPor(asignador.getNombreCompleto())
-            .tipoOperacion("ASIGNAR")
-            .build();
+        return convertirADTO(asignacionGuardada, ticket, tecnico);
     }
     
-    /**
-     * Reasignar ticket a otro técnico
-     */
-    public AsignacionResponseDTO reasignarTicket(AsignarTicketRequestDTO request, String emailAsignador) {
-        log.info("Reasignando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
-        
-        // 1. Buscar ticket
-        Ticket ticket = ticketRepository.findById(request.getTicketId())
-            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
-        
-        // 2. Verificar que ya esté asignado
-        if (ticket.getTecnicoAsignado() == null) {
-            throw new RuntimeException("El ticket no está asignado");
+    public AsignacionResponseDTO reasignarTicket(Long ticketId, Long nuevoTecnicoId, String emailReasignador) {
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            throw new RuntimeException("Ticket no encontrado con ID: " + ticketId);
         }
         
-        // 3. Guardar técnico anterior
-        Usuario tecnicoAnterior = ticket.getTecnicoAsignado();
-        String estadoAnterior = ticket.getEstado();
-        
-        // 4. Asignar a nuevo técnico
-        AsignacionResponseDTO response = asignarTicket(request, emailAsignador);
-        // Cambiar el tipo de operación a REASIGNAR
-        response.setTipoOperacion("REASIGNAR");
-        return response;
-    }
-    
-    /**
-     * Escalar ticket a otro técnico (escalación por dificultad)
-     */
-    public AsignacionResponseDTO escalarTicket(AsignarTicketRequestDTO request, String emailEscalador) {
-        log.info("Escalando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
-        
-        // 1. Buscar ticket
-        Ticket ticket = ticketRepository.findById(request.getTicketId())
-            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
-        
-        // 2. Verificar que ya esté asignado
-        if (ticket.getTecnicoAsignado() == null) {
-            throw new RuntimeException("El ticket no está asignado para escalar");
+        Optional<Usuario> tecnicoOpt = usuarioRepository.findById(nuevoTecnicoId);
+        if (tecnicoOpt.isEmpty()) {
+            throw new RuntimeException("Técnico no encontrado con ID: " + nuevoTecnicoId);
         }
         
-        // 3. Guardar técnico anterior
-        Usuario tecnicoAnterior = ticket.getTecnicoAsignado();
-        String estadoAnterior = ticket.getEstado();
+        Optional<AsignacionTicket> asignacionAnterior = asignacionTicketRepository
+            .findByTicketIdAndActivaTrue(ticketId);
         
-        // 4. Buscar nuevo técnico
-        Usuario nuevoTecnico = usuarioRepository.findById(request.getTecnicoId())
-            .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
-        
-        // 5. Verificar que sea técnico
-        if (!nuevoTecnico.isTecnico()) {
-            throw new RuntimeException("El usuario no es un técnico");
+        if (asignacionAnterior.isPresent()) {
+            AsignacionTicket anterior = asignacionAnterior.get();
+            anterior.setActiva(false);
+            asignacionTicketRepository.save(anterior);
         }
         
-        // 6. Buscar quien escala
-        Usuario escalador = usuarioRepository.findByEmail(emailEscalador)
-            .orElseThrow(() -> new RuntimeException("Usuario escalador no encontrado"));
+        AsignacionTicket nuevaAsignacion = new AsignacionTicket();
+        nuevaAsignacion.setTicketId(ticketId);
+        nuevaAsignacion.setTecnicoId(nuevoTecnicoId);
+        nuevaAsignacion.setFechaAsignacion(LocalDateTime.now());
+        nuevaAsignacion.setActiva(true);
         
-        // 7. Cerrar acceso del técnico anterior
-        cerrarAccesoTicket(ticket, tecnicoAnterior, "Ticket escalado a otro técnico");
+        AsignacionTicket asignacionGuardada = asignacionTicketRepository.save(nuevaAsignacion);
         
-        // 8. Escalar ticket (cambiar técnico y marcar como escalado)
-        ticket.setTecnicoAsignado(nuevoTecnico);
-        ticket.setEstado("ESCALADO"); // Marcar como escalado
-        
-        // 8. Actualizar prioridad si se proporciona
-        if (request.getPrioridad() != null) {
-            ticket.setPrioridad(request.getPrioridad());
-        }
-        
-        // 9. Actualizar fecha de actualización
-        ticket.setFechaActualizacion(LocalDateTime.now());
-        
-        // 10. Guardar ticket
+        Ticket ticket = ticketOpt.get();
+        Usuario tecnico = tecnicoOpt.get();
+        ticket.setTecnicoAsignado(tecnico);
+        ticket.setTecnicoEmail(tecnico.getEmail());
         ticketRepository.save(ticket);
         
-        // 11. Crear acceso del nuevo técnico al ticket
-        crearAccesoTicket(ticket, nuevoTecnico, TicketAcceso.TipoAcceso.ESCALADO, "Ticket escalado");
+        guardarHistorialAsignacion(ticketId, nuevoTecnicoId, emailReasignador, "REASIGNACION", null);
         
-        // 12. Guardar en historial
-        guardarHistorialAsignacion(ticket, nuevoTecnico, escalador, HistorialAsignacion.TipoOperacion.ESCALAR, 
-                                 estadoAnterior, "ESCALADO", 
-                                 request.getComentario() != null ? request.getComentario() : "Ticket escalado por dificultad");
-        
-        log.info("Ticket {} escalado exitosamente de {} a {}", 
-            ticket.getId(), tecnicoAnterior.getEmail(), nuevoTecnico.getEmail());
-        
-        // 11. Crear respuesta
-        return AsignacionResponseDTO.builder()
-            .ticketId(ticket.getId())
-            .ticketTitulo(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Ticket")
-            .tecnicoId(nuevoTecnico.getIdUsuario())
-            .tecnicoNombre(nuevoTecnico.getNombreCompleto())
-            .tecnicoEmail(nuevoTecnico.getEmail())
-            .estadoAnterior(estadoAnterior)
-            .estadoNuevo("ESCALADO") // Marcar como escalado
-            .prioridad(ticket.getPrioridad())
-            .comentario(request.getComentario() != null ? request.getComentario() : "Ticket escalado por dificultad")
-            .fechaAsignacion(LocalDateTime.now())
-            .asignadoPor(escalador.getNombreCompleto())
-            .tipoOperacion("ESCALAR")
-            .build();
+        return convertirADTO(asignacionGuardada, ticket, tecnico);
     }
     
-    /**
-     * Desasignar ticket
-     */
-    public AsignacionResponseDTO desasignarTicket(Long ticketId, String emailDesasignador) {
-        log.info("Desasignando ticket {}", ticketId);
-        
-        // 1. Buscar ticket
-        Ticket ticket = ticketRepository.findById(ticketId)
-            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
-        
-        // 2. Verificar que esté asignado
-        if (ticket.getTecnicoAsignado() == null) {
-            throw new RuntimeException("El ticket no está asignado");
+    public AsignacionResponseDTO escalarTicket(Long ticketId, Long tecnicoId, String emailEscalador, String comentario) {
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            throw new RuntimeException("Ticket no encontrado con ID: " + ticketId);
         }
         
-        // 3. Buscar quien desasigna
-        Usuario desasignador = usuarioRepository.findByEmail(emailDesasignador)
-            .orElseThrow(() -> new RuntimeException("Usuario desasignador no encontrado"));
-        
-        // 4. Guardar información anterior
-        Usuario tecnicoAnterior = ticket.getTecnicoAsignado();
-        String estadoAnterior = ticket.getEstado();
-        
-        // 5. Desasignar
-        ticket.setTecnicoAsignado(null);
-        ticket.setEstado("PENDIENTE");
-        ticket.setFechaActualizacion(LocalDateTime.now());
-        
-        // 6. Guardar
-        ticketRepository.save(ticket);
-        
-        log.info("Ticket {} desasignado exitosamente", ticket.getId());
-        
-        // 7. Crear respuesta
-        return AsignacionResponseDTO.builder()
-            .ticketId(ticket.getId())
-            .ticketTitulo(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Ticket")
-            .tecnicoId(null)
-            .tecnicoNombre(null)
-            .tecnicoEmail(null)
-            .estadoAnterior(estadoAnterior)
-            .estadoNuevo("PENDIENTE")
-            .prioridad(ticket.getPrioridad())
-            .comentario("Ticket desasignado")
-            .fechaAsignacion(LocalDateTime.now())
-            .asignadoPor(desasignador.getNombreCompleto())
-            .tipoOperacion("DESASIGNAR")
-            .build();
-    }
-    
-    /**
-     * Obtener tickets asignados a un técnico
-     */
-    @Transactional(readOnly = true)
-    public List<AsignacionResponseDTO> obtenerTicketsAsignados(Long tecnicoId) {
-        log.info("Obteniendo tickets asignados al técnico {}", tecnicoId);
-        
-        Usuario tecnico = usuarioRepository.findById(tecnicoId)
-            .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
-        
-        List<Ticket> tickets = ticketRepository.findByTecnicoAsignado(tecnico);
-        
-        return tickets.stream()
-            .map(ticket -> AsignacionResponseDTO.builder()
-                .ticketId(ticket.getId())
-                .ticketTitulo(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Ticket")
-                .tecnicoId(tecnico.getIdUsuario())
-                .tecnicoNombre(tecnico.getNombreCompleto())
-                .tecnicoEmail(tecnico.getEmail())
-                .estadoAnterior("PENDIENTE")
-                .estadoNuevo(ticket.getEstado())
-                .prioridad(ticket.getPrioridad())
-                .fechaAsignacion(ticket.getFechaActualizacion())
-                .build())
-            .collect(Collectors.toList());
-    }
-    
-    /**
-     * Obtener tickets sin asignar
-     */
-    @Transactional(readOnly = true)
-    public List<AsignacionResponseDTO> obtenerTicketsSinAsignar() {
-        log.info("Obteniendo tickets sin asignar");
-        
-        List<Ticket> tickets = ticketRepository.findByTecnicoAsignadoIsNull();
-        
-        return tickets.stream()
-            .map(ticket -> AsignacionResponseDTO.builder()
-                .ticketId(ticket.getId())
-                .ticketTitulo(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Ticket")
-                .tecnicoId(null)
-                .tecnicoNombre(null)
-                .tecnicoEmail(null)
-                .estadoAnterior("PENDIENTE")
-                .estadoNuevo(ticket.getEstado())
-                .prioridad(ticket.getPrioridad())
-                .fechaAsignacion(ticket.getFechaCreacion())
-                .build())
-            .collect(Collectors.toList());
-    }
-    
-    /**
-     * Reabrir ticket cerrado
-     */
-    public AsignacionResponseDTO reabrirTicket(Long ticketId, String emailReabridor) {
-        log.info("Reabriendo ticket {}", ticketId);
-        
-        // 1. Buscar ticket
-        Ticket ticket = ticketRepository.findById(ticketId)
-            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
-        
-        // 2. Verificar que esté cerrado
-        if (!"CERRADO".equalsIgnoreCase(ticket.getEstado()) && !"TERMINADO".equalsIgnoreCase(ticket.getEstado())) {
-            throw new RuntimeException("El ticket no está cerrado y no puede ser reabierto");
+        Optional<Usuario> tecnicoOpt = usuarioRepository.findById(tecnicoId);
+        if (tecnicoOpt.isEmpty()) {
+            throw new RuntimeException("Técnico no encontrado con ID: " + tecnicoId);
         }
         
-        // 3. Buscar quien reabre
-        Usuario reabridor = usuarioRepository.findByEmail(emailReabridor)
-            .orElseThrow(() -> new RuntimeException("Usuario reabridor no encontrado"));
+        Optional<AsignacionTicket> asignacionAnterior = asignacionTicketRepository
+            .findByTicketIdAndActivaTrue(ticketId);
         
-        // 4. Guardar estado anterior
-        String estadoAnterior = ticket.getEstado();
+        if (asignacionAnterior.isPresent()) {
+            AsignacionTicket anterior = asignacionAnterior.get();
+            anterior.setActiva(false);
+            asignacionTicketRepository.save(anterior);
+        }
         
-        // 5. Reabrir ticket
-        ticket.setEstado("PENDIENTE");
-        ticket.setFechaActualizacion(LocalDateTime.now());
+        AsignacionTicket escalacion = new AsignacionTicket();
+        escalacion.setTicketId(ticketId);
+        escalacion.setTecnicoId(tecnicoId);
+        escalacion.setFechaAsignacion(LocalDateTime.now());
+        escalacion.setActiva(true);
+        escalacion.setComentario(comentario);
         
-        // 6. Guardar ticket
+        AsignacionTicket escalacionGuardada = asignacionTicketRepository.save(escalacion);
+        
+        Ticket ticket = ticketOpt.get();
+        Usuario tecnico = tecnicoOpt.get();
+        ticket.setEstado("ESCALADO");
+        ticket.setTecnicoAsignado(tecnico);
+        ticket.setTecnicoEmail(tecnico.getEmail());
         ticketRepository.save(ticket);
         
-        log.info("Ticket {} reabierto exitosamente por {}", ticket.getId(), reabridor.getEmail());
+        guardarHistorialAsignacion(ticketId, tecnicoId, emailEscalador, "ESCALAMIENTO", comentario);
         
-        // 7. Crear respuesta
-        return AsignacionResponseDTO.builder()
-            .ticketId(ticket.getId())
-            .ticketTitulo(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Ticket")
-            .tecnicoId(ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getIdUsuario() : null)
-            .tecnicoNombre(ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getNombreCompleto() : null)
-            .tecnicoEmail(ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null)
-            .estadoAnterior(estadoAnterior)
-            .estadoNuevo("PENDIENTE")
-            .prioridad(ticket.getPrioridad())
-            .comentario("Ticket reabierto por el cliente")
-            .fechaAsignacion(LocalDateTime.now())
-            .asignadoPor(reabridor.getNombreCompleto())
-            .tipoOperacion("REABRIR")
-            .build();
+        return convertirADTO(escalacionGuardada, ticket, tecnico);
     }
     
-    /**
-     * Guardar entrada en el historial de asignaciones
-     */
-    private void guardarHistorialAsignacion(Ticket ticket, Usuario tecnico, Usuario usuarioQueAsigna, 
-                                          HistorialAsignacion.TipoOperacion tipoOperacion, 
-                                          String estadoAnterior, String estadoNuevo, String comentario) {
+    public void desasignarTicket(Long ticketId, String emailDesasignador) {
+        Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository
+            .findByTicketIdAndActivaTrue(ticketId);
+        
+        if (asignacionActiva.isPresent()) {
+            AsignacionTicket asignacion = asignacionActiva.get();
+            asignacion.setActiva(false);
+            asignacionTicketRepository.save(asignacion);
+        }
+        
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isPresent()) {
+            Ticket ticket = ticketOpt.get();
+            ticket.setEstado("PENDIENTE");
+            ticket.setTecnicoEmail(null);
+            ticketRepository.save(ticket);
+        }
+        
+        guardarHistorialAsignacion(ticketId, null, emailDesasignador, "DESASIGNACION", null);
+    }
+    
+    public void reabrirTicket(Long ticketId, String emailReabridor) {
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isPresent()) {
+            Ticket ticket = ticketOpt.get();
+            ticket.setEstado("REABIERTO");
+            ticketRepository.save(ticket);
+            
+            guardarHistorialAsignacion(ticketId, null, emailReabridor, "REAPERTURA", null);
+        }
+    }
+    
+    public List<AsignacionResponseDTO> obtenerAsignacionesPorTicket(Long ticketId) {
+        List<AsignacionTicket> asignaciones = asignacionTicketRepository.findByTicketIdOrderByFechaAsignacionDesc(ticketId);
+        return asignaciones.stream()
+                .map(this::convertirADTOBasico)
+                .toList();
+    }
+    
+    public List<AsignacionResponseDTO> obtenerAsignacionesActivasPorTecnico(Long tecnicoId) {
+        List<AsignacionTicket> asignaciones = asignacionTicketRepository.findByTecnicoIdAndActivaTrue(tecnicoId);
+        return asignaciones.stream()
+                .map(this::convertirADTOBasico)
+                .toList();
+    }
+    
+    private void guardarHistorialAsignacion(Long ticketId, Long tecnicoId, String emailUsuario, 
+                                          String tipoAccion, String comentario) {
+        // Obtener el ID del usuario que asigna
+        Optional<Usuario> usuarioAsignador = usuarioRepository.findByEmail(emailUsuario);
+        Long usuarioQueAsignaId = usuarioAsignador.map(usuario -> usuario.getIdUsuario()).orElse(1L); // Fallback a ID 1
+        
+        // Obtener el estado anterior del ticket
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        String estadoAnterior = ticketOpt.map(Ticket::getEstado).orElse("PENDIENTE");
+        
+        // Determinar el estado nuevo basado en el tipo de acción
+        String estadoNuevo = determinarEstadoNuevo(tipoAccion);
+        
         HistorialAsignacion historial = new HistorialAsignacion();
-        historial.setTicket(ticket);
-        historial.setTecnico(tecnico);
-        historial.setUsuarioQueAsigna(usuarioQueAsigna);
-        historial.setTipoOperacion(tipoOperacion);
-        historial.setEstadoAnterior(estadoAnterior);
-        historial.setEstadoNuevo(estadoNuevo);
-        historial.setComentario(comentario);
+        historial.setTicketId(ticketId);
+        historial.setTecnicoId(tecnicoId);
+        historial.setUsuarioQueAsignaId(usuarioQueAsignaId);
+        historial.setEmailUsuario(emailUsuario != null ? emailUsuario : "sistema@admin.com");
+        historial.setTipoOperacion(tipoAccion != null ? tipoAccion : "ASIGNACION");
+        historial.setTipoAccion(tipoAccion != null ? tipoAccion : "ASIGNACION"); // También establecer tipo_accion
+        historial.setEstadoAnterior(estadoAnterior != null ? estadoAnterior : "PENDIENTE");
+        historial.setEstadoNuevo(estadoNuevo != null ? estadoNuevo : "PENDIENTE");
+        historial.setComentario(comentario != null ? comentario : "");
+        // fechaOperacion se establece automáticamente por @CreationTimestamp
         
         historialAsignacionRepository.save(historial);
-        log.info("Historial guardado para ticket {} - operación: {}", ticket.getId(), tipoOperacion);
     }
     
-    /**
-     * Crear acceso de técnico a ticket
-     */
-    private void crearAccesoTicket(Ticket ticket, Usuario tecnico, TicketAcceso.TipoAcceso tipoAcceso, String motivo) {
-        TicketAcceso acceso = new TicketAcceso();
-        acceso.setTicket(ticket);
-        acceso.setTecnico(tecnico);
-        acceso.setTipoAcceso(tipoAcceso);
-        acceso.setActivo(true);
-        acceso.setMotivoCierre(motivo);
-        
-        ticketAccesoRepository.save(acceso);
-        log.info("Acceso creado para técnico {} al ticket {} - tipo: {}", tecnico.getEmail(), ticket.getId(), tipoAcceso);
-    }
-    
-    /**
-     * Cerrar acceso de técnico a ticket
-     */
-    private void cerrarAccesoTicket(Ticket ticket, Usuario tecnico, String motivo) {
-        List<TicketAcceso> accesos = ticketAccesoRepository.findByTicketAndTecnico(ticket, tecnico);
-        
-        for (TicketAcceso acceso : accesos) {
-            if (acceso.getActivo()) {
-                acceso.setActivo(false);
-                acceso.setFechaCierre(LocalDateTime.now());
-                acceso.setMotivoCierre(motivo);
-                ticketAccesoRepository.save(acceso);
-                log.info("Acceso cerrado para técnico {} al ticket {} - motivo: {}", tecnico.getEmail(), ticket.getId(), motivo);
-            }
+    private String determinarEstadoNuevo(String tipoAccion) {
+        switch (tipoAccion.toUpperCase()) {
+            case "ASIGNACION":
+                return "ASIGNADO";
+            case "REASIGNACION":
+                return "ASIGNADO";
+            case "ESCALAMIENTO":
+                return "ESCALADO";
+            case "DESASIGNACION":
+                return "PENDIENTE";
+            case "REAPERTURA":
+                return "REABIERTO";
+            default:
+                return "PENDIENTE";
         }
     }
+    
+    private AsignacionResponseDTO convertirADTO(AsignacionTicket asignacion, Ticket ticket, Usuario tecnico) {
+        AsignacionResponseDTO dto = new AsignacionResponseDTO();
+        dto.setId(asignacion.getId());
+        dto.setTicketId(asignacion.getTicketId());
+        dto.setTecnicoId(asignacion.getTecnicoId());
+        dto.setTecnicoNombre(tecnico.getNombre() + " " + tecnico.getApellido());
+        dto.setTecnicoEmail(tecnico.getEmail());
+        dto.setFechaAsignacion(asignacion.getFechaAsignacion());
+        dto.setActiva(asignacion.getActiva());
+        dto.setComentario(asignacion.getComentario());
+        dto.setTicketAsunto(ticket.getAsunto());
+        dto.setTicketEstado(ticket.getEstado());
+        return dto;
+    }
+    
+    private AsignacionResponseDTO convertirADTOBasico(AsignacionTicket asignacion) {
+        AsignacionResponseDTO dto = new AsignacionResponseDTO();
+        dto.setId(asignacion.getId());
+        dto.setTicketId(asignacion.getTicketId());
+        dto.setTecnicoId(asignacion.getTecnicoId());
+        dto.setFechaAsignacion(asignacion.getFechaAsignacion());
+        dto.setActiva(asignacion.getActiva());
+        dto.setComentario(asignacion.getComentario());
+        return dto;
+    }
 }
+
+
+
+
 
 

@@ -297,7 +297,7 @@ export interface AsignacionResponseDTO {
 export interface AsignarTicketRequestDTO {
   ticketId: number;
   tecnicoId: number;
-  comentarios?: string;
+  comentario?: string;
 }
 
 // ========== TIPOS PARA TÉCNICOS ==========
@@ -644,6 +644,20 @@ class ApiClient {
     return this.request(`/tickets/historial?page=${page}&size=${size}`);
   }
 
+  async getMensajesTicket(ticketId: number): Promise<any[]> {
+    return this.request(`/tickets/${ticketId}/comentarios`);
+  }
+
+  async getTicketsHistory(page: number = 0, size: number = 10): Promise<{
+    content: TicketResponseDTO[];
+    totalElements: number;
+    totalPages: number;
+    size: number;
+    number: number;
+  }> {
+    return this.request(`/tickets/historial?page=${page}&size=${size}`);
+  }
+
   async buscarTickets(filtros: {
     categoria?: string;
     estado?: string;
@@ -979,6 +993,117 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ mensaje })
     });
+  }
+
+  // ========== ENCUESTA DE SATISFACCIÓN ==========
+  
+  /**
+   * Enviar encuesta de satisfacción
+   */
+  async enviarEncuestaSatisfaccion(data: {
+    ticketId: number;
+    calificacion: number;
+    comentario: string;
+    aspectosPositivos: string[];
+    aspectosNegativos: string[];
+  }): Promise<ApiResponse> {
+    return this.request('/encuestas/satisfaccion', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  // ========== INTELIGENCIA ARTIFICIAL ==========
+  
+  /**
+   * Clasificar ticket con IA
+   */
+  async clasificarTicketConIA(ticketId: number): Promise<any> {
+    return this.request(`/ai/clasificar/${ticketId}`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Obtener sugerencias de IA
+   */
+  async obtenerSugerenciasIA(ticketId: number): Promise<any> {
+    return this.request(`/ai/sugerencias/${ticketId}`);
+  }
+
+  // ========== AUTOMATIZACIÓN Y REGLAS ==========
+  
+  /**
+   * Obtener reglas de automatización
+   */
+  async obtenerReglasAutomatizacion(): Promise<any[]> {
+    return this.request('/automation/rules');
+  }
+
+  /**
+   * Crear regla de automatización
+   */
+  async crearReglaAutomatizacion(rule: any): Promise<ApiResponse> {
+    return this.request('/automation/rules', {
+      method: 'POST',
+      body: JSON.stringify(rule)
+    });
+  }
+
+  /**
+   * Actualizar regla de automatización
+   */
+  async actualizarReglaAutomatizacion(ruleId: number, updates: any): Promise<ApiResponse> {
+    return this.request(`/automation/rules/${ruleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  }
+
+  /**
+   * Eliminar regla de automatización
+   */
+  async eliminarReglaAutomatizacion(ruleId: number): Promise<ApiResponse> {
+    return this.request(`/automation/rules/${ruleId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // ========== DASHBOARD AVANZADO ==========
+  
+  /**
+   * Obtener métricas del dashboard
+   */
+  async obtenerMetricasDashboard(timeRange: string = '7d'): Promise<any> {
+    return this.request(`/dashboard/metrics?range=${timeRange}`);
+  }
+
+  /**
+   * Exportar reporte del dashboard
+   */
+  async exportarReporteDashboard(timeRange: string, format: 'pdf' | 'excel'): Promise<ApiResponse> {
+    return this.request(`/dashboard/export?range=${timeRange}&format=${format}`, {
+      method: 'POST'
+    });
+  }
+
+  // ========== SOPORTE MULTI-IDIOMA ==========
+  
+  /**
+   * Cambiar idioma del sistema
+   */
+  async cambiarIdioma(language: string): Promise<ApiResponse> {
+    return this.request('/settings/language', {
+      method: 'POST',
+      body: JSON.stringify({ language })
+    });
+  }
+
+  /**
+   * Obtener idioma actual
+   */
+  async obtenerIdiomaActual(): Promise<{ language: string }> {
+    return this.request('/settings/language');
   }
 
   // ========== GESTIÓN DE TÉCNICOS ==========
@@ -1696,15 +1821,6 @@ class ApiClient {
 
   // ========== GESTIÓN DE ASIGNACIONES ==========
   
-  /**
-   * Asignar ticket a técnico
-   */
-  async asignarTicket(ticketId: number, tecnicoId: number): Promise<ApiResponse> {
-    return this.request('/asignaciones/asignar', {
-      method: 'POST',
-      body: JSON.stringify({ ticketId, tecnicoId })
-    });
-  }
 
   /**
    * Reasignar ticket a otro técnico
@@ -1719,10 +1835,10 @@ class ApiClient {
   /**
    * Escalar ticket a otro técnico (escalación por dificultad)
    */
-  async escalarTicket(ticketId: number, tecnicoId: number): Promise<ApiResponse> {
+  async escalarTicket(request: { ticketId: number, tecnicoId: number, comentario?: string }): Promise<ApiResponse> {
     return this.request('/asignaciones/escalar', {
       method: 'POST',
-      body: JSON.stringify({ ticketId, tecnicoId })
+      body: JSON.stringify(request)
     });
   }
 
@@ -1747,10 +1863,178 @@ class ApiClient {
   /**
    * Enviar comentario a un ticket
    */
-  async enviarComentario(ticketId: number, mensaje: string): Promise<ApiResponse> {
+  async enviarComentario(ticketId: number, mensaje: string, usuarioId?: number, autor?: string, autorEmail?: string, tipoAutor?: string): Promise<ApiResponse> {
+    // Intentar primero con todos los campos
+    try {
+      return await this.request(`/tickets/${ticketId}/comentarios`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          mensaje,
+          usuario_id: usuarioId,
+          autor: autor || 'Usuario',
+          autor_email: autorEmail || 'usuario@ejemplo.com',
+          tipo_autor: tipoAutor || 'cliente',
+          fecha_creacion: new Date().toISOString()
+        })
+      });
+    } catch (error) {
+      console.log('🔄 Intentando método alternativo...');
+      // Si falla, intentar solo con los campos básicos
+      return await this.request(`/tickets/${ticketId}/comentarios`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          mensaje,
+          autor: autor || 'Usuario',
+          autor_email: autorEmail || 'usuario@ejemplo.com',
+          tipo_autor: tipoAutor || 'cliente'
+        })
+      });
+    }
+  }
+
+  /**
+   * Obtener comentarios de un ticket
+   */
+  async obtenerComentarios(ticketId: number): Promise<any[]> {
+    return this.request(`/tickets/${ticketId}/comentarios`);
+  }
+
+  /**
+   * Método alternativo para enviar comentarios si el principal falla
+   */
+  async enviarComentarioAlternativo(ticketId: number, mensaje: string, usuarioId?: number): Promise<ApiResponse> {
+    console.log('🔄 Usando método alternativo para comentarios...');
+    
+    // Si tenemos usuario_id, incluirlo
+    if (usuarioId) {
+      return this.request(`/tickets/${ticketId}/comentarios`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          mensaje: mensaje,
+          usuario_id: usuarioId
+        })
+      });
+    } else {
+      // Si no tenemos usuario_id, usar un valor por defecto
+      return this.request(`/tickets/${ticketId}/comentarios`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          mensaje: mensaje,
+          usuario_id: 1 // Usar ID 1 como fallback
+        })
+      });
+    }
+  }
+
+  /**
+   * Método de emergencia para comentarios (con usuario_id)
+   */
+  async enviarComentarioEmergencia(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    console.log('🚨 Usando método de emergencia para comentarios...');
+    
+    const payload = { 
+      mensaje: mensaje,
+      autor: 'Usuario',
+      autor_email: 'usuario@ejemplo.com',
+      tipo_autor: 'cliente',
+      usuario_id: 1, // ID por defecto
+      fecha_creacion: new Date().toISOString()
+    };
+    
+    console.log('🚨 Payload de emergencia:', payload);
+    console.log('🚨 URL:', `/tickets/${ticketId}/comentarios`);
+    
     return this.request(`/tickets/${ticketId}/comentarios`, {
       method: 'POST',
-      body: JSON.stringify({ mensaje })
+      body: JSON.stringify(payload)
+    });
+  }
+
+  /**
+   * Método que funciona con la estructura real del backend
+   */
+  async enviarComentarioBackend(ticketId: number, mensaje: string, usuarioId?: number): Promise<ApiResponse> {
+    console.log('🔧 Usando método compatible con backend...');
+    
+    // Obtener datos del usuario si no se proporcionan
+    let autor = 'Usuario';
+    let autorEmail = 'usuario@ejemplo.com';
+    let tipoAutor = 'cliente';
+    let userId = usuarioId || 1;
+    
+    try {
+      const userProfile = await this.getMyProfile();
+      if (userProfile) {
+        autor = `${userProfile.nombre || ''} ${userProfile.apellido || ''}`.trim() || 'Usuario';
+        autorEmail = userProfile.email || 'usuario@ejemplo.com';
+        tipoAutor = userProfile.tipoUsuario === 'Técnico' ? 'tecnico' : 'cliente';
+        userId = userProfile.id || 1;
+      }
+    } catch (error) {
+      console.log('⚠️ No se pudo obtener perfil del usuario, usando valores por defecto');
+    }
+    
+    console.log('📤 Enviando comentario con datos:', {
+      ticketId,
+      mensaje,
+      autor,
+      autorEmail,
+      tipoAutor,
+      userId
+    });
+    
+    return this.request(`/tickets/${ticketId}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify({ 
+        mensaje: mensaje,
+        autor: autor,
+        autor_email: autorEmail,
+        tipo_autor: tipoAutor,
+        usuario_id: userId,
+        fecha_creacion: new Date().toISOString()
+      })
+    });
+  }
+
+  /**
+   * Método que funciona con la estructura real del backend - VERSIÓN CORREGIDA
+   */
+  async enviarComentarioFuncional(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    console.log('🔧 Usando método funcional para comentarios...');
+    
+    // Obtener datos del usuario actual
+    let autor = 'Usuario';
+    let autorEmail = 'usuario@ejemplo.com';
+    let tipoAutor = 'cliente';
+    let userId = 1;
+    
+    try {
+      const userProfile = await this.getMyProfile();
+      if (userProfile) {
+        autor = `${userProfile.nombre || ''} ${userProfile.apellido || ''}`.trim() || 'Usuario';
+        autorEmail = userProfile.email || 'usuario@ejemplo.com';
+        tipoAutor = userProfile.tipoUsuario === 'Técnico' ? 'tecnico' : 'cliente';
+        userId = userProfile.id || 1;
+      }
+    } catch (error) {
+      console.log('⚠️ No se pudo obtener perfil del usuario, usando valores por defecto');
+    }
+    
+    // Crear el payload exacto que necesita el backend
+    const payload = {
+      mensaje: mensaje,
+      autor: autor,
+      autor_email: autorEmail,
+      tipo_autor: tipoAutor,
+      usuario_id: userId,
+      fecha_creacion: new Date().toISOString()
+    };
+    
+    console.log('📤 Payload completo:', payload);
+    
+    return this.request(`/tickets/${ticketId}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     });
   }
 
@@ -1759,6 +2043,161 @@ class ApiClient {
    */
   async getTicketsSinAsignar(): Promise<TicketResponseDTO[]> {
     return this.request('/asignaciones/sin-asignar');
+  }
+
+  /**
+   * Método que funciona con la estructura exacta del backend
+   */
+  async enviarComentarioFuncional(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    console.log('🔧 Usando método funcional para comentarios...');
+    
+    // Obtener datos del usuario actual
+    let autor = 'Usuario';
+    let autorEmail = 'usuario@ejemplo.com';
+    let tipoAutor = 'cliente';
+    let userId = 1;
+    
+    try {
+      const userProfile = await this.getMyProfile();
+      if (userProfile) {
+        autor = `${userProfile.nombre || ''} ${userProfile.apellido || ''}`.trim() || 'Usuario';
+        autorEmail = userProfile.email || 'usuario@ejemplo.com';
+        tipoAutor = userProfile.tipoUsuario === 'Técnico' ? 'tecnico' : 'cliente';
+        userId = userProfile.id || 1;
+      }
+    } catch (error) {
+      console.log('⚠️ No se pudo obtener perfil del usuario, usando valores por defecto');
+    }
+    
+    // Crear el payload exacto que necesita el backend
+    const payload = {
+      mensaje: mensaje,
+      autor: autor,
+      autor_email: autorEmail,
+      tipo_autor: tipoAutor,
+      usuario_id: userId,
+      fecha_creacion: new Date().toISOString()
+    };
+    
+    console.log('📤 Payload completo:', payload);
+    
+    return this.request(`/tickets/${ticketId}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  /**
+   * Método alternativo que envía usuario_id como parámetro de query
+   */
+  async enviarComentarioConQuery(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    console.log('🔧 Usando método con query para comentarios...');
+    
+    let userId = 1;
+    try {
+      const userProfile = await this.getMyProfile();
+      if (userProfile) {
+        userId = userProfile.id || 1;
+      }
+    } catch (error) {
+      console.log('⚠️ No se pudo obtener perfil del usuario, usando ID por defecto');
+    }
+    
+    const payload = {
+      mensaje: mensaje,
+      autor: 'Usuario',
+      autor_email: 'usuario@ejemplo.com',
+      tipo_autor: 'cliente',
+      fecha_creacion: new Date().toISOString()
+    };
+    
+    console.log('📤 Payload con query:', payload);
+    console.log('📤 Usuario ID:', userId);
+    
+    return this.request(`/tickets/${ticketId}/comentarios?usuario_id=${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  /**
+   * Método que envía usuario_id como header personalizado
+   */
+  async enviarComentarioConHeader(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    console.log('🔧 Usando método con header para comentarios...');
+    
+    let userId = 1;
+    try {
+      const userProfile = await this.getMyProfile();
+      if (userProfile) {
+        userId = userProfile.id || 1;
+      }
+    } catch (error) {
+      console.log('⚠️ No se pudo obtener perfil del usuario, usando ID por defecto');
+    }
+    
+    const payload = {
+      mensaje: mensaje,
+      autor: 'Usuario',
+      autor_email: 'usuario@ejemplo.com',
+      tipo_autor: 'cliente',
+      fecha_creacion: new Date().toISOString()
+    };
+    
+    console.log('📤 Payload con header:', payload);
+    console.log('📤 Usuario ID en header:', userId);
+    
+    return this.request(`/tickets/${ticketId}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        'X-User-ID': userId.toString()
+      }
+    });
+  }
+
+  /**
+   * Método de depuración que prueba diferentes formatos
+   */
+  async enviarComentarioDebug(ticketId: number, mensaje: string): Promise<ApiResponse> {
+    console.log('🔍 MÉTODO DE DEPURACIÓN - Probando diferentes formatos...');
+    
+    // Intentar con usuario_id en el JSON
+    const payload1 = {
+      mensaje: mensaje,
+      autor: 'Usuario',
+      autor_email: 'usuario@ejemplo.com',
+      tipo_autor: 'cliente',
+      usuario_id: 1,
+      fecha_creacion: new Date().toISOString()
+    };
+    
+    console.log('🔍 Intentando formato 1 (usuario_id en JSON):', payload1);
+    
+    try {
+      return await this.request(`/tickets/${ticketId}/comentarios`, {
+        method: 'POST',
+        body: JSON.stringify(payload1)
+      });
+    } catch (error) {
+      console.log('🔍 Formato 1 falló, probando formato 2...');
+      
+      // Intentar con usuario_id como query parameter
+      const payload2 = {
+        mensaje: mensaje,
+        autor: 'Usuario',
+        autor_email: 'usuario@ejemplo.com',
+        tipo_autor: 'cliente',
+        fecha_creacion: new Date().toISOString()
+      };
+      
+      console.log('🔍 Intentando formato 2 (usuario_id como query):', payload2);
+      
+      return await this.request(`/tickets/${ticketId}/comentarios?usuario_id=1`, {
+        method: 'POST',
+        body: JSON.stringify(payload2)
+      });
+    }
   }
 
   // ========== OPERACIONES DE TÉCNICO ==========

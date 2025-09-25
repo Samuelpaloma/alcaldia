@@ -33,6 +33,9 @@ public class TicketResponseDTO {
     
     // Historial de asignaciones
     private List<AsignacionResponseDTO> historialAsignaciones;
+    
+    // Comentarios del ticket
+    private List<ComentarioResponseDTO> comentarios;
 
     // Constructor completo
     public TicketResponseDTO(Long id, String asunto, String descripcion, String prioridad, String estado,
@@ -40,7 +43,7 @@ public class TicketResponseDTO {
                              LocalDateTime fechaActualizacion, String nombre, String ubicacion,
                              String consulta, String categoria, String archivoAdjunto, String nombreArchivo,
                              List<EvidenciaResponseDTO> evidencias, List<HistorialEstadoResponseDTO> historialEstados,
-                             List<AsignacionResponseDTO> historialAsignaciones) {
+                             List<AsignacionResponseDTO> historialAsignaciones, List<ComentarioResponseDTO> comentarios) {
         this.id = id;
         this.asunto = asunto;
         this.descripcion = descripcion;
@@ -60,6 +63,7 @@ public class TicketResponseDTO {
         this.evidencias = evidencias;
         this.historialEstados = historialEstados;
         this.historialAsignaciones = historialAsignaciones;
+        this.comentarios = comentarios;
     }
 
     // Constructor básico para compatibilidad
@@ -96,6 +100,7 @@ public class TicketResponseDTO {
     public List<EvidenciaResponseDTO> getEvidencias() { return evidencias; }
     public List<HistorialEstadoResponseDTO> getHistorialEstados() { return historialEstados; }
     public List<AsignacionResponseDTO> getHistorialAsignaciones() { return historialAsignaciones; }
+    public List<ComentarioResponseDTO> getComentarios() { return comentarios; }
     
     // Setters
     public void setCreadorNombre(String creadorNombre) { this.creadorNombre = creadorNombre; }

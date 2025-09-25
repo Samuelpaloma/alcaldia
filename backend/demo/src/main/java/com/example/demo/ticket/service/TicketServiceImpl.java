@@ -29,6 +29,8 @@ import com.example.demo.ticket.repository.HistorialEstadoTicketRepository;
 import com.example.demo.asignacion.model.HistorialAsignacion;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
+import com.example.demo.ticket.service.ComentarioService;
+import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 
 @Service
 public class TicketServiceImpl implements TicketService {
@@ -50,6 +52,9 @@ public class TicketServiceImpl implements TicketService {
     
     @Autowired
     private HistorialAsignacionRepository historialAsignacionRepository;
+    
+    @Autowired
+    private ComentarioService comentarioService;
 
     @Override
     @Transactional
@@ -174,7 +179,8 @@ public class TicketServiceImpl implements TicketService {
                 ticket.getNombreArchivo(),
                 null, // evidencias
                 null, // historialEstados
-                null  // historialAsignaciones
+                null, // historialAsignaciones
+                null  // comentarios
         );
     }
 
@@ -214,6 +220,9 @@ public class TicketServiceImpl implements TicketService {
             .map(this::convertirHistorialAsignacionAResponseDTO)
             .collect(Collectors.toList());
         
+        // Obtener comentarios
+        List<ComentarioResponseDTO> comentariosDTO = comentarioService.obtenerComentariosPorTicket(ticket.getId());
+        
         return new TicketResponseDTO(
             ticket.getId(),
             ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
@@ -233,7 +242,8 @@ public class TicketServiceImpl implements TicketService {
             ticket.getNombreArchivo(),
             evidenciasDTO,
             historialDTO,
-            historialAsignacionesDTO
+            historialAsignacionesDTO,
+            comentariosDTO
         );
     }
     
@@ -255,19 +265,14 @@ public class TicketServiceImpl implements TicketService {
     
     private AsignacionResponseDTO convertirHistorialAsignacionAResponseDTO(HistorialAsignacion historial) {
         return AsignacionResponseDTO.builder()
-            .ticketId(historial.getTicket().getId())
-            .ticketTitulo(historial.getTicket().getCategoria() != null ? 
-                         historial.getTicket().getCategoria().getNombre() : "Ticket")
-            .tecnicoId(historial.getTecnico() != null ? historial.getTecnico().getIdUsuario() : null)
-            .tecnicoNombre(historial.getTecnico() != null ? historial.getTecnico().getNombreCompleto() : null)
-            .tecnicoEmail(historial.getTecnico() != null ? historial.getTecnico().getEmail() : null)
-            .estadoAnterior(historial.getEstadoAnterior())
-            .estadoNuevo(historial.getEstadoNuevo())
-            .prioridad(historial.getTicket().getPrioridad())
+            .ticketId(historial.getTicketId())
+            .ticketAsunto("Ticket #" + historial.getTicketId())
+            .tecnicoId(historial.getTecnicoId())
+            .tecnicoNombre("Técnico")
+            .tecnicoEmail("tecnico@alcaldia.gov.co")
             .comentario(historial.getComentario())
-            .fechaAsignacion(historial.getFechaOperacion())
-            .asignadoPor(historial.getUsuarioQueAsigna().getNombreCompleto())
-            .tipoOperacion(historial.getTipoOperacion().name())
+            .fechaAsignacion(historial.getFechaAccion())
+            .activa(false)
             .build();
     }
     

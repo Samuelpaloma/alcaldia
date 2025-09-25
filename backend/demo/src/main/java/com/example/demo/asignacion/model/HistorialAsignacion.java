@@ -1,7 +1,5 @@
 package com.example.demo.asignacion.model;
 
-import com.example.demo.ticket.model.Ticket;
-import com.example.demo.usuario.model.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,21 +19,23 @@ public class HistorialAsignacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ticket_id", nullable = false)
-    private Ticket ticket;
+    @Column(name = "ticket_id", nullable = false)
+    private Long ticketId;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tecnico_id")
-    private Usuario tecnico;
+    @Column(name = "tecnico_id")
+    private Long tecnicoId;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_que_asigna_id", nullable = false)
-    private Usuario usuarioQueAsigna;
+    @Column(name = "usuario_que_asigna_id", nullable = false)
+    private Long usuarioQueAsignaId;
     
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TipoOperacion tipoOperacion;
+    @Column(name = "email_usuario")
+    private String emailUsuario;
+    
+    @Column(name = "tipo_operacion", nullable = false)
+    private String tipoOperacion;
+    
+    @Column(name = "tipo_accion")
+    private String tipoAccion;
     
     @Column(name = "estado_anterior")
     private String estadoAnterior;
@@ -43,14 +43,14 @@ public class HistorialAsignacion {
     @Column(name = "estado_nuevo")
     private String estadoNuevo;
     
-    @Column(name = "comentario", length = 1000)
+    @Column(name = "comentario", columnDefinition = "TEXT")
     private String comentario;
     
     @CreationTimestamp
-    @Column(name = "fecha_operacion", nullable = false, updatable = false)
+    @Column(name = "fecha_operacion", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaOperacion;
     
-    public enum TipoOperacion {
-        ASIGNAR, REASIGNAR, ESCALAR, DESASIGNAR, REABRIR
-    }
+    // Campos de compatibilidad (para mantener funcionalidad existente)
+    @Transient
+    private LocalDateTime fechaAccion;
 }

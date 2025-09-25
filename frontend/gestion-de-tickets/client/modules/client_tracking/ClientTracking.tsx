@@ -19,7 +19,9 @@ import {
   Calendar,
   Wrench,
   FileText,
-  Send
+  Send,
+  ChevronDown,
+  X
 } from "lucide-react";
 import ChatSystem from "./ChatSystem";
 
@@ -31,8 +33,24 @@ interface TicketTracking {
   estado: string;
   prioridad: string;
   tecnicoAsignado?: string;
+  tecnicoEmail?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
+  historialAsignaciones?: Array<{
+    idAsignacion: number;
+    ticketId: number;
+    ticketTitulo: string;
+    tecnicoId: number;
+    tecnicoNombre: string;
+    tecnicoEmail: string;
+    estadoAnterior: string;
+    estadoNuevo: string;
+    prioridad: string;
+    comentario: string;
+    fechaAsignacion: string;
+    asignadoPor: string;
+    tipoOperacion: string;
+  }>;
   comentarios?: Array<{
     id: number;
     autor: string;
@@ -51,6 +69,7 @@ export default function ClientTracking() {
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const ticket = useMemo(() => tickets.find(t => t.id.toString() === selected), [tickets, selected]);
@@ -169,15 +188,39 @@ export default function ClientTracking() {
     setIsSending(true);
 
     try {
-      // Enviar mensaje al backend
-      await api.enviarComentario(parseInt(selected), messageText);
+      // Usar el método con query que envía usuario_id como parámetro
+      console.log('🔥 ENVIANDO MENSAJE CON MÉTODO CON QUERY...');
+      await api.enviarComentarioConQuery(parseInt(selected), messageText);
       
       // Agregar comentario localmente usando el apiStore
       addComment(selected, 'client', messageText);
       
     } catch (error) {
       console.error('Error enviando mensaje:', error);
-      setNewMessage(messageText);
+      
+      // Intentar método funcional como fallback
+      try {
+        console.log('🚨 Intentando método funcional...');
+        await api.enviarComentarioFuncional(parseInt(selected), messageText);
+        
+        // Agregar comentario localmente usando el apiStore
+        addComment(selected, 'client', messageText);
+      } catch (funcionalError) {
+        console.error('❌ ERROR EN MÉTODO FUNCIONAL:', funcionalError);
+        
+        // Intentar método de emergencia como último recurso
+        try {
+          console.log('🚨 Intentando método de emergencia...');
+          await api.enviarComentarioEmergencia(parseInt(selected), messageText);
+          console.log('✅ MENSAJE ENVIADO CON MÉTODO DE EMERGENCIA');
+          
+          // Agregar comentario localmente usando el apiStore
+          addComment(selected, 'client', messageText);
+        } catch (emergencyError) {
+          console.error('❌ ERROR EN MÉTODO DE EMERGENCIA:', emergencyError);
+          setNewMessage(messageText);
+        }
+      }
     } finally {
       setIsSending(false);
     }
@@ -274,100 +317,83 @@ export default function ClientTracking() {
               </CardContent>
             </Card>
 
-            {/* Fechas */}
+            {/* Historial del Ticket */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Fechas
+                  <Clock className="w-5 h-5" />
+                  Historial del Ticket
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Creado:</span>
-                  <span className="text-sm">{formatTimestamp(ticket.createdAt)}</span>
-                </div>
-                {ticket.closedAt && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Cerrado:</span>
-                    <span className="text-sm">{formatTimestamp(ticket.closedAt)}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          </div>
+            <CardContent>
+              <div className="space-y-3">
+                  {/* 1. Evento de creación - SIEMPRE PRIMERO */}
+                  <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-blue-900">Ticket creado</div>
+                      <div className="text-xs text-blue-600">{formatTimestamp(ticket.createdAt)}</div>
+                    </div>
+                  </div>
 
-          {/* Chat y Comunicación */}
-          <div className="lg:col-span-2">
-            <Card className="h-[600px] flex flex-col">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5" />
-                  Actividad
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col p-0">
-                {/* Área de mensajes/actividad */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {/* Mostrar eventos del ticket */}
-                  {ticket?.events && ticket.events.length > 0 ? (
-                    ticket.events.map((event, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${event.author === 'client' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-                          event.author === 'client' 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-100 text-gray-900'
-                        }`}>
-                          <div className="text-xs opacity-75 mb-1 flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {event.author === 'client' ? 'Tú' : event.author === 'technician' ? 'Técnico' : 'Sistema'} • {formatTimestamp(event.at)}
-                          </div>
-                          <div className="text-sm whitespace-pre-wrap">{event.message}</div>
+                  {/* 2. SIEMPRE mostrar asignación como segundo paso */}
+                  {trackingData?.tecnicoEmail && (
+                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-green-900">
+                          Asignado a {trackingData.tecnicoEmail}
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-sm text-muted-foreground py-8">
-                      <div className="mb-4">
-                        <MessageSquare className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                        <p>No hay actividad aún</p>
-                        <p className="text-xs mt-1">¡Sé el primero en escribir un comentario!</p>
+                        <div className="text-xs text-green-600">
+                          {formatTimestamp(trackingData.fechaCreacion)}
+                        </div>
                       </div>
                     </div>
                   )}
-                  <div ref={messagesEndRef} />
-                </div>
 
-                {/* Área de entrada */}
-                <div className="border-t p-4">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Escribe un comentario..."
-                      disabled={isSending}
-                      className="flex-1"
-                    />
+                  {/* 3. Mostrar escalación si existe */}
+                  {trackingData?.historialAsignaciones?.find(asignacion => asignacion.tipoOperacion === 'ESCALAR') && (
+                    <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-orange-900">
+                          Escalado a {trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.tecnicoNombre}
+                        </div>
+                        <div className="text-xs text-orange-600">
+                          {formatTimestamp(trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.fechaAsignacion || '')}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Botón Ver más historial */}
+                  <div className="flex justify-center pt-2">
                     <Button 
-                      onClick={sendMessage} 
-                      disabled={!newMessage.trim() || isSending}
-                      size="sm"
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowHistoryModal(true)}
                       className="flex items-center gap-2"
                     >
-                      <Send className="w-4 h-4" />
-                      {isSending ? 'Enviando...' : 'Enviar'}
+                      <ChevronDown className="w-4 h-4" />
+                      Ver más historial
                     </Button>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Presiona Enter para enviar, Shift+Enter para nueva línea
                   </div>
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Chat y Comunicación */}
+          <div className="lg:col-span-2">
+            <ChatSystem 
+              ticketId={parseInt(selected)} 
+              onMessageSent={(message) => {
+                // Recargar datos del ticket
+                if (selected) {
+                  loadTrackingData(parseInt(selected));
+                }
+              }}
+            />
           </div>
         </div>
       ) : selected ? (
@@ -390,6 +416,122 @@ export default function ClientTracking() {
                   </div>
                 </CardContent>
               </Card>
+      )}
+
+      {/* Modal de Historial Completo */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <Clock className="w-6 h-6 text-blue-600" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Historial Completo del Ticket
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Ticket #{ticket?.id} • {ticket?.message}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowHistoryModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            {/* Contenido del Modal */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {/* 1. Evento de creación */}
+                <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-blue-900 dark:text-blue-100">Ticket creado</div>
+                    <div className="text-xs text-blue-600 dark:text-blue-300">{formatTimestamp(ticket?.createdAt || '')}</div>
+                  </div>
+                </div>
+
+                {/* 2. Asignación */}
+                {trackingData?.tecnicoEmail && (
+                  <div className="flex items-center gap-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-green-900 dark:text-green-100">
+                        Asignado a {trackingData.tecnicoEmail}
+                      </div>
+                      <div className="text-xs text-green-600 dark:text-green-300">
+                        {formatTimestamp(trackingData.fechaCreacion)}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Escalación */}
+                {trackingData?.historialAsignaciones?.find(asignacion => asignacion.tipoOperacion === 'ESCALAR') && (
+                  <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-orange-900 dark:text-orange-100">
+                        Escalado a {trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.tecnicoNombre}
+                      </div>
+                      <div className="text-xs text-orange-600 dark:text-orange-300">
+                        {formatTimestamp(trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.fechaAsignacion || '')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Reasignaciones */}
+                {trackingData?.historialAsignaciones?.filter(asignacion => asignacion.tipoOperacion === 'REASIGNAR').map((asignacion, index) => (
+                  <div key={index} className="flex items-center gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                        Reasignado a {asignacion.tecnicoNombre}
+                      </div>
+                      <div className="text-xs text-purple-600 dark:text-purple-300">{formatTimestamp(asignacion.fechaAsignacion)}</div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* 5. Estado actual */}
+                {trackingData?.fechaActualizacion && trackingData.fechaActualizacion !== trackingData.fechaCreacion && (
+                  <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <div className="w-3 h-3 bg-gray-500 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        Estado actual: {trackingData.estado}
+                      </div>
+                      <div className="text-xs text-gray-600 dark:text-gray-300">{formatTimestamp(trackingData.fechaActualizacion)}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Mostrando {trackingData?.historialAsignaciones?.length || 0 + 2} eventos del historial
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowHistoryModal(false)}
+                >
+                  Cerrar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

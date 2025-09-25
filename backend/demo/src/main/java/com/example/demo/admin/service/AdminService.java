@@ -167,7 +167,8 @@ public class AdminService {
             ticket.getNombreArchivo(),
             evidenciasDTO,
             historialDTO,
-            new ArrayList<>() // historialAsignaciones vacío por ahora
+            new ArrayList<>(), // historialAsignaciones vacío por ahora
+            new ArrayList<>() // comentarios vacío por ahora
         );
     }
     

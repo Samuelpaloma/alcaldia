@@ -23,6 +23,12 @@ export default defineConfig(({ mode }) => ({
       "@shared": path.resolve(__dirname, "./shared"),
     },
   },
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['sockjs-client', '@stomp/stompjs']
+  }
 }));
 
 function expressPlugin(): Plugin {
@@ -37,3 +43,4 @@ function expressPlugin(): Plugin {
     },
   };
 }
+

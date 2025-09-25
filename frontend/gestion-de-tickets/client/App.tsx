@@ -22,6 +22,7 @@ import AiClassification from "./modules/ai_classification/AiClassification";
 import Login from "./modules/auth/Login";
 import Register from "./modules/auth/Register";
 import AdminDashboard from "./modules/admin/AdminDashboard";
+import UnifiedDashboard from "./modules/admin/UnifiedDashboard";
 import SuperAdminDashboard from "./modules/superadmin/SuperAdminDashboard";
 import SuperAdminLayout from "./modules/_shared/SuperAdminLayout";
 import { I18nProvider } from "./i18n";
@@ -40,8 +41,15 @@ import { CategoriesManagement } from "./modules/categories/CategoriesManagement"
 import { TechnicianOperations } from "./modules/technician/TechnicianOperations";
 import { TechnicianDashboard } from "./modules/technician/TechnicianDashboard";
 import { EvidencesManagement } from "./modules/evidences/EvidencesManagement";
-import { NotificationsCenter } from "./modules/notifications/NotificationsCenter";
+import NotificationsCenter from "./modules/notifications/NotificationsCenter";
 import TechnicianLayout from "./modules/_shared/TechnicianLayout";
+// Nuevos módulos implementados
+import AutomationRules from "./modules/automation_rules/AutomationRules";
+import AdvancedDashboard from "./modules/advanced_dashboard/AdvancedDashboard";
+import SatisfactionSurvey from "./modules/satisfaction_survey/SatisfactionSurvey";
+import Reports from "./modules/reports/Reports";
+import TrendsAnalysis from "./modules/analytics/TrendsAnalysis";
+import UnifiedAnalytics from "./modules/analytics/UnifiedAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -85,22 +93,24 @@ const App = () => (
             {/* Admin section (role-restricted) */}
         <Route element={<RoleRoute role="admin" />}>
           <Route element={<AdminLayout />}>
-            <Route path="/admin" element={<AdminDashboard userRole="admin" />} />
-            <Route path="/tickets" element={<AdminDashboard userRole="admin" />} />
+            <Route path="/admin" element={<UnifiedDashboard />} />
+            <Route path="/tickets" element={<TicketsManagement />} />
             <Route path="/users-roles" element={<AdminDashboard userRole="admin" />} />
-            <Route path="/evidences" element={<EvidencesManagement userRole="admin" />} />
-            <Route path="/notifications" element={<NotificationsCenter userRole="admin" />} />
+            <Route path="/notifications" element={<NotificationsCenter />} />
             <Route path="/system-configuration" element={<SystemConfiguration />} />
             <Route path="/assignment-rules" element={<AssignmentRules />} />
             <Route path="/tickets-history" element={<TicketsHistory />} />
             <Route path="/metrics" element={<Metrics />} />
-            <Route path="/ai-classification" element={<AiClassification />} />
+            <Route path="/ai-classification" element={<AiClassification ticketId={0} onClassificationComplete={() => {}} />} />
             <Route path="/categories" element={<CategoriesManagement userRole="admin" />} />
+            {/* Módulos especializados */}
+            <Route path="/automation-rules" element={<AutomationRules />} />
+            <Route path="/analytics" element={<UnifiedAnalytics />} />
           </Route>
         </Route>
 
             {/* Technician section (role-restricted) */}
-            <Route element={<RoleRoute role="tecnico" />}>
+            <Route element={<RoleRoute role="admin" />}>
               <Route element={<TechnicianLayout />}>
                 <Route path="/technician" element={<TechnicianDashboard userRole="tecnico" />} />
                 <Route path="/technician/tickets" element={<TechnicianOperations userRole="tecnico" />} />

@@ -5,7 +5,10 @@ import com.example.demo.shared.dto.ApiResponse;
 import com.example.demo.ticket.dto.request.TicketRequestDTO;
 import com.example.demo.ticket.dto.response.HistorialTicketResponseDTO;
 import com.example.demo.ticket.dto.response.TicketResponseDTO;
+import com.example.demo.ticket.dto.request.ComentarioRequestDTO;
+import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 import com.example.demo.ticket.service.TicketService;
+import com.example.demo.ticket.service.ComentarioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,6 +27,9 @@ public class TicketController {
 
     @Autowired
     private TicketService ticketService;
+    
+    @Autowired
+    private ComentarioService comentarioService;
 
     /**
      * Crear un nuevo ticket desde el formulario de funcionarios
@@ -95,12 +101,27 @@ public class TicketController {
     @PostMapping("/{ticketId}/comentarios")
     public ResponseEntity<?> agregarComentario(
             @PathVariable Long ticketId,
-            @RequestBody Map<String, String> request,
+            @RequestBody Map<String, Object> request,
             Authentication authentication) {
         try {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailUsuario = userDetails.getEmail();
-            String mensaje = request.get("mensaje");
+            String mensaje = (String) request.get("mensaje");
+            Long usuarioId = null;
+            
+            // Extraer usuario_id del request si está presente
+            if (request.containsKey("usuario_id")) {
+                Object usuarioIdObj = request.get("usuario_id");
+                if (usuarioIdObj instanceof Number) {
+                    usuarioId = ((Number) usuarioIdObj).longValue();
+                } else if (usuarioIdObj instanceof String) {
+                    try {
+                        usuarioId = Long.parseLong((String) usuarioIdObj);
+                    } catch (NumberFormatException e) {
+                        // Ignorar si no se puede parsear
+                    }
+                }
+            }
             
             if (mensaje == null || mensaje.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(
@@ -108,9 +129,16 @@ public class TicketController {
                 );
             }
             
-            // Por ahora, solo devolvemos éxito
-            // En una implementación real, aquí guardarías el comentario en la base de datos
-            return ResponseEntity.ok(ApiResponse.success("Comentario agregado exitosamente"));
+            // Crear DTO para el comentario
+            ComentarioRequestDTO comentarioRequest = new ComentarioRequestDTO();
+            comentarioRequest.setTicketId(ticketId);
+            comentarioRequest.setMensaje(mensaje);
+            comentarioRequest.setUsuarioId(usuarioId);
+            
+            // Crear comentario usando el servicio (esto enviará WebSocket automáticamente)
+            ComentarioResponseDTO comentario = comentarioService.crearComentario(comentarioRequest, emailUsuario);
+            
+            return ResponseEntity.ok(comentario);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al agregar comentario: " + e.getMessage())

@@ -13,19 +13,16 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AsignacionResponseDTO {
     
-    private Long idAsignacion;
+    private Long id;
     private Long ticketId;
-    private String ticketTitulo;
+    private String ticketAsunto;
+    private String ticketEstado;
     private Long tecnicoId;
     private String tecnicoNombre;
     private String tecnicoEmail;
-    private String estadoAnterior;
-    private String estadoNuevo;
-    private String prioridad;
     private String comentario;
     private LocalDateTime fechaAsignacion;
-    private String asignadoPor; // Quien hizo la asignación
-    private String tipoOperacion; // "ASIGNAR", "REASIGNAR", "ESCALAR", "DESASIGNAR", "REABRIR"
+    private Boolean activa;
 }
 
 

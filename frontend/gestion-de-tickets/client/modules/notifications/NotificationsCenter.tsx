@@ -3,406 +3,323 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
-import { api } from '../../../shared/api';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Bell, 
-  CheckCircle, 
+  Check, 
+  X, 
   AlertCircle, 
   Info, 
-  X, 
-  Search,
-  Filter,
-  MoreHorizontal,
-  Calendar,
-  User,
-  FileText
+  CheckCircle,
+  Clock,
+  Search
 } from 'lucide-react';
 
 interface Notification {
   id: number;
   titulo: string;
   mensaje: string;
-  tipo: string;
+  tipo: 'info' | 'warning' | 'success' | 'error';
   leida: boolean;
   fechaCreacion: string;
-  fechaLeida?: string;
-  usuarioEmail: string;
+  fechaLectura?: string;
   ticketId?: number;
-  creadorEmail?: string;
+  usuarioId?: number;
 }
 
-interface NotificationsCenterProps {
-  userRole: string;
-}
-
-export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({ userRole }) => {
-  const { toast } = useToast();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+const NotificationsCenter: React.FC = () => {
+  const [notificaciones, setNotificaciones] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'unread' | 'read'>('all');
-  const [filterNotificationType, setFilterNotificationType] = useState<'all' | 'TICKET_CREADO' | 'TICKET_ASIGNADO' | 'TICKET_ACTUALIZADO' | 'TICKET_RESUELTO' | 'SISTEMA_ALERTA'>('all');
-  const [stats, setStats] = useState({
-    totalNotificaciones: 0,
-    notificacionesNoLeidas: 0,
-    notificacionesLeidas: 0,
-    notificacionesHoy: 0
+  const [error, setError] = useState<string | null>(null);
+  const [filtros, setFiltros] = useState({
+    busqueda: '',
+    tipo: '',
+    estado: ''
   });
 
-  useEffect(() => {
-    loadNotifications();
-    loadStats();
-  }, []);
-
-  const loadNotifications = async () => {
+  // Cargar notificaciones
+  const loadNotificaciones = async () => {
     try {
       setLoading(true);
-      const leida = filterType === 'all' ? undefined : filterType === 'read';
-      const response = await api.getNotificaciones(0, 50, leida);
-      setNotifications(response.content || []);
-    } catch (error) {
-      console.error('Error cargando notificaciones:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las notificaciones",
-        variant: "destructive",
-      });
+      setError(null);
+      // Simular datos por ahora
+      const notificacionesData = [
+        {
+          id: 1,
+          titulo: 'Nuevo ticket creado',
+          mensaje: 'Se ha creado un nuevo ticket de alta prioridad',
+          tipo: 'info' as const,
+          leida: false,
+          fechaCreacion: new Date().toISOString(),
+          ticketId: 123
+        },
+        {
+          id: 2,
+          titulo: 'Ticket asignado',
+          mensaje: 'El ticket #456 ha sido asignado a Juan Pérez',
+          tipo: 'success' as const,
+          leida: true,
+          fechaCreacion: new Date(Date.now() - 3600000).toISOString(),
+          ticketId: 456
+        },
+        {
+          id: 3,
+          titulo: 'Ticket escalado',
+          mensaje: 'El ticket #789 requiere atención inmediata',
+          tipo: 'warning' as const,
+          leida: false,
+          fechaCreacion: new Date(Date.now() - 7200000).toISOString(),
+          ticketId: 789
+        }
+      ];
+      setNotificaciones(notificacionesData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
+      console.error('Error cargando notificaciones:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadStats = async () => {
-    try {
-      const statsData = await api.getEstadisticasNotificaciones();
-      setStats(statsData);
-    } catch (error) {
-      console.error('Error cargando estadísticas:', error);
-    }
-  };
+  useEffect(() => {
+    loadNotificaciones();
+  }, []);
 
-  const markAsRead = async (id: number) => {
-    try {
-      await api.marcarNotificacionComoLeida(id);
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === id 
-            ? { ...notif, leida: true, fechaLeida: new Date().toISOString() }
-            : notif
-        )
-      );
-      loadStats(); // Recargar estadísticas
-    } catch (error) {
-      console.error('Error marcando notificación como leída:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo marcar la notificación como leída",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      await api.marcarTodasComoLeidas();
-      setNotifications(prev => 
-        prev.map(notif => 
-          !notif.leida 
-            ? { ...notif, leida: true, fechaLeida: new Date().toISOString() }
-            : notif
-        )
-      );
-      loadStats(); // Recargar estadísticas
-    } catch (error) {
-      console.error('Error marcando todas como leídas:', error);
-      toast({
-        title: "Error",
-        description: "No se pudieron marcar todas las notificaciones como leídas",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const deleteNotification = async (id: number) => {
-    try {
-      await api.eliminarNotificacion(id);
-      setNotifications(prev => prev.filter(notif => notif.id !== id));
-      loadStats(); // Recargar estadísticas
-    } catch (error) {
-      console.error('Error eliminando notificación:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la notificación",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getNotificationIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'TICKET_RESUELTO':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'TICKET_ASIGNADO':
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-      case 'SISTEMA_ALERTA':
-        return <X className="h-5 w-5 text-red-500" />;
-      default:
-        return <Info className="h-5 w-5 text-blue-500" />;
-    }
-  };
-
-  const getNotificationColor = (tipo: string) => {
-    switch (tipo) {
-      case 'TICKET_RESUELTO':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'TICKET_ASIGNADO':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'SISTEMA_ALERTA':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-    }
-  };
-
-  const filteredNotifications = notifications.filter(notification => {
-    const matchesSearch = notification.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         notification.mensaje.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filtrar notificaciones
+  const notificacionesFiltradas = notificaciones.filter(notif => {
+    const cumpleBusqueda = !filtros.busqueda || 
+      notif.titulo.toLowerCase().includes(filtros.busqueda.toLowerCase()) ||
+      notif.mensaje.toLowerCase().includes(filtros.busqueda.toLowerCase());
+    const cumpleTipo = !filtros.tipo || notif.tipo === filtros.tipo;
+    const cumpleEstado = !filtros.estado || 
+      (filtros.estado === 'leida' && notif.leida) ||
+      (filtros.estado === 'no_leida' && !notif.leida);
     
-    const matchesFilter = filterType === 'all' ||
-                         (filterType === 'unread' && !notification.leida) ||
-                         (filterType === 'read' && notification.leida);
-    
-    const matchesType = filterNotificationType === 'all' || notification.tipo === filterNotificationType;
-    
-    return matchesSearch && matchesFilter && matchesType;
+    return cumpleBusqueda && cumpleTipo && cumpleEstado;
   });
 
-  const unreadCount = stats.notificacionesNoLeidas;
+  // Marcar como leída
+  const marcarComoLeida = async (id: number) => {
+    try {
+      setNotificaciones(prev => 
+        prev.map(notif => 
+          notif.id === id 
+            ? { ...notif, leida: true, fechaLectura: new Date().toISOString() }
+            : notif
+        )
+      );
+    } catch (err) {
+      console.error('Error marcando notificación como leída:', err);
+    }
+  };
+
+  // Marcar todas como leídas
+  const marcarTodasComoLeidas = async () => {
+    try {
+      setNotificaciones(prev => 
+        prev.map(notif => ({ 
+          ...notif, 
+          leida: true, 
+          fechaLectura: new Date().toISOString() 
+        }))
+      );
+    } catch (err) {
+      console.error('Error marcando todas como leídas:', err);
+    }
+  };
+
+  // Eliminar notificación
+  const eliminarNotificacion = async (id: number) => {
+    try {
+      setNotificaciones(prev => prev.filter(notif => notif.id !== id));
+    } catch (err) {
+      console.error('Error eliminando notificación:', err);
+    }
+  };
+
+  // Obtener icono por tipo
+  const getTipoIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'info': return <Info className="w-5 h-5 text-blue-500" />;
+      case 'warning': return <AlertCircle className="w-5 h-5 text-yellow-500" />;
+      case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'error': return <X className="w-5 h-5 text-red-500" />;
+      default: return <Bell className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  // Obtener color por tipo
+  const getTipoColor = (tipo: string) => {
+    switch (tipo) {
+      case 'info': return 'bg-blue-100 text-blue-800';
+      case 'warning': return 'bg-yellow-100 text-yellow-800';
+      case 'success': return 'bg-green-100 text-green-800';
+      case 'error': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="notifications-center">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Cargando notificaciones...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="notifications-center">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Centro de Notificaciones</h1>
-          <p className="text-muted-foreground">Gestiona tus notificaciones y alertas</p>
+      <div className="notifications-header">
+        <div className="header-content">
+          <h1 className="notifications-title">Centro de Notificaciones</h1>
+          <p className="notifications-subtitle">Gestiona todas las notificaciones del sistema</p>
         </div>
-        <div className="flex items-center gap-2">
-          {unreadCount > 0 && (
-            <Button onClick={markAllAsRead} variant="outline" size="sm">
-              Marcar todas como leídas
-            </Button>
-          )}
-          <Button onClick={loadNotifications} variant="outline" size="sm">
-            Actualizar
+        <div className="header-actions">
+          <Button onClick={marcarTodasComoLeidas} variant="outline">
+            <Check className="w-4 h-4 mr-2" />
+            Marcar todas como leídas
           </Button>
         </div>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-sm font-medium">Total</p>
-                <p className="text-2xl font-bold">{stats.totalNotificaciones}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              <div>
-                <p className="text-sm font-medium">No Leídas</p>
-                <p className="text-2xl font-bold">{stats.notificacionesNoLeidas}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-sm font-medium">Leídas</p>
-                <p className="text-2xl font-bold">{stats.notificacionesLeidas}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Info className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-sm font-medium">Hoy</p>
-                <p className="text-2xl font-bold">{stats.notificacionesHoy}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {error && (
+        <div className="error-message">
+          <AlertCircle className="w-5 h-5" />
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="error-close">×</button>
+        </div>
+      )}
 
       {/* Filtros */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+      <Card className="filters-card">
+        <CardContent className="p-6">
+          <div className="filters-grid">
+            <div className="filter-group">
+              <Label htmlFor="busqueda">Buscar</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
+                  id="busqueda"
                   placeholder="Buscar notificaciones..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filtros.busqueda}
+                  onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
                   className="pl-10"
                 />
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={filterType === 'all' ? 'default' : 'outline'}
-                onClick={() => setFilterType('all')}
-                size="sm"
+            
+            <div className="filter-group">
+              <Label htmlFor="tipo">Tipo</Label>
+              <Select
+                value={filtros.tipo}
+                onValueChange={(value) => setFiltros({ ...filtros, tipo: value })}
               >
-                Todas
-              </Button>
-              <Button
-                variant={filterType === 'unread' ? 'default' : 'outline'}
-                onClick={() => setFilterType('unread')}
-                size="sm"
-              >
-                No Leídas
-              </Button>
-              <Button
-                variant={filterType === 'read' ? 'default' : 'outline'}
-                onClick={() => setFilterType('read')}
-                size="sm"
-              >
-                Leídas
-              </Button>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  <SelectItem value="info">Información</SelectItem>
+                  <SelectItem value="warning">Advertencia</SelectItem>
+                  <SelectItem value="success">Éxito</SelectItem>
+                  <SelectItem value="error">Error</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant={filterNotificationType === 'all' ? 'default' : 'outline'}
-                onClick={() => setFilterNotificationType('all')}
-                size="sm"
+
+            <div className="filter-group">
+              <Label htmlFor="estado">Estado</Label>
+              <Select
+                value={filtros.estado}
+                onValueChange={(value) => setFiltros({ ...filtros, estado: value })}
               >
-                Todos
-              </Button>
-              <Button
-                variant={filterNotificationType === 'TICKET_CREADO' ? 'default' : 'outline'}
-                onClick={() => setFilterNotificationType('TICKET_CREADO')}
-                size="sm"
-              >
-                Ticket Creado
-              </Button>
-              <Button
-                variant={filterNotificationType === 'TICKET_ASIGNADO' ? 'default' : 'outline'}
-                onClick={() => setFilterNotificationType('TICKET_ASIGNADO')}
-                size="sm"
-              >
-                Ticket Asignado
-              </Button>
-              <Button
-                variant={filterNotificationType === 'TICKET_RESUELTO' ? 'default' : 'outline'}
-                onClick={() => setFilterNotificationType('TICKET_RESUELTO')}
-                size="sm"
-              >
-                Ticket Resuelto
-              </Button>
-              <Button
-                variant={filterNotificationType === 'SISTEMA_ALERTA' ? 'default' : 'outline'}
-                onClick={() => setFilterNotificationType('SISTEMA_ALERTA')}
-                size="sm"
-              >
-                Sistema
-              </Button>
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="no_leida">No leídas</SelectItem>
+                  <SelectItem value="leida">Leídas</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Lista de Notificaciones */}
-      <div className="space-y-3">
-        {loading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-4">
-                <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))
-        ) : filteredNotifications.length === 0 ? (
-          <Card>
+      {/* Lista de notificaciones */}
+      <div className="notifications-list">
+        {notificacionesFiltradas.length === 0 ? (
+          <Card className="empty-state">
             <CardContent className="p-8 text-center">
-              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No hay notificaciones que coincidan con los filtros</p>
+              <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay notificaciones</h3>
+              <p className="text-gray-500">No se encontraron notificaciones con los filtros aplicados.</p>
             </CardContent>
           </Card>
         ) : (
-          filteredNotifications.map((notification) => (
-            <Card key={notification.id} className={`${!notification.leida ? 'border-l-4 border-l-blue-500' : ''}`}>
+          notificacionesFiltradas.map(notif => (
+            <Card key={notif.id} className={`notification-card ${!notif.leida ? 'unread' : ''}`}>
               <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {getNotificationIcon(notification.tipo)}
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    {getTipoIcon(notif.tipo)}
                   </div>
+                  
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground">{notification.titulo}</h3>
-                        {!notification.leida && (
-                          <Badge variant="default" className="text-xs">
-                            Nueva
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-medium text-gray-900">
+                          {notif.titulo}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {notif.mensaje}
+                        </p>
+                        <div className="flex items-center space-x-4 mt-2">
+                          <div className="flex items-center space-x-1 text-xs text-gray-500">
+                            <Clock className="w-3 h-3" />
+                            <span>{new Date(notif.fechaCreacion).toLocaleString()}</span>
+                          </div>
+                          <Badge className={getTipoColor(notif.tipo)}>
+                            {notif.tipo}
                           </Badge>
-                        )}
-                        <Badge className={getNotificationColor(notification.tipo)}>
-                          {notification.tipo.toUpperCase()}
-                        </Badge>
+                          {notif.ticketId && (
+                            <Badge variant="outline">
+                              Ticket #{notif.ticketId}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {!notification.leida && (
+                      
+                      <div className="flex items-center space-x-2 ml-4">
+                        {!notif.leida && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        )}
+                        {!notif.leida ? (
                           <Button
                             size="sm"
-                            variant="ghost"
-                            onClick={() => markAsRead(notification.id)}
+                            variant="outline"
+                            onClick={() => marcarComoLeida(notif.id)}
                           >
-                            <CheckCircle className="h-4 w-4" />
+                            <Check className="w-3 h-3 mr-1" />
+                            Marcar como leída
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => eliminarNotificacion(notif.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-3 h-3" />
                           </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => deleteNotification(notification.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">{notification.mensaje}</p>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(notification.fechaCreacion).toLocaleString()}
-                      </span>
-                      {notification.ticketId && (
-                        <span className="flex items-center gap-1">
-                          <FileText className="h-3 w-3" />
-                          Ticket #{notification.ticketId}
-                        </span>
-                      )}
-                      {notification.leida && notification.fechaLeida && (
-                        <span className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Leída: {new Date(notification.fechaLeida).toLocaleString()}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -414,3 +331,5 @@ export const NotificationsCenter: React.FC<NotificationsCenterProps> = ({ userRo
     </div>
   );
 };
+
+export default NotificationsCenter;

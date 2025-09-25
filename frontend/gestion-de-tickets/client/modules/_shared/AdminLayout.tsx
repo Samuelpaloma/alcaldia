@@ -42,7 +42,9 @@ export default function AdminLayout() {
               <NavLink to="/tickets" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Gestión de Tickets</NavLink>
               <NavLink to="/users-roles" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Gestión de Usuarios</NavLink>
               <NavLink to="/categories" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Categorías</NavLink>
-              <NavLink to="/evidences" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Evidencias</NavLink>
+              {/* Módulos especializados */}
+              <NavLink to="/automation-rules" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Reglas de Automatización</NavLink>
+              <NavLink to="/analytics" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Análisis y Reportes</NavLink>
               <NavLink to="/logout" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("auth.logout")}</NavLink>
             </div>
           </div>

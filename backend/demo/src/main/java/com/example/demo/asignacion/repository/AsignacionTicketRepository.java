@@ -1,8 +1,6 @@
 package com.example.demo.asignacion.repository;
 
 import com.example.demo.asignacion.model.AsignacionTicket;
-import com.example.demo.ticket.model.Ticket;
-import com.example.demo.usuario.model.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,33 +8,33 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AsignacionTicketRepository extends JpaRepository<AsignacionTicket, Long> {
     
+    // Buscar asignación activa por ticket
+    Optional<AsignacionTicket> findByTicketIdAndActivaTrue(Long ticketId);
+    
     // Buscar asignaciones por ticket
-    List<AsignacionTicket> findByTicketOrderByFechaAsignacionDesc(Ticket ticket);
+    List<AsignacionTicket> findByTicketIdOrderByFechaAsignacionDesc(Long ticketId);
+    
+    // Buscar asignaciones activas por técnico
+    List<AsignacionTicket> findByTecnicoIdAndActivaTrue(Long tecnicoId);
     
     // Buscar asignaciones por técnico
-    List<AsignacionTicket> findByTecnicoOrderByFechaAsignacionDesc(Usuario tecnico);
-    
-    // Buscar asignaciones por quien asignó
-    List<AsignacionTicket> findByAsignadoPorOrderByFechaAsignacionDesc(Usuario asignadoPor);
+    List<AsignacionTicket> findByTecnicoIdOrderByFechaAsignacionDesc(Long tecnicoId);
     
     // Buscar asignaciones recientes
     @Query("SELECT a FROM AsignacionTicket a WHERE a.fechaAsignacion >= :desde ORDER BY a.fechaAsignacion DESC")
     List<AsignacionTicket> findAsignacionesRecientes(@Param("desde") LocalDateTime desde);
     
-    // Buscar asignación actual de un ticket
-    @Query("SELECT a FROM AsignacionTicket a WHERE a.ticket = :ticket ORDER BY a.fechaAsignacion DESC")
-    List<AsignacionTicket> findAsignacionActual(@Param("ticket") Ticket ticket);
-    
-    // Contar asignaciones por técnico
-    long countByTecnico(Usuario tecnico);
+    // Contar asignaciones activas por técnico
+    long countByTecnicoIdAndActivaTrue(Long tecnicoId);
     
     // Contar asignaciones por técnico en un rango de fechas
-    @Query("SELECT COUNT(a) FROM AsignacionTicket a WHERE a.tecnico = :tecnico AND a.fechaAsignacion >= :desde")
-    long countByTecnicoAndFechaAsignacionAfter(@Param("tecnico") Usuario tecnico, @Param("desde") LocalDateTime desde);
+    @Query("SELECT COUNT(a) FROM AsignacionTicket a WHERE a.tecnicoId = :tecnicoId AND a.fechaAsignacion >= :desde")
+    long countByTecnicoIdAndFechaAsignacionAfter(@Param("tecnicoId") Long tecnicoId, @Param("desde") LocalDateTime desde);
 }
 
 

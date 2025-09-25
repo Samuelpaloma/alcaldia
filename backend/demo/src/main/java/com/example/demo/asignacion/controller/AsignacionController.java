@@ -9,7 +9,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,15 +33,22 @@ public class AsignacionController {
             @Valid @RequestBody AsignarTicketRequestDTO request,
             Authentication authentication) {
         try {
+            log.info("=== INICIO ASIGNACIÓN ===");
+            log.info("Request recibido: {}", request);
+            log.info("Authentication: {}", authentication);
             log.info("Asignando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
             
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailAsignador = userDetails.getEmail();
+            log.info("Email asignador: {}", emailAsignador);
             
             AsignacionResponseDTO asignacion = asignacionService.asignarTicket(request, emailAsignador);
+            log.info("Asignación exitosa: {}", asignacion);
             
             return ResponseEntity.ok(asignacion);
         } catch (Exception e) {
+            log.error("=== ERROR EN ASIGNACIÓN ===");
+            log.error("Request que falló: {}", request);
             log.error("Error asignando ticket", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al asignar ticket: " + e.getMessage())
@@ -65,7 +71,11 @@ public class AsignacionController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailAsignador = userDetails.getEmail();
             
-            AsignacionResponseDTO asignacion = asignacionService.reasignarTicket(request, emailAsignador);
+            AsignacionResponseDTO asignacion = asignacionService.reasignarTicket(
+                request.getTicketId(), 
+                request.getTecnicoId(), 
+                emailAsignador
+            );
             
             return ResponseEntity.ok(asignacion);
         } catch (Exception e) {
@@ -91,7 +101,12 @@ public class AsignacionController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailEscalador = userDetails.getEmail();
             
-            AsignacionResponseDTO asignacion = asignacionService.escalarTicket(request, emailEscalador);
+            AsignacionResponseDTO asignacion = asignacionService.escalarTicket(
+                request.getTicketId(), 
+                request.getTecnicoId(), 
+                emailEscalador, 
+                request.getComentario()
+            );
             
             return ResponseEntity.ok(asignacion);
         } catch (Exception e) {
@@ -117,9 +132,9 @@ public class AsignacionController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailDesasignador = userDetails.getEmail();
             
-            AsignacionResponseDTO asignacion = asignacionService.desasignarTicket(ticketId, emailDesasignador);
+            asignacionService.desasignarTicket(ticketId, emailDesasignador);
             
-            return ResponseEntity.ok(asignacion);
+            return ResponseEntity.ok(ApiResponse.success("Ticket desasignado correctamente"));
         } catch (Exception e) {
             log.error("Error desasignando ticket", e);
             return ResponseEntity.badRequest().body(
@@ -137,7 +152,7 @@ public class AsignacionController {
     public ResponseEntity<?> obtenerTicketsAsignados(@PathVariable Long tecnicoId) {
         try {
             log.info("Obteniendo tickets asignados al técnico {}", tecnicoId);
-            List<AsignacionResponseDTO> tickets = asignacionService.obtenerTicketsAsignados(tecnicoId);
+            List<AsignacionResponseDTO> tickets = asignacionService.obtenerAsignacionesActivasPorTecnico(tecnicoId);
             return ResponseEntity.ok(tickets);
         } catch (Exception e) {
             log.error("Error obteniendo tickets asignados", e);
@@ -148,20 +163,20 @@ public class AsignacionController {
     }
     
     /**
-     * Obtener tickets sin asignar
-     * GET /api/asignaciones/sin-asignar
+     * Obtener asignaciones por ticket
+     * GET /api/asignaciones/ticket/{ticketId}
      */
-    @GetMapping("/sin-asignar")
-    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
-    public ResponseEntity<?> obtenerTicketsSinAsignar() {
+    @GetMapping("/ticket/{ticketId}")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN', 'TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> obtenerAsignacionesPorTicket(@PathVariable Long ticketId) {
         try {
-            log.info("Obteniendo tickets sin asignar");
-            List<AsignacionResponseDTO> tickets = asignacionService.obtenerTicketsSinAsignar();
-            return ResponseEntity.ok(tickets);
+            log.info("Obteniendo asignaciones del ticket {}", ticketId);
+            List<AsignacionResponseDTO> asignaciones = asignacionService.obtenerAsignacionesPorTicket(ticketId);
+            return ResponseEntity.ok(asignaciones);
         } catch (Exception e) {
-            log.error("Error obteniendo tickets sin asignar", e);
+            log.error("Error obteniendo asignaciones del ticket", e);
             return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error al obtener tickets sin asignar: " + e.getMessage())
+                ApiResponse.error("Error al obtener asignaciones del ticket: " + e.getMessage())
             );
         }
     }
@@ -181,9 +196,9 @@ public class AsignacionController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailReabridor = userDetails.getEmail();
             
-            AsignacionResponseDTO asignacion = asignacionService.reabrirTicket(ticketId, emailReabridor);
+            asignacionService.reabrirTicket(ticketId, emailReabridor);
             
-            return ResponseEntity.ok(asignacion);
+            return ResponseEntity.ok(ApiResponse.success("Ticket reabierto correctamente"));
         } catch (Exception e) {
             log.error("Error reabriendo ticket", e);
             return ResponseEntity.badRequest().body(
