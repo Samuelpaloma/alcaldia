@@ -93,6 +93,21 @@ public class NotificacionServiceImpl implements NotificacionService {
     }
     
     @Override
+    public Notificacion crearNotificacion(Notificacion notificacion) {
+        log.info("Creando notificación directamente: {} para usuario: {}", notificacion.getTitulo(), notificacion.getUsuarioEmail());
+        
+        // Asegurar que los campos requeridos estén establecidos
+        if (notificacion.getFechaCreacion() == null) {
+            notificacion.setFechaCreacion(LocalDateTime.now());
+        }
+        if (notificacion.getLeida() == null) {
+            notificacion.setLeida(false);
+        }
+        
+        return notificacionRepository.save(notificacion);
+    }
+    
+    @Override
     @Transactional
     public void eliminarNotificacion(Long id, String emailUsuario) {
         log.info("Eliminando notificación {} para usuario: {}", id, emailUsuario);

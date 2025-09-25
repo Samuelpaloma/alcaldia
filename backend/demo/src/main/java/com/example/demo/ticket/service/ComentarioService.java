@@ -6,6 +6,10 @@ import com.example.demo.ticket.model.Comentario;
 import com.example.demo.ticket.repository.ComentarioRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.model.TipoUsuario;
+import com.example.demo.notificacion.service.SmartNotificationService;
+import com.example.demo.ticket.model.Ticket;
+import com.example.demo.ticket.repository.TicketRepository;
+import com.example.demo.usuario.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +21,15 @@ public class ComentarioService {
     
     @Autowired
     private ComentarioRepository comentarioRepository;
+    
+    @Autowired
+    private SmartNotificationService smartNotificationService;
+    
+    @Autowired
+    private TicketRepository ticketRepository;
+    
+    @Autowired
+    private UsuarioRepository usuarioRepository;
     
     public ComentarioResponseDTO crearComentario(ComentarioRequestDTO request, String emailUsuario) {
         // TODO: Implementar lógica de negocio completa
@@ -30,6 +43,27 @@ public class ComentarioService {
         comentario.setFechaCreacion(java.time.LocalDateTime.now());
         
         Comentario comentarioGuardado = comentarioRepository.save(comentario);
+        
+        // Enviar notificaciones según el tipo de autor
+        try {
+            Ticket ticket = ticketRepository.findById(request.getTicketId()).orElse(null);
+            Usuario usuario = usuarioRepository.findByEmail(emailUsuario).orElse(null);
+            
+            if (ticket != null && usuario != null) {
+                // Determinar el tipo de usuario que está comentando
+                if (usuario.getTipoUsuario() == TipoUsuario.TECNICO) {
+                    // Si es técnico, notificar al cliente y admin
+                    smartNotificationService.notificarRespuestaTecnico(ticket, usuario);
+                } else {
+                    // Si es cliente, notificar al técnico y admin
+                    smartNotificationService.notificarRespuestaCliente(ticket, usuario);
+                }
+            }
+        } catch (Exception e) {
+            // Log del error pero no fallar la creación del comentario
+            System.err.println("Error enviando notificación de comentario: " + e.getMessage());
+        }
+        
         return convertirADTO(comentarioGuardado);
     }
     
@@ -52,13 +86,4 @@ public class ComentarioService {
         );
     }
     
-    private Comentario.TipoAutor determinarTipoAutor(Usuario usuario) {
-        if (usuario.getTipoUsuario() == TipoUsuario.ADMINISTRADOR) {
-            return Comentario.TipoAutor.ADMINISTRADOR;
-        } else if (usuario.getTipoUsuario() == TipoUsuario.TECNICO) {
-            return Comentario.TipoAutor.TECNICO;
-        } else {
-            return Comentario.TipoAutor.CLIENTE;
-        }
-    }
 }

@@ -4,7 +4,7 @@ import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Bell, Settings, LogOut } from "lucide-react";
 import { logout, getAuth } from "../auth/auth";
-import NotificationsModal from "../notifications/NotificationsModal";
+import NotificacionInteligenteModal from "../notifications/NotificacionInteligenteModal";
 import SettingsModal from "../system_configuration/SettingsModal";
 import LogoutModal from "../auth/LogoutModal";
 import "./AppLayout.css";
@@ -131,14 +131,18 @@ export default function AdminLayout() {
       </div>
 
       {/* Modales */}
-      <NotificationsModal 
-        isOpen={showNotifications} 
-        onClose={() => setShowNotifications(false)} 
-      />
+        <NotificacionInteligenteModal 
+          isOpen={showNotifications} 
+          onClose={() => setShowNotifications(false)} 
+        />
       <SettingsModal 
         isOpen={showSettings} 
         onClose={() => setShowSettings(false)} 
       />
+        <NotificacionInteligenteModal 
+          isOpen={showNotifications} 
+          onClose={() => setShowNotifications(false)} 
+        />
       <LogoutModal 
         isOpen={showLogout} 
         onClose={() => setShowLogout(false)}

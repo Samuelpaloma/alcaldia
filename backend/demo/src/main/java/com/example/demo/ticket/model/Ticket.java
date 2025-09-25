@@ -72,6 +72,15 @@ public class Ticket {
 
     public Usuario getCreador() { return creador; }
     public void setCreador(Usuario creador) { this.creador = creador; }
+    
+    // Métodos de conveniencia para obtener datos del creador
+    public String getCreadorNombre() {
+        return creador != null ? creador.getNombreCompleto() : "Usuario Desconocido";
+    }
+    
+    public String getCreadorEmail() {
+        return creador != null ? creador.getEmail() : null;
+    }
 
     public Usuario getTecnicoAsignado() { return tecnicoAsignado; }
     public void setTecnicoAsignado(Usuario tecnicoAsignado) { this.tecnicoAsignado = tecnicoAsignado; }

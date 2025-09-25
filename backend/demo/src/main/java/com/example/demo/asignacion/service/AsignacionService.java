@@ -10,6 +10,7 @@ import com.example.demo.ticket.model.Ticket;
 import com.example.demo.ticket.repository.TicketRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
+import com.example.demo.notificacion.service.SmartNotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +34,10 @@ public class AsignacionService {
     
     @Autowired
     private UsuarioRepository usuarioRepository;
+    
+    
+    @Autowired
+    private SmartNotificationService smartNotificationService;
     
     public AsignacionResponseDTO asignarTicket(AsignarTicketRequestDTO request, String emailAsignador) {
         Optional<Ticket> ticketOpt = ticketRepository.findById(request.getTicketId());
@@ -72,6 +77,12 @@ public class AsignacionService {
         guardarHistorialAsignacion(request.getTicketId(), request.getTecnicoId(), 
                                  emailAsignador, "ASIGNACION", request.getComentario());
         
+        // Enviar notificaciones inteligentes
+        Usuario admin = usuarioRepository.findByEmail(emailAsignador).orElse(null);
+        if (admin != null) {
+            smartNotificationService.notificarTicketAsignado(ticket, tecnico, admin);
+        }
+        
         return convertirADTO(asignacionGuardada, ticket, tecnico);
     }
     
@@ -110,6 +121,12 @@ public class AsignacionService {
         ticketRepository.save(ticket);
         
         guardarHistorialAsignacion(ticketId, nuevoTecnicoId, emailReasignador, "REASIGNACION", null);
+        
+        // Enviar notificaciones inteligentes
+        Usuario admin = usuarioRepository.findByEmail(emailReasignador).orElse(null);
+        if (admin != null) {
+            smartNotificationService.notificarTicketAsignado(ticket, tecnico, admin);
+        }
         
         return convertirADTO(asignacionGuardada, ticket, tecnico);
     }
@@ -151,6 +168,12 @@ public class AsignacionService {
         ticketRepository.save(ticket);
         
         guardarHistorialAsignacion(ticketId, tecnicoId, emailEscalador, "ESCALAMIENTO", comentario);
+        
+        // Enviar notificaciones inteligentes
+        Usuario admin = usuarioRepository.findByEmail(emailEscalador).orElse(null);
+        if (admin != null) {
+            smartNotificationService.notificarTicketEscalado(ticket, admin);
+        }
         
         return convertirADTO(escalacionGuardada, ticket, tecnico);
     }

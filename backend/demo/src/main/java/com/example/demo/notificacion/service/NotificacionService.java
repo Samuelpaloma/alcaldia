@@ -35,6 +35,11 @@ public interface NotificacionService {
     Notificacion crearNotificacion(CreateNotificacionRequest request, String emailCreador);
     
     /**
+     * Crear nueva notificación directamente desde modelo
+     */
+    Notificacion crearNotificacion(Notificacion notificacion);
+    
+    /**
      * Eliminar notificación
      */
     void eliminarNotificacion(Long id, String emailUsuario);
