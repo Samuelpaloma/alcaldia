@@ -128,19 +128,44 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        console.log('📊 Estadísticas recibidas:', data);
-        if (data.success && data.stats) {
+        try {
+          const data = await response.json();
+          console.log('📊 Estadísticas recibidas:', data);
+          console.log('📊 Data success:', data?.success);
+          console.log('📊 Data stats:', data?.stats);
+          
+          if (data?.success && data?.stats) {
+            setStats({
+              total: data.stats.ticketsAsignados || 0,
+              pendientes: data.stats.ticketsPendientes || 0,
+              enProceso: data.stats.ticketsEnProceso || 0,
+              finalizados: data.stats.ticketsCompletados || 0,
+              evidencias: data.stats.evidencias || 0,
+              notificaciones: data.stats.notificaciones || 0
+            });
+          } else {
+            console.error('Error en respuesta del servidor:', data?.message || 'Respuesta inválida del servidor');
+            // Usar datos por defecto si la respuesta no es válida
+            setStats({
+              total: 0,
+              pendientes: 0,
+              enProceso: 0,
+              finalizados: 0,
+              evidencias: 0,
+              notificaciones: 0
+            });
+          }
+        } catch (parseError) {
+          console.error('Error parseando respuesta JSON:', parseError);
+          // Usar datos por defecto si hay error parseando
           setStats({
-            total: data.stats.ticketsAsignados || 0,
-            pendientes: data.stats.ticketsPendientes || 0,
-            enProceso: data.stats.ticketsEnProceso || 0,
-            finalizados: data.stats.ticketsCompletados || 0,
-            evidencias: data.stats.evidencias || 0,
-            notificaciones: data.stats.notificaciones || 0
+            total: 0,
+            pendientes: 0,
+            enProceso: 0,
+            finalizados: 0,
+            evidencias: 0,
+            notificaciones: 0
           });
-        } else {
-          console.error('Error en respuesta del servidor:', data.message);
         }
       } else if (response.status === 401) {
         console.log('Token inválido o expirado, redirigiendo a Login');

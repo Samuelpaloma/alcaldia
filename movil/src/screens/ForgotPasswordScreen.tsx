@@ -16,7 +16,7 @@ import type { RootStackParamList } from "./navigationTypes"; // importa el tipo 
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
-  "ForgotPasswordScreen"
+  "ForgotPassword"
 >;
 
 export default function ForgotPasswordScreen() {
@@ -58,7 +58,7 @@ export default function ForgotPasswordScreen() {
 
       if (response.ok) {
         // Navegar a la pantalla de reset con el email
-        navigation.navigate('ResetPasswordScreen', { email: email.trim() });
+        navigation.navigate('ResetPassword', { email: email.trim() });
       } else {
         setEmailError(data.message || 'No se pudo enviar el correo de recuperación');
       }
