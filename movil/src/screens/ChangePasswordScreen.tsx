@@ -189,7 +189,7 @@ const ChangePasswordScreen = () => {
               style={styles.eyeButton}
               onPress={() => setShowCurrentPassword(!showCurrentPassword)}
             >
-              <Text style={styles.eyeIcon}>{showCurrentPassword ? "👁" : "👁"}</Text>
+              <Text style={styles.eyeIcon}>{showCurrentPassword ? "👁️" : "👁️"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -211,7 +211,7 @@ const ChangePasswordScreen = () => {
               style={styles.eyeButton}
               onPress={() => setShowNewPassword(!showNewPassword)}
             >
-              <Text style={styles.eyeIcon}>{showNewPassword ? "👁" : "👁"}</Text>
+              <Text style={styles.eyeIcon}>{showNewPassword ? "👁️" : "👁️"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -233,7 +233,7 @@ const ChangePasswordScreen = () => {
               style={styles.eyeButton}
               onPress={() => setShowConfirmPassword(!showConfirmPassword)}
             >
-              <Text style={styles.eyeIcon}>{showConfirmPassword ? "👁" : "👁"}</Text>
+              <Text style={styles.eyeIcon}>{showConfirmPassword ? "👁️" : "👁️"}</Text>
             </TouchableOpacity>
           </View>
         </View>
