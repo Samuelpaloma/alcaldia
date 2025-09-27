@@ -19,13 +19,9 @@ public interface PendingUserRepository extends JpaRepository<PendingUser, Long> 
         LocalDateTime now
     );
     
-    // Método alternativo para debugging
+    // Método para buscar por email y código de verificación
     @Query("SELECT p FROM PendingUser p WHERE p.email = :email AND p.verificationCode = :code")
     Optional<PendingUser> findByEmailAndVerificationCode(@Param("email") String email, @Param("code") String code);
-    
-    // Método para buscar por email y código sin verificar expiración
-    @Query("SELECT p FROM PendingUser p WHERE p.email = :email AND p.verificationCode = :code")
-    Optional<PendingUser> findByEmailAndCode(@Param("email") String email, @Param("code") String code);
     
     Optional<PendingUser> findByEmailAndVerified(String email, boolean verified);
     

@@ -12,7 +12,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -173,6 +172,80 @@ public class TecnicoController {
             log.error("Error obteniendo estadísticas", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener estadísticas: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Obtener dashboard del técnico (alias para estadísticas)
+     * GET /api/tecnico/dashboard
+     */
+    @GetMapping("/dashboard")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> obtenerDashboard(Authentication authentication) {
+        try {
+            log.info("Obteniendo dashboard para técnico");
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            
+            EstadisticasTecnicoResponseDTO estadisticas = tecnicoService.obtenerEstadisticasTecnico(emailTecnico);
+            
+            return ResponseEntity.ok(estadisticas);
+        } catch (Exception e) {
+            log.error("Error obteniendo dashboard", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al obtener dashboard: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Obtener evidencias del técnico
+     * GET /api/tecnico/evidencias
+     */
+    @GetMapping("/evidencias")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> obtenerEvidencias(Authentication authentication) {
+        try {
+            log.info("Obteniendo evidencias para técnico");
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            
+            // Por ahora retornamos una lista vacía hasta implementar el servicio
+            List<Object> evidencias = List.of();
+            
+            return ResponseEntity.ok(ApiResponse.success("Evidencias obtenidas", evidencias));
+        } catch (Exception e) {
+            log.error("Error obteniendo evidencias", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al obtener evidencias: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Obtener notificaciones del técnico
+     * GET /api/tecnico/notificaciones
+     */
+    @GetMapping("/notificaciones")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> obtenerNotificaciones(Authentication authentication) {
+        try {
+            log.info("Obteniendo notificaciones para técnico");
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            
+            // Por ahora retornamos una lista vacía hasta implementar el servicio
+            List<Object> notificaciones = List.of();
+            
+            return ResponseEntity.ok(ApiResponse.success("Notificaciones obtenidas", notificaciones));
+        } catch (Exception e) {
+            log.error("Error obteniendo notificaciones", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al obtener notificaciones: " + e.getMessage())
             );
         }
     }

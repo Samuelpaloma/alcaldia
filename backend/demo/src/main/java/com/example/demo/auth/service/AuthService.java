@@ -18,10 +18,11 @@ public interface AuthService {
     
     // Recuperación de contraseña
     PendingUser createPasswordResetVerification(String email);
-    void resetPasswordWithCode(ResetPasswordRequest request);
+    LoginResponse resetPasswordWithCode(ResetPasswordRequest request);
     
     // Utilidades
     void changeTemporaryPassword(String token, ChangeTemporaryPasswordRequest request);
+    void changePassword(String token, com.example.demo.usuario.dto.request.ChangePasswordRequest request);
     void logout(String token);
     void verifyToken(String token);
     long getUserCount();

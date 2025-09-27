@@ -2,11 +2,9 @@ package com.example.demo.auth.controller;
 
 import com.example.demo.auth.dto.request.*;
 import com.example.demo.auth.dto.response.ApiResponse;
+import com.example.demo.usuario.dto.request.ChangePasswordRequest;
 import com.example.demo.auth.dto.response.LoginResponse;
-import com.example.demo.auth.exception.AuthException;
 import com.example.demo.auth.model.PendingUser;
-import com.example.demo.usuario.model.Usuario;
-import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.auth.repository.PendingUserRepository;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.auth.service.AuthService;
@@ -19,12 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -168,25 +160,30 @@ public class AuthController {
     public ResponseEntity<ApiResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         log.info("Solicitud de recuperación de contraseña para: {}", request.getEmail());
         
-        PendingUser pendingUser = authService.createPasswordResetVerification(request.getEmail());
-        emailService.sendVerificationEmailHtml(pendingUser);
-        
-        return ResponseEntity.ok(new ApiResponse(
-            "El código fue enviado a tu correo"
-        ));
+        try {
+            PendingUser pendingUser = authService.createPasswordResetVerification(request.getEmail());
+            emailService.sendVerificationEmailHtml(pendingUser);
+            
+            return ResponseEntity.ok(new ApiResponse(
+                "El código fue enviado a tu correo"
+            ));
+        } catch (Exception e) {
+            log.error("Error en forgot-password: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(new ApiResponse(
+                "Error interno del servidor: " + e.getMessage()
+            ));
+        }
     }
     
     /**
      * Resetear contraseña con código
      */
     @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<LoginResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         log.info("Reset de contraseña con código para: {}", request.getEmail());
         
-        authService.resetPasswordWithCode(request);
-        return ResponseEntity.ok(new ApiResponse(
-            "Contraseña actualizada exitosamente"
-        ));
+        LoginResponse loginResponse = authService.resetPasswordWithCode(request);
+        return ResponseEntity.ok(loginResponse);
     }
     
     // ========== LOGOUT ==========
@@ -201,6 +198,29 @@ public class AuthController {
             authService.logout(token);
         }
         return ResponseEntity.ok(new ApiResponse("Sesión cerrada"));
+    }
+    
+    // ========== CAMBIO DE CONTRASEÑA ==========
+    
+    /**
+     * Cambiar contraseña del usuario autenticado
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<ApiResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, HttpServletRequest httpRequest) {
+        log.info("Solicitud de cambio de contraseña");
+        
+        try {
+            String token = extractTokenFromRequest(httpRequest);
+            if (token == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse("Token no proporcionado"));
+            }
+            
+            authService.changePassword(token, request);
+            return ResponseEntity.ok(new ApiResponse("Contraseña actualizada exitosamente"));
+        } catch (Exception e) {
+            log.error("Error cambiando contraseña: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage()));
+        }
     }
     
     // ========== VERIFICACIÓN DE TOKEN ==========

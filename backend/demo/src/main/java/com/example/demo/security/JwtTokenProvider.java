@@ -104,11 +104,16 @@ public class JwtTokenProvider {
      * Obtiene todas las claims del token
      */
     public Claims getClaimsFromJWT(String token) {
-        return Jwts.parserBuilder()
-            .setSigningKey(getSigningKey())
-            .build()
-            .parseClaimsJws(token)
-            .getBody();
+        try {
+            return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        } catch (Exception e) {
+            log.error("Error parseando token JWT: {}", e.getMessage());
+            throw new RuntimeException("Token JWT inválido", e);
+        }
     }
     
     /**
