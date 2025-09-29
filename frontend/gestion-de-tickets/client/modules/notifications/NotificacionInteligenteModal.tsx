@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useI18n } from '@/i18n';
 import { api } from '../../_shared/api';
+import { useRoleNotifications } from '@/hooks/use-role-notifications';
+import { useUserInfo } from '@/hooks/use-user-info';
 
 interface NotificacionInteligente {
   id: number;
@@ -27,33 +29,29 @@ interface NotificacionInteligenteModalProps {
 
 export default function NotificacionInteligenteModal({ isOpen, onClose }: NotificacionInteligenteModalProps) {
   const { t } = useI18n();
-  const [notificaciones, setNotificaciones] = useState<NotificacionInteligente[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { userInfo } = useUserInfo();
+  const userEmail = userInfo?.email || '';
   
-  // Estado local para filtros
-  const [filter, setFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
+  const {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    filter,
+    setFilter,
+    sortBy,
+    setSortBy,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+    removeAllRead,
+    getNotificationIcon,
+    getNotificationColor,
+    loadNotifications
+  } = useRoleNotifications(userEmail);
   
-  // Calcular notificaciones no leídas
-  const unreadCount = notificaciones.filter(notif => !notif.leida).length;
-  
-  // Filtrar y ordenar notificaciones
-  const filteredNotifications = notificaciones.filter(notif => {
-    if (filter === 'unread') return !notif.leida;
-    if (filter === 'read') return notif.leida;
-    if (filter === 'criticas') return notif.prioridad === 'critica';
-    if (filter === 'altas') return notif.prioridad === 'alta';
-    return true;
-  }).sort((a, b) => {
-    if (sortBy === 'newest') return new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime();
-    if (sortBy === 'oldest') return new Date(a.fechaCreacion).getTime() - new Date(b.fechaCreacion).getTime();
-    if (sortBy === 'priority') {
-      const priorityOrder = { 'critica': 3, 'alta': 2, 'normal': 1 };
-      return priorityOrder[b.prioridad] - priorityOrder[a.prioridad];
-    }
-    return 0;
-  });
+  // Las notificaciones ya vienen filtradas y ordenadas del hook
+  const filteredNotifications = notifications;
   
   // Cargar notificaciones
   const loadNotificaciones = async () => {

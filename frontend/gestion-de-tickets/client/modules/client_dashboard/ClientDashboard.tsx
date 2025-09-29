@@ -46,13 +46,15 @@ export default function ClientDashboard() {
 
   const calculateStats = () => {
     const totalTickets = tickets.length;
-    const openTickets = tickets.filter(t => t.status === 'open' || t.status === 'pending').length;
-    const inProgressTickets = tickets.filter(t => t.status === 'in_progress').length;
-    const resolvedTickets = tickets.filter(t => t.status === 'resolved').length;
-    const closedTickets = tickets.filter(t => t.status === 'closed').length;
+    const openTickets = tickets.filter(t => t.status === 'PENDIENTE').length;
+    const inProgressTickets = tickets.filter(t => 
+      t.status === 'ASIGNADO' || t.status === 'EN_PROGRESO' || t.status === 'ESCALADO'
+    ).length;
+    const resolvedTickets = tickets.filter(t => t.status === 'RESUELTO').length;
+    const closedTickets = tickets.filter(t => t.status === 'CERRADO').length;
 
     // Calcular tiempo promedio de resolución (simulado)
-    const resolvedTicketsWithTime = tickets.filter(t => t.status === 'resolved' || t.status === 'closed');
+    const resolvedTicketsWithTime = tickets.filter(t => t.status === 'RESUELTO' || t.status === 'CERRADO');
     const averageTime = resolvedTicketsWithTime.length > 0 ? "2.5h" : "0h";
 
     // Actividad reciente (tickets creados en los últimos 7 días)
@@ -74,31 +76,35 @@ export default function ClientDashboard() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'open':
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'resolved':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+    switch (status.toUpperCase()) {
+      case 'PENDIENTE':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-700';
+      case 'ASIGNADO':
+      case 'EN_PROGRESO':
+        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-700';
+      case 'ESCALADO':
+        return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-700';
+      case 'RESUELTO':
+        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-700';
+      case 'CERRADO':
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-700';
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'open':
-      case 'pending':
+    switch (status.toUpperCase()) {
+      case 'PENDIENTE':
         return <Clock className="w-4 h-4" />;
-      case 'in_progress':
+      case 'ASIGNADO':
+      case 'EN_PROGRESO':
         return <AlertCircle className="w-4 h-4" />;
-      case 'resolved':
+      case 'ESCALADO':
+        return <AlertCircle className="w-4 h-4" />;
+      case 'RESUELTO':
         return <CheckCircle className="w-4 h-4" />;
-      case 'closed':
+      case 'CERRADO':
         return <CheckCircle className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
@@ -111,6 +117,121 @@ export default function ClientDashboard() {
       month: '2-digit',
       year: 'numeric'
     });
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInHours < 1) {
+      return 'Hace unos minutos';
+    } else if (diffInHours < 24) {
+      return `Hace ${diffInHours} ${diffInHours === 1 ? 'hora' : 'horas'}`;
+    } else if (diffInDays === 1) {
+      return 'Ayer';
+    } else if (diffInDays < 7) {
+      return `Hace ${diffInDays} días`;
+    } else {
+      return formatDate(dateString);
+    }
+  };
+
+  const generateRecentActivity = () => {
+    const activities: Array<{
+      title: string;
+      time: string;
+      color: string;
+      ticketId?: number;
+    }> = [];
+
+    // Generar actividades basadas en los tickets
+    tickets.forEach(ticket => {
+      const createdAt = new Date(ticket.createdAt);
+      const updatedAt = new Date(ticket.updatedAt || ticket.createdAt);
+      const isRecent = (Date.now() - updatedAt.getTime()) < (7 * 24 * 60 * 60 * 1000); // Últimos 7 días
+
+      if (isRecent) {
+        // Actividad de creación de ticket
+        activities.push({
+          title: `Ticket creado: ${ticket.message?.substring(0, 30)}${ticket.message && ticket.message.length > 30 ? '...' : ''}`,
+          time: formatTimeAgo(ticket.createdAt),
+          color: '#3B82F6', // Azul
+          ticketId: ticket.id
+        });
+
+        // Actividad de cambio de estado
+        if (ticket.status !== 'PENDIENTE' && updatedAt.getTime() !== createdAt.getTime()) {
+          let statusText = '';
+          let color = '#6B7280'; // Gris por defecto
+
+          switch (ticket.status) {
+            case 'ASIGNADO':
+              statusText = 'Ticket asignado';
+              color = '#3B82F6'; // Azul
+              break;
+            case 'EN_PROGRESO':
+              statusText = 'Ticket en progreso';
+              color = '#F59E0B'; // Amarillo
+              break;
+            case 'ESCALADO':
+              statusText = 'Ticket escalado';
+              color = '#EF4444'; // Rojo
+              break;
+            case 'RESUELTO':
+              statusText = 'Ticket resuelto';
+              color = '#10B981'; // Verde
+              break;
+            case 'CERRADO':
+              statusText = 'Ticket cerrado';
+              color = '#6B7280'; // Gris
+              break;
+          }
+
+          if (statusText) {
+            activities.push({
+              title: statusText,
+              time: formatTimeAgo(ticket.updatedAt || ticket.createdAt),
+              color: color,
+              ticketId: ticket.id
+            });
+          }
+        }
+
+        // Actividad de asignación de técnico
+        if (ticket.technician && ticket.technician !== 'Sin asignar') {
+          activities.push({
+            title: `Técnico asignado: ${ticket.technician}`,
+            time: formatTimeAgo(ticket.updatedAt || ticket.createdAt),
+            color: '#8B5CF6', // Púrpura
+            ticketId: ticket.id
+          });
+        }
+      }
+    });
+
+    // Ordenar por fecha (más reciente primero) y tomar solo los primeros 7
+    return activities
+      .sort((a, b) => {
+        // Extraer timestamp del texto de tiempo para ordenar
+        const getTimestamp = (timeStr: string) => {
+          if (timeStr.includes('minutos')) return Date.now() - (5 * 60 * 1000);
+          if (timeStr.includes('hora')) {
+            const hours = parseInt(timeStr.match(/\d+/)?.[0] || '0');
+            return Date.now() - (hours * 60 * 60 * 1000);
+          }
+          if (timeStr.includes('días')) {
+            const days = parseInt(timeStr.match(/\d+/)?.[0] || '0');
+            return Date.now() - (days * 24 * 60 * 60 * 1000);
+          }
+          if (timeStr === 'Ayer') return Date.now() - (24 * 60 * 60 * 1000);
+          return Date.now();
+        };
+        return getTimestamp(b.time) - getTimestamp(a.time);
+      })
+      .slice(0, 7);
   };
 
   const recentTickets = tickets
@@ -261,27 +382,48 @@ export default function ClientDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <div>
-                  <p className="text-sm font-medium">Sistema actualizado</p>
-                  <p className="text-xs text-muted-foreground">Hace 2 horas</p>
+              {generateRecentActivity().length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                  <p>No hay actividad reciente</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <div>
-                  <p className="text-sm font-medium">Ticket #123 resuelto</p>
-                  <p className="text-xs text-muted-foreground">Ayer</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <div>
-                  <p className="text-sm font-medium">Nuevo técnico asignado</p>
-                  <p className="text-xs text-muted-foreground">Hace 3 días</p>
-                </div>
-              </div>
+              ) : (
+                generateRecentActivity().map((activity, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer hover:bg-muted/50"
+                    style={{
+                      backgroundColor: activity.color + '10',
+                      borderColor: activity.color + '30'
+                    }}
+                    onClick={() => activity.ticketId && navigate(`/client/seguimiento?ticket=${activity.ticketId}`)}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: activity.color }}
+                    ></div>
+                    <div className="flex-1">
+                      <p 
+                        className="text-sm font-medium"
+                        style={{ color: activity.color }}
+                      >
+                        {activity.title}
+                      </p>
+                      <p 
+                        className="text-xs"
+                        style={{ color: activity.color + 'CC' }}
+                      >
+                        {activity.time}
+                      </p>
+                    </div>
+                    {activity.ticketId && (
+                      <span className="text-xs text-muted-foreground">
+                        #{activity.ticketId}
+                      </span>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

@@ -1,0 +1,184 @@
+{
+  "notification_examples": {
+    "ticket_creado": {
+      "funcionario": {
+        "id": 1,
+        "tipo": "ticket_creado",
+        "mensaje": "Tu ticket #1 ha sido creado exitosamente",
+        "destinatarios": ["funcionario:roberrodrigues@gmail.com"],
+        "ticketId": 1,
+        "usuarioActorNombre": "Rober Rodrigues",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T10:30:00"
+      },
+      "administrador": {
+        "id": 1,
+        "tipo": "ticket_creado",
+        "mensaje": "Nuevo ticket creado por Rober Rodrigues (#1)",
+        "destinatarios": ["rol:administrador"],
+        "ticketId": 1,
+        "usuarioActorNombre": "Rober Rodrigues",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T10:30:00"
+      }
+    },
+    "ticket_asignado": {
+      "funcionario": {
+        "id": 26,
+        "tipo": "ticket_asignado",
+        "mensaje": "Tu ticket #26 fue asignado al técnico Juan Pérez",
+        "destinatarios": ["funcionario:roberrodrigues@gmail.com"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Admin Sistema",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T11:00:00"
+      },
+      "tecnico": {
+        "id": 26,
+        "tipo": "ticket_asignado",
+        "mensaje": "Se te asignó el ticket #26 del cliente Rober Rodrigues",
+        "destinatarios": ["tecnico:juanperez@gmail.com"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Admin Sistema",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T11:00:00"
+      },
+      "administrador": {
+        "id": 26,
+        "tipo": "ticket_asignado",
+        "mensaje": "Has asignado el ticket #26 al técnico Juan Pérez",
+        "destinatarios": ["rol:administrador"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Admin Sistema",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T11:00:00"
+      }
+    },
+    "ticket_en_proceso": {
+      "funcionario": {
+        "id": 26,
+        "tipo": "ticket_en_proceso",
+        "mensaje": "Tu ticket #26 está siendo procesado por Juan Pérez",
+        "destinatarios": ["funcionario:roberrodrigues@gmail.com"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Juan Pérez",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T11:30:00"
+      },
+      "administrador": {
+        "id": 26,
+        "tipo": "ticket_en_proceso",
+        "mensaje": "El ticket #26 del cliente Rober Rodrigues está siendo procesado por Juan Pérez",
+        "destinatarios": ["rol:administrador"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Juan Pérez",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T11:30:00"
+      }
+    },
+    "ticket_resuelto": {
+      "funcionario": {
+        "id": 26,
+        "tipo": "ticket_resuelto",
+        "mensaje": "Tu ticket #26 ha sido resuelto por Juan Pérez",
+        "destinatarios": ["funcionario:roberrodrigues@gmail.com"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Juan Pérez",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T12:00:00"
+      },
+      "administrador": {
+        "id": 26,
+        "tipo": "ticket_resuelto",
+        "mensaje": "El ticket #26 del cliente Rober Rodrigues fue resuelto por Juan Pérez",
+        "destinatarios": ["rol:administrador"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Juan Pérez",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T12:00:00"
+      }
+    },
+    "ticket_cerrado": {
+      "funcionario": {
+        "id": 26,
+        "tipo": "ticket_cerrado",
+        "mensaje": "Tu ticket #26 ha sido cerrado por Juan Pérez",
+        "destinatarios": ["funcionario:roberrodrigues@gmail.com"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Juan Pérez",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T12:30:00"
+      },
+      "administrador": {
+        "id": 26,
+        "tipo": "ticket_cerrado",
+        "mensaje": "El ticket #26 del cliente Rober Rodrigues fue cerrado por Juan Pérez",
+        "destinatarios": ["rol:administrador"],
+        "ticketId": 26,
+        "usuarioActorNombre": "Juan Pérez",
+        "prioridad": "normal",
+        "leida": false,
+        "fechaCreacion": "2024-01-15T12:30:00"
+      }
+    }
+  },
+  "notification_schema": {
+    "id": "Long - ID único de la notificación",
+    "tipo": "String - Tipo de notificación (ticket_creado, ticket_asignado, etc.)",
+    "mensaje": "String - Mensaje personalizado según el rol del destinatario",
+    "destinatarios": "Array<String> - Lista de destinatarios en formato 'rol:email' o 'rol:rol'",
+    "ticketId": "Long - ID del ticket relacionado (opcional)",
+    "usuarioActorNombre": "String - Nombre del usuario que realizó la acción",
+    "prioridad": "String - Prioridad de la notificación (normal, alta, critica)",
+    "leida": "Boolean - Estado de lectura de la notificación",
+    "fechaCreacion": "LocalDateTime - Fecha y hora de creación",
+    "fechaLectura": "LocalDateTime - Fecha y hora de lectura (opcional)"
+  },
+  "destinatarios_format": {
+    "usuario_especifico": "rol:email@ejemplo.com",
+    "todos_por_rol": "rol:administrador",
+    "ejemplos": [
+      "funcionario:roberrodrigues@gmail.com",
+      "tecnico:juanperez@gmail.com",
+      "administrador:admin@empresa.com",
+      "rol:administrador",
+      "rol:tecnico"
+    ]
+  },
+  "mensajes_por_rol": {
+    "funcionario": {
+      "persona": "primera persona",
+      "ejemplos": [
+        "Tu ticket #26 fue asignado al técnico Juan Pérez",
+        "Tu ticket #26 ha sido resuelto por Juan Pérez",
+        "Tu ticket #1 ha sido creado exitosamente"
+      ]
+    },
+    "tecnico": {
+      "persona": "segunda persona",
+      "ejemplos": [
+        "Se te asignó el ticket #26 del cliente Rober Rodrigues",
+        "Tienes un nuevo ticket #26 del cliente Rober Rodrigues"
+      ]
+    },
+    "administrador": {
+      "persona": "tercera persona",
+      "ejemplos": [
+        "Has asignado el ticket #26 al técnico Juan Pérez",
+        "El ticket #26 del cliente Rober Rodrigues fue resuelto por Juan Pérez",
+        "Nuevo ticket creado por Rober Rodrigues (#1)"
+      ]
+    }
+  }
+}
+

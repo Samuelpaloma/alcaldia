@@ -23,6 +23,7 @@ public class AsignacionResponseDTO {
     private String comentario;
     private LocalDateTime fechaAsignacion;
     private Boolean activa;
+    private String tipoOperacion;
 }
 
 

@@ -1,21 +1,43 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Bell, Settings, LogOut } from "lucide-react";
 import { logout, getAuth } from "../auth/auth";
-import NotificacionInteligenteModal from "../notifications/NotificacionInteligenteModal";
+import { UnifiedNotificationsModal } from "../notifications/UnifiedNotificationsModal";
 import SettingsModal from "../system_configuration/SettingsModal";
 import LogoutModal from "../auth/LogoutModal";
+import { useRoleNotifications } from "@/hooks/use-role-notifications";
+import { useUserInfo } from "@/hooks/use-user-info";
+import NotificationSystem from "../../components/NotificationSystem";
 import "./AppLayout.css";
 
 export default function AdminLayout() {
   const { t, locale, setLocale } = useI18n();
   const navigate = useNavigate();
+  const { userInfo } = useUserInfo();
+  const userEmail = userInfo?.email || '';
+  const userRole = userInfo?.tipoUsuario?.toLowerCase() || '';
+  const { unreadCount } = useRoleNotifications(userEmail, userRole);
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+
+  // Escuchar evento para abrir modal desde toast
+  useEffect(() => {
+    const handleOpenModal = () => {
+      console.log('🔔 AdminLayout: Recibido evento para abrir modal de notificaciones');
+      setShowNotifications(true);
+    };
+
+    window.addEventListener('openNotificationsModal', handleOpenModal);
+    
+    return () => {
+      window.removeEventListener('openNotificationsModal', handleOpenModal);
+    };
+  }, []);
   
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
@@ -112,7 +134,11 @@ export default function AdminLayout() {
         >
           <Bell className="w-5 h-5 text-foreground" />
           {/* Indicador de notificaciones no leídas */}
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
         </button>
         <button 
           aria-label="Settings" 
@@ -131,24 +157,27 @@ export default function AdminLayout() {
       </div>
 
       {/* Modales */}
-        <NotificacionInteligenteModal 
-          isOpen={showNotifications} 
-          onClose={() => setShowNotifications(false)} 
-        />
+        {showNotifications && (
+          <UnifiedNotificationsModal 
+            key={`admin-notifications-${userEmail}-${Date.now()}`}
+            isOpen={showNotifications} 
+            onClose={() => setShowNotifications(false)}
+            userEmail={userEmail}
+            userRole={userRole}
+          />
+        )}
       <SettingsModal 
         isOpen={showSettings} 
         onClose={() => setShowSettings(false)} 
       />
-        <NotificacionInteligenteModal 
-          isOpen={showNotifications} 
-          onClose={() => setShowNotifications(false)} 
-        />
-      <LogoutModal 
-        isOpen={showLogout} 
+      <LogoutModal
+        isOpen={showLogout}
         onClose={() => setShowLogout(false)}
         onConfirm={onLogout}
         userName={userName}
       />
+      
+      {/* Sistema de notificaciones toast en tiempo real - Integrado en GlobalWebSocket */}
     </div>
   );
 }

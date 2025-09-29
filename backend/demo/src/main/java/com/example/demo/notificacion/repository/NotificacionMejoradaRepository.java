@@ -1,6 +1,8 @@
 package com.example.demo.notificacion.repository;
 
 import com.example.demo.notificacion.model.NotificacionMejorada;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,4 +55,16 @@ public interface NotificacionMejoradaRepository extends JpaRepository<Notificaci
     // Contar notificaciones no leídas por destinatario (método de alcaldia)
     @Query("SELECT COUNT(n) FROM NotificacionMejorada n WHERE n.destinatarios LIKE %:destinatario% AND n.leida = false")
     long countNoLeidasByDestinatario(@Param("destinatario") String destinatario);
+    
+    // Buscar notificaciones que contengan un destinatario específico con paginación
+    @Query("SELECT n FROM NotificacionMejorada n WHERE n.destinatarios LIKE %:destinatario% ORDER BY n.fechaCreacion DESC")
+    Page<NotificacionMejorada> findByDestinatariosContainingOrderByFechaCreacionDesc(@Param("destinatario") String destinatario, Pageable pageable);
+    
+    // Buscar notificaciones no leídas para un destinatario con ordenamiento
+    @Query("SELECT n FROM NotificacionMejorada n WHERE n.destinatarios LIKE %:destinatario% AND n.leida = false ORDER BY n.fechaCreacion DESC")
+    List<NotificacionMejorada> findByDestinatariosContainingAndLeidaFalseOrderByFechaCreacionDesc(@Param("destinatario") String destinatario);
+    
+    // Buscar TODAS las notificaciones ordenadas por fecha de creación (para filtrado por roles)
+    @Query("SELECT n FROM NotificacionMejorada n ORDER BY n.fechaCreacion DESC")
+    Page<NotificacionMejorada> findAllOrderByFechaCreacionDesc(Pageable pageable);
 }

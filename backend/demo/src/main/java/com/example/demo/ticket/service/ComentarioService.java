@@ -5,10 +5,7 @@ import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 import com.example.demo.ticket.model.Comentario;
 import com.example.demo.ticket.repository.ComentarioRepository;
 import com.example.demo.usuario.model.Usuario;
-import com.example.demo.usuario.model.TipoUsuario;
-import com.example.demo.notificacion.service.SmartNotificationService;
-import com.example.demo.ticket.model.Ticket;
-import com.example.demo.ticket.repository.TicketRepository;
+import com.example.demo.notificacion.service.NotificationRoleService;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,10 +20,8 @@ public class ComentarioService {
     private ComentarioRepository comentarioRepository;
     
     @Autowired
-    private SmartNotificationService smartNotificationService;
+    private NotificationRoleService notificationRoleService;
     
-    @Autowired
-    private TicketRepository ticketRepository;
     
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -44,20 +39,11 @@ public class ComentarioService {
         
         Comentario comentarioGuardado = comentarioRepository.save(comentario);
         
-        // Enviar notificaciones según el tipo de autor
+        // Enviar notificaciones por roles
         try {
-            Ticket ticket = ticketRepository.findById(request.getTicketId()).orElse(null);
             Usuario usuario = usuarioRepository.findByEmail(emailUsuario).orElse(null);
-            
-            if (ticket != null && usuario != null) {
-                // Determinar el tipo de usuario que está comentando
-                if (usuario.getTipoUsuario() == TipoUsuario.TECNICO) {
-                    // Si es técnico, notificar al cliente y admin
-                    smartNotificationService.notificarRespuestaTecnico(ticket, usuario);
-                } else {
-                    // Si es cliente, notificar al técnico y admin
-                    smartNotificationService.notificarRespuestaCliente(ticket, usuario);
-                }
+            if (usuario != null) {
+                notificationRoleService.notificarComentarioAgregado(request.getTicketId(), usuario.getIdUsuario());
             }
         } catch (Exception e) {
             // Log del error pero no fallar la creación del comentario

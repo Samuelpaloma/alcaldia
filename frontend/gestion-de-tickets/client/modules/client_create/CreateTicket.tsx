@@ -146,6 +146,7 @@ export default function CreateTicket() {
   const [location, setLocation] = useState("");
   const [message, setMessage] = useState("");
   const [priority, setPriority] = useState<Priority>("medium");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -269,13 +270,34 @@ export default function CreateTicket() {
   };
 
   const getFormattedMessage = () => {
+    // Prioridad 1: Si hay mensaje personalizado (texto libre), usarlo como descripción principal
     if (showFreeText && freeTextMessage) {
       const pathString = selectedPath.length > 0 
         ? `${t("client.chat.selected_category")} ${selectedPath.map(p => p.title).join(' → ')}\n\n${t("client.chat.message")} ${freeTextMessage}`
         : freeTextMessage;
       return pathString;
     }
-    return message;
+    
+    // Prioridad 2: Si hay mensaje directo en el campo, usarlo
+    if (message && message.trim()) {
+      const categoryPath = selectedPath.length > 0 
+        ? `${t("client.chat.selected_category")} ${selectedPath.map(p => p.title).join(' → ')}\n\n${t("client.chat.message")} ${message}`
+        : message;
+      return categoryPath;
+    }
+    
+    // Prioridad 3: Si es una categoría seleccionada del bot sin mensaje personalizado, usar la descripción específica
+    if (selectedPath.length > 0) {
+      const lastOption = selectedPath[selectedPath.length - 1];
+      const categoryPath = selectedPath.map(p => p.title).join(' → ');
+      
+      // Si tiene descripción específica, usarla; si no, usar el título
+      const problemDescription = lastOption.description || lastOption.title;
+      
+      return `${t("client.chat.selected_category")} ${categoryPath}\n\n${t("client.chat.problem_description")} ${problemDescription}`;
+    }
+    
+    return 'Consulta General';
   };
 
   const getSubject = () => {
@@ -302,6 +324,21 @@ export default function CreateTicket() {
 
   const canSubmit = name && location && (message || (showFreeText && freeTextMessage)) && priority && !isLoading;
 
+  // Función para convertir archivo a Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remover el prefijo "data:image/jpeg;base64," para obtener solo el Base64
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -315,27 +352,51 @@ export default function CreateTicket() {
         subject,
         category,
         message: finalMessage,
-        priority
+        priority,
+        hasFile: !!selectedFile
       });
       
-      const tkt = await createTicket({ 
+      // Preparar datos del ticket
+      const ticketData: any = { 
         name, 
         location, 
         message: finalMessage,
         subject,
         category,
-        priority, 
-        attachmentName: fileName 
-      });
+        priority
+      };
+
+      // Si hay archivo seleccionado, convertirlo a Base64
+      if (selectedFile) {
+        try {
+          console.log('🔍 [DEBUG] Procesando archivo:', selectedFile.name, 'Tamaño:', selectedFile.size);
+          const base64Content = await fileToBase64(selectedFile);
+          ticketData.archivoAdjunto = base64Content;
+          ticketData.nombreArchivo = selectedFile.name;
+          ticketData.attachmentName = selectedFile.name;
+          console.log('✅ [DEBUG] Archivo convertido a Base64:', selectedFile.name, 'Longitud Base64:', base64Content.length);
+        } catch (fileError) {
+          console.error('❌ [DEBUG] Error procesando archivo:', fileError);
+          toast({
+            title: t("client.error"),
+            description: "Error al procesar el archivo adjunto",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        console.log('🔍 [DEBUG] No hay archivo seleccionado');
+      }
+      
+      const tkt = await createTicket(ticketData);
       
       setCreatedTicketId(tkt.id);
       setShowSuccessModal(true);
       
-      // Limpiar formulario
-      setName(""); 
-      setLocation(""); 
+      // Limpiar solo los campos del ticket, mantener datos del usuario
       setMessage(""); 
       setPriority("medium"); 
+      setSelectedFile(null);
       setFileName(undefined);
       resetChat();
       
@@ -528,8 +589,37 @@ export default function CreateTicket() {
             </label>
             <label className="grid gap-1">
               <span className="label text-sm">{t("client.form.attach")}</span>
-              <input type="file" onChange={(e)=>setFileName(e.target.files?.[0]?.name)} className="bg-background border-input text-foreground rounded-md px-3 py-2" />
-              {fileName && <span className="text-xs text-muted-foreground">{fileName}</span>}
+              <input 
+                type="file" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    // Validar tamaño (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                      toast({
+                        title: "Error",
+                        description: "El archivo no puede ser mayor a 10MB",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setSelectedFile(file);
+                    setFileName(file.name);
+                  } else {
+                    setSelectedFile(null);
+                    setFileName(undefined);
+                  }
+                }}
+                accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.zip,.rar,.7z,.mp4,.avi,.mov,.wmv,.mp3,.wav,.ogg"
+                className="bg-background border-input text-foreground rounded-md px-3 py-2" 
+              />
+              {fileName && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  <span>{fileName}</span>
+                  <span className="text-green-600">✓</span>
+                </div>
+              )}
             </label>
             <div className="md:col-span-2">
               <Button disabled={!canSubmit} className="btn-contrast">

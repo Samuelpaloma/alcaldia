@@ -53,6 +53,30 @@ export function getLoadingState() {
   return { isLoading, error };
 }
 
+// Función para obtener el nombre del técnico
+function getTechnicianDisplayName(tecnicoNombre: string | undefined, tecnicoAsignado: string | undefined, tecnicoEmail: string | undefined): string {
+  // Prioridad: tecnicoNombre (nombre real) > tecnicoAsignado > tecnicoEmail
+  if (tecnicoNombre && tecnicoNombre.trim() !== '') {
+    return tecnicoNombre;
+  }
+  
+  if (tecnicoAsignado && tecnicoAsignado.trim() !== '') {
+    // Si tecnicoAsignado parece ser un email, extraer el nombre
+    if (tecnicoAsignado.includes('@')) {
+      const namePart = tecnicoAsignado.split('@')[0];
+      return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+    }
+    return tecnicoAsignado;
+  }
+  
+  if (tecnicoEmail && tecnicoEmail.trim() !== '') {
+    const namePart = tecnicoEmail.split('@')[0];
+    return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+  }
+  
+  return 'Sin asignar';
+}
+
 // Función para convertir TicketResponseDTO a Ticket
 function convertToTicket(dto: TicketResponseDTO): Ticket {
   const events: TicketEvent[] = [
@@ -89,11 +113,11 @@ function convertToTicket(dto: TicketResponseDTO): Ticket {
     id: dto.id.toString(),
     name: dto.creador?.nombre || 'Usuario',
     location: dto.ubicacion,
-    message: dto.consulta || dto.categoria,
+    message: dto.descripcion || dto.consulta || dto.categoria,
     priority: dto.prioridad,
     attachmentName: dto.nombreArchivo,
     status: dto.estado as TicketStatus,
-    technician: dto.tecnicoAsignado || 'Sin asignar',
+    technician: getTechnicianDisplayName(dto.tecnicoNombre, dto.tecnicoAsignado, dto.tecnicoEmail),
     createdAt: dto.fechaCreacion,
     closedAt: dto.estado === 'closed' ? dto.fechaActualizacion : undefined,
     events
@@ -109,6 +133,8 @@ function convertToRequestDTO(input: {
   category?: string;
   priority: Priority;
   attachmentName?: string;
+  archivoAdjunto?: string;
+  nombreArchivo?: string;
 }): TicketRequestDTO {
   // Mapear categorías de texto a IDs numéricos basado en la base de datos
   const categoryMap: { [key: string]: number } = {
@@ -136,13 +162,25 @@ function convertToRequestDTO(input: {
   // Obtener el ID de la categoría seleccionada o usar 1 por defecto
   const categoriaId = input.category ? categoryMap[input.category] || 1 : 1;
   
-  return {
+  const requestData = {
     ubicacion: input.location,
     consulta: input.message,
     categoriaId: categoriaId, // Usar el ID correcto de la categoría seleccionada
     prioridad: input.priority,
-    nombreArchivo: input.attachmentName
+    archivoAdjunto: input.archivoAdjunto, // Base64 del archivo
+    nombreArchivo: input.nombreArchivo || input.attachmentName // Nombre del archivo
   };
+  
+  console.log('🔍 [DEBUG] Request DTO preparado:', {
+    ubicacion: requestData.ubicacion,
+    consulta: requestData.consulta,
+    categoriaId: requestData.categoriaId,
+    prioridad: requestData.prioridad,
+    tieneArchivo: !!requestData.archivoAdjunto,
+    nombreArchivo: requestData.nombreArchivo
+  });
+  
+  return requestData;
 }
 
 // Cargar tickets desde el backend
@@ -179,6 +217,8 @@ export async function createTicket(input: {
   category?: string;
   priority: Priority;
   attachmentName?: string;
+  archivoAdjunto?: string; // Base64 del archivo
+  nombreArchivo?: string;  // Nombre original del archivo
 }): Promise<Ticket> {
   isLoading = true;
   error = null;
@@ -188,7 +228,7 @@ export async function createTicket(input: {
     const requestData = convertToRequestDTO(input);
     const response = await api.createTicket(requestData);
     
-    // Crear un ticket temporal hasta que se actualice la lista
+    // Crear un ticket temporal hasta que se actualize la lista
     const tempTicket: Ticket = {
       id: response.id.toString(),
       name: input.name,
@@ -214,6 +254,13 @@ export async function createTicket(input: {
 
     // Recargar la lista para obtener el ticket real del backend
     await loadTickets();
+    
+    // Disparar notificación de creación de ticket
+    try {
+      await api.createTicketNotification(response.id, response.creadorId || 1);
+    } catch (notificationError) {
+      console.warn('Error enviando notificación de ticket:', notificationError);
+    }
     
     return tempTicket;
   } catch (err) {

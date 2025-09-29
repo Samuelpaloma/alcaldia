@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { api, TicketResponseDTO, SystemStatsResponse } from '../../../shared/api';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -34,8 +35,27 @@ interface DashboardMetrics {
   tecnicosMasActivos: { tecnico: string; tickets: number }[];
 }
 
+interface RecentTicket {
+  id: number;
+  asunto: string;
+  prioridad: string;
+  estado: string;
+  creadoPor: string;
+  fechaCreacion: string;
+}
+
+interface ActiveTechnician {
+  id: number;
+  nombre: string;
+  email: string;
+  ticketsActivos: number;
+  estado: string;
+}
+
 const UnifiedDashboard: React.FC = () => {
   const [metricas, setMetricas] = useState<DashboardMetrics | null>(null);
+  const [recentTickets, setRecentTickets] = useState<RecentTicket[]>([]);
+  const [activeTechnicians, setActiveTechnicians] = useState<ActiveTechnician[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -45,45 +65,114 @@ const UnifiedDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Simular datos de métricas
+      console.log('🔍 [DEBUG] Cargando métricas del dashboard administrativo...');
+      
+      // Cargar estadísticas del sistema (si está disponible)
+      let stats = null;
+      try {
+        stats = await api.obtenerMetricasDashboard();
+        console.log('📊 [DEBUG] Estadísticas recibidas:', stats);
+      } catch (error) {
+        console.log('⚠️ [DEBUG] Métricas del dashboard no disponibles, usando datos calculados');
+      }
+      
+      // Cargar tickets recientes (usando historial de tickets)
+      const ticketsResponse = await api.getTicketsHistory(0, 100);
+      const tickets = ticketsResponse.content;
+      console.log('🎫 [DEBUG] Tickets recibidos:', tickets.length);
+      
+      // Cargar técnicos
+      const techniciansResponse = await api.getTechnicians(0, 100);
+      const technicians = techniciansResponse.content;
+      console.log('👥 [DEBUG] Técnicos recibidos:', technicians.length);
+      
+      // Procesar datos reales
+      const totalTickets = tickets.length;
+      const ticketsResueltos = tickets.filter(t => t.estado === 'RESUELTO' || t.estado === 'CERRADO').length;
+      const ticketsPendientes = tickets.filter(t => t.estado === 'PENDIENTE' || t.estado === 'ASIGNADO' || t.estado === 'EN_PROGRESO').length;
+      
+      // Calcular estadísticas por categoría
+      const categoriaStats = new Map<string, number>();
+      tickets.forEach(ticket => {
+        const categoria = ticket.asunto || 'Sin categoría';
+        categoriaStats.set(categoria, (categoriaStats.get(categoria) || 0) + 1);
+      });
+      const ticketsPorCategoria = Array.from(categoriaStats.entries())
+        .map(([categoria, cantidad]) => ({ categoria, cantidad }))
+        .sort((a, b) => b.cantidad - a.cantidad)
+        .slice(0, 5);
+      
+      // Calcular estadísticas por estado
+      const estadoStats = new Map<string, number>();
+      tickets.forEach(ticket => {
+        const estado = ticket.estado;
+        estadoStats.set(estado, (estadoStats.get(estado) || 0) + 1);
+      });
+      const ticketsPorEstado = Array.from(estadoStats.entries())
+        .map(([estado, cantidad]) => ({ estado, cantidad }));
+      
+      // Calcular técnicos más activos
+      const tecnicoStats = new Map<string, number>();
+      tickets.forEach(ticket => {
+        if (ticket.tecnicoAsignado && ticket.tecnicoAsignado !== 'Sin asignar') {
+          const tecnico = ticket.tecnicoAsignado;
+          tecnicoStats.set(tecnico, (tecnicoStats.get(tecnico) || 0) + 1);
+        }
+      });
+      const tecnicosMasActivos = Array.from(tecnicoStats.entries())
+        .map(([tecnico, tickets]) => ({ tecnico, tickets }))
+        .sort((a, b) => b.tickets - a.tickets)
+        .slice(0, 4);
+      
+      // Preparar tickets recientes (últimos 5)
+      const recentTicketsData = tickets
+        .sort((a, b) => new Date(b.fechaCreacion).getTime() - new Date(a.fechaCreacion).getTime())
+        .slice(0, 5)
+        .map(ticket => ({
+          id: ticket.id,
+          asunto: ticket.asunto || 'Sin asunto',
+          prioridad: ticket.prioridad,
+          estado: ticket.estado,
+          creadoPor: ticket.creadorNombre || 'Usuario',
+          fechaCreacion: ticket.fechaCreacion
+        }));
+      
+      // Preparar técnicos activos
+      const activeTechniciansData = technicians
+        .map(tech => {
+          const ticketsActivos = tickets.filter(t => t.tecnicoAsignado === tech.nombreCompleto).length;
+          return {
+            id: tech.idUsuario,
+            nombre: tech.nombreCompleto,
+            email: tech.email,
+            ticketsActivos,
+            estado: ticketsActivos > 0 ? 'En línea' : 'Disponible'
+          };
+        })
+        .filter(tech => tech.ticketsActivos > 0)
+        .sort((a, b) => b.ticketsActivos - a.ticketsActivos)
+        .slice(0, 3);
+      
       const metricasData: DashboardMetrics = {
-        totalTickets: 1247,
-        ticketsResueltos: 892,
-        ticketsPendientes: 355,
-        tiempoPromedioResolucion: 4.2,
-        satisfaccionPromedio: 4.6,
-        ticketsPorCategoria: [
-          { categoria: 'Redes', cantidad: 234 },
-          { categoria: 'Sistemas', cantidad: 189 },
-          { categoria: 'Hardware', cantidad: 156 },
-          { categoria: 'Software', cantidad: 123 },
-          { categoria: 'Otros', cantidad: 89 }
-        ],
-        ticketsPorEstado: [
-          { estado: 'Abierto', cantidad: 89 },
-          { estado: 'En Progreso', cantidad: 156 },
-          { estado: 'Resuelto', cantidad: 892 },
-          { estado: 'Cerrado', cantidad: 110 }
-        ],
-        ticketsPorMes: [
-          { mes: 'Ene', cantidad: 98 },
-          { mes: 'Feb', cantidad: 112 },
-          { mes: 'Mar', cantidad: 134 },
-          { mes: 'Abr', cantidad: 156 },
-          { mes: 'May', cantidad: 189 },
-          { mes: 'Jun', cantidad: 203 }
-        ],
-        tecnicosMasActivos: [
-          { tecnico: 'Juan Pérez', tickets: 45 },
-          { tecnico: 'María García', tickets: 38 },
-          { tecnico: 'Carlos López', tickets: 32 },
-          { tecnico: 'Ana Martínez', tickets: 28 }
-        ]
+        totalTickets,
+        ticketsResueltos,
+        ticketsPendientes,
+        tiempoPromedioResolucion: 4.2, // TODO: Calcular tiempo real
+        satisfaccionPromedio: 4.6, // TODO: Implementar encuestas de satisfacción
+        ticketsPorCategoria,
+        ticketsPorEstado,
+        ticketsPorMes: [], // TODO: Implementar análisis temporal
+        tecnicosMasActivos
       };
       
       setMetricas(metricasData);
+      setRecentTickets(recentTicketsData);
+      setActiveTechnicians(activeTechniciansData);
+      
+      console.log('✅ [DEBUG] Dashboard cargado exitosamente');
     } catch (err) {
-      setError('Error al cargar métricas');
+      console.error('❌ [DEBUG] Error cargando dashboard:', err);
+      setError('Error al cargar métricas: ' + (err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -92,6 +181,67 @@ const UnifiedDashboard: React.FC = () => {
   useEffect(() => {
     loadMetricas();
   }, []);
+
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInHours < 1) {
+      return 'Hace unos minutos';
+    } else if (diffInHours < 24) {
+      return `Hace ${diffInHours} ${diffInHours === 1 ? 'hora' : 'horas'}`;
+    } else if (diffInDays === 1) {
+      return 'Ayer';
+    } else if (diffInDays < 7) {
+      return `Hace ${diffInDays} días`;
+    } else {
+      return date.toLocaleDateString('es-ES');
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getPriorityColor = (prioridad: string) => {
+    switch (prioridad?.toUpperCase()) {
+      case 'ALTA':
+        return 'bg-red-100 text-red-800';
+      case 'MEDIA':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'BAJA':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusColor = (estado: string) => {
+    switch (estado?.toUpperCase()) {
+      case 'PENDIENTE':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'ASIGNADO':
+        return 'bg-blue-100 text-blue-800';
+      case 'EN_PROGRESO':
+        return 'bg-orange-100 text-orange-800';
+      case 'ESCALADO':
+        return 'bg-red-100 text-red-800';
+      case 'RESUELTO':
+        return 'bg-green-100 text-green-800';
+      case 'CERRADO':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   const getTendenciaColor = (valor: number, esPositivo: boolean) => {
     if (esPositivo) {
@@ -253,36 +403,33 @@ const UnifiedDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <div>
-                        <p className="font-medium text-sm">Problema de red en oficina principal</p>
-                        <p className="text-xs text-gray-500">Hace 2 horas</p>
-                      </div>
+                  {recentTickets.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Ticket className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                      <p>No hay tickets recientes</p>
                     </div>
-                    <Badge className="bg-blue-100 text-blue-800">Alta</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <div>
-                        <p className="font-medium text-sm">Instalación de software</p>
-                        <p className="text-xs text-gray-500">Hace 4 horas</p>
+                  ) : (
+                    recentTickets.map((ticket) => (
+                      <div key={ticket.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{ticket.asunto}</p>
+                            <p className="text-xs text-gray-500">{formatTimeAgo(ticket.fechaCreacion)}</p>
+                            <p className="text-xs text-gray-400">Por: {ticket.creadoPor}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge className={`text-xs ${getPriorityColor(ticket.prioridad)}`}>
+                            {ticket.prioridad}
+                          </Badge>
+                          <Badge className={`text-xs ${getStatusColor(ticket.estado)}`}>
+                            {ticket.estado}
+                          </Badge>
+                        </div>
                       </div>
-                    </div>
-                    <Badge className="bg-yellow-100 text-yellow-800">Media</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div>
-                        <p className="font-medium text-sm">Configuración de email</p>
-                        <p className="text-xs text-gray-500">Hace 6 horas</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-green-100 text-green-800">Baja</Badge>
-                  </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -296,42 +443,39 @@ const UnifiedDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">JP</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Juan Pérez</p>
-                        <p className="text-xs text-gray-500">3 tickets activos</p>
-                      </div>
+                  {activeTechnicians.length === 0 ? (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                      <p>No hay técnicos activos</p>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">En línea</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-purple-600">MG</span>
+                  ) : (
+                    activeTechnicians.map((technician) => (
+                      <div key={technician.id} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-600">
+                              {getInitials(technician.nombre)}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium">{technician.nombre}</p>
+                            <p className="text-xs text-gray-500">
+                              {technician.ticketsActivos} ticket{technician.ticketsActivos !== 1 ? 's' : ''} activo{technician.ticketsActivos !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <Badge className={
+                          technician.estado === 'En línea' 
+                            ? 'bg-green-100 text-green-800' 
+                            : technician.estado === 'Ocupado'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }>
+                          {technician.estado}
+                        </Badge>
                       </div>
-                      <div>
-                        <p className="font-medium">María García</p>
-                        <p className="text-xs text-gray-500">2 tickets activos</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-green-100 text-green-800">En línea</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-orange-600">CL</span>
-                      </div>
-                      <div>
-                        <p className="font-medium">Carlos López</p>
-                        <p className="text-xs text-gray-500">1 ticket activo</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-yellow-100 text-yellow-800">Ocupado</Badge>
-                  </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
