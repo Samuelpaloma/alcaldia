@@ -38,6 +38,11 @@ class NotificacionService {
   private async makeRequest(endpoint: string, method: string = 'GET', body: any = null, token?: string): Promise<any> {
     const authToken = token || await this.getAuthToken();
     
+    console.log('🔔 [MAKE REQUEST] Endpoint:', endpoint);
+    console.log('🔔 [MAKE REQUEST] Method:', method);
+    console.log('🔔 [MAKE REQUEST] Auth token present:', !!authToken);
+    console.log('🔔 [MAKE REQUEST] Full URL:', `${API_BASE_URL}${endpoint}`);
+    
     const defaultHeaders = {
       'Content-Type': 'application/json',
       ...(authToken && { 'Authorization': `Bearer ${authToken}` })
@@ -52,14 +57,20 @@ class NotificacionService {
       options.body = typeof body === 'string' ? body : JSON.stringify(body);
     }
 
+    console.log('🔔 [MAKE REQUEST] Sending request...');
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    console.log('🔔 [MAKE REQUEST] Response status:', response.status);
+    console.log('🔔 [MAKE REQUEST] Response ok:', response.ok);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('❌ [MAKE REQUEST] Error response:', errorData);
       throw new Error(errorData.message || `HTTP ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('🔔 [MAKE REQUEST] Response data:', data);
+    return data;
   }
 
   // Obtener todas las notificaciones del usuario

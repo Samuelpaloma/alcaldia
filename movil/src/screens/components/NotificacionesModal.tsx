@@ -11,6 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import NotificacionService, { Notificacion } from '../../services/NotificacionService';
+import { useTheme } from '../../hooks/useTheme';
 
 interface NotificacionesModalProps {
   visible: boolean;
@@ -19,6 +20,7 @@ interface NotificacionesModalProps {
 }
 
 const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onClose, onOpenPreferences }) => {
+  const { theme } = useTheme();
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -114,6 +116,8 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
     );
   };
 
+  const styles = createStyles(theme);
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={styles.container}>
@@ -158,10 +162,10 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',

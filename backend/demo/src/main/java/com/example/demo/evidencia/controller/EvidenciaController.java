@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -79,6 +78,35 @@ public class EvidenciaController {
     }
     
     /**
+     * Endpoint de prueba para verificar FormData
+     * POST /api/evidencias/test
+     */
+    @PostMapping("/test")
+    public ResponseEntity<?> testFormData(
+            @RequestParam(required = false) Long ticketId,
+            @RequestParam(required = false) String descripcion,
+            @RequestParam(value = "archivo", required = false) MultipartFile archivo,
+            Authentication authentication) {
+        try {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Test endpoint funcionando");
+            response.put("ticketId", ticketId);
+            response.put("descripcion", descripcion);
+            response.put("archivo", archivo != null ? archivo.getOriginalFilename() : "null");
+            response.put("archivoSize", archivo != null ? archivo.getSize() : 0);
+            response.put("authentication", authentication != null ? "presente" : "null");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error en test endpoint", e);
+            return ResponseEntity.status(500).body(
+                ApiResponse.error("Error en test: " + e.getMessage())
+            );
+        }
+    }
+
+    /**
      * Subir evidencia a un ticket
      * POST /api/evidencias/subir
      */
@@ -90,17 +118,34 @@ public class EvidenciaController {
             @RequestParam String descripcion,
             Authentication authentication) {
         try {
-            log.info("Subiendo evidencia al ticket {}", ticketId);
+            log.info("🔍 [EVIDENCIA] ===== INICIANDO SUBIDA DE EVIDENCIA =====");
+            log.info("🔍 [EVIDENCIA] Ticket ID: {}", ticketId);
+            log.info("🔍 [EVIDENCIA] Descripción: {}", descripcion);
+            log.info("🔍 [EVIDENCIA] Archivo: {} ({} bytes)", archivo.getOriginalFilename(), archivo.getSize());
+            log.info("🔍 [EVIDENCIA] Content Type: {}", archivo.getContentType());
+            log.info("🔍 [EVIDENCIA] Authentication: {}", authentication != null ? "Presente" : "Null");
+            
+            if (authentication == null || authentication.getPrincipal() == null) {
+                log.error("❌ [EVIDENCIA] No hay autenticación válida para subir evidencia");
+                return ResponseEntity.status(401).body(
+                    ApiResponse.error("Token de autenticación requerido")
+                );
+            }
             
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailUsuario = userDetails.getEmail();
             
+            log.info("🔍 [EVIDENCIA] Usuario autenticado: {}", emailUsuario);
+            log.info("🔍 [EVIDENCIA] Llamando a evidenciaService.subirEvidencia...");
+            
             Evidencia evidencia = evidenciaService.subirEvidencia(ticketId, archivo, descripcion, emailUsuario);
             
+            log.info("✅ [EVIDENCIA] Evidencia guardada exitosamente con ID: {}", evidencia.getIdEvidencia());
             return ResponseEntity.ok(evidencia);
         } catch (Exception e) {
-            log.error("Error subiendo evidencia", e);
-            return ResponseEntity.badRequest().body(
+            log.error("❌ [EVIDENCIA] Error subiendo evidencia", e);
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(
                 ApiResponse.error("Error al subir evidencia: " + e.getMessage())
             );
         }

@@ -2,197 +2,98 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  TextInput,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { RouteProp } from '@react-navigation/native';
+import type { RootStackParamList } from './navigationTypes';
+import ChatService, { ChatMessage } from '../services/ChatService';
+import EvidenceModal from './components/EvidenceModal';
+import { useTheme } from '../hooks/useTheme';
 
-interface Message {
-  id: string;
-  text: string;
-  sender: 'tecnico' | 'admin';
-  timestamp: string;
-  isRead: boolean;
+type ChatScreenRouteProp = RouteProp<RootStackParamList, 'Chat'>;
+
+interface TicketInfo {
+  id: number;
+  titulo: string;
+  descripcion: string;
+  categoria: string;
+  estado: string;
+  prioridad: string;
+  tecnicoNombre?: string;
+  tecnicoEmail?: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  creadorEmail?: string;
+  creadorNombre?: string;
+  comentarios?: ChatMessage[];
 }
 
-interface ChatScreenProps {
-  visible?: boolean;
-  onClose?: () => void;
-}
-
-export default function ChatScreen({ visible = true, onClose }: ChatScreenProps) {
+export default function ChatScreen() {
+  const route = useRoute<ChatScreenRouteProp>();
   const navigation = useNavigation();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { theme, isDark } = useTheme();
+  const { ticketId } = route.params;
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [ticketInfo, setTicketInfo] = useState<TicketInfo | null>(null);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [showTicketDetails, setShowTicketDetails] = useState(false);
+  const [hasEvidence, setHasEvidence] = useState(false);
+
   const scrollViewRef = useRef<ScrollView>(null);
-  const textInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    if (visible) {
-      loadUserData();
-      initializeWebSocket();
-    } else {
-      closeWebSocket();
-    }
-
-    return () => {
-      closeWebSocket();
-    };
-  }, [visible]);
+    loadInitialData();
+  }, [ticketId]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      scrollToBottom();
-    }
+    // Auto-scroll al final cuando hay nuevos mensajes
+    scrollToBottom();
   }, [messages]);
 
-  const loadUserData = async () => {
+  const loadInitialData = async () => {
     try {
+      setIsLoading(true);
+      
+      // Cargar información del ticket (incluye comentarios)
+      const ticketData = await ChatService.getTicketInfo(ticketId);
+
+      setTicketInfo(ticketData);
+      // Los comentarios ya vienen incluidos en la respuesta del ticket
+      if (ticketData.comentarios) {
+        setMessages(ticketData.comentarios);
+      }
+      
+      // Verificar si hay evidencias
+      if (ticketData.evidencias && ticketData.evidencias.length > 0) {
+        setHasEvidence(true);
+      }
+
+      // Obtener email del usuario actual
       const userInfo = await AsyncStorage.getItem('userInfo');
       if (userInfo) {
-        setUserData(JSON.parse(userInfo));
+        const userData = JSON.parse(userInfo);
+        setUserEmail(userData.email || '');
       }
     } catch (error) {
-      console.error('Error cargando datos del usuario:', error);
-    }
-  };
-
-  const initializeWebSocket = () => {
-    try {
-      // Conectar al WebSocket del servidor usando SockJS
-      const websocket = new WebSocket('ws://localhost:8080/ws/chat');
-      
-      websocket.onopen = () => {
-        console.log('🔌 WebSocket conectado');
-        setIsConnected(true);
-        
-        // Enviar mensaje de conexión con información del usuario
-        if (userData) {
-          websocket.send(JSON.stringify({
-            type: 'join',
-            userId: userData.id,
-            userName: userData.nombre,
-            userRole: 'tecnico',
-            sender: 'tecnico'
-          }));
-        }
-      };
-
-      websocket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('📨 Mensaje recibido:', data);
-          
-          if (data.type === 'message') {
-            const newMsg: Message = {
-              id: data.id || Date.now().toString(),
-              text: data.text,
-              sender: data.sender === 'admin' ? 'admin' : 'tecnico',
-              timestamp: data.timestamp || new Date().toISOString(),
-              isRead: data.sender === 'tecnico' // Los mensajes propios se marcan como leídos
-            };
-            
-            setMessages(prev => [...prev, newMsg]);
-          } else if (data.type === 'typing') {
-            setIsTyping(data.isTyping && data.sender === 'admin');
-          } else if (data.type === 'user_joined') {
-            // Mostrar notificación de usuario conectado
-            console.log('👤 Usuario conectado:', data.userName);
-          }
-        } catch (error) {
-          console.error('Error parseando mensaje:', error);
-        }
-      };
-
-      websocket.onclose = () => {
-        console.log('🔌 WebSocket desconectado');
-        setIsConnected(false);
-        setIsTyping(false);
-      };
-
-      websocket.onerror = (error) => {
-        console.error('❌ Error WebSocket:', error);
-        setIsConnected(false);
-        Alert.alert('Error de conexión', 'No se pudo conectar al chat. Verifica tu conexión a internet.');
-      };
-
-      setWs(websocket);
-    } catch (error) {
-      console.error('Error inicializando WebSocket:', error);
-      Alert.alert('Error', 'No se pudo inicializar el chat');
-    }
-  };
-
-  const closeWebSocket = () => {
-    if (ws) {
-      ws.close();
-      setWs(null);
-      setIsConnected(false);
-      setIsTyping(false);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !ws || !isConnected) {
-      return;
-    }
-
-    const messageText = newMessage.trim();
-    setNewMessage('');
-
-    try {
-      const message = {
-        type: 'message',
-        text: messageText,
-        sender: 'tecnico',
-        timestamp: new Date().toISOString(),
-        userId: userData?.id,
-        userName: userData?.nombre,
-        userRole: 'tecnico'
-      };
-
-      ws.send(JSON.stringify(message));
-
-      // Agregar mensaje localmente inmediatamente
-      const localMessage: Message = {
-        id: Date.now().toString(),
-        text: messageText,
-        sender: 'tecnico',
-        timestamp: new Date().toISOString(),
-        isRead: true
-      };
-
-      setMessages(prev => [...prev, localMessage]);
-    } catch (error) {
-      console.error('Error enviando mensaje:', error);
-      Alert.alert('Error', 'No se pudo enviar el mensaje');
-    }
-  };
-
-  const handleTyping = (text: string) => {
-    setNewMessage(text);
-    
-    if (ws && isConnected) {
-      // Enviar estado de escritura
-      ws.send(JSON.stringify({
-        type: 'typing',
-        isTyping: text.length > 0,
-        sender: 'tecnico',
-        userRole: 'tecnico',
-        userName: userData?.nombre
-      }));
+      console.error('Error cargando datos iniciales:', error);
+      Alert.alert('Error', 'No se pudieron cargar los datos del chat');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -202,213 +103,544 @@ export default function ChatScreen({ visible = true, onClose }: ChatScreenProps)
     }, 100);
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('es-ES', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+  const sendMessage = async () => {
+    if (!newMessage.trim() || isSending) return;
+
+    const messageText = newMessage.trim();
+    setNewMessage('');
+    setIsSending(true);
+
+    try {
+      const newChatMessage = await ChatService.enviarComentario(ticketId, messageText);
+      setMessages(prev => [...prev, newChatMessage]);
+    } catch (error) {
+      console.error('Error enviando mensaje:', error);
+      Alert.alert('Error', 'No se pudo enviar el mensaje');
+      setNewMessage(messageText); // Restaurar el mensaje si falla
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const formatDate = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 
-    if (date.toDateString() === today.toDateString()) {
-      return 'Hoy';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Ayer';
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString('es-ES', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
     } else {
       return date.toLocaleDateString('es-ES', { 
         day: '2-digit', 
-        month: '2-digit' 
+        month: '2-digit',
+        hour: '2-digit', 
+        minute: '2-digit' 
       });
     }
   };
 
-  const renderMessage = (message: Message, index: number) => {
-    const isOwnMessage = message.sender === 'tecnico';
-    const showDate = index === 0 || 
-      formatDate(messages[index - 1].timestamp) !== formatDate(message.timestamp);
-
-    return (
-      <View key={message.id}>
-        {showDate && (
-          <View style={styles.dateSeparator}>
-            <Text style={styles.dateText}>{formatDate(message.timestamp)}</Text>
-          </View>
-        )}
-        
-        <View style={[
-          styles.messageContainer,
-          isOwnMessage ? styles.ownMessage : styles.otherMessage
-        ]}>
-          <View style={[
-            styles.messageBubble,
-            isOwnMessage ? styles.ownBubble : styles.otherBubble
-          ]}>
-            <Text style={[
-              styles.messageText,
-              isOwnMessage ? styles.ownMessageText : styles.otherMessageText
-            ]}>
-              {message.text}
-            </Text>
-            <Text style={[
-              styles.messageTime,
-              isOwnMessage ? styles.ownMessageTime : styles.otherMessageTime
-            ]}>
-              {formatTime(message.timestamp)}
-            </Text>
-          </View>
-        </View>
-      </View>
-    );
+  const getAuthorName = (message: ChatMessage) => {
+    if (message.autorEmail === userEmail) {
+      return 'Tú';
+    }
+    
+    switch (message.tipoAutor) {
+      case 'TECNICO':
+        return 'Técnico';
+      case 'CLIENTE':
+        return 'Cliente';
+      case 'ADMINISTRADOR':
+        return 'Administrador';
+      default:
+        return message.autor;
+    }
   };
 
-  // Si no hay función onClose, significa que es una pantalla independiente
-  const isModal = !!onClose;
-  if (isModal && !visible) return null;
+  const isCurrentUser = (message: ChatMessage) => {
+    return message.autorEmail === userEmail;
+  };
+
+  const getStatusColor = (estado: string) => {
+    switch (estado) {
+      case 'PENDIENTE':
+        return '#ff9800';
+      case 'EN_PROCESO':
+      case 'ASIGNADO':
+        return '#2196f3';
+      case 'TERMINADO':
+      case 'FINALIZADA':
+        return '#4caf50';
+      case 'CERRADO':
+        return '#9e9e9e';
+      default:
+        return '#666';
+    }
+  };
+
+  const getPriorityColor = (prioridad: string) => {
+    switch (prioridad?.toUpperCase()) {
+      case 'ALTA':
+        return '#f44336';
+      case 'MEDIA':
+        return '#ff9800';
+      case 'BAJA':
+        return '#4caf50';
+      default:
+        return '#666';
+    }
+  };
+
+  const styles = createStyles(theme);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Cargando chat...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
-        style={styles.keyboardAvoid}
+        style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Ticket #{ticketId}</Text>
+            {ticketInfo && (
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {ticketInfo.titulo || ticketInfo.descripcion}
+              </Text>
+            )}
+          </View>
+        </View>
 
-        {/* Messages */}
+        {/* Información compacta del ticket */}
+        {ticketInfo && (
+          <View style={styles.ticketSummaryCard}>
+            <View style={styles.ticketSummaryHeader}>
+              <View style={styles.ticketBasicInfo}>
+                <Text style={styles.ticketId}>#{ticketInfo.id}</Text>
+                <Text style={styles.ticketTitle} numberOfLines={1}>{ticketInfo.titulo}</Text>
+              </View>
+              <View style={styles.ticketBadges}>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(ticketInfo.estado) }]}>
+                  <Text style={styles.statusText}>{ticketInfo.estado}</Text>
+                </View>
+                <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(ticketInfo.prioridad) }]}>
+                  <Text style={styles.priorityText}>{ticketInfo.prioridad}</Text>
+                </View>
+              </View>
+            </View>
+            
+            <View style={styles.ticketSummaryActions}>
+              <TouchableOpacity 
+                style={styles.toggleDetailsButton}
+                onPress={() => setShowTicketDetails(!showTicketDetails)}
+              >
+                <Text style={styles.toggleDetailsText}>
+                  {showTicketDetails ? 'Ocultar detalles' : 'Ver detalles'}
+                </Text>
+                <Text style={styles.toggleDetailsIcon}>
+                  {showTicketDetails ? '▲' : '▼'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.evidenceButton, hasEvidence && styles.evidenceButtonDisabled]}
+                onPress={() => !hasEvidence && setShowEvidenceModal(true)}
+                disabled={hasEvidence}
+              >
+                <Text style={[styles.evidenceButtonText, hasEvidence && styles.evidenceButtonTextDisabled]}>
+                  {hasEvidence ? '📎 Evidencia Subida' : '📎 Evidencia'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Detalles expandibles */}
+            {showTicketDetails && (
+              <View style={styles.expandedDetails}>
+                <View style={styles.ticketDetails}>
+                  <View style={styles.ticketInfoRow}>
+                    <Text style={styles.ticketInfoLabel}>Asunto:</Text>
+                    <Text style={styles.ticketInfoValue}>{ticketInfo.titulo}</Text>
+                  </View>
+                  {ticketInfo.tecnicoNombre && (
+                    <View style={styles.ticketInfoRow}>
+                      <Text style={styles.ticketInfoLabel}>Técnico:</Text>
+                      <Text style={styles.ticketInfoValue}>{ticketInfo.tecnicoNombre}</Text>
+                    </View>
+                  )}
+                  {ticketInfo.ubicacion && (
+                    <View style={styles.ticketInfoRow}>
+                      <Text style={styles.ticketInfoLabel}>Ubicación:</Text>
+                      <Text style={styles.ticketInfoValue}>{ticketInfo.ubicacion}</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Historial del ticket */}
+                {ticketInfo.historialEstados && ticketInfo.historialEstados.length > 0 && (
+                  <View style={styles.historySection}>
+                    <Text style={styles.historyTitle}>🕒 Historial del Ticket</Text>
+                    <ScrollView style={styles.historyList} showsVerticalScrollIndicator={false}>
+                      {ticketInfo.historialEstados.map((historial, index) => (
+                        <View key={index} style={styles.historyItem}>
+                          <View style={styles.historyDot} />
+                          <View style={styles.historyContent}>
+                            <Text style={styles.historyText}>{historial.estadoAnterior} → {historial.estadoNuevo}</Text>
+                            <Text style={styles.historyDate}>
+                              {new Date(historial.fechaCambio).toLocaleDateString('es-ES', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </Text>
+                            {historial.comentario && (
+                              <Text style={styles.historyComment}>{historial.comentario}</Text>
+                            )}
+                          </View>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Área de mensajes */}
         <ScrollView 
           ref={scrollViewRef}
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
         >
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>💬</Text>
-              <Text style={styles.emptyTitle}>Inicia una conversación</Text>
-              <Text style={styles.emptyText}>
-                Escribe un mensaje para comunicarte con el administrador
-              </Text>
+              <Text style={styles.emptyStateIcon}>💬</Text>
+              <Text style={styles.emptyStateText}>No hay mensajes aún</Text>
+              <Text style={styles.emptyStateSubtext}>Sé el primero en escribir</Text>
             </View>
           ) : (
-            messages.map((message, index) => renderMessage(message, index))
-          )}
-          
-          {isTyping && (
-            <View style={styles.typingContainer}>
-              <View style={styles.typingBubble}>
-                <Text style={styles.typingText}>Administrador está escribiendo...</Text>
+            messages.map((message) => (
+              <View
+                key={message.id}
+                style={[
+                  styles.messageContainer,
+                  isCurrentUser(message) ? styles.messageContainerRight : styles.messageContainerLeft
+                ]}
+              >
+                <View
+                  style={[
+                    styles.messageBubble,
+                    isCurrentUser(message) ? styles.messageBubbleRight : styles.messageBubbleLeft
+                  ]}
+                >
+                  <Text style={styles.messageAuthor}>
+                    {getAuthorName(message)}
+                  </Text>
+                  <Text style={styles.messageText}>{message.mensaje}</Text>
+                  <Text style={styles.messageTime}>
+                    {formatTimestamp(message.fechaCreacion)}
+                  </Text>
+                </View>
               </View>
-            </View>
+            ))
           )}
         </ScrollView>
 
-        {/* Input */}
+        {/* Área de entrada */}
         <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
+          <View style={styles.inputRow}>
             <TextInput
-              ref={textInputRef}
               style={styles.textInput}
+              value={newMessage}
+              onChangeText={setNewMessage}
               placeholder="Escribe tu mensaje..."
               placeholderTextColor="#999"
-              value={newMessage}
-              onChangeText={handleTyping}
               multiline
               maxLength={500}
-              returnKeyType="send"
-              onSubmitEditing={sendMessage}
-              blurOnSubmit={false}
+              editable={!isSending}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.sendButton,
-                (!newMessage.trim() || !isConnected) && styles.sendButtonDisabled
+                (!newMessage.trim() || isSending) && styles.sendButtonDisabled
               ]}
               onPress={sendMessage}
-              disabled={!newMessage.trim() || !isConnected}
+              disabled={!newMessage.trim() || isSending}
             >
-              <Text style={[
-                styles.sendButtonText,
-                (!newMessage.trim() || !isConnected) && styles.sendButtonTextDisabled
-              ]}>
-                →
-              </Text>
+              {isSending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.sendButtonText}>→</Text>
+              )}
             </TouchableOpacity>
           </View>
+          <Text style={styles.characterCount}>
+            {newMessage.length}/500
+          </Text>
         </View>
+
+        {/* Modal de evidencias */}
+        <EvidenceModal
+          visible={showEvidenceModal}
+          onClose={() => setShowEvidenceModal(false)}
+          ticketId={ticketId}
+          onEvidenceUploaded={() => {
+            // Marcar que ya hay evidencias
+            setHasEvidence(true);
+            // Recargar datos del ticket para mostrar nuevas evidencias
+            loadInitialData();
+          }}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
-  keyboardAvoid: {
+  keyboardAvoidingView: {
     flex: 1,
   },
-  header: {
-    backgroundColor: '#000000',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  headerLeft: {
-    flexDirection: 'row',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: theme.colors.textSecondary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
   backButton: {
-    marginRight: 15,
-    padding: 5,
+    marginRight: 12,
+    padding: 4,
   },
   backButtonText: {
-    fontSize: 20,
-    color: 'white',
+    fontSize: 24,
+    color: theme.colors.text,
     fontWeight: 'bold',
   },
-  headerInfo: {
+  headerContent: {
     flex: 1,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: theme.colors.text,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  // Estilos para el resumen compacto del ticket
+  ticketSummaryCard: {
+    backgroundColor: '#1a1a1a',
+    margin: 16,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  ticketSummaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  ticketBasicInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  ticketId: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007bff',
     marginBottom: 4,
   },
-  connectionStatus: {
+  ticketTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#ffffff',
+  },
+  ticketBadges: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  ticketSummaryActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statusDot: {
+  toggleDetailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#333',
+    borderRadius: 6,
+  },
+  toggleDetailsText: {
+    color: '#ccc',
+    fontSize: 14,
+    marginRight: 4,
+  },
+  toggleDetailsIcon: {
+    color: '#ccc',
+    fontSize: 12,
+  },
+  evidenceButton: {
+    backgroundColor: '#007bff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  evidenceButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  evidenceButtonDisabled: {
+    backgroundColor: '#555',
+    opacity: 0.6,
+  },
+  evidenceButtonTextDisabled: {
+    color: '#ccc',
+  },
+  expandedDetails: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  ticketDetails: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  historySection: {
+    marginTop: 8,
+  },
+  ticketInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ticketInfoLabel: {
+    fontSize: 14,
+    color: '#ccc',
+    width: 80,
+    fontWeight: '500',
+  },
+  ticketInfoValue: {
+    fontSize: 14,
+    color: '#ffffff',
+    flex: 1,
+  },
+  // Estilos para el historial
+  historyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 12,
+  },
+  historyList: {
+    maxHeight: 150,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  historyDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: 6,
+    backgroundColor: '#007bff',
+    marginTop: 6,
+    marginRight: 12,
   },
-  statusConnected: {
-    backgroundColor: '#4CAF50',
+  historyContent: {
+    flex: 1,
   },
-  statusDisconnected: {
-    backgroundColor: '#f44336',
+  historyText: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  historyDate: {
+    fontSize: 12,
+    color: '#ccc',
+    marginBottom: 4,
+  },
+  historyComment: {
+    fontSize: 12,
+    color: '#aaa',
+    fontStyle: 'italic',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   statusText: {
     fontSize: 12,
-    color: 'white',
-    opacity: 0.8,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  priorityText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
   },
   messagesContainer: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
   messagesContent: {
-    padding: 20,
-    paddingBottom: 10,
+    padding: 16,
+    paddingBottom: 20,
   },
   emptyState: {
     flex: 1,
@@ -416,148 +648,99 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 60,
   },
-  emptyIcon: {
+  emptyStateIcon: {
     fontSize: 48,
-    marginBottom: 15,
+    marginBottom: 16,
   },
-  emptyTitle: {
+  emptyStateText: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
     color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
+    fontWeight: '500',
+    marginBottom: 8,
   },
-  dateSeparator: {
-    alignItems: 'center',
-    marginVertical: 15,
-  },
-  dateText: {
-    fontSize: 12,
+  emptyStateSubtext: {
+    fontSize: 14,
     color: '#999',
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
   },
   messageContainer: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
-  ownMessage: {
-    alignItems: 'flex-end',
-  },
-  otherMessage: {
+  messageContainerLeft: {
     alignItems: 'flex-start',
+  },
+  messageContainerRight: {
+    alignItems: 'flex-end',
   },
   messageBubble: {
     maxWidth: '80%',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 18,
+    padding: 12,
+    borderRadius: 16,
   },
-  ownBubble: {
+  messageBubbleLeft: {
+    backgroundColor: '#fff',
+    borderBottomLeftRadius: 4,
+  },
+  messageBubbleRight: {
     backgroundColor: '#007AFF',
     borderBottomRightRadius: 4,
   },
-  otherBubble: {
-    backgroundColor: 'white',
-    borderBottomLeftRadius: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  messageAuthor: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+    opacity: 0.8,
   },
   messageText: {
     fontSize: 16,
     lineHeight: 20,
     marginBottom: 4,
   },
-  ownMessageText: {
-    color: 'white',
-  },
-  otherMessageText: {
-    color: '#333',
-  },
   messageTime: {
     fontSize: 11,
-    opacity: 0.7,
-  },
-  ownMessageTime: {
-    color: 'white',
-    textAlign: 'right',
-  },
-  otherMessageTime: {
-    color: '#666',
-  },
-  typingContainer: {
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  typingBubble: {
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  typingText: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
+    opacity: 0.6,
   },
   inputContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
   },
-  inputWrapper: {
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 25,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
   },
   textInput: {
     flex: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
-    color: '#333',
     maxHeight: 100,
-    paddingVertical: 8,
+    marginRight: 12,
   },
   sendButton: {
     backgroundColor: '#007AFF',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
   },
   sendButtonDisabled: {
     backgroundColor: '#ccc',
   },
   sendButtonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  sendButtonTextDisabled: {
+  characterCount: {
+    fontSize: 12,
     color: '#999',
+    textAlign: 'right',
+    marginTop: 4,
   },
 });

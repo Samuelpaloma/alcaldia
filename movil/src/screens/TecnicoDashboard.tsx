@@ -18,6 +18,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from './navigationTypes';
 import { checkAuthStatus } from './utils/authHelpers';
 import NotificacionService from '../services/NotificacionService';
+import { useTheme } from '../hooks/useTheme';
 import SecurityService from '../services/SecurityService';
 import NotificacionesModal from './components/NotificacionesModal';
 import PreferenciasNotificacionesModal from './components/PreferenciasNotificacionesModal';
@@ -44,6 +45,8 @@ interface Ticket {
 
 export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const navigation = useNavigation<NavigationProp>();
+  const { theme, isDark } = useTheme();
+  const styles = createStyles(theme);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -748,6 +751,18 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                       <Text style={styles.viewEvidenceButtonText}>Ver Evidencias</Text>
                     </TouchableOpacity>
                   )}
+
+                  {/* Botón de Chat - Disponible para todos los estados */}
+                  <TouchableOpacity 
+                    style={styles.chatButton}
+                    onPress={() => {
+                      setSelectedTicket(null); // Cerrar el modal
+                      navigation.navigate('Chat', { ticketId: ticket.id });
+                    }}
+                  >
+                    <Text style={styles.chatButtonIcon}>💬</Text>
+                    <Text style={styles.chatButtonText}>Chat</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             ))
@@ -1412,6 +1427,17 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   style={styles.sidebarMenuItem}
                   onPress={() => {
                     setSidebarVisible(false);
+                    navigation.navigate('Configuraciones');
+                  }}
+                >
+                  <Text style={styles.sidebarMenuIcon}>⚙️</Text>
+                  <Text style={styles.sidebarMenuText}>Configuraciones</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.sidebarMenuItem}
+                  onPress={() => {
+                    setSidebarVisible(false);
                     navigation.navigate('ChangePassword');
                   }}
                 >
@@ -1459,10 +1485,10 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   safeArea: {
     flex: 1,
@@ -1471,10 +1497,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingBottom: 30,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 20,
     paddingVertical: 15,
     flexDirection: 'row',
@@ -1484,7 +1510,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: theme.colors.text,
   },
   menuButton: {
     padding: 5,
@@ -1608,7 +1634,7 @@ const styles = StyleSheet.create({
   // Estilos para los modales (mantener los existentes)
   modalContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1621,15 +1647,15 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
   },
   closeButton: {
     fontSize: 24,
-    color: '#666',
+    color: theme.colors.textSecondary,
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.textSecondary,
     padding: 20,
     paddingTop: 10,
   },
@@ -1994,6 +2020,23 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  chatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2196F3',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  chatButtonIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  chatButtonText: {
+    fontSize: 14,
+    color: 'white',
+    fontWeight: '500',
   },
 
   // Estilos para modales de finalización
@@ -2417,7 +2460,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: '70%',
     height: '100%',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     paddingTop: 50,
     shadowColor: '#000',
     shadowOffset: {
@@ -2440,11 +2483,11 @@ const styles = StyleSheet.create({
   sidebarTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
   },
   sidebarCloseButton: {
     fontSize: 24,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: 'bold',
   },
   sidebarSection: {
@@ -2473,7 +2516,7 @@ const styles = StyleSheet.create({
   },
   sidebarMenuText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   sidebarLogout: {
@@ -2496,7 +2539,7 @@ const styles = StyleSheet.create({
   },
   sidebarLogoutText: {
     fontSize: 16,
-    color: '#ff4444',
+    color: theme.colors.error,
     fontWeight: '500',
   },
 

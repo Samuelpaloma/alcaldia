@@ -130,12 +130,19 @@ public class EvidenciaService {
      */
     @Transactional
     public Evidencia subirEvidencia(Long ticketId, MultipartFile archivo, String descripcion, String emailUsuario) {
-        log.info("Subiendo evidencia al ticket {} por usuario {}", ticketId, emailUsuario);
+        log.info("🔍 [EVIDENCIA SERVICE] ===== INICIANDO SUBIDA DE EVIDENCIA =====");
+        log.info("🔍 [EVIDENCIA SERVICE] Ticket ID: {}", ticketId);
+        log.info("🔍 [EVIDENCIA SERVICE] Email usuario: {}", emailUsuario);
+        log.info("🔍 [EVIDENCIA SERVICE] Archivo: {} ({} bytes)", archivo.getOriginalFilename(), archivo.getSize());
+        log.info("🔍 [EVIDENCIA SERVICE] Content Type: {}", archivo.getContentType());
         
+        log.info("🔍 [EVIDENCIA SERVICE] Buscando ticket...");
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        log.info("🔍 [EVIDENCIA SERVICE] Ticket encontrado: {}", ticket.getId());
         
         // Validar archivo
+        log.info("🔍 [EVIDENCIA SERVICE] Validando archivo...");
         if (archivo.isEmpty()) {
             throw new RuntimeException("El archivo no puede estar vacío");
         }
@@ -145,25 +152,27 @@ public class EvidenciaService {
             throw new RuntimeException("El archivo no puede ser mayor a 10MB");
         }
         
-        // Validar tipo de archivo
+        // Validar tipo de archivo - solo imágenes y videos
         String contentType = archivo.getContentType();
-        if (contentType == null || !contentType.startsWith("image/") && !contentType.startsWith("application/pdf")) {
-            throw new RuntimeException("Solo se permiten archivos de imagen y PDF");
+        if (contentType == null || (!contentType.startsWith("image/") && !contentType.startsWith("video/"))) {
+            throw new RuntimeException("Solo se permiten archivos de imagen y video");
         }
+        log.info("🔍 [EVIDENCIA SERVICE] Validaciones de archivo pasadas");
         
         // Obtener usuario por email
+        log.info("🔍 [EVIDENCIA SERVICE] Buscando usuario por email...");
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        log.info("🔍 [EVIDENCIA SERVICE] Usuario encontrado: {}", usuario.getEmail());
         
         // Determinar tipo de evidencia basado en el content type
-        String tipoEvidencia = "DOCUMENTO";
+        String tipoEvidencia = "IMAGEN"; // Por defecto
         if (contentType.startsWith("image/")) {
             tipoEvidencia = "IMAGEN";
         } else if (contentType.startsWith("video/")) {
             tipoEvidencia = "VIDEO";
-        } else if (contentType.startsWith("audio/")) {
-            tipoEvidencia = "AUDIO";
         }
+        log.info("🔍 [EVIDENCIA SERVICE] Tipo de evidencia: {}", tipoEvidencia);
         
         // Obtener extensión del archivo
         String nombreOriginal = archivo.getOriginalFilename();
@@ -171,8 +180,10 @@ public class EvidenciaService {
         if (nombreOriginal != null && nombreOriginal.contains(".")) {
             extension = nombreOriginal.substring(nombreOriginal.lastIndexOf(".") + 1);
         }
+        log.info("🔍 [EVIDENCIA SERVICE] Extensión: {}", extension);
         
         // Crear evidencia
+        log.info("🔍 [EVIDENCIA SERVICE] Creando objeto Evidencia...");
         Evidencia evidencia = Evidencia.builder()
             .ticket(ticket)
             .subidoPor(usuario)
@@ -185,7 +196,11 @@ public class EvidenciaService {
             .activa(true)
             .build();
         
-        return evidenciaRepository.save(evidencia);
+        log.info("🔍 [EVIDENCIA SERVICE] Guardando evidencia en base de datos...");
+        Evidencia evidenciaGuardada = evidenciaRepository.save(evidencia);
+        log.info("✅ [EVIDENCIA SERVICE] Evidencia guardada con ID: {}", evidenciaGuardada.getIdEvidencia());
+        
+        return evidenciaGuardada;
     }
     
     /**

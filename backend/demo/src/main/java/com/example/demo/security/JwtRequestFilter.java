@@ -34,6 +34,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         
         try {
             String jwt = getJwtFromRequest(request);
+            log.info("🔑 JWT extraído: {}", jwt != null ? "Sí" : "No");
+            log.info("🔑 JWT completo: {}", jwt);
             
             if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
                 Long userId = jwtTokenProvider.getUserIdFromJWT(jwt);

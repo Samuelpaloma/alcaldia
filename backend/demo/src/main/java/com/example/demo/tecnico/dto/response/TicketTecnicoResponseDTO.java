@@ -41,4 +41,7 @@ public class TicketTecnicoResponseDTO {
     
     // Historial de cambios de estado
     private List<com.example.demo.ticket.dto.response.HistorialEstadoResponseDTO> historialEstados;
+    
+    // Comentarios del ticket
+    private List<com.example.demo.ticket.dto.response.ComentarioResponseDTO> comentarios;
 }

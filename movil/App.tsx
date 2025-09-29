@@ -14,16 +14,23 @@ import VerifyScreen from './src/screens/VerifyScreen';
 import VerifyEmailScreen from './src/screens/verifyEmailScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
+import ChatScreen from './src/screens/ChatScreen';
+import ConfiguracionesScreen from './src/screens/ConfiguracionesScreen';
+import HistorialPorAreaScreen from './src/screens/HistorialPorAreaScreen';
+import { ThemeProvider } from './src/components/ThemeProvider';
 
 type RootStackParamList = {
   Login: undefined;
   Home: undefined;
   Config: undefined;
+  Configuraciones: undefined;
   ChangePassword: undefined;
+  HistorialPorArea: undefined;
   Verify2FA: { userId: number; userEmail: string; userName: string };
   VerifyEmailScreen: { email: string };
   ForgotPasswordScreen: undefined;
   ResetPasswordScreen: { email: string };
+  Chat: { ticketId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -140,9 +147,10 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} onReady={checkAuthStatus}>
-      <StatusBar style="auto" />
-      <Stack.Navigator initialRouteName="Login">
+    <ThemeProvider>
+      <NavigationContainer ref={navigationRef} onReady={checkAuthStatus}>
+        <StatusBar style="auto" />
+        <Stack.Navigator initialRouteName="Login">
         <Stack.Screen 
           name="Login" 
           component={LoginScreen} 
@@ -156,8 +164,13 @@ export default function App() {
         </Stack.Screen>
         <Stack.Screen 
           name="Config" 
-          component={ConfigScreen}
+          component={ConfigScreen} 
           options={{ title: 'Configuración' }}
+        />
+        <Stack.Screen 
+          name="Configuraciones" 
+          component={ConfiguracionesScreen} 
+          options={{ title: 'Configuraciones' }}
         />
         <Stack.Screen 
           name="Verify2FA" 
@@ -184,9 +197,20 @@ export default function App() {
           component={ChangePasswordScreen}
           options={{ title: 'Cambiar Contraseña' }}
         />
-      </Stack.Navigator>
-    </NavigationContainer>
-  );
+        <Stack.Screen 
+          name="HistorialPorArea"
+          component={HistorialPorAreaScreen}
+          options={{ title: 'Historial por Área' }}
+        />
+        <Stack.Screen 
+          name="Chat"
+          component={ChatScreen}
+          options={{ title: 'Chat del Ticket' }}
+        />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
+    );
 }
 
 const styles = StyleSheet.create({

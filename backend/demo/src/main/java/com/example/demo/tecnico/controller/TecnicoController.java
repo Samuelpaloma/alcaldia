@@ -69,6 +69,13 @@ public class TecnicoController {
         try {
             log.info("Obteniendo ticket detallado {} para técnico", ticketId);
             
+            if (authentication == null || authentication.getPrincipal() == null) {
+                log.error("No hay autenticación válida para el técnico");
+                return ResponseEntity.status(401).body(
+                    ApiResponse.error("Token de autenticación requerido")
+                );
+            }
+            
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailTecnico = userDetails.getEmail();
             
