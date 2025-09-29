@@ -35,21 +35,24 @@ class NotificacionService {
     return await AsyncStorage.getItem('authToken');
   }
 
-  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
-    const token = await this.getAuthToken();
+  private async makeRequest(endpoint: string, method: string = 'GET', body: any = null, token?: string): Promise<any> {
+    const authToken = token || await this.getAuthToken();
     
     const defaultHeaders = {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
+      ...(authToken && { 'Authorization': `Bearer ${authToken}` })
     };
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        ...defaultHeaders,
-        ...options.headers
-      }
-    });
+    const options: RequestInit = {
+      method,
+      headers: defaultHeaders
+    };
+
+    if (body && method !== 'GET') {
+      options.body = typeof body === 'string' ? body : JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -87,9 +90,7 @@ class NotificacionService {
   // Marcar notificación como leída
   async marcarComoLeida(notificacionId: number): Promise<void> {
     try {
-      await this.makeRequest(`/notificaciones/movil/${notificacionId}/leer`, {
-        method: 'PUT'
-      });
+      await this.makeRequest(`/notificaciones/movil/${notificacionId}/leer`, 'PUT');
     } catch (error) {
       console.error('Error marcando notificación como leída:', error);
       throw error;
@@ -110,10 +111,7 @@ class NotificacionService {
   // Actualizar preferencias de notificación
   async actualizarPreferencias(preferencias: Partial<PreferenciasNotificacion>): Promise<PreferenciasNotificacion> {
     try {
-      const response = await this.makeRequest('/notificaciones/movil/preferencias', {
-        method: 'PUT',
-        body: JSON.stringify(preferencias)
-      });
+      const response = await this.makeRequest('/notificaciones/movil/preferencias', 'PUT', preferencias);
       return response.preferencias;
     } catch (error) {
       console.error('Error actualizando preferencias:', error);
@@ -122,21 +120,14 @@ class NotificacionService {
   }
 
   // Obtener contador de notificaciones no leídas
-  async getContadorNotificaciones(): Promise<number> {
-    console.log('🔔 [SERVICE] ===== INICIANDO getContadorNotificaciones =====');
-    console.log('🔔 [SERVICE] Timestamp:', new Date().toISOString());
+  async getContadorNotificaciones(token: string, email: string): Promise<number> {
+    console.log('🔔 [SERVICE] Obteniendo contador de notificaciones para:', email);
     try {
-      console.log('🔔 [SERVICE] Llamando a /notificaciones/movil/contador');
-      const response = await this.makeRequest('/notificaciones/movil/contador');
-      console.log('🔔 [SERVICE] Respuesta recibida:', response);
-      console.log('🔔 [SERVICE] Count en respuesta:', response.count);
-      const count = response.count || 0;
-      console.log('🔔 [SERVICE] Count final:', count);
-      console.log('✅ [SERVICE] ===== getContadorNotificaciones COMPLETADO =====');
-      return count;
+      const response = await this.makeRequest(`/notificaciones/movil/contador?email=${encodeURIComponent(email)}`, 'GET', null, token);
+      console.log('🔔 [SERVICE] Contador de notificaciones recibido:', response);
+      return response.count || 0;
     } catch (error) {
       console.error('❌ [SERVICE] Error obteniendo contador:', error);
-      console.error('❌ [SERVICE] Error details:', error);
       throw error;
     }
   }

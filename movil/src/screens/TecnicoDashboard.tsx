@@ -282,14 +282,28 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     console.log('🔔 [FRONTEND] ===== INICIANDO loadContadorNotificaciones =====');
     console.log('🔔 [FRONTEND] Timestamp:', new Date().toISOString());
     try {
-      console.log('🔔 [FRONTEND] Llamando a NotificacionService.getContadorNotificaciones()');
-      const count = await NotificacionService.getContadorNotificaciones();
+      const token = await AsyncStorage.getItem('authToken');
+      const userInfo = await AsyncStorage.getItem('userInfo');
+      
+      if (!token || !userInfo) {
+        console.log('⚠️ [FRONTEND] No hay token o userInfo disponible');
+        setContadorNotificaciones(0);
+        return;
+      }
+      
+      const userData = JSON.parse(userInfo);
+      const email = userData.email;
+      
+      console.log('🔔 [FRONTEND] Llamando a NotificacionService.getContadorNotificaciones() con email:', email);
+      const count = await NotificacionService.getContadorNotificaciones(token, email);
       console.log('🔔 [FRONTEND] Contador recibido:', count);
       setContadorNotificaciones(count);
       console.log('✅ [FRONTEND] Contador de notificaciones actualizado exitosamente');
     } catch (error) {
       console.error('❌ [FRONTEND] Error cargando contador de notificaciones:', error);
       console.error('❌ [FRONTEND] Error details:', error);
+      // En caso de error, mantener el contador en 0
+      setContadorNotificaciones(0);
     }
     console.log('🔔 [FRONTEND] ===== FIN loadContadorNotificaciones =====');
   };
