@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // Extender Window para WebSocket
 declare global {
@@ -40,6 +41,7 @@ import './UsersModule.css';
 export default function TicketsManagement() {
   const { t } = useI18n();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -731,7 +733,10 @@ export default function TicketsManagement() {
           <p className="page-subtitle">Administra y supervisa todos los tickets del sistema</p>
         </div>
         <div className="header-actions">
-          <Button className="create-btn">
+          <Button 
+            className="create-btn"
+            onClick={() => navigate('/client/crear')}
+          >
             <Plus className="w-4 h-4" />
             Nuevo Ticket
           </Button>
