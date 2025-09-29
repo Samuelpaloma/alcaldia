@@ -11,6 +11,7 @@ public interface AuthService {
     PendingUser resendVerificationCode(String email);
     
     // Login
+    LoginResponse authenticate(LoginRequest request);
     LoginResponse authenticateWithVerification(LoginRequest request);
     void validateCredentials(LoginRequest request);
     PendingUser createLoginVerification(LoginRequest request);
@@ -26,4 +27,6 @@ public interface AuthService {
     void logout(String token);
     void verifyToken(String token);
     long getUserCount();
+    LoginResponse verify2FAAndCompleteLogin(Long userId, String code);
+    void verifyExistingUserEmail(String email, String code);
 }

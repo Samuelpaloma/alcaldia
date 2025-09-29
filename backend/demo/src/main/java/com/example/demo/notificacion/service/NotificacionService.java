@@ -1,7 +1,10 @@
 package com.example.demo.notificacion.service;
 
+import com.example.demo.notificacion.dto.NotificacionDTO;
+import com.example.demo.notificacion.dto.PreferenciasNotificacionDTO;
 import com.example.demo.notificacion.dto.request.CreateNotificacionRequest;
 import com.example.demo.notificacion.model.Notificacion;
+import com.example.demo.notificacion.model.NotificacionMejorada;
 import com.example.demo.shared.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
 
@@ -48,6 +51,50 @@ public interface NotificacionService {
      * Obtener estadísticas de notificaciones
      */
     NotificacionStatsResponseDTO obtenerEstadisticas(String emailUsuario);
+    
+    /**
+     * Obtener notificaciones del usuario por ID (para el controller)
+     */
+    List<NotificacionDTO> getNotificacionesByUsuario(Long usuarioId);
+    
+    /**
+     * Obtener notificaciones no leídas del usuario por ID
+     */
+    List<NotificacionDTO> getNotificacionesNoLeidasByUsuario(Long usuarioId);
+    
+    /**
+     * Marcar notificación como leída por ID de usuario
+     */
+    void marcarComoLeida(Long notificacionId, Long usuarioId);
+    
+    /**
+     * Contar notificaciones no leídas del usuario
+     */
+    long contarNotificacionesNoLeidas(Long usuarioId);
+    
+    /**
+     * Obtener preferencias de notificación del usuario
+     */
+    PreferenciasNotificacionDTO getPreferenciasByUsuario(Long usuarioId);
+    
+    /**
+     * Actualizar preferencias de notificación del usuario
+     */
+    PreferenciasNotificacionDTO actualizarPreferencias(Long usuarioId, PreferenciasNotificacionDTO preferenciasDTO);
+    
+    // ===== MÉTODOS ADICIONALES DE ALCALDIA =====
+    
+    /**
+     * Crear una notificación (método de alcaldia)
+     */
+    NotificacionMejorada crearNotificacion(String tipo, String mensaje, List<Integer> destinatariosIds, 
+                                          Long ticketId, Integer usuarioActorId, String prioridad);
+    
+    /**
+     * Crear notificación solo si el usuario tiene push activo
+     */
+    NotificacionMejorada crearNotificacionSiPushActivo(String tipo, String mensaje, List<Integer> destinatariosIds, 
+                                                      Long ticketId, Integer usuarioActorId, String prioridad);
     
     // Clase interna para estadísticas
     class NotificacionStatsResponseDTO {

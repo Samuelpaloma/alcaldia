@@ -1,374 +1,421 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import authService from '../services/authService';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
+import { useNavigation, NavigationProp } from "@react-navigation/native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface LoginScreenProps {
-  navigation: any;
-  onAuthSuccess?: () => void;
-}
-
-export default function LoginScreen({ navigation, onAuthSuccess }: LoginScreenProps) {
+export default function LoginScreen() {
+  const navigation = useNavigation<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'credentials' | 'verification'>('credentials');
-  const [isRequestingCode, setIsRequestingCode] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [generalError, setGeneralError] = useState('');
 
   const handleLogin = async () => {
-    console.log('🔐 [LOGIN] Iniciando proceso de login...');
-    console.log('🔐 [LOGIN] Email:', email);
-    console.log('🔐 [LOGIN] Password:', password ? '***' : 'vacío');
-    
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+    // Limpiar errores previos
+    setEmailError('');
+    setPasswordError('');
+    setGeneralError('');
+
+    // Validación básica en el frontend
+    let hasErrors = false;
+
+    if (!email || !email.trim()) {
+      setEmailError('El campo correo es obligatorio');
+      hasErrors = true;
+    } else if (!email.includes('@') || !email.match(/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/)) {
+      setEmailError('Por favor ingrese un correo electrónico válido');
+      hasErrors = true;
+    }
+
+    if (!password || !password.trim()) {
+      setPasswordError('El campo contraseña es obligatorio');
+      hasErrors = true;
+    } else if (!password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/)) {
+      setPasswordError(
+        'La contraseña debe tener al menos 8 caracteres, incluyendo mayúsculas, minúsculas y números'
+      );
+      hasErrors = true;
+    }
+
+
+    if (hasErrors) {
       return;
     }
 
-    setIsLoading(true);
+    setLoading(true);
     try {
-      console.log('🔐 [LOGIN] Paso 1: Validando credenciales...');
-      // Paso 1: Validar credenciales
-      await authService.validateCredentials(email.trim(), password);
-      console.log('✅ [LOGIN] Credenciales válidas');
-      
-      console.log('🔐 [LOGIN] Paso 2: Solicitando código...');
-      // Paso 2: Solicitar código de verificación
-      setIsRequestingCode(true);
-      await authService.requestLoginCode(email.trim(), password);
-      console.log('✅ [LOGIN] Código solicitado');
-      
-      // Cambiar a paso de verificación
-      setStep('verification');
-      Alert.alert('Código enviado', 'Se ha enviado un código de verificación a tu correo electrónico');
-      
-    } catch (error: any) {
-      console.error('❌ [LOGIN] Error:', error);
-      console.error('❌ [LOGIN] Error message:', error.message);
-      console.error('❌ [LOGIN] Error stack:', error.stack);
-      Alert.alert('Error', error.message || 'Error en el proceso de login');
-    } finally {
-      setIsLoading(false);
-      setIsRequestingCode(false);
-    }
-  };
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim()
+        })
+      });
 
-  const handleVerifyCode = async () => {
-    if (!verificationCode.trim()) {
-      Alert.alert('Error', 'Por favor ingresa el código de verificación');
-      return;
-    }
+      const data = await response.json();
+      console.log('🔍 Response status:', response.status);
+      console.log('🔍 Response data:', data);
 
-    // Prevenir múltiples verificaciones
-    if (isVerifying) {
-      console.log('⚠️ [LOGIN] Verificación ya en progreso, ignorando...');
-      return;
-    }
-
-    setIsLoading(true);
-    setIsVerifying(true);
-    
-    try {
-      console.log('🔐 [LOGIN] Iniciando verificación de código...');
-      // Verificar código y obtener token
-      const loginResponse = await authService.verifyLoginCode(email.trim(), verificationCode.trim());
-      
-      console.log('✅ [LOGIN] Código verificado, guardando datos...');
-      // Guardar datos de autenticación
-      await authService.saveAuthData(loginResponse);
-      
-      console.log('✅ [LOGIN] Login exitoso, datos guardados. Notificando al App.tsx...');
-      // Notificar al App.tsx para que actualice el estado de autenticación
-      if (onAuthSuccess) {
-        await onAuthSuccess();
+      // PRIMERO: Verificar si requiere verificación de email
+      if (data.requireEmailVerification) {
+        console.log('📧 Email no verificado, navegando a VerifyEmailScreen');
+        console.log('📧 Data recibida:', data);
+        console.log('📧 Email en data:', data.email);
+        console.log('📧 Tipo de email:', typeof data.email);
+        navigation.navigate('VerifyEmailScreen', {
+          email: data.email
+        });
+        return;
       }
-      
-    } catch (error: any) {
-      console.error('❌ [LOGIN] Error en verificación:', error);
-      // Mostrar mensaje específico para usuarios no técnicos
-      if (error.message.includes('Solo los técnicos pueden acceder')) {
-        Alert.alert(
-          'Acceso Denegado', 
-          'Esta aplicación móvil está destinada únicamente para técnicos.\n\nLos administradores y funcionarios deben usar la aplicación web.',
-          [
-            {
-              text: 'Entendido',
-              onPress: () => {
-                // Volver al paso de credenciales
-                setStep('credentials');
-                setVerificationCode('');
-              }
-            }
-          ]
-        );
+
+      // SEGUNDO: Si response es OK, manejar casos exitosos
+      if (response.ok) {
+        if (data.accessToken) {
+          // Login directo exitoso - GUARDAR TOKEN AQUÍ
+          console.log('✅ Login directo exitoso, guardando token y navegando a Home');
+          await AsyncStorage.setItem('authToken', data.accessToken);
+          await AsyncStorage.setItem('userInfo', JSON.stringify({
+            userId: data.userId,
+            email: data.email,
+            nombre: data.nombre
+          }));
+          // Navegar manualmente a Home después del login exitoso
+          console.log('✅ Login exitoso, navegando a Home');
+          navigation.navigate('Home');
+        } else if (data.require2fa) {
+          // Login requiere 2FA - NO guardar token todavía
+          console.log('🔐 Login requiere 2FA, navegando a Verify2FA');
+          navigation.navigate('Verify2FA', { 
+            userId: data.userId,
+            userEmail: data.email,
+            userName: data.nombre 
+          });
+        }
       } else {
-        Alert.alert('Error', error.message || 'Código de verificación inválido');
+        // Errores normales
+        const errorMessage = data.message || 'Credenciales incorrectas';
+        if (errorMessage.includes('correo') || errorMessage.includes('email')) {
+          setEmailError(errorMessage);
+        } else if (errorMessage.includes('contraseña') || errorMessage.includes('password')) {
+          setPasswordError(errorMessage);
+        } else {
+          setGeneralError(errorMessage);
+        }
       }
+    } catch (error) {
+      console.error('Error de conexión:', error);
+      setGeneralError('No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.');
     } finally {
-      setIsLoading(false);
-      setIsVerifying(false);
+      setLoading(false);
     }
   };
 
-  const handleResendCode = async () => {
-    setIsRequestingCode(true);
-    try {
-      await authService.requestLoginCode(email.trim(), password);
-      Alert.alert('Código reenviado', 'Se ha enviado un nuevo código de verificación');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Error reenviando código');
-    } finally {
-      setIsRequestingCode(false);
-    }
+  const handleForgotPassword = () => {
+    // Navegar a la pantalla de recuperación de contraseña
+    navigation.navigate('ForgotPasswordScreen');
   };
 
-  const handleBackToCredentials = () => {
-    setStep('credentials');
-    setVerificationCode('');
-    setIsVerifying(false);
-  };
+  return (
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
+          <View style={styles.formContainer}>
+            <View style={styles.headerSection}>
+              <View style={styles.logoContainer}>
+                {/* Reemplazamos la imagen por texto TicketFlow */}
+                <Text style={styles.logoText}>TicketFlow</Text>
+              </View>
+              {/* Agregamos el texto descriptivo */}
+              <Text style={styles.subtitleText}>Inicia sesión para continuar</Text>
+            </View>
 
-  const renderCredentialsStep = () => (
-    <View style={styles.formContainer}>
-      <Text style={styles.title}>TicketFlow</Text>
-      <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
-      
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Correo</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="tu@empresa.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-      </View>
+            <View style={styles.inputSection}>
+              {/* Error general */}
+              {generalError ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{generalError}</Text>
+                </View>
+              ) : null}
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Contraseña</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Tu contraseña"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-      </View>
+              <Text style={styles.inputLabel}>Correo</Text>
+              <TextInput
+                style={[styles.input, emailError ? styles.inputError : null]}
+                placeholder="tu@empresa.com"
+                placeholderTextColor="#888"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (emailError) setEmailError(''); // Limpiar error al escribir
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-      <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.buttonText}>Ingresar</Text>
-        )}
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.linkButton}
-        onPress={() => navigation.navigate('ForgotPassword')}
-      >
-        <Text style={styles.linkText}>Olvidé mi contraseña</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderVerificationStep = () => (
-    <View style={styles.formContainer}>
-      <Text style={styles.title}>Verificación</Text>
-      <Text style={styles.subtitle}>
-        Ingresa el código de verificación enviado a{'\n'}
-        <Text style={styles.emailText}>{email}</Text>
-      </Text>
-      
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Código de Verificación</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="123456"
-          value={verificationCode}
-          onChangeText={setVerificationCode}
-          keyboardType="numeric"
-          maxLength={6}
-        />
-      </View>
+              <Text style={styles.inputLabel}>Contraseña</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={[styles.passwordInput, passwordError ? styles.inputError : null]}
+                  placeholder="••••••••••••"
+                  placeholderTextColor="#888"
+                  value={password}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) setPasswordError(''); // Limpiar error al escribir
+                  }}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Image
+                    source={
+                      showPassword
+                        ? require("../../assets/eye-open.png")
+                        : require("../../assets/eye-closed.png")
+                    }
+                    style={styles.eyeIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+              {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
               <TouchableOpacity
-        style={[styles.button, (isLoading || isVerifying) && styles.buttonDisabled]}
-        onPress={handleVerifyCode}
-        disabled={isLoading || isVerifying}
-      >
-        {(isLoading || isVerifying) ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={styles.buttonText}>Verificar</Text>
-        )}
-      </TouchableOpacity>
-
-      <View style={styles.verificationActions}>
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={handleResendCode}
-          disabled={isRequestingCode}
-        >
-          <Text style={styles.linkText}>
-            {isRequestingCode ? 'Reenviando...' : 'Reenviar código'}
+                style={[styles.loginButton, loading && styles.buttonDisabled]}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                <Text style={styles.loginButtonText}>
+                  {loading ? 'Ingresando...' : 'Ingresar'}
                 </Text>
               </TouchableOpacity>
 
+              {/* Enlace "Olvidé mi contraseña" */}
               <TouchableOpacity
-          style={styles.linkButton}
-          onPress={handleBackToCredentials}
+                style={styles.forgotPasswordButton}
+                onPress={handleForgotPassword}
               >
-          <Text style={styles.linkText}>Cambiar credenciales</Text>
+                <Text style={styles.forgotPasswordText}>Olvidé mi contraseña</Text>
               </TouchableOpacity>
             </View>
           </View>
-  );
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {step === 'credentials' ? renderCredentialsStep() : renderVerificationStep()}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f5f5f5',
   },
-  keyboardView: {
+  safeArea: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
+  keyboardAvoid: {
+    flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  header: {
     alignItems: 'center',
-    marginBottom: 40,
-  },
-  logoContainer: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  logoText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000000',
+    padding: 20,
   },
   formContainer: {
-    backgroundColor: 'white',
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#ffffff',
     borderRadius: 15,
-    padding: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    padding: 40,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    marginHorizontal: 20,
+    shadowRadius: 10,
+    elevation: 8,
+    position: 'relative',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 30,
-    lineHeight: 22,
-  },
-  emailText: {
-    fontWeight: 'bold',
-    color: '#000000',
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: 'white',
-  },
-  button: {
-    backgroundColor: '#000000',
-    borderRadius: 10,
-    paddingVertical: 15,
+  // Estilos para el ícono de información
+  infoButton: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#5a7c5a',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
+    zIndex: 1,
   },
-  buttonDisabled: {
-    backgroundColor: '#999',
-  },
-  buttonText: {
+  infoIcon: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  linkButton: {
+  headerSection: {
     alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 10,
+  },
+  subtitleText: {
+    color: '#666666',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  inputSection: {
+    width: '100%',
+  },
+  inputLabel: {
+    color: '#333333',
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
     marginTop: 15,
   },
-  linkText: {
-    color: '#007AFF',
+  input: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 15,
     fontSize: 16,
-    fontWeight: '500',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  verificationActions: {
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: 15,
+  },
+  passwordInput: {
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    padding: 15,
+    paddingRight: 50,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: 15,
+    top: 15,
+    padding: 4,
+  },
+  eyeIcon: {
+    width: 20,
+    height: 20,
+  },
+  // Estilos para mensajes de error
+  errorContainer: {
+    backgroundColor: '#ffe6e6',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 15,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ff4444',
+  },
+  errorText: {
+    color: '#cc0000',
+    fontSize: 14,
+    marginTop: 5,
+    marginBottom: 10,
+  },
+  inputError: {
+    borderColor: '#ff4444',
+    borderWidth: 2,
+  },
+  loginButton: {
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    padding: 15,
+    alignItems: 'center',
     marginTop: 20,
-    gap: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#888888',
+  },
+  loginButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Estilos para "Olvidé mi contraseña"
+  forgotPasswordButton: {
+    alignItems: 'center',
+    marginTop: 15,
+    paddingVertical: 10,
+  },
+  forgotPasswordText: {
+    color: '#007AFF',
+    fontSize: 14,
+    textDecorationLine: 'underline',
+  },
+  // Estilos para el modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 25,
+    margin: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    minWidth: 280,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 22,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButton: {
+    backgroundColor: '#5a7c5a',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

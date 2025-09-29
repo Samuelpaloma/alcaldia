@@ -1,155 +1,167 @@
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\admin\controller\AdminController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\admin\dto\response\EstadisticasAdminResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\admin\service\AdminService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ai\controller\AIController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ai\dto\response\ClasificacionIAResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ai\dto\response\SugerenciaIAResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ai\service\AIService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\controller\AsignacionController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\dto\request\AsignarTicketRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\dto\response\AsignacionResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\model\AsignacionTicket.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\model\HistorialAsignacion.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\repository\AsignacionTicketRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\repository\HistorialAsignacionRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\service\AsignacionService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\controller\AuthController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\controller\PasswordHashController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ChangeTemporaryPasswordRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ForgotPasswordRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\LoginRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\RegisterRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ResendVerificationRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ResetPasswordRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\VerifyEmailRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\response\ApiResponse.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\response\LoginResponse.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\exception\AuthException.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\exception\InvalidTokenException.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\exception\UserAlreadyExistsException.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\model\EmailVerificationToken.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\model\PasswordResetToken.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\model\PendingUser.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\repository\EmailVerificationTokenRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\repository\PasswordResetTokenRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\repository\PendingUserRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\AuthService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\AuthServiceImpl.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\EmailService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\EmailTemplateService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\EmailVerificationService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\PasswordResetService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\PasswordResetServiceImpl.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\automation\controller\AutomationController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\automation\dto\request\ReglaAutomatizacionRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\automation\dto\response\ReglaAutomatizacionResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\automation\service\AutomationService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\controller\CategoriaController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\dto\request\CategoriaRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\dto\response\CategoriaResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\dto\response\CategoriaSimpleDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\model\Categoria.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\repository\CategoriaRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\service\CategoriaService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\service\CategoriaServiceImpl.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\config\DatabaseInitializer.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\config\WebSocketConfig.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\dashboard\controller\DashboardController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\dashboard\dto\response\DashboardMetricsResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\dashboard\service\DashboardService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\DemoApplication.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\controller\EncuestaController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\dto\request\EncuestaSatisfaccionRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\dto\response\EncuestaSatisfaccionResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\service\EncuestaService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\controller\EvidenciaController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\model\Evidencia.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\repository\EvidenciaRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\service\EvidenciaService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\controller\NotificacionController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\controller\NotificacionMejoradaController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\controller\NotificacionWebSocketController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\dto\request\CreateNotificacionRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\model\Notificacion.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\model\NotificacionMejorada.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\repository\NotificacionMejoradaRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\repository\NotificacionRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionInteligenteService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionMejoradaService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionServiceImpl.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\SmartNotificationService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\security\CustomUserDetails.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\security\JwtAuthenticationEntryPoint.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\security\JwtRequestFilter.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\security\JwtTokenProvider.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\security\SecurityConfig.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\security\UserDetailsServiceImpl.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\settings\controller\SettingsController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\settings\dto\request\LanguageRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\settings\dto\response\LanguageResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\settings\service\SettingsService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\shared\dto\ApiResponse.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\shared\dto\PageResponse.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\shared\exception\NotFoundException.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\shared\util\SecurityUtils.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\controller\SuperAdminController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\request\ConfiguracionRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\response\ConfiguracionResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\response\EstadisticasAdministradoresResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\response\EstadisticasSistemaResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\model\ConfiguracionSistema.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\repository\ConfiguracionSistemaRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\ConfiguracionService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\DataInitializerService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\SuperAdminService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\SuperAdminUsuarioService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\controller\TecnicoController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\request\CambiarEstadoTicketRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\request\SubirEvidenciaRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\EstadisticasTecnicoResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\EvidenciaResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\HistorialEstadoResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\TicketTecnicoResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\service\TecnicoService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\controller\TicketController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\controller\WebSocketController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\controller\WebSocketTestController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\request\ComentarioRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\request\SeguimientoTicketRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\request\TicketRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\ComentarioResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\EvidenciaResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\HistorialEstadoResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\HistorialTicketResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\TicketResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\Comentario.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\HistorialEstadoTicket.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\Ticket.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\TicketAcceso.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\ComentarioRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\HistorialEstadoTicketRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\TicketAccesoRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\TicketRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\service\ComentarioService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\service\TicketService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\service\TicketServiceImpl.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\controller\UsuarioController.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\ChangePasswordRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\CreateAdminRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\CreateTecnicoRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\UpdateUsuarioRequest.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\UsuarioRequestDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\PageResponse.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\UsuarioDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\UsuarioResponseDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\UsuarioSummaryDTO.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\exception\BusinessRuleException.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\exception\InsufficientPermissionException.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\exception\UserNotFoundException.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\model\TipoUsuario.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\model\Usuario.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\repository\UsuarioRepository.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\service\UsuarioMapper.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\service\UsuarioService.java
-C:\Proyecto V1\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\service\UsuarioServiceImpl.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\admin\controller\AdminController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\admin\dto\response\EstadisticasAdminResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\admin\service\AdminService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ai\controller\AIController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ai\dto\response\ClasificacionIAResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ai\dto\response\SugerenciaIAResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ai\service\AIService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\controller\AsignacionController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\dto\request\AsignarTicketRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\dto\response\AsignacionResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\model\AsignacionTicket.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\model\HistorialAsignacion.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\repository\AsignacionTicketRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\repository\HistorialAsignacionRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\asignacion\service\AsignacionService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\controller\AuthController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\controller\PasswordHashController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ChangeTemporaryPasswordRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ForgotPasswordRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\LoginRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\RegisterRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ResendVerificationRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\ResetPasswordRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\request\VerifyEmailRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\response\ApiResponse.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\dto\response\LoginResponse.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\exception\AuthException.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\exception\InvalidTokenException.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\exception\UserAlreadyExistsException.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\model\EmailVerificationToken.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\model\PasswordResetToken.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\model\PendingUser.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\repository\EmailVerificationTokenRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\repository\PasswordResetTokenRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\repository\PendingUserRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\AuthService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\AuthServiceImpl.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\EmailService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\EmailTemplateService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\EmailVerificationService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\PasswordResetService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\auth\service\PasswordResetServiceImpl.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\automation\controller\AutomationController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\automation\dto\request\ReglaAutomatizacionRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\automation\dto\response\ReglaAutomatizacionResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\automation\service\AutomationService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\controller\CategoriaController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\dto\request\CategoriaRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\dto\response\CategoriaResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\dto\response\CategoriaSimpleDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\model\Categoria.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\repository\CategoriaRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\service\CategoriaService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\categoria\service\CategoriaServiceImpl.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\config\DatabaseInitializer.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\config\WebSocketConfig.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\dashboard\controller\DashboardController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\dashboard\dto\response\DashboardMetricsResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\dashboard\service\DashboardService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\DemoApplication.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\controller\EncuestaController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\dto\request\EncuestaSatisfaccionRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\dto\response\EncuestaSatisfaccionResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\encuesta\service\EncuestaService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\controller\EvidenciaController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\dto\EvidenciaMovilDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\model\Evidencia.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\repository\EvidenciaRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\evidencia\service\EvidenciaService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\controller\NotificacionController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\controller\NotificacionMejoradaController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\controller\NotificacionWebSocketController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\dto\NotificacionDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\dto\PreferenciasNotificacionDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\dto\request\CreateNotificacionRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\model\Notificacion.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\model\NotificacionMejorada.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\model\PreferenciasNotificacion.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\repository\NotificacionMejoradaRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\repository\NotificacionRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\repository\PreferenciasNotificacionRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionAutomaticaService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionInteligenteService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionMejoradaService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionServiceImpl.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\NotificacionServiceSimple.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\PushNotificationService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\notificacion\service\SmartNotificationService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\security\CustomUserDetails.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\security\JwtAuthenticationEntryPoint.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\security\JwtRequestFilter.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\security\JwtTokenProvider.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\security\SecurityConfig.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\security\UserDetailsServiceImpl.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\settings\controller\SettingsController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\settings\dto\request\LanguageRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\settings\dto\response\LanguageResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\settings\service\SettingsService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\shared\dto\ApiResponse.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\shared\dto\PageResponse.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\shared\exception\NotFoundException.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\shared\util\SecurityUtils.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\controller\SuperAdminController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\request\ConfiguracionRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\response\ConfiguracionResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\response\EstadisticasAdministradoresResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\dto\response\EstadisticasSistemaResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\model\ConfiguracionSistema.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\repository\ConfiguracionSistemaRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\ConfiguracionService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\DataInitializerService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\SuperAdminService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\superadmin\service\SuperAdminUsuarioService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\controller\SampleDataController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\controller\TecnicoController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\request\CambiarEstadoTicketRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\request\SubirEvidenciaRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\EstadisticasTecnicoResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\EvidenciaResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\HistorialEstadoResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\dto\response\TicketTecnicoResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\tecnico\service\TecnicoService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\controller\TicketController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\controller\WebSocketController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\controller\WebSocketTestController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\EvidenciaDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\request\ComentarioRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\request\SeguimientoTicketRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\request\TicketRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\ComentarioResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\EvidenciaResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\HistorialEstadoResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\HistorialTicketResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\response\TicketResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\TecnicoDashboardDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\dto\TicketDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\Comentario.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\HistorialEstadoTicket.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\Ticket.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\model\TicketAcceso.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\ComentarioRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\HistorialEstadoTicketRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\TicketAccesoRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\repository\TicketRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\service\ComentarioService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\service\TicketService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\ticket\service\TicketServiceImpl.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\controller\UsuarioController.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\ChangePasswordRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\CreateAdminRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\CreateTecnicoRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\UpdateUsuarioRequest.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\request\UsuarioRequestDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\PageResponse.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\UsuarioDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\UsuarioResponseDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\dto\response\UsuarioSummaryDTO.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\exception\BusinessRuleException.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\exception\InsufficientPermissionException.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\exception\UserNotFoundException.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\model\TipoUsuario.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\model\Usuario.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\repository\UsuarioRepository.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\service\UsuarioMapper.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\service\UsuarioService.java
+C:\Alcaldia\paloma-HU-3\alcaldia\backend\demo\src\main\java\com\example\demo\usuario\service\UsuarioServiceImpl.java

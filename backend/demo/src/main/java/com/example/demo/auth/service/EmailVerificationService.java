@@ -96,6 +96,59 @@ public class EmailVerificationService {
         sendVerificationCode(usuario);
     }
     
+    /**
+     * Enviar código 2FA (reutiliza la lógica de verificación de email)
+     */
+    public void send2FACode(Usuario usuario) {
+        log.info("Enviando código 2FA a: {}", usuario.getEmail());
+        
+        // 1. Invalidar tokens anteriores del usuario
+        tokenRepository.invalidateAllTokensByUsuario(usuario);
+        
+        // 2. Generar nuevo código de 6 dígitos
+        String code = generateSixDigitCode();
+        
+        // 3. Crear token de verificación (válido por 5 minutos para 2FA)
+        EmailVerificationToken verificationToken = EmailVerificationToken.builder()
+            .token(code)
+            .usuario(usuario)
+            .fechaExpiracion(LocalDateTime.now().plusMinutes(5)) // 5 min para 2FA
+            .usado(false)
+            .build();
+        
+        tokenRepository.save(verificationToken);
+        
+        // 4. Enviar email específico para 2FA
+        try {
+            emailService.send2FACode(usuario, code); // Método específico para 2FA
+            log.info("Código 2FA enviado a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error enviando código 2FA a: {}", usuario.getEmail(), e);
+            throw new RuntimeException("Error enviando el código 2FA. Intente nuevamente");
+        }
+    }
+    
+    /**
+     * Verificar código 2FA (reutiliza la validación de tokens)
+     */
+    public boolean verify2FACode(String code) {
+        try {
+            EmailVerificationToken token = tokenRepository
+                .findByTokenAndUsadoFalseAndFechaExpiracionAfter(code, LocalDateTime.now())
+                .orElse(null);
+            
+            if (token != null) {
+                // Marcar como usado para evitar reutilización
+                token.setUsado(true);
+                tokenRepository.save(token);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error verificando código 2FA: {}", code, e);
+            return false;
+        }
+    }
     
     /**
      * Limpieza automática de tokens expirados (cada hora)

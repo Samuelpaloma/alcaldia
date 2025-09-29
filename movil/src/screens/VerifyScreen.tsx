@@ -65,8 +65,12 @@ export default function VerifyScreen() {
           nombre: data.nombre
         }));
         
-        // No navegar manualmente - App.tsx detectará automáticamente el cambio
-        console.log('✅ 2FA verificado, App.tsx detectará automáticamente la autenticación');
+        console.log('✅ Token guardado, navegando a Home...');
+        
+        // Navegar directamente al dashboard
+        navigation.navigate('Home');
+        
+        console.log('✅ Navegación completada');
         
       } else {
         // Error en verificación

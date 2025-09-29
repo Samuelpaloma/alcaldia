@@ -41,7 +41,7 @@ public class TecnicoController {
             
             List<TicketTecnicoResponseDTO> tickets = tecnicoService.obtenerTicketsAsignados(emailTecnico);
             
-            return ResponseEntity.ok(tickets);
+            return ResponseEntity.ok(ApiResponse.success("Tickets obtenidos exitosamente", tickets));
         } catch (Exception e) {
             log.error("Error obteniendo tickets asignados", e);
             return ResponseEntity.badRequest().body(
@@ -167,7 +167,7 @@ public class TecnicoController {
             
             EstadisticasTecnicoResponseDTO estadisticas = tecnicoService.obtenerEstadisticasTecnico(emailTecnico);
             
-            return ResponseEntity.ok(estadisticas);
+            return ResponseEntity.ok(ApiResponse.success("Estadísticas obtenidas exitosamente", estadisticas));
         } catch (Exception e) {
             log.error("Error obteniendo estadísticas", e);
             return ResponseEntity.badRequest().body(
@@ -191,7 +191,7 @@ public class TecnicoController {
             
             EstadisticasTecnicoResponseDTO estadisticas = tecnicoService.obtenerEstadisticasTecnico(emailTecnico);
             
-            return ResponseEntity.ok(estadisticas);
+            return ResponseEntity.ok(ApiResponse.success("Dashboard obtenido exitosamente", estadisticas));
         } catch (Exception e) {
             log.error("Error obteniendo dashboard", e);
             return ResponseEntity.badRequest().body(
@@ -246,6 +246,114 @@ public class TecnicoController {
             log.error("Error obteniendo notificaciones", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener notificaciones: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Aceptar un ticket (PENDIENTE -> EN_PROCESO)
+     * PUT /api/tecnico/tickets/{ticketId}/aceptar
+     */
+    @PutMapping("/tickets/{ticketId}/aceptar")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> aceptarTicket(
+            @PathVariable Long ticketId,
+            Authentication authentication) {
+        try {
+            log.info("Aceptando ticket {} para técnico", ticketId);
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            
+            TicketTecnicoResponseDTO ticket = tecnicoService.aceptarTicket(ticketId, emailTecnico);
+            
+            return ResponseEntity.ok(ApiResponse.success("Ticket aceptado exitosamente", ticket));
+        } catch (Exception e) {
+            log.error("Error aceptando ticket", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al aceptar ticket: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Finalizar un ticket con evidencia
+     * POST /api/tecnico/tickets/{ticketId}/finalizar
+     */
+    @PostMapping("/tickets/{ticketId}/finalizar")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> finalizarTicket(
+            @PathVariable Long ticketId,
+            @RequestParam(value = "archivoAdjunto", required = false) org.springframework.web.multipart.MultipartFile archivoAdjunto,
+            @RequestParam(value = "descripcion", required = false) String descripcion,
+            Authentication authentication) {
+        try {
+            log.info("Finalizando ticket {} para técnico", ticketId);
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            
+            TicketTecnicoResponseDTO ticket = tecnicoService.finalizarTicket(ticketId, emailTecnico, descripcion, archivoAdjunto);
+            
+            return ResponseEntity.ok(ApiResponse.success("Ticket finalizado exitosamente", ticket));
+        } catch (Exception e) {
+            log.error("Error finalizando ticket", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al finalizar ticket: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Obtener evidencias de un ticket
+     * GET /api/tecnico/tickets/{ticketId}/evidencias
+     */
+    @GetMapping("/tickets/{ticketId}/evidencias")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> obtenerEvidenciasTicket(
+            @PathVariable Long ticketId,
+            Authentication authentication) {
+        try {
+            log.info("Obteniendo evidencias del ticket {} para técnico", ticketId);
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            
+            // TODO: Implementar lógica de obtener evidencias en TecnicoService
+            // Por ahora retornamos lista vacía
+            List<Object> evidencias = List.of();
+            
+            return ResponseEntity.ok(ApiResponse.success("Evidencias obtenidas exitosamente", evidencias));
+        } catch (Exception e) {
+            log.error("Error obteniendo evidencias del ticket", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al obtener evidencias: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Descargar archivo adjunto de un ticket
+     * GET /api/tecnico/tickets/{ticketId}/download
+     */
+    @GetMapping("/tickets/{ticketId}/download")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> descargarArchivoAdjunto(
+            @PathVariable Long ticketId,
+            Authentication authentication) {
+        try {
+            log.info("Descargando archivo adjunto del ticket {} para técnico", ticketId);
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            
+            // TODO: Implementar lógica de descarga en TecnicoService
+            // Por ahora retornamos error 404
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Error descargando archivo adjunto", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al descargar archivo: " + e.getMessage())
             );
         }
     }

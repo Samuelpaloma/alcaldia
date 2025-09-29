@@ -3,7 +3,7 @@
 export type RootStackParamList = {
   Login: undefined;
   ForgotPassword: undefined;
-  ResetPassword: { email: string };
+  ResetPasswordScreen: { email: string };
   Verify: undefined;
   verifyEmail: { email: string };
   Home: undefined;

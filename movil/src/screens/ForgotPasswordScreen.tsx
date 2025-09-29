@@ -58,7 +58,7 @@ export default function ForgotPasswordScreen() {
 
       if (response.ok) {
         // Navegar a la pantalla de reset con el email
-        navigation.navigate('ResetPassword', { email: email.trim() });
+        navigation.navigate('ResetPasswordScreen', { email: email.trim() });
       } else {
         setEmailError(data.message || 'No se pudo enviar el correo de recuperación');
       }

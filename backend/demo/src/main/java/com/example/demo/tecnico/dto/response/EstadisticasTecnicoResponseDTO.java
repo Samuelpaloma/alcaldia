@@ -15,6 +15,8 @@ public class EstadisticasTecnicoResponseDTO {
     private long ticketsPendientes;
     private long ticketsEnEjecucion;
     private long ticketsTerminados;
+    private long totalEvidencias;
+    private long totalNotificaciones;
     private String tecnicoNombre;
     private String tecnicoEmail;
     

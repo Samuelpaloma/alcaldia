@@ -65,15 +65,21 @@ export default function VerifyEmailScreen() {
       console.log('📧 Verificando email con código...');
       console.log('Email:', email);
       console.log('Code:', code);
+      console.log('Email type:', typeof email);
+      console.log('Email length:', email ? email.length : 'null/undefined');
+
+      const requestBody = {
+        email: email,
+        code: code.trim()
+      };
+      console.log('Request body:', JSON.stringify(requestBody));
 
       const response = await fetch('http://localhost:8080/api/auth/verify-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          code: code.trim()
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();

@@ -14,10 +14,13 @@ import com.example.demo.evidencia.model.Evidencia;
 import com.example.demo.evidencia.repository.EvidenciaRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
+import com.example.demo.notificacion.service.NotificacionAutomaticaService;
+import com.example.demo.notificacion.service.NotificacionServiceSimple;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,6 +36,8 @@ public class TecnicoService {
     private final UsuarioRepository usuarioRepository;
     private final EvidenciaRepository evidenciaRepository;
     private final HistorialEstadoTicketRepository historialRepository;
+    private final NotificacionAutomaticaService notificacionAutomaticaService;
+    private final NotificacionServiceSimple notificacionServiceSimple;
     
     /**
      * Obtener tickets asignados a un técnico
@@ -213,20 +218,163 @@ public class TecnicoService {
             .filter(t -> "PENDIENTE".equals(t.getEstado()))
             .count();
         long ticketsEnEjecucion = ticketRepository.findByTecnicoAsignado(tecnico).stream()
-            .filter(t -> "EN_EJECUCION".equals(t.getEstado()))
+            .filter(t -> "EN_PROCESO".equals(t.getEstado()))
             .count();
         long ticketsTerminados = ticketRepository.findByTecnicoAsignado(tecnico).stream()
-            .filter(t -> "TERMINADO".equals(t.getEstado()))
+            .filter(t -> "COMPLETADO".equals(t.getEstado()))
             .count();
+        
+        // Calcular total de evidencias (evidencias + archivos adjuntos)
+        long totalEvidencias = calcularTotalEvidencias(tecnico);
+        
+        // Calcular total de notificaciones no leídas
+        long totalNotificaciones = calcularTotalNotificaciones(tecnico);
         
         EstadisticasTecnicoResponseDTO estadisticas = new EstadisticasTecnicoResponseDTO();
         estadisticas.setTotalTickets(totalTickets);
         estadisticas.setTicketsPendientes(ticketsPendientes);
         estadisticas.setTicketsEnEjecucion(ticketsEnEjecucion);
         estadisticas.setTicketsTerminados(ticketsTerminados);
+        estadisticas.setTotalEvidencias(totalEvidencias);
+        estadisticas.setTotalNotificaciones(totalNotificaciones);
         estadisticas.setTecnicoNombre(tecnico.getNombreCompleto());
         estadisticas.setTecnicoEmail(tecnico.getEmail());
         return estadisticas;
+    }
+    
+    /**
+     * Aceptar un ticket (PENDIENTE -> EN_PROCESO)
+     */
+    @Transactional
+    public TicketTecnicoResponseDTO aceptarTicket(Long ticketId, String emailTecnico) {
+        log.info("Aceptando ticket {} para técnico: {}", ticketId, emailTecnico);
+        
+        Usuario tecnico = usuarioRepository.findByEmail(emailTecnico)
+            .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
+        
+        Ticket ticket = ticketRepository.findById(ticketId)
+            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        
+        // Verificar que el ticket esté asignado al técnico
+        if (!ticket.getTecnicoAsignado().getIdUsuario().equals(tecnico.getIdUsuario())) {
+            throw new RuntimeException("El ticket no está asignado a este técnico");
+        }
+        
+        // Verificar que el ticket esté en estado PENDIENTE
+        if (!"PENDIENTE".equals(ticket.getEstado())) {
+            throw new RuntimeException("Solo se pueden aceptar tickets en estado PENDIENTE");
+        }
+        
+        // Cambiar estado a EN_PROCESO
+        String estadoAnterior = ticket.getEstado();
+        ticket.setEstado("EN_PROCESO");
+        ticket.setFechaActualizacion(LocalDateTime.now());
+        ticketRepository.save(ticket);
+        
+        // Crear registro en historial
+        HistorialEstadoTicket historial = new HistorialEstadoTicket();
+        historial.setTicket(ticket);
+        historial.setEstadoAnterior(estadoAnterior);
+        historial.setEstadoNuevo("EN_PROCESO");
+        historial.setComentario("Ticket aceptado por el técnico");
+        historial.setFechaCambio(LocalDateTime.now());
+        historial.setCambiadoPor(tecnico);
+        historial.setTipoUsuario("TECNICO");
+        historialRepository.save(historial);
+        
+        log.info("Ticket {} aceptado exitosamente por técnico {}", ticketId, emailTecnico);
+        
+        // Enviar notificación de ticket en proceso
+        try {
+            notificacionAutomaticaService.notificarTicketEnProceso(ticket, tecnico);
+        } catch (Exception e) {
+            log.error("Error enviando notificación de ticket en proceso", e);
+        }
+        
+        return convertirTicketAResponseDTO(ticket);
+    }
+    
+    /**
+     * Finalizar un ticket (EN_PROCESO -> COMPLETADO)
+     */
+    @Transactional
+    public TicketTecnicoResponseDTO finalizarTicket(Long ticketId, String emailTecnico, String descripcion, MultipartFile archivoAdjunto) {
+        log.info("Finalizando ticket {} para técnico: {}", ticketId, emailTecnico);
+        
+        Usuario tecnico = usuarioRepository.findByEmail(emailTecnico)
+            .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
+        
+        Ticket ticket = ticketRepository.findById(ticketId)
+            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        
+        // Verificar que el ticket esté asignado al técnico
+        if (!ticket.getTecnicoAsignado().getIdUsuario().equals(tecnico.getIdUsuario())) {
+            throw new RuntimeException("El ticket no está asignado a este técnico");
+        }
+        
+        // Verificar que el ticket esté en estado EN_PROCESO
+        if (!"EN_PROCESO".equals(ticket.getEstado())) {
+            throw new RuntimeException("Solo se pueden finalizar tickets en estado EN_PROCESO");
+        }
+        
+        // Cambiar estado a COMPLETADO
+        String estadoAnterior = ticket.getEstado();
+        ticket.setEstado("COMPLETADO");
+        ticket.setFechaActualizacion(LocalDateTime.now());
+        if (descripcion != null && !descripcion.trim().isEmpty()) {
+            ticket.setDescripcion(ticket.getDescripcion() + "\n\nFinalización: " + descripcion);
+        }
+        
+        // Manejar archivo adjunto si se proporciona
+        if (archivoAdjunto != null && !archivoAdjunto.isEmpty()) {
+            log.info("Guardando archivo adjunto: {}", archivoAdjunto.getOriginalFilename());
+            try {
+                // Validar tamaño del archivo (máximo 10MB)
+                if (archivoAdjunto.getSize() > 10 * 1024 * 1024) {
+                    throw new RuntimeException("El archivo no puede ser mayor a 10MB");
+                }
+                
+                // Validar tipo de archivo
+                String contentType = archivoAdjunto.getContentType();
+                if (contentType == null || (!contentType.startsWith("image/") && !contentType.startsWith("application/pdf") && !contentType.startsWith("video/") && !contentType.startsWith("audio/"))) {
+                    throw new RuntimeException("Solo se permiten archivos de imagen, PDF, video o audio");
+                }
+                
+                // Guardar el nombre del archivo en el ticket
+                String nombreArchivo = archivoAdjunto.getOriginalFilename();
+                ticket.setArchivoAdjunto(nombreArchivo);
+                
+                log.info("Archivo adjunto guardado: {}", nombreArchivo);
+            } catch (Exception e) {
+                log.error("Error guardando archivo adjunto", e);
+                throw new RuntimeException("Error al guardar el archivo adjunto: " + e.getMessage());
+            }
+        }
+        
+        ticketRepository.save(ticket);
+        
+        // Crear registro en historial
+        HistorialEstadoTicket historial = new HistorialEstadoTicket();
+        historial.setTicket(ticket);
+        historial.setEstadoAnterior(estadoAnterior);
+        historial.setEstadoNuevo("COMPLETADO");
+        historial.setComentario("Ticket finalizado por el técnico");
+        historial.setObservaciones(descripcion);
+        historial.setFechaCambio(LocalDateTime.now());
+        historial.setCambiadoPor(tecnico);
+        historial.setTipoUsuario("TECNICO");
+        historialRepository.save(historial);
+        
+        log.info("Ticket {} finalizado exitosamente por técnico {}", ticketId, emailTecnico);
+        
+        // Enviar notificación de ticket finalizado
+        try {
+            notificacionAutomaticaService.notificarTicketFinalizado(ticket, tecnico);
+        } catch (Exception e) {
+            log.error("Error enviando notificación de ticket finalizado", e);
+        }
+        
+        return convertirTicketAResponseDTO(ticket);
     }
     
     // ========== MÉTODOS AUXILIARES ==========
@@ -316,5 +464,46 @@ public class TecnicoService {
     
     private String generarRutaArchivo(Long ticketId, String nombreArchivo) {
         return "/uploads/evidencias/ticket_" + ticketId + "/" + nombreArchivo;
+    }
+    
+    /**
+     * Calcular total de evidencias del técnico
+     */
+    private long calcularTotalEvidencias(Usuario tecnico) {
+        try {
+            // Obtener todos los tickets del técnico
+            List<Ticket> tickets = ticketRepository.findByTecnicoAsignado(tecnico);
+            long totalEvidencias = 0;
+            
+            for (Ticket ticket : tickets) {
+                // Contar evidencias de la tabla evidencias
+                long evidenciasTabla = evidenciaRepository.findActivasByTicket(ticket).size();
+                totalEvidencias += evidenciasTabla;
+                
+                // Contar archivo adjunto si existe
+                if (ticket.getArchivoAdjunto() != null && !ticket.getArchivoAdjunto().trim().isEmpty()) {
+                    totalEvidencias += 1;
+                }
+            }
+            
+            log.info("Total evidencias calculadas para técnico {}: {}", tecnico.getEmail(), totalEvidencias);
+            return totalEvidencias;
+        } catch (Exception e) {
+            log.error("Error calculando total de evidencias", e);
+            return 0;
+        }
+    }
+    
+    /**
+     * Calcular total de notificaciones no leídas del técnico
+     */
+    private long calcularTotalNotificaciones(Usuario tecnico) {
+        try {
+            // Usar el servicio de notificaciones para obtener el contador
+            return notificacionServiceSimple.contarNotificacionesNoLeidas(tecnico.getIdUsuario());
+        } catch (Exception e) {
+            log.error("Error calculando total de notificaciones", e);
+            return 0;
+        }
     }
 }

@@ -23,6 +23,7 @@ public class LoginResponse {
     private String email;
     private String tipoUsuario; // String legible para frontend
     private Boolean require2fa;
+    private Boolean requireEmailVerification; // Indica si requiere verificación de email
     private Boolean requiereCambioPassword; // Indica si debe cambiar la contraseña
     
     // Para redirección del frontend

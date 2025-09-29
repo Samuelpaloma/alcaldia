@@ -2,6 +2,7 @@ com\example\demo\superadmin\dto\response\ConfiguracionResponseDTO$ConfiguracionR
 com\example\demo\categoria\model\Categoria.class
 com\example\demo\settings\controller\SettingsController.class
 com\example\demo\ticket\repository\ComentarioRepository.class
+com\example\demo\evidencia\dto\EvidenciaMovilDTO.class
 com\example\demo\admin\controller\AdminController.class
 com\example\demo\security\CustomUserDetails.class
 com\example\demo\ticket\model\TicketAcceso.class
@@ -19,6 +20,7 @@ com\example\demo\tecnico\dto\response\EstadisticasTecnicoResponseDTO$Estadistica
 com\example\demo\notificacion\repository\NotificacionMejoradaRepository.class
 com\example\demo\usuario\dto\request\CreateAdminRequest.class
 com\example\demo\auth\service\PasswordResetService.class
+com\example\demo\notificacion\model\PreferenciasNotificacion.class
 com\example\demo\tecnico\dto\request\SubirEvidenciaRequestDTO.class
 com\example\demo\dashboard\service\DashboardService.class
 com\example\demo\notificacion\dto\request\CreateNotificacionRequest.class
@@ -36,6 +38,7 @@ com\example\demo\usuario\dto\response\PageResponse$PageResponseBuilder.class
 com\example\demo\ticket\service\ComentarioService.class
 com\example\demo\categoria\dto\response\CategoriaSimpleDTO$CategoriaSimpleDTOBuilder.class
 com\example\demo\shared\util\SecurityUtils.class
+com\example\demo\notificacion\service\NotificacionAutomaticaService.class
 com\example\demo\superadmin\service\SuperAdminService.class
 com\example\demo\auth\model\PendingUser$PendingUserBuilder.class
 com\example\demo\superadmin\service\SuperAdminService$EstadisticasSistemaDTO.class
@@ -75,6 +78,7 @@ com\example\demo\shared\dto\PageResponse$PageResponseBuilder.class
 com\example\demo\notificacion\controller\NotificacionWebSocketController.class
 com\example\demo\dashboard\dto\response\DashboardMetricsResponseDTO.class
 com\example\demo\dashboard\dto\response\DashboardMetricsResponseDTO$CategoryMetrics.class
+com\example\demo\notificacion\repository\PreferenciasNotificacionRepository.class
 com\example\demo\encuesta\service\EncuestaService.class
 com\example\demo\ticket\dto\request\SeguimientoTicketRequestDTO.class
 com\example\demo\usuario\dto\request\UsuarioRequestDTO.class
@@ -93,6 +97,7 @@ com\example\demo\categoria\controller\CategoriaController$EstadisticasCategorias
 com\example\demo\usuario\dto\request\ChangePasswordRequest.class
 com\example\demo\ai\dto\response\SugerenciaIAResponseDTO.class
 com\example\demo\asignacion\dto\response\AsignacionResponseDTO.class
+com\example\demo\tecnico\controller\SampleDataController.class
 com\example\demo\notificacion\model\Notificacion.class
 com\example\demo\security\JwtTokenProvider.class
 com\example\demo\categoria\dto\response\CategoriaResponseDTO.class
@@ -105,15 +110,19 @@ com\example\demo\evidencia\service\EvidenciaService.class
 com\example\demo\auth\service\EmailService$1.class
 com\example\demo\evidencia\controller\EvidenciaController.class
 com\example\demo\security\JwtRequestFilter.class
+com\example\demo\auth\service\AuthServiceImpl$1.class
+com\example\demo\ticket\dto\TecnicoDashboardDTO.class
 com\example\demo\ticket\model\TicketAcceso$TipoAcceso.class
 com\example\demo\asignacion\controller\AsignacionController.class
 com\example\demo\dashboard\dto\response\DashboardMetricsResponseDTO$TimeMetrics.class
 com\example\demo\tecnico\dto\response\TicketTecnicoResponseDTO.class
+com\example\demo\notificacion\dto\PreferenciasNotificacionDTO.class
 com\example\demo\auth\dto\request\ResendVerificationRequest.class
 com\example\demo\notificacion\service\NotificacionService$NotificacionStatsResponseDTO.class
 com\example\demo\usuario\dto\response\UsuarioDTO.class
 com\example\demo\auth\dto\request\ResetPasswordRequest.class
 com\example\demo\ticket\dto\response\TicketResponseDTO.class
+com\example\demo\evidencia\dto\EvidenciaMovilDTO$EvidenciaMovilDTOBuilder.class
 com\example\demo\notificacion\repository\NotificacionRepository.class
 com\example\demo\admin\dto\response\EstadisticasAdminResponseDTO.class
 com\example\demo\ticket\service\TicketService.class
@@ -133,10 +142,13 @@ com\example\demo\evidencia\model\Evidencia.class
 com\example\demo\categoria\service\CategoriaService.class
 com\example\demo\ticket\model\HistorialEstadoTicket$HistorialEstadoTicketBuilder.class
 com\example\demo\tecnico\dto\response\EvidenciaResponseDTO$EvidenciaResponseDTOBuilder.class
+com\example\demo\ticket\dto\EvidenciaDTO.class
 com\example\demo\usuario\dto\response\UsuarioResponseDTO.class
+com\example\demo\notificacion\service\NotificacionServiceSimple.class
 com\example\demo\tecnico\service\TecnicoService.class
 com\example\demo\auth\dto\request\VerifyEmailRequest.class
 com\example\demo\asignacion\repository\HistorialAsignacionRepository.class
+com\example\demo\ticket\dto\TicketDTO.class
 com\example\demo\ticket\dto\request\ComentarioRequestDTO.class
 com\example\demo\auth\dto\request\RegisterRequest.class
 com\example\demo\categoria\repository\CategoriaRepository.class
@@ -154,6 +166,7 @@ com\example\demo\auth\model\EmailVerificationToken.class
 com\example\demo\evidencia\model\Evidencia$EvidenciaBuilder.class
 com\example\demo\tecnico\dto\response\EstadisticasTecnicoResponseDTO.class
 com\example\demo\categoria\dto\request\CategoriaRequestDTO.class
+com\example\demo\notificacion\service\PushNotificationService.class
 com\example\demo\usuario\dto\request\CreateTecnicoRequest.class
 com\example\demo\superadmin\dto\response\EstadisticasAdministradoresResponseDTO$EstadisticasAdministradoresResponseDTOBuilder.class
 com\example\demo\categoria\model\Categoria$CategoriaBuilder.class
@@ -187,7 +200,9 @@ com\example\demo\tecnico\dto\response\EvidenciaResponseDTO.class
 com\example\demo\ticket\dto\response\HistorialEstadoResponseDTO.class
 com\example\demo\ticket\dto\response\EvidenciaResponseDTO$EvidenciaResponseDTOBuilder.class
 com\example\demo\superadmin\dto\request\ConfiguracionRequestDTO.class
+com\example\demo\notificacion\dto\NotificacionDTO.class
 com\example\demo\usuario\service\UsuarioService.class
+com\example\demo\auth\controller\PasswordHashController.class
 com\example\demo\usuario\model\Usuario.class
 com\example\demo\security\JwtAuthenticationEntryPoint.class
 com\example\demo\auth\dto\request\LoginRequest.class
