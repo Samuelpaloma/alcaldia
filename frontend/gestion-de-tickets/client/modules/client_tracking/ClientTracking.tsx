@@ -8,7 +8,7 @@ import { useI18n } from "@/i18n";
 import { api } from "@shared/api";
 import { useTickets } from "../../hooks/use-tickets";
 import { addComment } from "../client_tickets/apiStore";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { 
   Clock, 
   User, 
@@ -21,9 +21,12 @@ import {
   FileText,
   Send,
   ChevronDown,
-  X
+  X,
+  Upload,
+  Paperclip
 } from "lucide-react";
 import ChatSystem from "./ChatSystem";
+import ArchivosConversacion from "./ArchivosConversacion";
 
 interface TicketTracking {
   id: number;
@@ -61,18 +64,68 @@ interface TicketTracking {
 
 export default function ClientTracking() {
   const { t } = useI18n();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { tickets, isLoading: ticketsLoading, error: ticketsError } = useTickets();
   const [selected, setSelected] = useState<string | undefined>(tickets[0]?.id?.toString());
+  
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get('page');
+    return pageParam ? parseInt(pageParam) : 1;
+  });
+  const ticketsPerPage = 20;
   const [trackingData, setTrackingData] = useState<TicketTracking | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
 
   const ticket = useMemo(() => tickets.find(t => t.id.toString() === selected), [tickets, selected]);
+  
+  // Calcular tickets paginados
+  const totalPages = Math.ceil(tickets.length / ticketsPerPage);
+  const startIndex = (currentPage - 1) * ticketsPerPage;
+  const endIndex = startIndex + ticketsPerPage;
+  const paginatedTickets = tickets.slice(startIndex, endIndex);
+  
+  // Función para actualizar la URL con el ticket seleccionado
+  const updateUrlWithTicket = (ticketId: string) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('ticket', ticketId);
+    setSearchParams(newSearchParams);
+  };
+  
+  // Función para manejar la selección de ticket
+  const handleTicketSelection = (ticketId: string) => {
+    setSelected(ticketId);
+    updateUrlWithTicket(ticketId);
+  };
+  
+  // Función para cambiar de página
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    
+    // Al cambiar de página, siempre seleccionar el primer ticket de la nueva página
+    const newStartIndex = (newPage - 1) * ticketsPerPage;
+    const newEndIndex = newStartIndex + ticketsPerPage;
+    const newPageTickets = tickets.slice(newStartIndex, newEndIndex);
+    
+    if (newPageTickets.length > 0) {
+      // Limpiar el parámetro de ticket de la URL al navegar por páginas
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('ticket');
+      newSearchParams.set('page', newPage.toString());
+      setSearchParams(newSearchParams);
+      
+      // Seleccionar el primer ticket de la página
+      setSelected(newPageTickets[0].id.toString());
+    }
+  };
 
   // Cargar datos de seguimiento cuando se selecciona un ticket
   useEffect(() => {
@@ -97,9 +150,85 @@ export default function ClientTracking() {
       const ticketExists = tickets.some(ticket => ticket.id.toString() === ticketParam);
       if (ticketExists) {
         setSelected(ticketParam);
+        // Encontrar en qué página está el ticket y actualizar currentPage
+        const ticketIndex = tickets.findIndex(ticket => ticket.id.toString() === ticketParam);
+        const page = Math.ceil((ticketIndex + 1) / ticketsPerPage);
+        if (page !== currentPage) {
+          setCurrentPage(page);
+        }
       }
     }
-  }, [searchParams, tickets]);
+  }, [searchParams, tickets, currentPage]);
+
+  // Actualizar URL cuando cambie la página (solo si no viene de la URL)
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    const currentPageFromUrl = pageParam ? parseInt(pageParam) : 1;
+    
+    // Solo actualizar la URL si la página actual es diferente a la de la URL
+    if (currentPage !== currentPageFromUrl) {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set('page', currentPage.toString());
+      setSearchParams(newSearchParams, { replace: true });
+    }
+  }, [currentPage, searchParams, setSearchParams]);
+
+  // Manejar parámetro de página desde la URL (solo al cargar inicialmente)
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    const ticketParam = searchParams.get('ticket');
+    
+    if (pageParam && !ticketParam) {
+      // Solo cambiar página si NO hay un ticket específico en la URL
+      const pageFromUrl = parseInt(pageParam);
+      if (pageFromUrl !== currentPage && pageFromUrl >= 1 && pageFromUrl <= totalPages) {
+        setCurrentPage(pageFromUrl);
+      }
+    }
+  }, [searchParams, currentPage, totalPages]);
+
+  // WebSocket para actualizaciones en tiempo real del ticket
+  useEffect(() => {
+    if (selected) {
+      // Conectar WebSocket para el ticket específico
+      const ws = new WebSocket(`ws://localhost:8080/ws/ticket/${selected}`);
+      
+      ws.onopen = () => {
+        console.log('🔔 WebSocket conectado para ticket:', selected);
+        setWsConnection(ws);
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('🔔 Actualización en tiempo real recibida:', data);
+          
+          // Recargar datos del ticket cuando hay cambios
+          if (data.type === 'ticket_updated' || data.type === 'assignment_updated' || data.type === 'comment_added') {
+            loadTrackingData(parseInt(selected));
+          }
+        } catch (error) {
+          console.error('Error procesando mensaje WebSocket:', error);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log('🔔 WebSocket desconectado para ticket:', selected);
+        setWsConnection(null);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('🔔 Error en WebSocket:', error);
+      };
+      
+      // Cleanup al desmontar o cambiar ticket
+      return () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close();
+        }
+      };
+    }
+  }, [selected]);
 
   const loadTrackingData = async (ticketId: number) => {
     try {
@@ -250,9 +379,9 @@ export default function ClientTracking() {
           <CardTitle className="text-base text-muted-foreground">{t("client.select_ticket")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <select className="generic-select" value={selected} onChange={(e)=>setSelected(e.target.value)}>
-            {tickets.length > 0 ? (
-              tickets.map(t => (
+          <select className="generic-select" value={selected || ''} onChange={(e) => handleTicketSelection(e.target.value)}>
+            {paginatedTickets.length > 0 ? (
+              paginatedTickets.map(t => (
                 <option key={t.id} value={t.id}>
                   #{t.id} • {t.message.slice(0,40)}... • {t.status}
                 </option>
@@ -261,6 +390,36 @@ export default function ClientTracking() {
               <option value="">No hay tickets disponibles</option>
             )}
           </select>
+          
+          {/* Controles de paginación */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages} ({tickets.length} tickets total)
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm font-medium">
+                  {startIndex + 1}-{Math.min(endIndex, tickets.length)} de {tickets.length}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -270,10 +429,21 @@ export default function ClientTracking() {
           <div className="lg:col-span-1 space-y-4">
             <Card>
             <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Información del ticket
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Información del ticket
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEvidenceModal(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                    Evidencia
+                  </Button>
+                </div>
             </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
@@ -306,7 +476,7 @@ export default function ClientTracking() {
                   
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Técnico:</span>
-                    <span className="text-sm">{ticket.technician || 'Sin asignar'}</span>
+                    <span className="text-sm">{trackingData?.tecnicoNombre || trackingData?.tecnicoEmail || 'Sin asignar'}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -342,7 +512,7 @@ export default function ClientTracking() {
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       <div className="flex-1">
                         <div className="text-sm font-medium text-green-900">
-                          Asignado a {trackingData.tecnicoEmail}
+                          Asignado a {trackingData.tecnicoNombre || trackingData.tecnicoEmail}
                         </div>
                         <div className="text-xs text-green-600">
                           {formatTimestamp(trackingData.fechaCreacion)}
@@ -352,15 +522,15 @@ export default function ClientTracking() {
                   )}
 
                   {/* 3. Mostrar escalación si existe */}
-                  {trackingData?.historialAsignaciones?.find(asignacion => asignacion.tipoOperacion === 'ESCALAR') && (
+                  {trackingData?.historialAsignaciones?.find(asignacion => asignacion.tipoOperacion === 'ESCALAMIENTO') && (
                     <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                       <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                       <div className="flex-1">
                         <div className="text-sm font-medium text-orange-900">
-                          Escalado a {trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.tecnicoNombre}
+                          Escalado a {trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAMIENTO')?.tecnicoNombre}
                         </div>
                         <div className="text-xs text-orange-600">
-                          {formatTimestamp(trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.fechaAsignacion || '')}
+                          {formatTimestamp(trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAMIENTO')?.fechaAsignacion || '')}
                         </div>
                       </div>
                     </div>
@@ -395,6 +565,7 @@ export default function ClientTracking() {
               }}
             />
           </div>
+
         </div>
       ) : selected ? (
         <Card>
@@ -463,7 +634,7 @@ export default function ClientTracking() {
                     <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-green-900 dark:text-green-100">
-                        Asignado a {trackingData.tecnicoEmail}
+                        Asignado a {trackingData.tecnicoNombre || trackingData.tecnicoEmail}
                       </div>
                       <div className="text-xs text-green-600 dark:text-green-300">
                         {formatTimestamp(trackingData.fechaCreacion)}
@@ -473,15 +644,15 @@ export default function ClientTracking() {
                 )}
 
                 {/* 3. Escalación */}
-                {trackingData?.historialAsignaciones?.find(asignacion => asignacion.tipoOperacion === 'ESCALAR') && (
+                {trackingData?.historialAsignaciones?.find(asignacion => asignacion.tipoOperacion === 'ESCALAMIENTO') && (
                   <div className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                     <div className="w-3 h-3 bg-orange-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                        Escalado a {trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.tecnicoNombre}
+                        Escalado a {trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAMIENTO')?.tecnicoNombre}
                       </div>
                       <div className="text-xs text-orange-600 dark:text-orange-300">
-                        {formatTimestamp(trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAR')?.fechaAsignacion || '')}
+                        {formatTimestamp(trackingData.historialAsignaciones.find(a => a.tipoOperacion === 'ESCALAMIENTO')?.fechaAsignacion || '')}
                       </div>
                     </div>
                   </div>
@@ -529,6 +700,60 @@ export default function ClientTracking() {
                   Cerrar
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Subida de Evidencia */}
+      {showEvidenceModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <Paperclip className="w-6 h-6 text-blue-600" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Archivos y Evidencias
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Ticket #{ticket?.id} • {ticket?.message}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowEvidenceModal(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            {/* Contenido del Modal */}
+            <div className="flex-1 p-6">
+              <ArchivosConversacion 
+                ticketId={parseInt(selected)}
+                onArchivoSubido={() => {
+                  // Recargar datos del ticket si es necesario
+                  if (selected) {
+                    loadTrackingData(parseInt(selected));
+                  }
+                }}
+              />
+            </div>
+
+            {/* Footer del Modal */}
+            <div className="flex items-center justify-end gap-2 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowEvidenceModal(false)}
+              >
+                Cerrar
+              </Button>
             </div>
           </div>
         </div>

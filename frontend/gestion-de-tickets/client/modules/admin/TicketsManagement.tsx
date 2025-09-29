@@ -295,7 +295,7 @@ export default function TicketsManagement() {
           }
         ];
         
-        if (ticket.estado === 'ASIGNADO' && ticket.tecnicoEmail) {
+        if ((ticket.estado === 'ASIGNADO' || ticket.estado === 'ESCALADO') && ticket.tecnicoEmail) {
           mensajesGenerados.push({
             id: 2,
             tipo: 'tecnico',
@@ -398,7 +398,7 @@ export default function TicketsManagement() {
           }
         ];
         
-        if (ticket.estado === 'ASIGNADO' && ticket.tecnicoEmail) {
+        if ((ticket.estado === 'ASIGNADO' || ticket.estado === 'ESCALADO') && ticket.tecnicoEmail) {
           historialGenerado.push({
             id: 2,
             accion: 'Ticket asignado',
@@ -491,6 +491,7 @@ export default function TicketsManagement() {
   const handleEscalateTicket = (ticket: any) => {
     setSelectedTicket(ticket);
     setShowEscalateModal(true);
+    setShowEscalateSuccess(false); // Resetear el estado de éxito
   };
 
   const confirmAssign = async () => {
@@ -517,8 +518,8 @@ export default function TicketsManagement() {
                    : ticket
                ));
         
-        // NO cerrar el modal - mantenerlo abierto para acciones en tiempo real
-        // setShowAssignModal(false);
+        // Cerrar el modal después de asignar exitosamente
+        setShowAssignModal(false);
         setSelectedTecnico("");
         setShowAssignSuccess(true);
         
@@ -543,14 +544,15 @@ export default function TicketsManagement() {
           window.ticketWebSocket.send(JSON.stringify(notification));
         }
         
+        // Disparar notificación de asignación de ticket
+        try {
+          await api.createTicketAssignmentNotification(selectedTicket.id, tecnicoId, 1); // 1 = admin ID
+        } catch (notificationError) {
+          console.warn('Error enviando notificación de asignación:', notificationError);
+        }
+        
         // Recargar datos para asegurar consistencia
         await loadTickets();
-        
-               // Mostrar notificación de éxito
-               toast({
-                 title: "Ticket Asignado",
-                 description: `Ticket #${selectedTicket.id} asignado exitosamente a ${tecnicoEmail}`,
-               });
       } catch (error) {
         console.error('Error asignando ticket:', error);
         toast({
@@ -565,27 +567,44 @@ export default function TicketsManagement() {
   };
 
   const confirmEscalate = async () => {
-    if (selectedTicket) {
+    if (selectedTicket && selectedTecnico) {
       try {
         setIsLoading(true);
-        await api.escalarTicket(selectedTicket.id);
+        const response = await api.escalarTicket({
+          ticketId: selectedTicket.id,
+          tecnicoId: parseInt(selectedTecnico)
+        });
+        
+        console.log('Respuesta de escalación:', response);
+        
+        // Obtener el email del técnico seleccionado
+        const tecnicoSeleccionado = tecnicos.find(t => t.id.toString() === selectedTecnico);
+        const tecnicoEmail = tecnicoSeleccionado?.email || 'Técnico asignado';
         
         // Actualizar el ticket localmente
         setTickets(prev => prev.map(ticket => 
           ticket.id === selectedTicket.id 
-            ? { ...ticket, estado: 'ESCALADO' }
+            ? { 
+                ...ticket, 
+                estado: 'ESCALADO', // Siempre ESCALADO cuando se escala
+                tecnicoEmail: tecnicoEmail,
+                tecnicoAsignado: tecnicoSeleccionado?.nombre || 'Técnico'
+              }
             : ticket
         ));
         
-        // NO cerrar el modal - mantenerlo abierto para acciones en tiempo real
-        // setShowEscalateModal(false);
+        // Cerrar el modal después de escalar exitosamente
+        setShowEscalateModal(false);
+        setSelectedTecnico("");
         setShowEscalateSuccess(true);
         
         // Actualizar el ticket seleccionado si está abierto
         if (showTicketModal && selectedTicket.id === currentTicketId) {
           setSelectedTicket(prev => ({
             ...prev,
-            estado: 'ESCALADO'
+            estado: 'ESCALADO', // Siempre ESCALADO cuando se escala
+            tecnicoEmail: tecnicoEmail,
+            tecnicoAsignado: tecnicoSeleccionado?.nombre || 'Técnico'
           }));
         }
         
@@ -598,12 +617,6 @@ export default function TicketsManagement() {
           };
           window.ticketWebSocket.send(JSON.stringify(notification));
         }
-        
-        // Mostrar notificación de éxito
-        toast({
-          title: "Ticket Escalado",
-          description: `Ticket #${selectedTicket.id} escalado exitosamente`,
-        });
         
         // Recargar datos para asegurar consistencia
         await loadTickets();
@@ -846,7 +859,7 @@ export default function TicketsManagement() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Asignados</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {tickets.filter(t => t.estado === 'ASIGNADO').length}
+                  {tickets.filter(t => t.estado === 'ASIGNADO' || t.estado === 'ESCALADO').length}
                 </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
@@ -952,7 +965,7 @@ export default function TicketsManagement() {
                   </Button>
                 )}
                 
-                {ticket.estado === 'ASIGNADO' && (
+                {(ticket.estado === 'ASIGNADO' || ticket.estado === 'ESCALADO') && (
                   <Button 
                     size="sm" 
                     variant="outline" 
@@ -1058,7 +1071,7 @@ export default function TicketsManagement() {
                   <SelectContent>
                     {tecnicos.map((tecnico) => (
                       <SelectItem key={tecnico.id} value={tecnico.id.toString()}>
-                        {tecnico.nombre} - {tecnico.email}
+                        {tecnico.nombre} {tecnico.apellido || ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1121,24 +1134,66 @@ export default function TicketsManagement() {
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>Escalar Ticket #{selectedTicket.id}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Asignar a otro técnico excluyendo al técnico actual
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                ¿Estás seguro de que quieres escalar este ticket? Esta acción notificará a los supervisores.
-              </p>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Seleccionar Nuevo Técnico</label>
+                <Select value={selectedTecnico} onValueChange={setSelectedTecnico}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Selecciona un técnico diferente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tecnicos
+                      .filter(tecnico => {
+                        // Excluir técnico actual por ID o por email
+                        const isCurrentTechnician = tecnico.id.toString() === selectedTicket.tecnicoId?.toString() ||
+                                                   tecnico.email === selectedTicket.tecnicoEmail;
+                        return !isCurrentTechnician;
+                      })
+                      .map((tecnico) => (
+                      <SelectItem key={tecnico.id} value={tecnico.id.toString()}>
+                        {tecnico.nombre} {tecnico.apellido || ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedTicket.tecnicoEmail && (
+                <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    <strong>Técnico actual:</strong> {
+                      (() => {
+                        const currentTechnician = tecnicos.find(t => 
+                          t.email === selectedTicket.tecnicoEmail || 
+                          t.id.toString() === selectedTicket.tecnicoId?.toString()
+                        );
+                        return currentTechnician 
+                          ? `${currentTechnician.nombre} ${currentTechnician.apellido || ''}`
+                          : selectedTicket.tecnicoEmail;
+                      })()
+                    }
+                  </p>
+                </div>
+              )}
               {!showEscalateSuccess ? (
                 <div className="flex space-x-2">
                   <Button 
                     className="flex-1" 
                     onClick={confirmEscalate}
-                    disabled={isLoading}
+                    disabled={!selectedTecnico || isLoading}
                   >
                     {isLoading ? "Escalando..." : "Escalar"}
                   </Button>
                   <Button 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => setShowEscalateModal(false)}
+                    onClick={() => {
+                      setShowEscalateModal(false);
+                      setShowEscalateSuccess(false); // Resetear el estado de éxito
+                    }}
                   >
                     Cancelar
                   </Button>
@@ -1164,6 +1219,7 @@ export default function TicketsManagement() {
                       className="flex-1"
                       onClick={() => {
                         setShowEscalateSuccess(false);
+                        setSelectedTecnico("");
                       }}
                     >
                       Escalar Otro
@@ -1404,7 +1460,7 @@ export default function TicketsManagement() {
                   <SelectContent>
                     {tecnicos.map((tecnico) => (
                       <SelectItem key={tecnico.id} value={tecnico.id.toString()}>
-                        {tecnico.nombre} - {tecnico.email}
+                        {tecnico.nombre} {tecnico.apellido || ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1432,53 +1488,9 @@ export default function TicketsManagement() {
         </div>
       )}
 
-      {/* Modal de Escalar Ticket */}
-      {showEscalateModal && selectedTicket && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Escalar Ticket #{selectedTicket.id}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                ¿Estás seguro de que quieres escalar este ticket? 
-                Se notificará a los supervisores.
-              </p>
-              
-              <div className="flex space-x-2">
-                <Button 
-                  className="flex-1"
-                  onClick={confirmEscalate}
-                >
-                  Escalar
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => setShowEscalateModal(false)}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

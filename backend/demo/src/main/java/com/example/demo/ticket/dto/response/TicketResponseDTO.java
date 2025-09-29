@@ -14,6 +14,7 @@ public class TicketResponseDTO {
     private String creadorEmail;
     private String creadorNombre;
     private String tecnicoEmail;
+    private String tecnicoNombre;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaActualizacion;
     
@@ -36,14 +37,18 @@ public class TicketResponseDTO {
     
     // Comentarios del ticket
     private List<ComentarioResponseDTO> comentarios;
+    
+    // Archivos de conversación (simplificado - usando campos existentes del ticket)
+    private List<Object> archivosConversacion;
 
     // Constructor completo
     public TicketResponseDTO(Long id, String asunto, String descripcion, String prioridad, String estado,
-                             String creadorEmail, String creadorNombre, String tecnicoEmail, LocalDateTime fechaCreacion,
+                             String creadorEmail, String creadorNombre, String tecnicoEmail, String tecnicoNombre, LocalDateTime fechaCreacion,
                              LocalDateTime fechaActualizacion, String nombre, String ubicacion,
                              String consulta, String categoria, String archivoAdjunto, String nombreArchivo,
                              List<EvidenciaResponseDTO> evidencias, List<HistorialEstadoResponseDTO> historialEstados,
-                             List<AsignacionResponseDTO> historialAsignaciones, List<ComentarioResponseDTO> comentarios) {
+                             List<AsignacionResponseDTO> historialAsignaciones, List<ComentarioResponseDTO> comentarios,
+                             List<Object> archivosConversacion) {
         this.id = id;
         this.asunto = asunto;
         this.descripcion = descripcion;
@@ -52,6 +57,7 @@ public class TicketResponseDTO {
         this.creadorEmail = creadorEmail;
         this.creadorNombre = creadorNombre;
         this.tecnicoEmail = tecnicoEmail;
+        this.tecnicoNombre = tecnicoNombre;
         this.fechaCreacion = fechaCreacion;
         this.fechaActualizacion = fechaActualizacion;
         this.nombre = nombre;
@@ -64,11 +70,12 @@ public class TicketResponseDTO {
         this.historialEstados = historialEstados;
         this.historialAsignaciones = historialAsignaciones;
         this.comentarios = comentarios;
+        this.archivosConversacion = archivosConversacion;
     }
 
     // Constructor básico para compatibilidad
     public TicketResponseDTO(Long id, String asunto, String descripcion, String prioridad, String estado,
-                             String creadorEmail, String creadorNombre, String tecnicoEmail, LocalDateTime fechaCreacion) {
+                             String creadorEmail, String creadorNombre, String tecnicoEmail, String tecnicoNombre, LocalDateTime fechaCreacion) {
         this.id = id;
         this.asunto = asunto;
         this.descripcion = descripcion;
@@ -77,6 +84,7 @@ public class TicketResponseDTO {
         this.creadorEmail = creadorEmail;
         this.creadorNombre = creadorNombre;
         this.tecnicoEmail = tecnicoEmail;
+        this.tecnicoNombre = tecnicoNombre;
         this.fechaCreacion = fechaCreacion;
     }
 
@@ -89,6 +97,7 @@ public class TicketResponseDTO {
     public String getCreadorEmail() { return creadorEmail; }
     public String getCreadorNombre() { return creadorNombre; }
     public String getTecnicoEmail() { return tecnicoEmail; }
+    public String getTecnicoNombre() { return tecnicoNombre; }
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
     public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
     public String getNombre() { return nombre; }
@@ -101,9 +110,11 @@ public class TicketResponseDTO {
     public List<HistorialEstadoResponseDTO> getHistorialEstados() { return historialEstados; }
     public List<AsignacionResponseDTO> getHistorialAsignaciones() { return historialAsignaciones; }
     public List<ComentarioResponseDTO> getComentarios() { return comentarios; }
+    public List<Object> getArchivosConversacion() { return archivosConversacion; }
     
     // Setters
     public void setCreadorNombre(String creadorNombre) { this.creadorNombre = creadorNombre; }
     public void setEvidencias(List<EvidenciaResponseDTO> evidencias) { this.evidencias = evidencias; }
     public void setHistorialEstados(List<HistorialEstadoResponseDTO> historialEstados) { this.historialEstados = historialEstados; }
+    public void setArchivosConversacion(List<Object> archivosConversacion) { this.archivosConversacion = archivosConversacion; }
 }

@@ -104,11 +104,34 @@ export interface TicketResponseDTO {
   creadorNombre?: string;
   tecnicoEmail?: string;
   tecnicoAsignado?: string;
+  tecnicoNombre?: string;
   creador?: {
     nombre: string;
   };
   evidencias?: any[];
   historialEstados?: AsignacionResponseDTO[];
+  archivosConversacion?: ArchivoConversacionResponseDTO[];
+}
+
+export interface ArchivoTicketInfo {
+  nombreArchivo: string;
+  rutaArchivo: string;
+  extension: string;
+  tipoMime: string;
+  tamañoArchivo: number;
+  esImagen: boolean;
+  esPDF: boolean;
+  esVideo: boolean;
+}
+
+export interface SubirArchivoRequestDTO {
+  ticketId: number;
+  nombreArchivo: string;
+  tipoMime: string;
+  tamañoArchivo: number;
+  extension: string;
+  contenidoArchivo: string; // Base64
+  comentario?: string;
 }
 
 export interface HistorialTicketResponseDTO {
@@ -684,7 +707,7 @@ class ApiClient {
     departamento: string;
     cargo: string;
   }> {
-    return this.request('/tickets/usuario-info');
+    return this.request('/usuarios/profile');
   }
 
   async getMyProfile(): Promise<{
@@ -952,6 +975,52 @@ class ApiClient {
 
   async getEstadisticasNotificaciones(): Promise<any> {
     return this.request('/notificaciones/estadisticas');
+  }
+
+  // ========== NOTIFICACIONES POR ROLES ==========
+  
+  async getRoleNotifications(userEmail: string, page: number = 0, size: number = 20): Promise<any> {
+    return this.request(`/notifications/role-based/user/${userEmail}?page=${page}&size=${size}`);
+  }
+
+  async getUnreadRoleNotifications(userEmail: string): Promise<any> {
+    return this.request(`/notifications/role-based/user/${userEmail}/unread`);
+  }
+
+  async markRoleNotificationAsRead(id: number, userEmail: string): Promise<any> {
+    return this.request(`/notifications/role-based/${id}/mark-read?email=${userEmail}`, {
+      method: 'PUT'
+    });
+  }
+
+  async deleteRoleNotification(id: number): Promise<any> {
+    return this.request(`/notifications/role-based/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getNotificationExamples(): Promise<any> {
+    return this.request('/notifications/role-based/examples');
+  }
+
+  async createTestNotifications(): Promise<any> {
+    return this.request('/notifications/role-based/create-test-notifications', {
+      method: 'POST'
+    });
+  }
+
+  async createTicketNotification(ticketId: number, creatorId: number): Promise<any> {
+    return this.request('/notifications/role-based/trigger-ticket-created', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId, creatorId })
+    });
+  }
+
+  async createTicketAssignmentNotification(ticketId: number, technicianId: number, assignerId: number): Promise<any> {
+    return this.request('/notifications/role-based/trigger-ticket-assigned', {
+      method: 'POST',
+      body: JSON.stringify({ ticketId, technicianId, assignerId })
+    });
   }
 
   // ========== GESTIÓN DE ASIGNACIONES ==========
@@ -2256,7 +2325,7 @@ class ApiClient {
    * Descargar evidencia
    */
   async descargarEvidencia(ticketId: number, nombreArchivo: string): Promise<Blob> {
-    const response = await fetch(`${this.baseURL}/evidencias/descargar/${ticketId}/${nombreArchivo}`, {
+    const response = await fetch(`${this.baseUrl}/evidencias/descargar/${ticketId}/${nombreArchivo}`, {
       headers: {
         'Authorization': `Bearer ${this.token}`
       }
@@ -2267,6 +2336,201 @@ class ApiClient {
     }
     
     return response.blob();
+  }
+
+  // ========== GESTIÓN DE ARCHIVOS DE TICKETS ==========
+  
+  /**
+   * Subir archivo a un ticket
+   */
+  async subirArchivoTicket(archivo: File, ticketId: number, comentario?: string): Promise<any> {
+    // Convertir archivo a Base64
+    const contenidoBase64 = await this.fileToBase64(archivo);
+    
+    const request: SubirArchivoRequestDTO = {
+      ticketId,
+      nombreArchivo: archivo.name.split('.')[0], // Nombre sin extensión
+      tipoMime: archivo.type,
+      tamañoArchivo: archivo.size,
+      extension: archivo.name.split('.').pop() || '',
+      contenidoArchivo: contenidoBase64,
+      comentario
+    };
+
+    return this.request('/archivos-conversacion/subir', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+  }
+
+  /**
+   * Obtener información del archivo del ticket
+   */
+  async getArchivoTicketInfo(ticketId: number): Promise<ApiResponse<ArchivoTicketInfo>> {
+    return this.request(`/archivos-conversacion/info/${ticketId}`);
+  }
+
+  /**
+   * Descargar archivo
+   */
+  async descargarArchivoTicket(ticketId: number): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/archivos-conversacion/descargar/${ticketId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error descargando archivo');
+    }
+    
+    return response.blob();
+  }
+
+  /**
+   * Previsualizar archivo (para imágenes y PDFs)
+   */
+  async previsualizarArchivoTicket(ticketId: number): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/archivos-conversacion/preview/${ticketId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error previsualizando archivo');
+    }
+    
+    return response.blob();
+  }
+
+  /**
+   * Obtener tipos de archivo permitidos
+   */
+  async getTiposArchivoPermitidos(): Promise<any> {
+    return this.request('/archivos-conversacion/tipos-permitidos');
+  }
+
+  // ========== GESTIÓN DE MÚLTIPLES ARCHIVOS POR TICKET ==========
+  
+  /**
+   * Subir archivo a un ticket (nuevo sistema de múltiples archivos)
+   */
+  async subirArchivoTicketNuevo(archivo: File, ticketId: number, comentario?: string): Promise<any> {
+    // Convertir archivo a Base64
+    const contenidoBase64 = await this.fileToBase64(archivo);
+    
+    const request: SubirArchivoRequestDTO = {
+      ticketId,
+      nombreArchivo: archivo.name.split('.')[0], // Nombre sin extensión
+      tipoMime: archivo.type,
+      tamañoArchivo: archivo.size,
+      extension: archivo.name.split('.').pop() || '',
+      contenidoArchivo: contenidoBase64,
+      comentario
+    };
+
+    return this.request('/archivos-ticket/subir', {
+      method: 'POST',
+      body: JSON.stringify(request)
+    });
+  }
+
+  /**
+   * Obtener múltiples archivos de un ticket
+   */
+  async getArchivosTicket(ticketId: number): Promise<any> {
+    const response = await this.request(`/archivos-ticket/ticket/${ticketId}`);
+    console.log('🔍 [DEBUG] getArchivosTicket response:', response);
+    
+    // El backend devuelve directamente un array, no una estructura {success, data}
+    if (Array.isArray(response)) {
+      return response;
+    }
+    
+    // Si viene envuelto en una estructura de respuesta estándar
+    if (response && response.data && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    // Si viene con success: true
+    if (response && response.success && Array.isArray(response.data)) {
+      return response.data;
+    }
+    
+    console.warn('⚠️ [DEBUG] Formato de respuesta inesperado:', response);
+    return [];
+  }
+
+  /**
+   * Descargar archivo específico
+   */
+  async descargarArchivoTicketEspecifico(ticketId: number, archivoId: number): Promise<Blob> {
+    const response = await fetch(`${this.baseUrl}/archivos-ticket/descargar/${ticketId}/${archivoId}`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Error descargando archivo');
+    }
+    
+    return response.blob();
+  }
+
+  /**
+   * Previsualizar archivo específico
+   */
+  async previsualizarArchivoTicketEspecifico(ticketId: number, archivoId: number): Promise<Blob> {
+    console.log('🔍 [DEBUG] previsualizarArchivoTicketEspecifico:', { ticketId, archivoId });
+    console.log('🔍 [DEBUG] baseURL:', this.baseUrl);
+    const url = `${this.baseUrl}/archivos-ticket/preview/${ticketId}/${archivoId}`;
+    console.log('🔍 [DEBUG] URL de previsualización:', url);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`
+      }
+    });
+    
+    console.log('🔍 [DEBUG] Respuesta de previsualización:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ [DEBUG] Error en previsualización:', errorText);
+      throw new Error(`Error previsualizando archivo: ${response.status} ${response.statusText}`);
+    }
+    
+    const blob = await response.blob();
+    console.log('✅ [DEBUG] Blob de previsualización creado:', blob.size, 'bytes');
+    return blob;
+  }
+
+  /**
+   * Eliminar archivo específico
+   */
+  async eliminarArchivoTicketEspecifico(ticketId: number, archivoId: number): Promise<ApiResponse> {
+    return this.request(`/archivos-ticket/${ticketId}/${archivoId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Convertir archivo a Base64
+   */
+  private fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remover el prefijo "data:image/jpeg;base64," etc.
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
   }
 
 }

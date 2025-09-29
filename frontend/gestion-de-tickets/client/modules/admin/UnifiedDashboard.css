@@ -1,0 +1,19 @@
+/* Contenedor principal con el mismo espaciado que otros módulos */
+.unified-dashboard {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive padding */
+@media (max-width: 768px) {
+  .unified-dashboard {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .unified-dashboard {
+    padding: 1.25rem;
+  }
+}

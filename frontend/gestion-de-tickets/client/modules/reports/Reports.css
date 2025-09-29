@@ -1,0 +1,20 @@
+/* Contenedor principal con el mismo espaciado que otros módulos */
+.reports {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Responsive padding */
+@media (max-width: 768px) {
+  .reports {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .reports {
+    padding: 1.25rem;
+  }
+}
+

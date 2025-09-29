@@ -10,7 +10,7 @@ import com.example.demo.ticket.model.Ticket;
 import com.example.demo.ticket.repository.TicketRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
-import com.example.demo.notificacion.service.SmartNotificationService;
+import com.example.demo.notificacion.service.NotificationRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +37,7 @@ public class AsignacionService {
     
     
     @Autowired
-    private SmartNotificationService smartNotificationService;
+    private NotificationRoleService notificationRoleService;
     
     public AsignacionResponseDTO asignarTicket(AsignarTicketRequestDTO request, String emailAsignador) {
         Optional<Ticket> ticketOpt = ticketRepository.findById(request.getTicketId());
@@ -77,10 +77,10 @@ public class AsignacionService {
         guardarHistorialAsignacion(request.getTicketId(), request.getTecnicoId(), 
                                  emailAsignador, "ASIGNACION", request.getComentario());
         
-        // Enviar notificaciones inteligentes
+        // Enviar notificaciones por roles
         Usuario admin = usuarioRepository.findByEmail(emailAsignador).orElse(null);
         if (admin != null) {
-            smartNotificationService.notificarTicketAsignado(ticket, tecnico, admin);
+            notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getIdUsuario(), tecnico.getIdUsuario());
         }
         
         return convertirADTO(asignacionGuardada, ticket, tecnico);
@@ -122,10 +122,10 @@ public class AsignacionService {
         
         guardarHistorialAsignacion(ticketId, nuevoTecnicoId, emailReasignador, "REASIGNACION", null);
         
-        // Enviar notificaciones inteligentes
+        // Enviar notificaciones por roles
         Usuario admin = usuarioRepository.findByEmail(emailReasignador).orElse(null);
         if (admin != null) {
-            smartNotificationService.notificarTicketAsignado(ticket, tecnico, admin);
+            notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getIdUsuario(), tecnico.getIdUsuario());
         }
         
         return convertirADTO(asignacionGuardada, ticket, tecnico);
@@ -163,16 +163,15 @@ public class AsignacionService {
         Ticket ticket = ticketOpt.get();
         Usuario tecnico = tecnicoOpt.get();
         ticket.setEstado("ESCALADO");
-        ticket.setTecnicoAsignado(tecnico);
-        ticket.setTecnicoEmail(tecnico.getEmail());
+        // NO actualizar tecnicoAsignado ni tecnicoEmail - mantener el técnico original
         ticketRepository.save(ticket);
         
         guardarHistorialAsignacion(ticketId, tecnicoId, emailEscalador, "ESCALAMIENTO", comentario);
         
-        // Enviar notificaciones inteligentes
+        // Enviar notificaciones por roles específicas para escalación
         Usuario admin = usuarioRepository.findByEmail(emailEscalador).orElse(null);
         if (admin != null) {
-            smartNotificationService.notificarTicketEscalado(ticket, admin);
+            notificationRoleService.notificarEscalacionTicket(ticket.getId(), admin.getIdUsuario(), tecnico.getIdUsuario());
         }
         
         return convertirADTO(escalacionGuardada, ticket, tecnico);
@@ -252,6 +251,28 @@ public class AsignacionService {
         historialAsignacionRepository.save(historial);
     }
     
+    /**
+     * Obtiene el técnico asignado original (primera asignación) de un ticket
+     */
+    public Usuario obtenerTecnicoAsignadoOriginal(Long ticketId) {
+        // Buscar la primera asignación del ticket (la original)
+        List<HistorialAsignacion> historial = historialAsignacionRepository
+            .findByTicketIdOrderByFechaOperacionAsc(ticketId);
+        
+        if (!historial.isEmpty()) {
+            // Buscar la primera asignación (no escalamiento ni reasignación)
+            for (HistorialAsignacion h : historial) {
+                if ("ASIGNACION".equals(h.getTipoOperacion())) {
+                    return usuarioRepository.findById(h.getTecnicoId()).orElse(null);
+                }
+            }
+        }
+        
+        // Fallback: usar el técnico asignado actual del ticket
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        return ticketOpt.map(Ticket::getTecnicoAsignado).orElse(null);
+    }
+    
     private String determinarEstadoNuevo(String tipoAccion) {
         switch (tipoAccion.toUpperCase()) {
             case "ASIGNACION":
@@ -295,9 +316,5 @@ public class AsignacionService {
         return dto;
     }
 }
-
-
-
-
 
 

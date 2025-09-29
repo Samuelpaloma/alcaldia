@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n";
 import { useTickets } from "../../hooks/use-tickets";
 import { reopenTicket } from "../client_tickets/apiStore";
 import { isAuthenticated } from "../auth/auth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Clock, 
   CheckCircle, 
@@ -20,7 +20,40 @@ import {
 export default function ClientHistory(){
   const { t } = useI18n();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { tickets, isLoading, error } = useTickets();
+  
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get('page');
+    return pageParam ? parseInt(pageParam) : 1;
+  });
+  const ticketsPerPage = 20;
+  
+  // Calcular tickets paginados
+  const totalPages = Math.ceil(tickets.length / ticketsPerPage);
+  const startIndex = (currentPage - 1) * ticketsPerPage;
+  const endIndex = startIndex + ticketsPerPage;
+  const paginatedTickets = tickets.slice(startIndex, endIndex);
+  
+  // Función para cambiar de página
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('page', newPage.toString());
+    setSearchParams(newSearchParams);
+  };
+  
+  // Efecto para manejar parámetro de página desde la URL
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    if (pageParam) {
+      const pageFromUrl = parseInt(pageParam);
+      if (pageFromUrl !== currentPage && pageFromUrl >= 1 && pageFromUrl <= totalPages) {
+        setCurrentPage(pageFromUrl);
+      }
+    }
+  }, [searchParams, currentPage, totalPages]);
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
@@ -132,8 +165,8 @@ export default function ClientHistory(){
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tickets.map(ticket => (
-                  <TableRow key={ticket.id} className="hover:bg-gray-50">
+                {paginatedTickets.map(ticket => (
+                  <TableRow key={ticket.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                     <TableCell className="font-mono font-medium">#{ticket.id}</TableCell>
                     <TableCell className="max-w-[200px] truncate" title={ticket.message}>
                       {ticket.message}
@@ -186,6 +219,36 @@ export default function ClientHistory(){
                 ))}
               </TableBody>
             </Table>
+          )}
+          
+          {/* Controles de paginación */}
+          {!isLoading && !error && tickets.length > ticketsPerPage && (
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {startIndex + 1}-{Math.min(endIndex, tickets.length)} de {tickets.length} tickets
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <span className="text-sm font-medium px-3">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

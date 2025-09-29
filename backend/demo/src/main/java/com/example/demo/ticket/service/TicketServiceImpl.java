@@ -1,6 +1,7 @@
 package com.example.demo.ticket.service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +23,7 @@ import com.example.demo.categoria.model.Categoria;
 import com.example.demo.categoria.service.CategoriaService;
 import com.example.demo.categoria.dto.response.CategoriaSimpleDTO;
 import com.example.demo.categoria.dto.response.CategoriaResponseDTO;
-import com.example.demo.notificacion.service.SmartNotificationService;
-import com.example.demo.notificacion.service.NotificacionInteligenteService;
+import com.example.demo.notificacion.service.NotificationRoleService;
 import com.example.demo.evidencia.model.Evidencia;
 import com.example.demo.evidencia.repository.EvidenciaRepository;
 import com.example.demo.ticket.model.HistorialEstadoTicket;
@@ -32,6 +32,14 @@ import com.example.demo.asignacion.model.HistorialAsignacion;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
 import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Base64;
+import java.util.UUID;
 
 @Service
 public class TicketServiceImpl implements TicketService {
@@ -55,13 +63,17 @@ public class TicketServiceImpl implements TicketService {
     private HistorialAsignacionRepository historialAsignacionRepository;
     
     @Autowired
-    private SmartNotificationService smartNotificationService;
+    private com.example.demo.asignacion.service.AsignacionService asignacionService;
     
     @Autowired
-    private NotificacionInteligenteService notificacionInteligenteService;
+    private NotificationRoleService notificationRoleService;
     
     @Autowired
     private ComentarioService comentarioService;
+    
+    @Autowired
+    private ArchivoTicketService archivoTicketService;
+    
 
     @Override
     @Transactional
@@ -84,8 +96,12 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = new Ticket();
         // El nombre se obtiene automáticamente del usuario logueado
         ticket.setUbicacion(request.getUbicacion());
-        // La consulta solo se llena si el usuario selecciona "Otros" y escribe algo personalizado
+        // Establecer tanto consulta como descripción
         ticket.setConsulta(request.getConsulta());
+        // La descripción debe contener el mensaje completo (consulta + categoría)
+        ticket.setDescripcion(request.getConsulta() != null && !request.getConsulta().trim().isEmpty() 
+            ? request.getConsulta() 
+            : categoria.getNombre());
         ticket.setCategoria(categoria);
         ticket.setCategoriaString(categoria.getNombre()); // Para compatibilidad
         ticket.setCategoriaNombre(categoria.getNombre()); // Campo requerido por la tabla
@@ -93,29 +109,57 @@ public class TicketServiceImpl implements TicketService {
         ticket.setEstado("PENDIENTE");
         ticket.setCreador(creador);
         
-        // Manejar archivo adjunto si existe
-        if (request.getArchivoAdjunto() != null) {
-            ticket.setArchivoAdjunto(request.getArchivoAdjunto());
-            ticket.setNombreArchivo(request.getNombreArchivo());
-        }
-
+        // Guardar ticket
         ticketRepository.save(ticket);
         
-        // Enviar notificación inteligente a los administradores
-        System.out.println("🔔 [DEBUG] ===== ENVIANDO NOTIFICACIÓN INTELIGENTE =====");
-        System.out.println("🔔 [DEBUG] Ticket ID: " + ticket.getId());
-        System.out.println("🔔 [DEBUG] NotificacionInteligenteService: " + (notificacionInteligenteService != null ? "INYECTADO" : "NULL"));
+        // Manejar archivo adjunto si existe - usar el nuevo sistema de múltiples archivos
+        System.out.println("🔍 [DEBUG] Verificando archivo adjunto...");
+        System.out.println("🔍 [DEBUG] archivoAdjunto: " + (request.getArchivoAdjunto() != null ? "Presente" : "Ausente"));
+        System.out.println("🔍 [DEBUG] nombreArchivo: " + request.getNombreArchivo());
         
+        if (request.getArchivoAdjunto() != null && request.getNombreArchivo() != null) {
+            try {
+                System.out.println("🔍 [DEBUG] Procesando archivo: " + request.getNombreArchivo());
+                
+                // Determinar tipo MIME basado en la extensión
+                String extension = request.getNombreArchivo().substring(request.getNombreArchivo().lastIndexOf('.') + 1);
+                String tipoMime = determinarTipoMime(extension);
+                
+                System.out.println("🔍 [DEBUG] Extension: " + extension + ", Tipo MIME: " + tipoMime);
+                
+                // Usar el servicio de archivos múltiples
+                archivoTicketService.subirArchivo(
+                    ticket.getId(),
+                    request.getNombreArchivo().substring(0, request.getNombreArchivo().lastIndexOf('.')), // nombre sin extensión
+                    tipoMime,
+                    (long) request.getArchivoAdjunto().length() * 3 / 4, // estimación del tamaño
+                    extension,
+                    request.getArchivoAdjunto(),
+                    "Archivo adjunto al crear el ticket",
+                    emailUsuario
+                );
+                
+                System.out.println("✅ [DEBUG] Archivo subido exitosamente");
+            } catch (Exception e) {
+                System.err.println("❌ [DEBUG] Error guardando archivo: " + e.getMessage());
+                e.printStackTrace();
+                // Continuar sin archivo si hay error
+            }
+        } else {
+            System.out.println("🔍 [DEBUG] No hay archivo adjunto para procesar");
+        }
+        
+        // Enviar notificación inteligente a los administradores
+        // NOTIFICACIONES: Solo usar el sistema de roles unificado
         try {
-            // Usar el nuevo sistema inteligente
-            notificacionInteligenteService.notificarTicketCreado(ticket, creador);
-            System.out.println("🔔 [DEBUG] ✅ Notificación inteligente enviada exitosamente");
-            
-            // También mantener el sistema viejo por compatibilidad temporal
-            smartNotificationService.notificarTicketCreado(ticket);
-            System.out.println("🔔 [DEBUG] ✅ Notificación vieja también enviada");
+            // Solo notificar si el creador NO es SuperAdmin (evitar auto-notificaciones)
+            if (creador != null && !"Super Administrador".equals(creador.getNombre() + " " + creador.getApellido())) {
+                System.out.println("🔔 [DEBUG] Enviando notificación de creación de ticket para: " + creador.getEmail());
+                notificationRoleService.notificarCreacionTicket(ticket.getId(), creador.getIdUsuario());
+            } else {
+                System.out.println("🔔 [DEBUG] Saltando notificación - creador es SuperAdmin");
+            }
         } catch (Exception e) {
-            // Log del error pero no fallar la creación del ticket
             System.err.println("❌ Error enviando notificación: " + e.getMessage());
             e.printStackTrace();
         }
@@ -129,7 +173,8 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
         // Verificar que el usuario tenga acceso al ticket
-        if (!ticket.getCreador().getEmail().equals(emailUsuario)) {
+        String creadorEmail = ticket.getCreadorEmail();
+        if (creadorEmail == null || !creadorEmail.equals(emailUsuario)) {
             throw new RuntimeException("No tienes permisos para ver este ticket");
         }
 
@@ -190,18 +235,22 @@ public class TicketServiceImpl implements TicketService {
 
     // Métodos auxiliares
     private TicketResponseDTO convertirTicketAResponseDTOBasico(Ticket ticket) {
+        // Obtener el técnico asignado original (primera asignación)
+        Usuario tecnicoOriginal = asignacionService.obtenerTecnicoAsignadoOriginal(ticket.getId());
+        
         return new TicketResponseDTO(
                 ticket.getId(),
                 ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
                 ticket.getDescripcion(),
                 ticket.getPrioridad(),
                 ticket.getEstado(),
-                ticket.getCreador().getEmail(),
-                ticket.getCreador().getNombreCompleto(), // Nombre del creador
-                ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
+                ticket.getCreadorEmail(), // Usar método seguro
+                ticket.getCreadorNombre(), // Usar método seguro
+                tecnicoOriginal != null ? tecnicoOriginal.getEmail() : null,
+                tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : null,
                 ticket.getFechaCreacion(),
                 ticket.getFechaActualizacion(),
-                ticket.getCreador().getNombreCompleto(), // Nombre del formulario
+                ticket.getCreadorNombre(), // Usar método seguro
                 ticket.getUbicacion(),
                 ticket.getConsulta(), // consulta completa para descripción
                 ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
@@ -210,21 +259,25 @@ public class TicketServiceImpl implements TicketService {
                 null, // evidencias
                 null, // historialEstados
                 null, // historialAsignaciones
-                null  // comentarios
+                null, // comentarios
+                null  // archivosConversacion
         );
     }
 
     private HistorialTicketResponseDTO convertirTicketAHistorialDTO(Ticket ticket) {
+        // Obtener el técnico asignado original (primera asignación)
+        Usuario tecnicoOriginal = asignacionService.obtenerTecnicoAsignadoOriginal(ticket.getId());
+        
         return new HistorialTicketResponseDTO(
                 ticket.getId(),
-                ticket.getCreador().getNombre(), // Nombre del usuario logueado
+                ticket.getCreador() != null ? ticket.getCreador().getNombre() : "Usuario Desconocido", // Usar método seguro
                 ticket.getUbicacion(),
                 ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
                 ticket.getEstado(),
                 ticket.getPrioridad(),
                 ticket.getFechaCreacion(),
                 ticket.getFechaActualizacion(),
-                ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null
+                tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : "Sin asignar"
         );
     }
     
@@ -253,18 +306,22 @@ public class TicketServiceImpl implements TicketService {
         // Obtener comentarios
         List<ComentarioResponseDTO> comentariosDTO = comentarioService.obtenerComentariosPorTicket(ticket.getId());
         
+        // Obtener el técnico asignado original (primera asignación)
+        Usuario tecnicoOriginal = asignacionService.obtenerTecnicoAsignadoOriginal(ticket.getId());
+        
         return new TicketResponseDTO(
             ticket.getId(),
             ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
             ticket.getDescripcion(),
             ticket.getPrioridad(),
             ticket.getEstado(),
-            ticket.getCreador().getEmail(),
-            ticket.getCreador().getNombreCompleto(), // Nombre del creador
-            ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
+            ticket.getCreadorEmail(), // Usar método seguro
+            ticket.getCreadorNombre(), // Usar método seguro
+            tecnicoOriginal != null ? tecnicoOriginal.getEmail() : null,
+            tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : null,
             ticket.getFechaCreacion(),
             ticket.getFechaActualizacion(),
-            ticket.getCreador().getNombreCompleto(), // Nombre del formulario
+            ticket.getCreadorNombre(), // Usar método seguro
             ticket.getUbicacion(),
             ticket.getConsulta(), // consulta completa para descripción
             ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
@@ -273,7 +330,8 @@ public class TicketServiceImpl implements TicketService {
             evidenciasDTO,
             historialDTO,
             historialAsignacionesDTO,
-            comentariosDTO
+            comentariosDTO,
+            null // archivosConversacion - no necesario en el enfoque simplificado
         );
     }
     
@@ -294,15 +352,48 @@ public class TicketServiceImpl implements TicketService {
     }
     
     private AsignacionResponseDTO convertirHistorialAsignacionAResponseDTO(HistorialAsignacion historial) {
+        // Obtener información del técnico desde la base de datos
+        String tecnicoNombre = "Técnico";
+        String tecnicoEmail = "tecnico@alcaldia.gov.co";
+        if (historial.getTecnicoId() != null) {
+            Optional<Usuario> tecnicoOpt = usuarioRepository.findById(historial.getTecnicoId());
+            if (tecnicoOpt.isPresent()) {
+                Usuario tecnico = tecnicoOpt.get();
+                tecnicoNombre = tecnico.getNombre() + " " + tecnico.getApellido();
+                tecnicoEmail = tecnico.getEmail();
+            }
+        }
+        
+        // Determinar el texto correcto según el tipo de operación
+        String descripcionOperacion;
+        switch (historial.getTipoOperacion().toUpperCase()) {
+            case "ASIGNACION":
+                descripcionOperacion = "Asignado a " + tecnicoNombre;
+                break;
+            case "REASIGNACION":
+                descripcionOperacion = "Reasignado a " + tecnicoNombre;
+                break;
+            case "ESCALAMIENTO":
+                descripcionOperacion = "Escalado a " + tecnicoNombre;
+                break;
+            case "DESASIGNACION":
+                descripcionOperacion = "Desasignado";
+                break;
+            default:
+                descripcionOperacion = "Operación: " + historial.getTipoOperacion();
+                break;
+        }
+        
         return AsignacionResponseDTO.builder()
             .ticketId(historial.getTicketId())
-            .ticketAsunto("Ticket #" + historial.getTicketId())
+            .ticketAsunto(descripcionOperacion)
             .tecnicoId(historial.getTecnicoId())
-            .tecnicoNombre("Técnico")
-            .tecnicoEmail("tecnico@alcaldia.gov.co")
+            .tecnicoNombre(tecnicoNombre)
+            .tecnicoEmail(tecnicoEmail)
             .comentario(historial.getComentario())
-            .fechaAsignacion(historial.getFechaAccion())
+            .fechaAsignacion(historial.getFechaOperacion() != null ? historial.getFechaOperacion() : historial.getFechaAccion())
             .activa(false)
+            .tipoOperacion(historial.getTipoOperacion())
             .build();
     }
     
@@ -319,5 +410,98 @@ public class TicketServiceImpl implements TicketService {
             .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
             .tipoUsuario(historial.getTipoUsuario())
             .build();
+    }
+    
+    /**
+     * Guardar archivo en el sistema de archivos
+     */
+    private String guardarArchivoEnSistema(String contenidoBase64, String nombreOriginal) throws IOException {
+        // Configuración del directorio de uploads
+        String uploadDir = "uploads/tickets/";
+        File uploadDirectory = new File(uploadDir);
+        
+        // Crear directorio si no existe
+        if (!uploadDirectory.exists()) {
+            uploadDirectory.mkdirs();
+        }
+        
+        // Generar nombre único para el archivo
+        String extension = "";
+        if (nombreOriginal.contains(".")) {
+            extension = nombreOriginal.substring(nombreOriginal.lastIndexOf("."));
+        }
+        String nombreUnico = UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + extension;
+        
+        // Ruta completa del archivo
+        String rutaCompleta = uploadDir + nombreUnico;
+        
+        // Decodificar Base64 y guardar archivo
+        byte[] contenido = Base64.getDecoder().decode(contenidoBase64);
+        
+        try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+            fos.write(contenido);
+        }
+        
+        System.out.println("📁 Archivo guardado: " + rutaCompleta);
+        return rutaCompleta;
+    }
+    
+    /**
+     * Determinar el tipo MIME basado en la extensión
+     */
+    private String determinarTipoMime(String extension) {
+        switch (extension.toLowerCase()) {
+            case "jpg":
+            case "jpeg":
+                return "image/jpeg";
+            case "png":
+                return "image/png";
+            case "gif":
+                return "image/gif";
+            case "bmp":
+                return "image/bmp";
+            case "webp":
+                return "image/webp";
+            case "pdf":
+                return "application/pdf";
+            case "doc":
+                return "application/msword";
+            case "docx":
+                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+            case "xls":
+                return "application/vnd.ms-excel";
+            case "xlsx":
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            case "ppt":
+                return "application/vnd.ms-powerpoint";
+            case "pptx":
+                return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+            case "txt":
+                return "text/plain";
+            case "rtf":
+                return "text/rtf";
+            case "zip":
+                return "application/zip";
+            case "rar":
+                return "application/x-rar-compressed";
+            case "7z":
+                return "application/x-7z-compressed";
+            case "mp4":
+                return "video/mp4";
+            case "avi":
+                return "video/x-msvideo";
+            case "mov":
+                return "video/quicktime";
+            case "wmv":
+                return "video/x-ms-wmv";
+            case "mp3":
+                return "audio/mpeg";
+            case "wav":
+                return "audio/wav";
+            case "ogg":
+                return "audio/ogg";
+            default:
+                return "application/octet-stream";
+        }
     }
 }

@@ -3,6 +3,7 @@ import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
 import { toast } from 'sonner';
 import { getAuth } from '../auth/auth';
+import { useUserInfo } from '@/hooks/use-user-info';
 
 // Context para compartir notificaciones globalmente
 interface NotificationContextType {
@@ -10,6 +11,8 @@ interface NotificationContextType {
   addNotificacion: (notificacion: any) => void;
   updateNotificacion: (id: number, updates: any) => void;
   removeNotificacion: (id: number) => void;
+  // Para toasts
+  addToastNotification: (notificacion: any) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
@@ -42,12 +45,32 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setNotificaciones(prev => prev.filter(notif => notif.id !== id));
   };
 
+  // Función para mostrar toasts de notificaciones
+  const addToastNotification = (notificacion: any) => {
+    console.log('🔔 Toast: Mostrando toast desde GlobalWebSocket:', notificacion);
+    
+    // Mostrar toast usando sonner
+    toast.success('Nueva notificación', {
+      description: notificacion.mensaje,
+      duration: 5000,
+      action: {
+        label: 'Ver',
+        onClick: () => {
+          console.log('🔔 Toast: Usuario hizo clic en "Ver" - Abriendo modal');
+          // Disparar evento personalizado para abrir el modal
+          window.dispatchEvent(new CustomEvent('openNotificationsModal'));
+        },
+      },
+    });
+  };
+
   return (
     <NotificationContext.Provider value={{
       notificaciones,
       addNotificacion,
       updateNotificacion,
-      removeNotificacion
+      removeNotificacion,
+      addToastNotification
     }}>
       {children}
     </NotificationContext.Provider>
@@ -56,7 +79,8 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 const GlobalWebSocket: React.FC = () => {
   const clientRef = useRef<Client | null>(null);
-  const { addNotificacion } = useNotifications();
+  const { addNotificacion, addToastNotification } = useNotifications();
+  const { userInfo } = useUserInfo();
 
   // Configurar WebSocket global para notificaciones
   const setupGlobalWebSocket = () => {
@@ -94,153 +118,62 @@ const GlobalWebSocket: React.FC = () => {
               // Filtrado correcto y simple
               console.log('🔔 [DEBUG] Aplicando filtrado correcto...');
               
-              // Mostrar información de debug
-              const auth = getAuth();
-              const userRole = auth?.user?.role || 'CLIENTE';
-              const userEmail = auth?.user?.email || '';
+              // Verificar si userInfo está disponible
+              if (!userInfo) {
+                console.log('🔔 [DEBUG] ⏳ UserInfo no disponible aún, ignorando notificación');
+                return;
+              }
               
+              // Obtener información del usuario actual
+              const userRole = userInfo.tipoUsuario?.toLowerCase() || 'funcionario';
+              const userEmail = userInfo.email || '';
+              
+              console.log('🔔 [DEBUG] ===== INFORMACIÓN DE DEBUG =====');
+              console.log('🔔 [DEBUG] UserInfo completo:', userInfo);
               console.log('🔔 [DEBUG] Usuario actual:', { userRole, userEmail });
+              console.log('🔔 [DEBUG] Tipo de userRole:', typeof userRole);
+              console.log('🔔 [DEBUG] Tipo de userEmail:', typeof userEmail);
               console.log('🔔 [DEBUG] Notificación recibida:', { 
                 usuarioEmail: nuevaNotificacion.usuarioEmail, 
                 tipo: nuevaNotificacion.tipo,
                 ticketId: nuevaNotificacion.ticketId,
-                titulo: nuevaNotificacion.titulo
+                titulo: nuevaNotificacion.titulo,
+                destinatarios: nuevaNotificacion.destinatarios
               });
               
-              // Filtrado correcto según requerimientos específicos
+              // Filtrado correcto: verificar destinatarios
               let shouldShow = false;
               
-              // 1. Si la notificación es específica para este usuario (por email)
-              if (nuevaNotificacion.usuarioEmail === userEmail) {
-                shouldShow = true;
-                console.log('🔔 [DEBUG] ✅ Notificación específica para este usuario');
-              }
-              // 2. Si es global (Super Admin)
-              else if (nuevaNotificacion.tipo === 'global') {
-                shouldShow = true;
-                console.log('🔔 [DEBUG] ✅ Notificación global');
-              }
-              // 3. Filtrado por rol según requerimientos específicos
-              else {
-                const titulo = nuevaNotificacion.titulo?.toLowerCase() || '';
-                const mensaje = nuevaNotificacion.mensaje?.toLowerCase() || '';
-                
-                if (userRole === 'CLIENTE' || userRole === 'FUNCIONARIO') {
-                  // FUNCIONARIO/CLIENTE:
-                  // ❌ NO recibe: "ticket creado" (solo confirmación local en UI)
-                  // ✅ SÍ recibe: cuando admin valida/asigna
-                  // ✅ SÍ recibe: cuando técnico actualiza estado o resuelve
-                  if (titulo.includes('asignado') || titulo.includes('validado') ||
-                      titulo.includes('en proceso') || titulo.includes('resuelto') ||
-                      titulo.includes('cerrado') || titulo.includes('actualizado') ||
-                      titulo.includes('respuesta') || titulo.includes('comentario')) {
-                    shouldShow = true;
-                    console.log('🔔 [DEBUG] ✅ Funcionario ve: asignación o actualización de su ticket');
-                  } else if (titulo.includes('creado') || titulo.includes('nuevo ticket')) {
-                    // NO mostrar notificación de "ticket creado" al funcionario
-                    shouldShow = false;
-                    console.log('🔔 [DEBUG] ❌ Funcionario NO ve: confirmación de ticket creado (solo UI local)');
-                  } else {
-                    shouldShow = false;
-                    console.log('🔔 [DEBUG] ❌ Funcionario no debe ver:', titulo);
+              // Verificar si la notificación es para este usuario
+              if (nuevaNotificacion.destinatarios && Array.isArray(nuevaNotificacion.destinatarios)) {
+                shouldShow = nuevaNotificacion.destinatarios.some(dest => {
+                  // Verificar por email específico
+                  if (userEmail && dest.endsWith(":" + userEmail)) {
+                    return true;
                   }
-                } else if (userRole === 'TECNICO') {
-                  // TÉCNICO:
-                  // ❌ NO recibe: "nuevo ticket creado"
-                  // ✅ SÍ recibe: "ticket asignado" (cuando admin lo asigna)
-                  // ✅ SÍ recibe: cambios importantes en ticket asignado
-                  if (titulo.includes('asignado') || titulo.includes('asignación') ||
-                      titulo.includes('evidencia') || titulo.includes('cambio') ||
-                      titulo.includes('actualización') || titulo.includes('comentario')) {
-                    shouldShow = true;
-                    console.log('🔔 [DEBUG] ✅ Técnico ve: asignación o cambios en ticket asignado');
-                  } else if (titulo.includes('creado') || titulo.includes('nuevo ticket')) {
-                    // NO mostrar notificación de "nuevo ticket creado" al técnico
-                    shouldShow = false;
-                    console.log('🔔 [DEBUG] ❌ Técnico NO ve: nuevo ticket creado');
-                  } else {
-                    shouldShow = false;
-                    console.log('🔔 [DEBUG] ❌ Técnico no debe ver:', titulo);
+                  // Verificar por rol específico
+                  if (userRole && dest === "rol:" + userRole) {
+                    return true;
                   }
-                } else if (userRole === 'ADMINISTRADOR') {
-                  // ADMINISTRADOR:
-                  // ✅ SÍ recibe: "nuevo ticket creado" (para revisar/asignar)
-                  // ✅ SÍ recibe: alertas del sistema
-                  if (titulo.includes('nuevo ticket') || titulo.includes('creado') ||
-                      titulo.includes('sin clasificar') || titulo.includes('sla') ||
-                      titulo.includes('incumplido') || titulo.includes('incidente') ||
-                      titulo.includes('seguridad') || titulo.includes('escalado') ||
-                      titulo.includes('alertas')) {
-                    shouldShow = true;
-                    console.log('🔔 [DEBUG] ✅ Administrador ve: nuevo ticket o alertas del sistema');
-                  } else {
-                    shouldShow = false;
-                    console.log('🔔 [DEBUG] ❌ Administrador no debe ver:', titulo);
-                  }
-                } else if (userRole === 'SUPER_ADMIN') {
-                  // SUPER ADMIN:
-                  // ✅ SÍ recibe: solo alertas críticas y auditoría
-                  // ❌ NO recibe: cada ticket individual
-                  if (titulo.includes('crítico') || titulo.includes('sistema') ||
-                      titulo.includes('reporte') || titulo.includes('escalamiento') ||
-                      titulo.includes('actividad') || titulo.includes('anomalía') ||
-                      titulo.includes('auditoría') || titulo.includes('bloqueado')) {
-                    shouldShow = true;
-                    console.log('🔔 [DEBUG] ✅ Super Admin ve: alertas críticas y auditoría');
-                  } else {
-                    shouldShow = false;
-                    console.log('🔔 [DEBUG] ❌ Super Admin no debe ver tickets individuales:', titulo);
-                  }
-                }
+                  return false;
+                });
               }
               
               console.log('🔔 [DEBUG] ¿Mostrar notificación?', shouldShow);
               
               if (!shouldShow) {
-                console.log('🔔 [DEBUG] ❌ No mostrar notificación');
+                console.log('🔔 [DEBUG] ❌ No mostrar notificación - no es para este usuario');
                 return;
               }
               
               // Agregar notificación al estado global
-              console.log('🔔 [DEBUG] Agregando notificación al estado global...');
-              console.log('🔔 [DEBUG] ✅ Pasó el filtrado, agregando notificación');
+              console.log('🔔 [DEBUG] ✅ Agregando notificación al estado global...');
               addNotificacion(nuevaNotificacion);
-              console.log('🔔 [DEBUG] ✅ Notificación agregada al estado global');
               
-              // Mostrar notificación toast visualmente
-              console.log('🔔 [DEBUG] Mostrando notificación toast...');
-              console.log('🔔 [DEBUG] Tipo de notificación:', nuevaNotificacion.tipo);
-              console.log('🔔 [DEBUG] Título:', nuevaNotificacion.titulo);
-              console.log('🔔 [DEBUG] Mensaje:', nuevaNotificacion.mensaje);
+              // Mostrar toast de notificación
+              console.log('🔔 [DEBUG] ✅ Mostrando toast de notificación...');
+              addToastNotification(nuevaNotificacion);
               
-              // Mostrar toast según el tipo de notificación
-              if (nuevaNotificacion.tipo === 'success') {
-                console.log('🔔 [DEBUG] Mostrando toast de éxito');
-                toast.success(nuevaNotificacion.titulo, {
-                  description: nuevaNotificacion.mensaje,
-                  duration: 5000,
-                });
-              } else if (nuevaNotificacion.tipo === 'warning') {
-                console.log('🔔 [DEBUG] Mostrando toast de advertencia');
-                toast.warning(nuevaNotificacion.titulo, {
-                  description: nuevaNotificacion.mensaje,
-                  duration: 5000,
-                });
-              } else if (nuevaNotificacion.tipo === 'error') {
-                console.log('🔔 [DEBUG] Mostrando toast de error');
-                toast.error(nuevaNotificacion.titulo, {
-                  description: nuevaNotificacion.mensaje,
-                  duration: 5000,
-                });
-              } else {
-                console.log('🔔 [DEBUG] Mostrando toast de información');
-                toast.info(nuevaNotificacion.titulo, {
-                  description: nuevaNotificacion.mensaje,
-                  duration: 5000,
-                });
-              }
-              
-              console.log('🔔 [DEBUG] ✅ Notificación agregada al estado global y mostrada visualmente');
               
             } catch (error) {
               console.error('🔔 Error procesando notificación WebSocket:', error);
@@ -276,7 +209,7 @@ const GlobalWebSocket: React.FC = () => {
         clientRef.current = null;
       }
     };
-  }, []);
+  }, [userInfo]); // Reconectar cuando userInfo cambie
 
   // Este componente no renderiza nada, solo maneja el WebSocket
   return null;

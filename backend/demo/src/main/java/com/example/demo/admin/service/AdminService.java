@@ -10,7 +10,10 @@ import com.example.demo.ticket.model.HistorialEstadoTicket;
 import com.example.demo.ticket.repository.HistorialEstadoTicketRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
+import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
+import com.example.demo.asignacion.model.HistorialAsignacion;
 import lombok.RequiredArgsConstructor;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +33,8 @@ public class AdminService {
     private final EvidenciaRepository evidenciaRepository;
     private final HistorialEstadoTicketRepository historialRepository;
     private final UsuarioRepository usuarioRepository;
+    private final HistorialAsignacionRepository historialAsignacionRepository;
+    private final com.example.demo.asignacion.service.AsignacionService asignacionService;
     
     /**
      * Obtener todos los tickets con evidencias e historial
@@ -148,18 +153,28 @@ public class AdminService {
             .map(this::convertirHistorialAResponseDTO)
             .collect(Collectors.toList());
         
+        // Obtener historial de asignaciones
+        List<HistorialAsignacion> historialAsignaciones = historialAsignacionRepository.findByTicketIdOrderByFechaOperacionAsc(ticket.getId());
+        List<com.example.demo.asignacion.dto.response.AsignacionResponseDTO> historialAsignacionesDTO = historialAsignaciones.stream()
+            .map(this::convertirHistorialAsignacionAResponseDTO)
+            .collect(Collectors.toList());
+        
+        // Obtener el técnico asignado original (primera asignación)
+        com.example.demo.usuario.model.Usuario tecnicoOriginal = asignacionService.obtenerTecnicoAsignadoOriginal(ticket.getId());
+        
         return new TicketResponseDTO(
             ticket.getId(),
             ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
             ticket.getDescripcion(),
             ticket.getPrioridad(),
             ticket.getEstado(),
-            ticket.getCreador().getEmail(),
-            ticket.getCreador().getNombreCompleto(), // Nombre del creador
-            ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null,
+            ticket.getCreadorEmail(), // Usar método seguro
+            ticket.getCreadorNombre(), // Usar método seguro
+            tecnicoOriginal != null ? tecnicoOriginal.getEmail() : null,
+            tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : null,
             ticket.getFechaCreacion(),
             ticket.getFechaActualizacion(),
-            ticket.getCreador().getNombreCompleto(), // Nombre del formulario (mismo que creador)
+            ticket.getCreadorNombre(), // Usar método seguro
             ticket.getUbicacion(),
             ticket.getConsulta(), // consulta completa para descripción
             ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
@@ -167,8 +182,9 @@ public class AdminService {
             ticket.getNombreArchivo(),
             evidenciasDTO,
             historialDTO,
-            new ArrayList<>(), // historialAsignaciones vacío por ahora
-            new ArrayList<>() // comentarios vacío por ahora
+            historialAsignacionesDTO,
+            new ArrayList<>(), // comentarios vacío por ahora
+            null // archivosConversacion - no necesario en el enfoque simplificado
         );
     }
     
@@ -200,6 +216,52 @@ public class AdminService {
             .cambiadoPor(historial.getCambiadoPor().getNombreCompleto())
             .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
             .tipoUsuario(historial.getTipoUsuario())
+            .build();
+    }
+    
+    private com.example.demo.asignacion.dto.response.AsignacionResponseDTO convertirHistorialAsignacionAResponseDTO(HistorialAsignacion historial) {
+        // Obtener información del técnico desde la base de datos
+        String tecnicoNombre = "Técnico";
+        String tecnicoEmail = "tecnico@alcaldia.gov.co";
+        if (historial.getTecnicoId() != null) {
+            Optional<Usuario> tecnicoOpt = usuarioRepository.findById(historial.getTecnicoId());
+            if (tecnicoOpt.isPresent()) {
+                Usuario tecnico = tecnicoOpt.get();
+                tecnicoNombre = tecnico.getNombre() + " " + tecnico.getApellido();
+                tecnicoEmail = tecnico.getEmail();
+            }
+        }
+        
+        // Determinar el texto correcto según el tipo de operación
+        String descripcionOperacion;
+        switch (historial.getTipoOperacion().toUpperCase()) {
+            case "ASIGNACION":
+                descripcionOperacion = "Asignado a " + tecnicoNombre;
+                break;
+            case "REASIGNACION":
+                descripcionOperacion = "Reasignado a " + tecnicoNombre;
+                break;
+            case "ESCALAMIENTO":
+                descripcionOperacion = "Escalado a " + tecnicoNombre;
+                break;
+            case "DESASIGNACION":
+                descripcionOperacion = "Desasignado";
+                break;
+            default:
+                descripcionOperacion = "Operación: " + historial.getTipoOperacion();
+                break;
+        }
+        
+        return com.example.demo.asignacion.dto.response.AsignacionResponseDTO.builder()
+            .ticketId(historial.getTicketId())
+            .ticketAsunto(descripcionOperacion)
+            .tecnicoId(historial.getTecnicoId())
+            .tecnicoNombre(tecnicoNombre)
+            .tecnicoEmail(tecnicoEmail)
+            .comentario(historial.getComentario())
+            .fechaAsignacion(historial.getFechaOperacion() != null ? historial.getFechaOperacion() : historial.getFechaAccion())
+            .activa(false)
+            .tipoOperacion(historial.getTipoOperacion())
             .build();
     }
 }

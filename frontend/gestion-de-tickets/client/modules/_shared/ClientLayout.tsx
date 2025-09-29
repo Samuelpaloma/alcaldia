@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/i18n";
 import { Bell, Settings, LogOut, X } from "lucide-react";
 import { logout, getAuth } from "../auth/auth";
@@ -7,18 +7,39 @@ import SettingsModal from "../system_configuration/SettingsModal";
 import LogoutModal from "../auth/LogoutModal";
 import { useSettings } from "@/hooks/use-settings";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import NotificacionInteligenteModal from "../notifications/NotificacionInteligenteModal";
+import { UnifiedNotificationsModal } from "../notifications/UnifiedNotificationsModal";
+import { useRoleNotifications } from "@/hooks/use-role-notifications";
+import { useUserInfo } from "@/hooks/use-user-info";
+import NotificationSystem from "../../components/NotificationSystem";
 import "./AppLayout.css";
 
 export default function ClientLayout() {
   const { t, locale, setLocale } = useI18n();
   const { settings, updateSetting } = useSettings();
   const { profile, isLoading: profileLoading } = useUserProfile();
+  const { userInfo } = useUserInfo();
+  const userEmail = userInfo?.email || '';
+  const userRole = userInfo?.tipoUsuario?.toLowerCase() || '';
+  const { unreadCount } = useRoleNotifications(userEmail, userRole);
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+
+  // Escuchar evento para abrir modal desde toast
+  useEffect(() => {
+    const handleOpenModal = () => {
+      console.log('🔔 ClientLayout: Recibido evento para abrir modal de notificaciones');
+      setShowNotifications(true);
+    };
+
+    window.addEventListener('openNotificationsModal', handleOpenModal);
+    
+    return () => {
+      window.removeEventListener('openNotificationsModal', handleOpenModal);
+    };
+  }, []);
   
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
@@ -184,7 +205,11 @@ export default function ClientLayout() {
           >
             <Bell className="w-5 h-5 text-foreground" />
             {/* Indicador de notificaciones no leídas */}
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
           <button 
             aria-label="Settings" 
@@ -204,36 +229,26 @@ export default function ClientLayout() {
 
         {/* Modales */}
         {showNotifications && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
-              <div className="p-4 border-b border-border flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Notificaciones</h2>
-                <button
-                  onClick={() => setShowNotifications(false)}
-                  className="p-2 hover:bg-muted rounded-md transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="p-4 overflow-y-auto max-h-[60vh]">
-        <NotificacionInteligenteModal 
-          isOpen={showNotifications} 
-          onClose={() => setShowNotifications(false)} 
-        />
-              </div>
-            </div>
-          </div>
+          <UnifiedNotificationsModal 
+            key={`client-notifications-${userEmail}-${Date.now()}`}
+            isOpen={showNotifications} 
+            onClose={() => setShowNotifications(false)}
+            userEmail={userEmail}
+            userRole={userRole}
+          />
         )}
         <SettingsModal 
           isOpen={showSettings} 
           onClose={() => setShowSettings(false)} 
         />
-        <LogoutModal 
-          isOpen={showLogout} 
+        <LogoutModal
+          isOpen={showLogout}
           onClose={() => setShowLogout(false)}
           onConfirm={handleLogout}
           userName={userName}
         />
+        
+        {/* Sistema de notificaciones toast en tiempo real - Integrado en GlobalWebSocket */}
     </div>
   );
 }
