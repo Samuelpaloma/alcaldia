@@ -59,4 +59,33 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     
     // Contar tickets por técnico asignado
     long countByTecnicoAsignado(Usuario tecnico);
+    
+    // ===== MÉTODOS ADICIONALES DE ALCALDIA =====
+    
+    // 📊 Consultas para estadísticas del técnico (adaptadas para Usuario)
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = 'PENDIENTE'")
+    long countTicketsPendientesByTecnico(@Param("tecnicoId") Integer tecnicoId);
+    
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = 'EN_PROCESO'")
+    long countTicketsEnProcesoByTecnico(@Param("tecnicoId") Integer tecnicoId);
+    
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = 'FINALIZADA'")
+    long countTicketsCompletadosByTecnico(@Param("tecnicoId") Integer tecnicoId);
+    
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId")
+    long countTicketsAsignadosByTecnico(@Param("tecnicoId") Integer tecnicoId);
+    
+    // 📋 Consultas para obtener tickets del técnico
+    @Query("SELECT t FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId ORDER BY t.fechaCreacion DESC")
+    List<Ticket> findTicketsByTecnico(@Param("tecnicoId") Integer tecnicoId);
+    
+    @Query("SELECT t FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = :estado ORDER BY t.fechaCreacion DESC")
+    List<Ticket> findTicketsByTecnicoAndEstado(@Param("tecnicoId") Integer tecnicoId, @Param("estado") String estado);
+    
+    // 🔍 Consultas adicionales útiles
+    @Query("SELECT t FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado IN ('PENDIENTE', 'EN_PROCESO') ORDER BY t.prioridad DESC, t.fechaCreacion ASC")
+    List<Ticket> findTicketsActivosByTecnico(@Param("tecnicoId") Integer tecnicoId);
+    
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado IN ('PENDIENTE', 'EN_PROCESO')")
+    long countTicketsActivosByTecnico(@Param("tecnicoId") Integer tecnicoId);
 }

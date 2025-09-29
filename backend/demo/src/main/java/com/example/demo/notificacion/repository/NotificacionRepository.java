@@ -56,4 +56,13 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
     // Archivar notificaciones antiguas
     @Query("UPDATE Notificacion n SET n.leida = true WHERE n.fechaCreacion < :fechaAntigua AND n.leida = false")
     void archiveOldNotifications(@Param("fechaAntigua") LocalDateTime fechaAntigua);
+    
+    // Métodos para trabajar con ID de usuario (para el controller)
+    List<Notificacion> findByUsuarioIdOrderByFechaCreacionDesc(Long usuarioId);
+    
+    List<Notificacion> findByUsuarioIdAndLeidaFalseOrderByFechaCreacionDesc(Long usuarioId);
+    
+    long countByUsuarioIdAndLeidaFalse(Long usuarioId);
+    
+    Optional<Notificacion> findByIdAndUsuarioId(Long id, Long usuarioId);
 }

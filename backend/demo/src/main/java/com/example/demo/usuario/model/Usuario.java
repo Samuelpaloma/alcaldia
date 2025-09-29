@@ -82,6 +82,12 @@ public class Usuario {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
     
+    @Column(name = "device_token")
+    private String deviceToken; // Token para notificaciones push
+    
+    @Column(name = "rol")
+    private String rol; // Campo adicional para compatibilidad
+    
         // Tickets donde el usuario es el técnico asignado
         @OneToMany(mappedBy = "tecnicoAsignado")
         private java.util.List<com.example.demo.ticket.model.Ticket> ticketsAsignados;

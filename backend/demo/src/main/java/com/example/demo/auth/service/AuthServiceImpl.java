@@ -6,6 +6,7 @@ import com.example.demo.auth.exception.AuthException;
 import com.example.demo.auth.exception.UserAlreadyExistsException;
 import com.example.demo.auth.model.PendingUser;
 import com.example.demo.auth.repository.PendingUserRepository;
+import com.example.demo.auth.service.EmailVerificationService;
 import com.example.demo.security.JwtTokenProvider;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.model.Usuario;
@@ -29,7 +30,178 @@ public class AuthServiceImpl implements AuthService {
     private final PendingUserRepository pendingUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final EmailVerificationService emailVerificationService;
     
+    // ========== LOGIN ==========
+    
+    @Override
+    public LoginResponse authenticate(LoginRequest request) {
+        log.info("Intento de login para email: {}", request.getEmail());
+        
+        // DEBUG: Información del request
+        System.out.println("=== DEBUG AUTHENTICATE START ===");
+        System.out.println("Email recibido: '" + request.getEmail() + "'");
+        System.out.println("Password recibido: '" + request.getPassword() + "'");
+        System.out.println("Password es null: " + (request.getPassword() == null));
+        System.out.println("Email es null: " + (request.getEmail() == null));
+        
+        // 1. Buscar usuario por email
+        System.out.println("🔍 Buscando usuario en BD...");
+        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> {
+                System.out.println("❌ Usuario NO encontrado para email: " + request.getEmail());
+                return new RuntimeException("Credenciales inválidas");
+            });
+        
+        System.out.println("✅ Usuario encontrado:");
+        System.out.println("  - ID: " + usuario.getIdUsuario());
+        System.out.println("  - Email: " + usuario.getEmail());
+        System.out.println("  - Activo: " + usuario.getActivo());
+        System.out.println("  - Email verificado: " + usuario.getEmailVerificado());
+        System.out.println("  - Tipo Usuario: " + usuario.getTipoUsuario());
+        System.out.println("  - Require 2FA: " + usuario.getRequire2fa());
+        System.out.println("  - Password hash: " + usuario.getPasswordHash().substring(0, 20) + "...");
+        
+        // 2. Verificar contraseña
+        System.out.println("🔐 Verificando password...");
+        System.out.println("Password enviado: '" + request.getPassword() + "'");
+        System.out.println("Password hash en BD: '" + usuario.getPasswordHash() + "'");
+        
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash());
+        System.out.println("Password coincide: " + passwordMatches);
+        
+        if (!passwordMatches) {
+            System.out.println("❌ PASSWORD NO COINCIDE");
+            log.warn("Intento de login fallido para email: {}", request.getEmail());
+            throw new RuntimeException("Credenciales inválidas");
+        }
+        
+        System.out.println("✅ Password VÁLIDO");
+        
+        // 3. Verificar que esté activo
+        if (!usuario.getActivo()) {
+            System.out.println("❌ Usuario INACTIVO");
+            throw new RuntimeException("Usuario desactivado. Contacte al administrador");
+        }
+        
+        System.out.println("✅ Usuario ACTIVO");
+        
+        // 4. Verificar que el email esté verificado
+        if (!usuario.getEmailVerificado()) {
+            System.out.println("❌ Email NO VERIFICADO - Requiere verificación");
+            log.info("Usuario {} requiere verificación de email", usuario.getEmail());
+            
+            // Retornar response indicando que requiere verificación de email
+            return LoginResponse.builder()
+                .accessToken(null)  // Sin token todavía
+                .tokenType("Bearer")
+                .expiresIn(null)
+                .userId(usuario.getIdUsuario())
+                .nombre(usuario.getNombre())
+                .apellido(usuario.getApellido())
+                .email(usuario.getEmail())
+                .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
+                .requireEmailVerification(true)  // Indica que requiere verificación de email
+                .require2fa(false)  // No requiere 2FA todavía
+                .redirectUrl(null)  // Sin redirección todavía
+                .build();
+        }
+        
+        System.out.println("✅ Email VERIFICADO");
+        
+        // 5. Verificar si requiere 2FA
+        if (usuario.getRequire2fa() != null && usuario.getRequire2fa()) {
+            System.out.println("🔐 Usuario REQUIERE 2FA");
+            log.info("Usuario {} requiere 2FA, enviando código de verificación", usuario.getEmail());
+            
+            try {
+                // Enviar código 2FA
+                emailVerificationService.send2FACode(usuario);
+                System.out.println("✅ Código 2FA enviado exitosamente");
+            } catch (Exception e) {
+                log.error("Error enviando código 2FA a: {}", usuario.getEmail(), e);
+                throw new RuntimeException("Error enviando código de verificación. Intente nuevamente");
+            }
+            
+            // Retornar response SIN token, indicando que requiere 2FA
+            return LoginResponse.builder()
+                .accessToken(null)  // Sin token todavía
+                .tokenType("Bearer")
+                .expiresIn(null)
+                .userId(usuario.getIdUsuario())
+                .nombre(usuario.getNombre())
+                .apellido(usuario.getApellido())
+                .email(usuario.getEmail())
+                .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
+                .require2fa(true)  // Indica que requiere código 2FA
+                .redirectUrl(null)  // Sin redirección todavía
+                .build();
+        }
+        
+        System.out.println("✅ NO requiere 2FA - procediendo con login normal");
+        
+        // 6. Si NO requiere 2FA, proceder con login normal
+        return completeAuthentication(usuario);
+    }
+    
+    // Método para completar autenticación (usado después de 2FA o login normal)
+    private LoginResponse completeAuthentication(Usuario usuario) {
+        System.out.println("🏁 Completando autenticación...");
+        
+        // Actualizar último acceso
+        usuario.setUltimoAcceso(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+        
+        // Generar token JWT
+        String accessToken = jwtTokenProvider.generateToken(usuario);
+        System.out.println("✅ Token generado: " + accessToken.substring(0, 20) + "...");
+        
+        // Determinar URL de redirección según tipo de usuario
+        String redirectUrl = getRedirectUrlByUserType(usuario.getTipoUsuario());
+        System.out.println("✅ Redirect URL: " + redirectUrl);
+        
+        log.info("Login completado exitosamente para usuario: {} - Tipo: {}", 
+                usuario.getEmail(), usuario.getTipoUsuario());
+        
+        LoginResponse response = LoginResponse.builder()
+            .accessToken(accessToken)
+            .tokenType("Bearer")
+            .expiresIn(jwtTokenProvider.getTokenValidityInSeconds())
+            .userId(usuario.getIdUsuario())
+            .nombre(usuario.getNombre())
+            .apellido(usuario.getApellido())
+            .email(usuario.getEmail())
+            .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
+            .require2fa(false)  // Ya no requiere más 2FA
+            .redirectUrl(redirectUrl)
+            .build();
+        
+        System.out.println("✅ LOGIN COMPLETADO EXITOSAMENTE");
+        System.out.println("=== DEBUG AUTHENTICATE END ===");
+        
+        return response;
+    }
+    
+    // Método auxiliar para determinar URL de redirección
+    private String getRedirectUrlByUserType(TipoUsuario tipoUsuario) {
+        if (tipoUsuario == null) {
+            return "/dashboard";
+        }
+        
+        switch (tipoUsuario) {
+            case ADMINISTRADOR:
+                return "/admin/dashboard";
+            case TECNICO:
+                return "/tecnico/dashboard";
+            case FUNCIONARIO:
+                return "/funcionario/dashboard";
+            case SUPERADMIN:
+                return "/superadmin/dashboard";
+            default:
+                return "/dashboard";
+        }
+    }
+
     // ========== REGISTRO ==========
     
     @Override
@@ -546,5 +718,101 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public long getUserCount() {
         return usuarioRepository.count();
+    }
+    
+    // ========== 2FA ==========
+    
+    @Override
+    public LoginResponse verify2FAAndCompleteLogin(Long userId, String code) {
+        log.info("Verificando código 2FA para usuario ID: {}", userId);
+        System.out.println("=== VERIFY 2FA AND COMPLETE LOGIN ===");
+        System.out.println("1. User ID recibido: " + userId);
+        System.out.println("2. Code recibido: '" + code + "'");
+        System.out.println("3. Longitud del código: " + (code != null ? code.length() : "null"));
+        
+        try {
+            // 1. Validaciones básicas
+            if (code == null || code.trim().isEmpty()) {
+                System.out.println("❌ Código vacío o null");
+                throw new RuntimeException("Código de verificación requerido");
+            }
+            
+            if (userId == null || userId <= 0) {
+                System.out.println("❌ User ID inválido: " + userId);
+                throw new RuntimeException("ID de usuario inválido");
+            }
+            
+            // 2. Buscar usuario
+            System.out.println("🔍 Buscando usuario con ID: " + userId);
+            Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> {
+                    System.out.println("❌ Usuario no encontrado con ID: " + userId);
+                    return new RuntimeException("Usuario no encontrado");
+                });
+            
+            System.out.println("✅ Usuario encontrado: " + usuario.getEmail());
+            
+            // 3. Verificar código 2FA
+            System.out.println("🔐 Verificando código 2FA...");
+            boolean codeValid = emailVerificationService.verify2FACode(code.trim());
+            
+            if (!codeValid) {
+                System.out.println("❌ Código 2FA inválido o expirado");
+                throw new RuntimeException("Código de verificación inválido o expirado");
+            }
+            
+            System.out.println("✅ Código 2FA válido");
+            
+            // 4. Completar autenticación
+            System.out.println("🏁 Completando autenticación 2FA...");
+            return completeAuthentication(usuario);
+            
+        } catch (Exception e) {
+            System.out.println("❌ Error en verify2FAAndCompleteLogin: " + e.getMessage());
+            log.error("Error verificando 2FA para usuario {}: {}", userId, e.getMessage());
+            throw new RuntimeException("Error verificando código 2FA: " + e.getMessage());
+        } finally {
+            System.out.println("=== END VERIFY 2FA AND COMPLETE LOGIN ===");
+        }
+    }
+    
+    @Override
+    public void verifyExistingUserEmail(String email, String code) {
+        log.info("Verificando email de usuario existente: {}", email);
+        System.out.println("=== VERIFY EXISTING USER EMAIL ===");
+        System.out.println("Email: " + email);
+        System.out.println("Code: " + code);
+        
+        try {
+            // 1. Buscar usuario existente
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            System.out.println("✅ Usuario encontrado: " + usuario.getEmail());
+            
+            // 2. Verificar código de verificación
+            boolean codeValid = emailVerificationService.verify2FACode(code.trim());
+            
+            if (!codeValid) {
+                System.out.println("❌ Código de verificación inválido o expirado");
+                throw new RuntimeException("Código de verificación inválido o expirado");
+            }
+            
+            System.out.println("✅ Código de verificación válido");
+            
+            // 3. Actualizar estado de verificación de email
+            usuario.setEmailVerificado(true);
+            usuarioRepository.save(usuario);
+            
+            System.out.println("✅ Email verificado exitosamente para: " + email);
+            log.info("Email verificado exitosamente para usuario: {}", email);
+            
+        } catch (Exception e) {
+            System.out.println("❌ Error verificando email: " + e.getMessage());
+            log.error("Error verificando email para usuario {}: {}", email, e.getMessage());
+            throw new RuntimeException("Error verificando email: " + e.getMessage());
+        } finally {
+            System.out.println("=== END VERIFY EXISTING USER EMAIL ===");
+        }
     }
 }

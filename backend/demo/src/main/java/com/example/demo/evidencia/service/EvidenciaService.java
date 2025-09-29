@@ -1,5 +1,6 @@
 package com.example.demo.evidencia.service;
 
+import com.example.demo.evidencia.dto.EvidenciaMovilDTO;
 import com.example.demo.evidencia.model.Evidencia;
 import com.example.demo.evidencia.repository.EvidenciaRepository;
 import com.example.demo.ticket.model.Ticket;
@@ -12,8 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +43,73 @@ public class EvidenciaService {
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
         return evidenciaRepository.findActivasByTicket(ticket);
+    }
+    
+    /**
+     * Obtener evidencias de un ticket en formato móvil
+     */
+    public List<EvidenciaMovilDTO> obtenerEvidenciasPorTicketMovil(Long ticketId) {
+        log.info("Obteniendo evidencias del ticket {} para móvil", ticketId);
+        
+        List<EvidenciaMovilDTO> evidenciasDTO = new ArrayList<>();
+        
+        // 1. Obtener evidencias de la tabla evidencias
+        List<Evidencia> evidencias = obtenerEvidenciasPorTicket(ticketId);
+        evidenciasDTO.addAll(evidencias.stream()
+            .map(this::convertirAEvidenciaMovilDTO)
+            .collect(Collectors.toList()));
+        
+        // 2. Obtener archivo adjunto del ticket si existe
+        Ticket ticket = ticketRepository.findById(ticketId)
+            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        
+        if (ticket.getArchivoAdjunto() != null && !ticket.getArchivoAdjunto().trim().isEmpty()) {
+            log.info("Ticket {} tiene archivo adjunto: {}", ticketId, ticket.getArchivoAdjunto());
+            
+            EvidenciaMovilDTO archivoAdjuntoDTO = EvidenciaMovilDTO.builder()
+                .idEvidencia(-1L) // ID especial para archivo adjunto
+                .ticketId(ticketId)
+                .tipoEvidencia(determinarTipoEvidencia(ticket.getArchivoAdjunto()))
+                .descripcion("Archivo adjunto del ticket")
+                .nombreArchivo(ticket.getArchivoAdjunto())
+                .extensionArchivo(obtenerExtensionArchivo(ticket.getArchivoAdjunto()))
+                .tamanioArchivo(0L) // No tenemos el tamaño real
+                .tamanioFormateado("N/A")
+                .urlArchivo(null)
+                .fechaSubida(ticket.getFechaActualizacion()) // Usar fecha de actualización
+                .subidoPorNombre(ticket.getTecnicoAsignado() != null ? 
+                    ticket.getTecnicoAsignado().getNombre() + " " + ticket.getTecnicoAsignado().getApellido() : null)
+                .subidoPorEmail(ticket.getTecnicoAsignado() != null ? 
+                    ticket.getTecnicoAsignado().getEmail() : null)
+                .build();
+            
+            evidenciasDTO.add(archivoAdjuntoDTO);
+            log.info("Archivo adjunto agregado como evidencia: {}", ticket.getArchivoAdjunto());
+        }
+        
+        log.info("Total evidencias encontradas para ticket {}: {}", ticketId, evidenciasDTO.size());
+        return evidenciasDTO;
+    }
+    
+    /**
+     * Convertir Evidencia a EvidenciaMovilDTO
+     */
+    private EvidenciaMovilDTO convertirAEvidenciaMovilDTO(Evidencia evidencia) {
+        return EvidenciaMovilDTO.builder()
+            .idEvidencia(evidencia.getIdEvidencia())
+            .ticketId(evidencia.getTicket().getId())
+            .tipoEvidencia(evidencia.getTipoEvidencia())
+            .descripcion(evidencia.getDescripcion())
+            .nombreArchivo(evidencia.getNombreArchivo())
+            .extensionArchivo(evidencia.getExtensionArchivo())
+            .tamanioArchivo(evidencia.getTamanioArchivo())
+            .tamanioFormateado(evidencia.getTamanioFormateado())
+            .urlArchivo(evidencia.getUrlArchivo())
+            .fechaSubida(evidencia.getFechaSubida())
+            .subidoPorNombre(evidencia.getSubidoPor() != null ? 
+                evidencia.getSubidoPor().getNombre() + " " + evidencia.getSubidoPor().getApellido() : null)
+            .subidoPorEmail(evidencia.getSubidoPor() != null ? evidencia.getSubidoPor().getEmail() : null)
+            .build();
     }
     
     /**
@@ -116,5 +186,50 @@ public class EvidenciaService {
             .build();
         
         return evidenciaRepository.save(evidencia);
+    }
+    
+    /**
+     * Determinar el tipo de evidencia basado en la extensión del archivo
+     */
+    private String determinarTipoEvidencia(String nombreArchivo) {
+        if (nombreArchivo == null) return "DOCUMENTO";
+        
+        String extension = obtenerExtensionArchivo(nombreArchivo).toLowerCase();
+        
+        if (extension.matches("(jpg|jpeg|png|gif|bmp|webp)")) {
+            return "IMAGEN";
+        } else if (extension.matches("(mp4|avi|mov|wmv|flv|webm)")) {
+            return "VIDEO";
+        } else if (extension.matches("(mp3|wav|ogg|aac)")) {
+            return "AUDIO";
+        } else {
+            return "DOCUMENTO";
+        }
+    }
+    
+    /**
+     * Obtener la extensión del archivo
+     */
+    private String obtenerExtensionArchivo(String nombreArchivo) {
+        if (nombreArchivo == null || !nombreArchivo.contains(".")) {
+            return "";
+        }
+        return nombreArchivo.substring(nombreArchivo.lastIndexOf(".") + 1);
+    }
+    
+    /**
+     * Verificar si un archivo es un archivo adjunto del ticket
+     */
+    public boolean esArchivoAdjunto(Long ticketId, String nombreArchivo) {
+        try {
+            Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+            
+            return ticket.getArchivoAdjunto() != null && 
+                   ticket.getArchivoAdjunto().equals(nombreArchivo);
+        } catch (Exception e) {
+            log.error("Error verificando archivo adjunto", e);
+            return false;
+        }
     }
 }

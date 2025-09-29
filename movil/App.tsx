@@ -1,137 +1,198 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, AppState } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Importar pantallas
+// Pantallas
 import LoginScreen from './src/screens/LoginScreen';
-import TecnicoDashboard from './src/screens/TecnicoDashboard';
+import IndexScreen from './src/screens/TecnicoDashboard';
 import ConfigScreen from './src/screens/config';
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen';
+import VerifyScreen from './src/screens/VerifyScreen';
+import VerifyEmailScreen from './src/screens/verifyEmailScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
-import TwoFactorAuthScreen from './src/screens/TwoFactorAuthScreen';
-import VerifyScreen from './src/screens/VerifyScreen';
-import verifyEmailScreen from './src/screens/verifyEmailScreen';
-import ChatScreen from './src/screens/ChatScreen';
-import HistorialPorAreaScreen from './src/screens/HistorialPorAreaScreen';
 
-// Importar servicio de autenticación
-import authService from './src/services/authService';
+type RootStackParamList = {
+  Login: undefined;
+  Home: undefined;
+  Config: undefined;
+  ChangePassword: undefined;
+  Verify2FA: { userId: number; userEmail: string; userName: string };
+  VerifyEmailScreen: { email: string };
+  ForgotPasswordScreen: undefined;
+  ResetPasswordScreen: { email: string };
+};
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
-  useEffect(() => {
-    checkAuthStatus();
-    
-    // Exponer función global para forzar verificación de autenticación
-    global.forceAppReload = () => {
-      console.log('🔄 [APP] Forzando verificación de autenticación...');
-      checkAuthStatus();
-    };
-    
-    // Listener para detectar cuando la app se vuelve activa
-    const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === 'active') {
-        console.log('🔄 [APP] App se volvió activa, verificando autenticación...');
-        checkAuthStatus();
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 [APP] Iniciando proceso de logout...');
+      
+      // Llamar al endpoint de logout del backend
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        try {
+          const response = await fetch('http://localhost:8080/api/auth/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            console.log('✅ [APP] Logout exitoso en el backend');
+          } else {
+            console.log('⚠️ [APP] Error en logout del backend, pero continuando...');
+          }
+        } catch (error) {
+          console.log('⚠️ [APP] Error en logout del backend, pero continuando...');
+        }
       }
-    };
-    
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-    
-    return () => {
-      subscription?.remove();
-      // Limpiar función global al desmontar
-      delete global.forceAppReload;
-    };
-  }, []);
-
-  // Función para actualizar el estado de autenticación desde otros componentes
-  const updateAuthStatus = async () => {
-    await checkAuthStatus();
+      
+      // Limpiar almacenamiento local
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userInfo');
+      
+      // Actualizar estado de autenticación
+      setIsAuthenticated(false);
+      
+      // Navegar a la pantalla de login
+      if (navigationRef.current?.isReady()) {
+        navigationRef.current.navigate('Login');
+      }
+      
+      console.log('✅ [APP] Logout completado exitosamente');
+    } catch (error) {
+      console.error('❌ [APP] Error en logout:', error);
+      // Limpiar almacenamiento incluso si hay error
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userInfo');
+      setIsAuthenticated(false);
+      if (navigationRef.current?.isReady()) {
+        navigationRef.current.navigate('Login');
+      }
+    }
   };
 
   const checkAuthStatus = async () => {
     try {
-      console.log('🔍 [APP] Verificando estado de autenticación...');
-      const { isAuthenticated: authStatus, userInfo: user } = await authService.checkAuthStatus();
-      
-      console.log('🔍 [APP] Estado de autenticación:', authStatus);
-      console.log('🔍 [APP] Información del usuario:', user);
-      
-      setIsAuthenticated(authStatus);
-      setUserInfo(user);
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        // Verificar si el token sigue válido
+        const response = await fetch('http://localhost:8080/api/auth/verify', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          // Token válido, ir directo a Home
+          setIsAuthenticated(true);
+          if (navigationRef.current?.isReady()) {
+            navigationRef.current.navigate('Home');
+          }
+        } else {
+          // Token expirado, ir a Login
+          await AsyncStorage.removeItem('authToken');
+          setIsAuthenticated(false);
+          if (navigationRef.current?.isReady()) {
+            navigationRef.current.navigate('Login');
+          }
+        }
+      } else {
+        // Sin token, ir a Login
+        setIsAuthenticated(false);
+        if (navigationRef.current?.isReady()) {
+          navigationRef.current.navigate('Login');
+        }
+      }
     } catch (error) {
-      console.error('❌ [APP] Error verificando autenticación:', error);
+      console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
-      setUserInfo(null);
+      if (navigationRef.current?.isReady()) {
+        navigationRef.current.navigate('Login');
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authService.logout();
-      setIsAuthenticated(false);
-      setUserInfo(null);
-    } catch (error) {
-      console.error('Error cerrando sesión:', error);
-    }
-  };
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#30692E' }}>
-        <ActivityIndicator size="large" color="white" />
-        <Text style={{ color: 'white', marginTop: 10, fontSize: 16 }}>Cargando...</Text>
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="light" />
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: '#30692E' }
-        }}
-      >
-        {!isAuthenticated ? (
-          // Pantallas de autenticación
-          <>
-            <Stack.Screen name="Login">
-              {(props) => <LoginScreen {...props} onAuthSuccess={updateAuthStatus} />}
-            </Stack.Screen>
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-            <Stack.Screen name="Verify" component={VerifyScreen} />
-            <Stack.Screen name="verifyEmail" component={verifyEmailScreen} />
-          </>
-        ) : (
-          // Pantallas autenticadas
-          <>
-            <Stack.Screen name="Home">
-              {(props) => <TecnicoDashboard {...props} onLogout={handleLogout} />}
-            </Stack.Screen>
-            <Stack.Screen name="Config" component={ConfigScreen} />
-            <Stack.Screen name="TecnicoDashboard" component={TecnicoDashboard} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-            <Stack.Screen name="TwoFactorAuth" component={TwoFactorAuthScreen} />
-            <Stack.Screen name="Chat" component={ChatScreen} />
-            <Stack.Screen name="HistorialPorArea" component={HistorialPorAreaScreen} />
-          </>
-        )}
+    <NavigationContainer ref={navigationRef} onReady={checkAuthStatus}>
+      <StatusBar style="auto" />
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen 
+          name="Login" 
+          component={LoginScreen} 
+          options={{ title: 'Iniciar Sesión' }}
+        />
+        <Stack.Screen 
+          name="Home" 
+          options={{ title: 'Home' }}
+        >
+          {() => <IndexScreen onLogout={handleLogout} />}
+        </Stack.Screen>
+        <Stack.Screen 
+          name="Config" 
+          component={ConfigScreen}
+          options={{ title: 'Configuración' }}
+        />
+        <Stack.Screen 
+          name="Verify2FA" 
+          component={VerifyScreen}
+          options={{ title: 'Verificación 2FA' }}
+        />
+        <Stack.Screen 
+          name="VerifyEmailScreen" 
+          component={VerifyEmailScreen}
+          options={{ title: 'Verificar Email' }}
+        />
+        <Stack.Screen 
+          name="ForgotPasswordScreen" 
+          component={ForgotPasswordScreen}
+          options={{ title: 'Olvide mi contraseña' }}
+        />
+        <Stack.Screen 
+          name="ResetPasswordScreen"
+          component={ResetPasswordScreen}
+          options={{ title: 'Nueva contraseña' }}
+        />
+        <Stack.Screen 
+          name="ChangePassword"
+          component={ChangePasswordScreen}
+          options={{ title: 'Cambiar Contraseña' }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

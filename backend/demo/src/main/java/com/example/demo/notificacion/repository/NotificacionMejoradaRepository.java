@@ -39,4 +39,18 @@ public interface NotificacionMejoradaRepository extends JpaRepository<Notificaci
     @Query("SELECT n FROM NotificacionMejorada n WHERE n.fechaCreacion >= :fechaInicio AND n.fechaCreacion <= :fechaFin")
     List<NotificacionMejorada> findByFechaCreacionBetween(@Param("fechaInicio") java.time.LocalDateTime fechaInicio, 
                                                           @Param("fechaFin") java.time.LocalDateTime fechaFin);
+    
+    // ===== MÉTODOS ADICIONALES DE ALCALDIA =====
+    
+    // Buscar notificaciones por destinatario (método de alcaldia)
+    @Query("SELECT n FROM NotificacionMejorada n WHERE n.destinatarios LIKE %:destinatario% ORDER BY n.fechaCreacion DESC")
+    List<NotificacionMejorada> findByDestinatario(@Param("destinatario") String destinatario);
+    
+    // Buscar notificaciones no leídas por destinatario (método de alcaldia)
+    @Query("SELECT n FROM NotificacionMejorada n WHERE n.destinatarios LIKE %:destinatario% AND n.leida = false ORDER BY n.fechaCreacion DESC")
+    List<NotificacionMejorada> findNoLeidasByDestinatario(@Param("destinatario") String destinatario);
+    
+    // Contar notificaciones no leídas por destinatario (método de alcaldia)
+    @Query("SELECT COUNT(n) FROM NotificacionMejorada n WHERE n.destinatarios LIKE %:destinatario% AND n.leida = false")
+    long countNoLeidasByDestinatario(@Param("destinatario") String destinatario);
 }

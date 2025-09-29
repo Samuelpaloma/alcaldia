@@ -380,4 +380,41 @@ public class EmailService {
             case PASSWORD_RESET -> "Recuperación de Contraseña";
         };
     }
+    
+    // ========== MÉTODOS PARA 2FA ==========
+    
+    /**
+     * Envía código 2FA por email
+     */
+    public void send2FACode(Usuario usuario, String code) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(usuario.getEmail());
+            message.setSubject("Código de verificación 2FA - " + appName);
+            
+            String content = String.format(
+                "Hola %s,\n\n" +
+                "Se ha solicitado un código de verificación para acceder a tu cuenta en %s.\n\n" +
+                "Tu código de verificación 2FA es: %s\n\n" +
+                "Este código es válido por 5 minutos por motivos de seguridad.\n\n" +
+                "Si no fuiste tú quien intentó iniciar sesión, ignora este mensaje.\n\n" +
+                "IMPORTANTE: Nunca compartas este código con nadie.\n\n" +
+                "Saludos,\n" +
+                "Equipo de %s",
+                usuario.getNombreCompleto(),
+                appName,
+                code,
+                appName
+            );
+            
+            message.setText(content);
+            mailSender.send(message);
+            
+            log.info("Código 2FA enviado a: {}", usuario.getEmail());
+        } catch (Exception e) {
+            log.error("Error enviando código 2FA a: {}", usuario.getEmail(), e);
+            throw e;
+        }
+    }
 }

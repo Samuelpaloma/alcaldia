@@ -1,11 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-interface FileData {
-  uri: string;
-  name: string;
-  type: string;
-  size: number;
-}
 import { 
   View,
   Text,
@@ -19,18 +12,34 @@ import {
   TextInput,
   Image
 } from 'react-native';
-import * as DocumentPicker from 'expo-document-picker';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from './navigationTypes'; // ajusta la ruta según dónde esté App.tsx
+import type { RootStackParamList } from './navigationTypes';
 import { checkAuthStatus } from './utils/authHelpers';
+import NotificacionService from '../services/NotificacionService';
+import SecurityService from '../services/SecurityService';
+import NotificacionesModal from './components/NotificacionesModal';
+import PreferenciasNotificacionesModal from './components/PreferenciasNotificacionesModal';
 import { useFocusEffect } from '@react-navigation/native';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface TecnicoDashboardProps {
   onLogout?: () => Promise<void>;
+}
+
+interface Ticket {
+  id: number;
+  estado: string;
+  prioridad?: string;
+  categoria?: string;
+  consulta?: string;
+  descripcion?: string;
+  ubicacion?: string;
+  creador?: {
+    nombre: string;
+  };
 }
 
 export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
@@ -44,65 +53,67 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     enProceso: 0,
     finalizados: 0,
     evidencias: 0,
-    notificaciones: 0
+    notificaciones: 0,
+    totalEvidencias: 0,
+    totalNotificaciones: 0
   });
-  
-  // Estado para tickets detallados
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [filteredTickets, setFilteredTickets] = useState<any[]>([]);
-  
-  // Estado para evidencias
-  const [evidencias, setEvidencias] = useState<any[]>([]);
-  
-  // Estados para búsqueda
-  const [searchText, setSearchText] = useState('');
-  
-  // Estados para dropdowns de tickets individuales
-  const [ticketDropdowns, setTicketDropdowns] = useState<{[key: number]: boolean}>({});
 
   // Estados para modales
   const [misTicketsVisible, setMisTicketsVisible] = useState(false);
   const [notificacionesVisible, setNotificacionesVisible] = useState(false);
+  const [preferenciasModalVisible, setPreferenciasModalVisible] = useState(false);
   const [evidenciasVisible, setEvidenciasVisible] = useState(false);
-  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
-  
-  // Estados para evidencias
-  const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [tempFile, setTempFile] = useState<any>(null);
-  const [evidenceDescription, setEvidenceDescription] = useState('');
-  const [currentTicketId, setCurrentTicketId] = useState<number | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
-  const textInputRef = useRef<TextInput>(null);
-  const [modalKey, setModalKey] = useState(0);
-  const [localDescription, setLocalDescription] = useState('');
-  const [tempDescription, setTempDescription] = useState('');
-  
-  // Estado para el sidebar
+  const [finalizarModalVisible, setFinalizarModalVisible] = useState(false);
+  const [verEvidenciasModalVisible, setVerEvidenciasModalVisible] = useState(false);
+
+  // Estados para el sidebar
   const [sidebarVisible, setSidebarVisible] = useState(false);
+
+  // Estados para seguridad
+  const [seguridadVisible, setSeguridadVisible] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(true); // Por defecto activado
+  const [verificationCode, setVerificationCode] = useState('');
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [loading2FA, setLoading2FA] = useState(false);
 
   // Estados para notificaciones
   const [preferenciasPush, setPreferenciasPush] = useState(true);
   const [preferenciasEmail, setPreferenciasEmail] = useState(true);
-  const [notificaciones, setNotificaciones] = useState<any[]>([]);
+  const [contadorNotificaciones, setContadorNotificaciones] = useState(0);
+
+  // Estados para tickets
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [evidencias, setEvidencias] = useState<any[]>([]);
+  const [evidenciasLoading, setEvidenciasLoading] = useState(false);
   
-  // Estados para autenticación de dos pasos
-  const [seguridadVisible, setSeguridadVisible] = useState(false);
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [verificationCode, setVerificationCode] = useState('');
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  // Estados para evidencias globales
+  const [todasLasEvidencias, setTodasLasEvidencias] = useState<any[]>([]);
+  const [evidenciasGlobalesLoading, setEvidenciasGlobalesLoading] = useState(false);
+
+  // Estados para búsqueda
+  const [searchText, setSearchText] = useState('');
+  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
 
   useEffect(() => {
     loadUserData();
     loadStats();
+    loadContadorNotificaciones();
     loadTickets();
-    loadEvidencias();
-    loadNotificaciones();
   }, []);
 
   // Efecto para filtrar tickets cuando cambia la búsqueda
   useEffect(() => {
     filterTickets();
   }, [searchText, tickets]);
+
+  // Cargar contador de notificaciones cuando el componente se enfoca
+  useFocusEffect(
+    React.useCallback(() => {
+      loadContadorNotificaciones();
+    }, [])
+  );
 
   const loadUserData = async () => {
     try {
@@ -112,6 +123,58 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       }
     } catch (error) {
       console.error('Error cargando datos del usuario:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      console.log('🚪 [LOGOUT] Iniciando proceso de logout...');
+      
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        const response = await fetch('http://localhost:8080/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          console.log('✅ [LOGOUT] Logout exitoso en el backend');
+        } else {
+          console.log('⚠️ [LOGOUT] Error en logout del backend, pero continuando...');
+        }
+      }
+
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userInfo');
+      console.log('✅ [LOGOUT] Almacenamiento local limpiado');
+
+      Alert.alert(
+        'Sesión cerrada',
+        'Has cerrado sesión exitosamente',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              console.log('🔄 [LOGOUT] Redirigiendo a login...');
+            }
+          }
+        ]
+      );
+
+    } catch (error) {
+      console.error('❌ [LOGOUT] Error en logout:', error);
+      
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userInfo');
+      
+      Alert.alert(
+        'Sesión cerrada',
+        'Has cerrado sesión (con errores menores)',
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -134,14 +197,16 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           console.log('📊 Data success:', data?.success);
           console.log('📊 Data stats:', data?.stats);
           
-          if (data?.success && data?.stats) {
+          if (data?.success && data?.data) {
             setStats({
-              total: data.stats.ticketsAsignados || 0,
-              pendientes: data.stats.ticketsPendientes || 0,
-              enProceso: data.stats.ticketsEnProceso || 0,
-              finalizados: data.stats.ticketsCompletados || 0,
-              evidencias: data.stats.evidencias || 0,
-              notificaciones: data.stats.notificaciones || 0
+              total: data.data.totalTickets || 0,
+              pendientes: data.data.ticketsPendientes || 0,
+              enProceso: data.data.ticketsEnEjecucion || 0,
+              finalizados: data.data.ticketsTerminados || 0,
+              evidencias: data.data.totalEvidencias || 0,
+              notificaciones: data.data.totalNotificaciones || 0,
+              totalEvidencias: data.data.totalEvidencias || 0,
+              totalNotificaciones: data.data.totalNotificaciones || 0
             });
           } else {
             console.error('Error en respuesta del servidor:', data?.message || 'Respuesta inválida del servidor');
@@ -152,7 +217,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
               enProceso: 0,
               finalizados: 0,
               evidencias: 0,
-              notificaciones: 0
+              notificaciones: 0,
+              totalEvidencias: 0,
+              totalNotificaciones: 0
             });
           }
         } catch (parseError) {
@@ -164,7 +231,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             enProceso: 0,
             finalizados: 0,
             evidencias: 0,
-            notificaciones: 0
+            notificaciones: 0,
+            totalEvidencias: 0,
+            totalNotificaciones: 0
           });
         }
       } else if (response.status === 401) {
@@ -186,7 +255,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           enProceso: 0,
           finalizados: 0,
           evidencias: 0,
-          notificaciones: 0
+          notificaciones: 0,
+          totalEvidencias: 0,
+          totalNotificaciones: 0
         });
       }
     } catch (error) {
@@ -198,16 +269,40 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         enProceso: 0,
         finalizados: 0,
         evidencias: 0,
-        notificaciones: 0
+        notificaciones: 0,
+        totalEvidencias: 0,
+        totalNotificaciones: 0
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const loadContadorNotificaciones = async () => {
+    console.log('🔔 [FRONTEND] ===== INICIANDO loadContadorNotificaciones =====');
+    console.log('🔔 [FRONTEND] Timestamp:', new Date().toISOString());
+    try {
+      console.log('🔔 [FRONTEND] Llamando a NotificacionService.getContadorNotificaciones()');
+      const count = await NotificacionService.getContadorNotificaciones();
+      console.log('🔔 [FRONTEND] Contador recibido:', count);
+      setContadorNotificaciones(count);
+      console.log('✅ [FRONTEND] Contador de notificaciones actualizado exitosamente');
+    } catch (error) {
+      console.error('❌ [FRONTEND] Error cargando contador de notificaciones:', error);
+      console.error('❌ [FRONTEND] Error details:', error);
+    }
+    console.log('🔔 [FRONTEND] ===== FIN loadContadorNotificaciones =====');
+  };
+
   const loadTickets = async () => {
+    console.log('🎫 [FRONTEND] ===== INICIANDO loadTickets =====');
+    console.log('🎫 [FRONTEND] Timestamp:', new Date().toISOString());
+    setTicketsLoading(true);
     try {
       const token = await AsyncStorage.getItem('authToken');
+      console.log('🎫 [FRONTEND] Token obtenido:', token ? `${token.substring(0, 20)}...` : 'null');
+      console.log('🎫 [FRONTEND] Llamando a: http://localhost:8080/api/tecnico/tickets');
+      
       const response = await fetch('http://localhost:8080/api/tecnico/tickets', {
         method: 'GET',
         headers: {
@@ -215,112 +310,35 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           'Content-Type': 'application/json',
         }
       });
+      
+      console.log('🎫 [FRONTEND] Respuesta recibida:', response.status, response.statusText);
 
       if (response.ok) {
         const data = await response.json();
         console.log('🎫 Tickets recibidos:', data);
-        if (data.success && data.tickets) {
-          setTickets(data.tickets);
-          console.log('✅ Tickets cargados correctamente:', data.tickets.length);
+        if (data.success && data.data) {
+          setTickets(data.data);
         } else {
-          console.log('⚠️ No hay tickets disponibles');
-          setTickets([]);
+          console.error('Error en respuesta del servidor:', data.message);
         }
+      } else if (response.status === 401) {
+        console.log('Token inválido o expirado, redirigiendo a Login');
+        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('userInfo');
       } else {
-        console.error('Error cargando tickets:', response.status);
-        // En caso de error, mantener tickets vacíos
-        setTickets([]);
+        console.error('Error del servidor:', response.status);
+        try {
+          const errorData = await response.json();
+          console.error('Detalles del error:', errorData);
+        } catch (parseError) {
+          console.error('No se pudo parsear el error del servidor');
+        }
       }
     } catch (error) {
       console.error('Error cargando tickets:', error);
-      // En caso de error, mantener tickets vacíos
-      setTickets([]);
+    } finally {
+      setTicketsLoading(false);
     }
-  };
-
-  const loadEvidencias = async () => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch('http://localhost:8080/api/tecnico/evidencias', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📎 Evidencias recibidas:', data);
-        if (data.success && data.evidencias) {
-          setEvidencias(data.evidencias);
-          console.log('✅ Evidencias cargadas correctamente:', data.evidencias.length);
-        } else {
-          console.log('⚠️ No hay evidencias disponibles');
-          setEvidencias([]);
-        }
-      } else {
-        // Manejar errores 404 de forma silenciosa (endpoints no implementados)
-        if (response.status === 404) {
-          console.log('📎 Endpoint de evidencias no implementado aún');
-        } else {
-          console.error('Error cargando evidencias:', response.status);
-        }
-        // En caso de error, mantener evidencias vacías
-        setEvidencias([]);
-      }
-    } catch (error) {
-      console.error('Error cargando evidencias:', error);
-      // En caso de error, mantener evidencias vacías
-      setEvidencias([]);
-    }
-  };
-
-  const loadNotificaciones = async () => {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch('http://localhost:8080/api/tecnico/notificaciones', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔔 Notificaciones recibidas:', data);
-        if (data.success && data.notificaciones) {
-          setNotificaciones(data.notificaciones);
-          console.log('✅ Notificaciones cargadas correctamente:', data.notificaciones.length);
-        } else {
-          console.log('⚠️ No hay notificaciones disponibles');
-          setNotificaciones([]);
-        }
-      } else {
-        // Manejar errores 404 de forma silenciosa (endpoints no implementados)
-        if (response.status === 404) {
-          console.log('🔔 Endpoint de notificaciones no implementado aún');
-        } else {
-          console.error('Error cargando notificaciones:', response.status);
-        }
-        // En caso de error, mantener notificaciones vacías
-        setNotificaciones([]);
-      }
-    } catch (error) {
-      console.error('Error cargando notificaciones:', error);
-      // En caso de error, mantener notificaciones vacías
-      setNotificaciones([]);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadStats();
-    await loadTickets();
-    await loadEvidencias();
-    await loadNotificaciones();
-    setRefreshing(false);
   };
 
   // Función para filtrar tickets
@@ -330,163 +348,260 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     // Filtrar por texto de búsqueda
     if (searchText.trim()) {
       filtered = filtered.filter(ticket => 
-        ticket.titulo.toLowerCase().includes(searchText.toLowerCase()) ||
-        ticket.descripcion.toLowerCase().includes(searchText.toLowerCase()) ||
-        ticket.id.toLowerCase().includes(searchText.toLowerCase())
+        (ticket.consulta || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        (ticket.descripcion || '').toLowerCase().includes(searchText.toLowerCase()) ||
+        ticket.id.toString().includes(searchText.toLowerCase())
       );
     }
 
     setFilteredTickets(filtered);
   };
 
-  // Función para cambiar estado de ticket
-  const changeTicketStatus = async (ticketId: number, newStatus: string) => {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadStats();
+    await loadTickets();
+    await loadContadorNotificaciones();
+    setRefreshing(false);
+  };
+
+  // Función para aceptar un ticket (PENDIENTE -> EN_PROCESO)
+  const aceptarTicket = async (ticketId: number) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/estado?estado=${newStatus}`, {
+      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/aceptar`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-        },
+        }
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Estado actualizado:', data);
-        
-        // Recargar todos los datos
-        await loadTickets();
-        await loadStats();
-        await loadNotificaciones();
-        
-        Alert.alert('Éxito', `Ticket ${ticketId} actualizado a ${newStatus}`);
+        if (data.success) {
+          Alert.alert('Éxito', 'Ticket aceptado exitosamente');
+          // Recargar tickets para actualizar la vista
+          await loadTickets();
+        } else {
+          Alert.alert('Error', data.message || 'Error al aceptar el ticket');
+        }
       } else {
-        console.error('Error actualizando ticket:', response.status);
-        Alert.alert('Error', 'No se pudo actualizar el ticket');
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Error del servidor');
       }
     } catch (error) {
-      console.error('Error actualizando ticket:', error);
-      Alert.alert('Error', 'No se pudo actualizar el ticket');
+      console.error('Error aceptando ticket:', error);
+      Alert.alert('Error', 'Error de conexión');
     }
   };
 
-  // Función para seleccionar archivo
-  const selectFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['image/*', 'video/*'],
-        copyToCacheDirectory: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const file = result.assets[0];
-        setSelectedFile({
-          uri: file.uri,
-          name: file.name,
-          type: file.mimeType,
-          size: file.size,
-        } as any);
-        console.log('📎 Archivo seleccionado:', file.name);
-      }
-    } catch (error) {
-      console.error('Error seleccionando archivo:', error);
-      Alert.alert('Error', 'No se pudo seleccionar el archivo');
-    }
+  // Función para abrir modal de finalización
+  const abrirModalFinalizar = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setFinalizarModalVisible(true);
   };
 
-  // Función para limpiar estados del modal
-  const clearEvidenceModal = () => {
-    setSelectedFile(null);
-    setEvidenceDescription('');
-    setLocalDescription('');
-    setCurrentTicketId(null);
-    setIsTyping(false);
-    setModalKey(prev => prev + 1); // Forzar re-render del modal
-    if (textInputRef.current) {
-      textInputRef.current.blur();
-    }
-  };
-
-  // Efecto para manejar el estado del modal
-  useEffect(() => {
-    if (showEvidenceModal) {
-      console.log('🔍 Modal de evidencia abierto');
-      // Resetear estados cuando se abre el modal
-      setEvidenceDescription('');
-      setLocalDescription('');
-      setSelectedFile(null);
-    }
-  }, [showEvidenceModal]);
-
-  // Función para guardar evidencia
-  const saveEvidence = async () => {
-    if (!selectedFile) {
-      Alert.alert('Error', 'Por favor selecciona un archivo');
-      return;
-    }
-
+  // Función para finalizar un ticket (EN_PROCESO -> FINALIZADA)
+  const finalizarTicket = async (ticketId: number, archivoAdjunto: any, descripcion: string) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
+      
       const formData = new FormData();
       
-        formData.append('ticketId', currentTicketId?.toString() || '');
-        formData.append('descripcion', localDescription);
-      formData.append('archivo', {
-        uri: selectedFile?.uri,
-        type: selectedFile?.type,
-        name: selectedFile?.name,
-      } as any);
+      // Agregar archivo adjunto si existe
+      if (archivoAdjunto) {
+        // Para web, usar el archivo directamente
+        if (archivoAdjunto.file) {
+          formData.append('archivoAdjunto', archivoAdjunto.file);
+        } else {
+          // Fallback para otros formatos
+          formData.append('archivoAdjunto', {
+            uri: archivoAdjunto.uri,
+            type: archivoAdjunto.type,
+            name: archivoAdjunto.name,
+          } as any);
+        }
+      }
+      
+      formData.append('descripcion', descripcion);
 
-      const response = await fetch('http://localhost:8080/api/tecnico/evidencias', {
+      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/finalizar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
         },
         body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Evidencia guardada:', data);
-        
-        // Cerrar modal y limpiar estados
-        setShowEvidenceModal(false);
-        clearEvidenceModal();
-        
-        // Recargar datos
-        await loadTickets();
-        await loadEvidencias();
-        await loadStats();
-        await loadNotificaciones();
-        
-        Alert.alert('Éxito', 'Evidencia guardada correctamente. El ticket cambió a EN_PROCESO');
+        if (data.success) {
+          Alert.alert('Éxito', 'Ticket finalizado exitosamente');
+          setFinalizarModalVisible(false);
+          setSelectedTicket(null);
+          // Recargar tickets para actualizar la vista
+          await loadTickets();
+        } else {
+          Alert.alert('Error', data.message || 'Error al finalizar el ticket');
+        }
       } else {
-        console.error('Error guardando evidencia:', response.status);
-        Alert.alert('Error', 'No se pudo guardar la evidencia');
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Error del servidor');
       }
     } catch (error) {
-      console.error('Error guardando evidencia:', error);
-      Alert.alert('Error', 'No se pudo guardar la evidencia');
+      console.error('Error finalizando ticket:', error);
+      Alert.alert('Error', 'Error de conexión');
     }
   };
 
-  // Función para toggle dropdown de ticket
-  const toggleTicketDropdown = (ticketId: number) => {
-    setTicketDropdowns(prev => ({
-      ...prev,
-      [ticketId]: !prev[ticketId]
-    }));
+  // Función para obtener evidencias de un ticket
+  const obtenerEvidencias = async (ticketId: number) => {
+    try {
+      setEvidenciasLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      
+      console.log('📱 [EVIDENCIA] Obteniendo evidencias del ticket:', ticketId);
+      
+      const response = await fetch(`http://localhost:8080/api/evidencias/movil/ticket/${ticketId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      console.log('📱 [EVIDENCIA] Respuesta recibida:', data);
+
+      if (response.ok && data.success) {
+        console.log('📱 [EVIDENCIA] Evidencias obtenidas:', data.data);
+        setEvidencias(data.data || []);
+        setVerEvidenciasModalVisible(true);
+      } else {
+        console.error('📱 [EVIDENCIA] Error en respuesta:', data.message);
+        Alert.alert('Error', data.message || 'Error al obtener evidencias');
+      }
+    } catch (error) {
+      console.error('📱 [EVIDENCIA] Error obteniendo evidencias:', error);
+      Alert.alert('Error', 'Error de conexión al obtener evidencias');
+    } finally {
+      setEvidenciasLoading(false);
+    }
   };
 
-  // Función para cambiar estado desde dropdown
-  const changeStatusFromDropdown = async (ticketId: number, newStatus: string) => {
-    await changeTicketStatus(ticketId, newStatus);
-    setTicketDropdowns(prev => ({
-      ...prev,
-      [ticketId]: false
-    }));
+  // Función para descargar evidencia
+  const descargarEvidencia = async (ticketId: number, nombreArchivo: string) => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      
+      console.log('📱 [EVIDENCIA] Descargando evidencia:', nombreArchivo, 'del ticket:', ticketId);
+      
+      const response = await fetch(`http://localhost:8080/api/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        // Obtener el archivo como blob
+        const blob = await response.blob();
+        
+        // Crear URL temporal para el archivo
+        const url = window.URL.createObjectURL(blob);
+        
+        // Crear elemento de descarga
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = nombreArchivo; // Nombre del archivo
+        link.style.display = 'none';
+        
+        // Agregar al DOM, hacer click y remover
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Limpiar la URL temporal
+        window.URL.revokeObjectURL(url);
+        
+        console.log('✅ [EVIDENCIA] Descarga exitosa');
+        Alert.alert('Éxito', `Archivo ${nombreArchivo} descargado exitosamente`);
+      } else {
+        console.error('❌ [EVIDENCIA] Error en descarga:', response.status);
+        const errorData = await response.json();
+        Alert.alert('Error', errorData.message || 'Error al descargar el archivo');
+      }
+    } catch (error) {
+      console.error('❌ [EVIDENCIA] Error descargando archivo:', error);
+      Alert.alert('Error', 'Error de conexión al descargar');
+    }
+  };
+
+  // Función para cargar todas las evidencias del técnico
+  const cargarTodasLasEvidencias = async () => {
+    try {
+      setEvidenciasGlobalesLoading(true);
+      const token = await AsyncStorage.getItem('authToken');
+      
+      console.log('📱 [EVIDENCIA] Cargando todas las evidencias del técnico...');
+      
+      // Obtener todos los tickets del técnico
+      const ticketsResponse = await fetch('http://localhost:8080/api/tecnico/tickets', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (ticketsResponse.ok) {
+        const ticketsData = await ticketsResponse.json();
+        const tickets = ticketsData.data || [];
+        
+        console.log('📱 [EVIDENCIA] Tickets encontrados:', tickets.length);
+        
+        // Obtener evidencias de cada ticket
+        const todasEvidencias: any[] = [];
+        
+        for (const ticket of tickets) {
+          try {
+            const evidenciasResponse = await fetch(`http://localhost:8080/api/evidencias/movil/ticket/${ticket.id}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (evidenciasResponse.ok) {
+              const evidenciasData = await evidenciasResponse.json();
+              if (evidenciasData.success && evidenciasData.data) {
+                // Agregar información del ticket a cada evidencia
+                const evidenciasConTicket = evidenciasData.data.map((evidencia: any) => ({
+                  ...evidencia,
+                  ticketNumero: ticket.id,
+                  ticketConsulta: ticket.consulta,
+                  ticketEstado: ticket.estado
+                }));
+                todasEvidencias.push(...evidenciasConTicket);
+              }
+            }
+          } catch (error) {
+            console.error(`Error obteniendo evidencias del ticket ${ticket.id}:`, error);
+          }
+        }
+        
+        console.log('📱 [EVIDENCIA] Total evidencias encontradas:', todasEvidencias.length);
+        setTodasLasEvidencias(todasEvidencias);
+      } else {
+        console.error('❌ [EVIDENCIA] Error obteniendo tickets');
+      }
+    } catch (error) {
+      console.error('❌ [EVIDENCIA] Error cargando evidencias:', error);
+    } finally {
+      setEvidenciasGlobalesLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -494,7 +609,6 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       const { isAuthenticated, userInfo } = await checkAuthStatus();
       
       if (!isAuthenticated) {
-        // El App.tsx se encargará de mostrar el Login
         return;
       }
       
@@ -522,7 +636,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           <Text style={styles.modalSubtitle}>Visualiza y actualiza tus tickets asignados</Text>
         </View>
 
-        {/* Barra de búsqueda sin lupa */}
+        {/* Barra de búsqueda */}
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
             <TextInput 
@@ -535,15 +649,18 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           </View>
         </View>
 
-
         {/* Lista de tickets */}
         <ScrollView style={styles.modalContent}>
-          {filteredTickets.length > 0 ? (
+          {ticketsLoading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Cargando tickets...</Text>
+            </View>
+          ) : filteredTickets.length > 0 ? (
             filteredTickets.map((ticket, index) => (
-              <View key={index} style={styles.ticketCardNew}>
+              <View key={ticket.id || index} style={styles.ticketCardNew}>
                 {/* Header del ticket */}
                 <View style={styles.ticketHeaderNew}>
-                  <Text style={styles.ticketTitleNew}>{ticket.id}: {ticket.consulta || ticket.titulo}</Text>
+                  <Text style={styles.ticketTitleNew}>{ticket.id}: {ticket.consulta || ticket.descripcion}</Text>
                 </View>
 
                 {/* Descripción */}
@@ -553,9 +670,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                 <View style={styles.tagsContainer}>
                   <View style={[
                     styles.statusTag, 
-                    ticket.estado === 'PENDIENTE' ? styles.statusPending :
-                    ticket.estado === 'EN_PROCESO' ? styles.statusInProcess :
-                    styles.statusCompleted
+                    ticket.estado === 'PENDIENTE' ? { backgroundColor: '#ffebee' } :
+                    ticket.estado === 'EN_PROCESO' ? { backgroundColor: '#fff3e0' } :
+                    { backgroundColor: '#e8f5e8' }
                   ]}>
                     <Text style={styles.tagText}>{ticket.estado}</Text>
                   </View>
@@ -570,11 +687,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   </View>
 
                   <View style={styles.areaTag}>
-                    <Text style={styles.tagText}>Área: {ticket.area || 'Sistemas'}</Text>
-                  </View>
-
-                  <View style={styles.evidenceTag}>
-                    <Text style={styles.tagText}>Evidencias: {ticket.evidencias || 0}</Text>
+                    <Text style={styles.tagText}>Área: {ticket.categoria || 'Sistemas'}</Text>
                   </View>
                 </View>
 
@@ -583,69 +696,50 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   <Text style={styles.currentStatusLabel}>Estado actual:</Text>
                   <View style={[
                     styles.currentStatusBadge,
-                    ticket.estado === 'PENDIENTE' ? styles.statusPending :
-                    ticket.estado === 'EN_PROCESO' ? styles.statusInProcess :
-                    styles.statusCompleted
+                    ticket.estado === 'PENDIENTE' ? { backgroundColor: '#ffebee' } :
+                    ticket.estado === 'EN_PROCESO' ? { backgroundColor: '#fff3e0' } :
+                    { backgroundColor: '#e8f5e8' }
                   ]}>
                     <Text style={styles.currentStatusText}>{ticket.estado}</Text>
                   </View>
                 </View>
 
-                {/* Botones de acción simplificados */}
+                {/* Botones de acción */}
                 <View style={styles.actionButtonsContainer}>
                   {ticket.estado === 'PENDIENTE' && (
                     <TouchableOpacity 
                       style={styles.actionButtonBlack}
-                      onPress={() => changeTicketStatus(ticket.id, 'EN_PROCESO')}
+                      onPress={() => aceptarTicket(ticket.id)}
                     >
                       <Text style={styles.actionButtonIcon}>▶</Text>
-                      <Text style={styles.actionButtonTextBlack}>En proceso</Text>
+                      <Text style={styles.actionButtonTextBlack}>Aceptar</Text>
                     </TouchableOpacity>
                   )}
                   
                   {ticket.estado === 'EN_PROCESO' && (
                     <TouchableOpacity 
                       style={styles.actionButtonGreen}
-                      onPress={() => changeTicketStatus(ticket.id, 'COMPLETADO')}
+                      onPress={() => abrirModalFinalizar(ticket)}
                     >
                       <Text style={styles.actionButtonIcon}>✓</Text>
                       <Text style={styles.actionButtonTextGreen}>Finalizar</Text>
                     </TouchableOpacity>
                   )}
 
-                  {ticket.estado === 'PENDIENTE' && (
+                  {ticket.estado === 'FINALIZADA' && (
                     <TouchableOpacity 
-                      style={styles.evidenceButtonNew}
-                      onPress={() => {
-                        setCurrentTicketId(ticket.id);
-                        setShowEvidenceModal(true);
-                      }}
+                      style={styles.viewEvidenceButton}
+                      onPress={() => obtenerEvidencias(ticket.id)}
                     >
-                      <Text style={styles.evidenceButtonIcon}>📎</Text>
-                      <Text style={styles.evidenceButtonText}>Agregar evidencia</Text>
+                      <Text style={styles.viewEvidenceButtonText}>Ver Evidencias</Text>
                     </TouchableOpacity>
-                  )}
-                  
-                  {ticket.estado === 'EN_PROCESO' && (
-                    <View style={styles.evidenceDisabledContainer}>
-                      <Text style={styles.evidenceDisabledIcon}>⏳</Text>
-                      <Text style={styles.evidenceDisabledText}>Esperando confirmación</Text>
-                    </View>
-                  )}
-                  
-                  {ticket.estado === 'COMPLETADO' && (
-                    <View style={styles.evidenceDisabledContainer}>
-                      <Text style={styles.evidenceDisabledIcon}>✅</Text>
-                      <Text style={styles.evidenceDisabledText}>Ticket finalizado</Text>
-                    </View>
                   )}
                 </View>
               </View>
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📋</Text>
-              <Text style={styles.emptyTitle}>Sin tickets asignados</Text>
+              <Text style={styles.emptyText}>📋 Sin tickets asignados</Text>
               <Text style={styles.emptyText}>
                 No tienes tickets asignados en este momento. El administrador te asignará tickets cuando estén disponibles.
               </Text>
@@ -656,301 +750,43 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     </Modal>
   );
 
-  // Componente Modal Notificaciones
-  const NotificacionesModal = () => (
-    <Modal visible={notificacionesVisible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Notificaciones</Text>
-          <TouchableOpacity onPress={() => setNotificacionesVisible(false)}>
-            <Text style={styles.closeButton}>×</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.modalSubtitle}>Gestiona cómo quieres recibir y visualizar tus notificaciones.</Text>
-        
-        <ScrollView style={styles.modalContent}>
-          <Text style={styles.sectionTitle}>Preferencias</Text>
-          
-          <View style={styles.preferenceItem}>
-            <Text style={styles.preferenceLabel}>Push</Text>
-            <TouchableOpacity 
-              style={[styles.toggle, preferenciasPush && styles.toggleActive]}
-              onPress={() => setPreferenciasPush(!preferenciasPush)}
-            >
-              <View style={[styles.toggleCircle, preferenciasPush && styles.toggleCircleActive]} />
-            </TouchableOpacity>
-          </View>
+  // Función para abrir preferencias de notificaciones
+  const abrirPreferenciasNotificaciones = () => {
+    setNotificacionesVisible(false);
+    setPreferenciasModalVisible(true);
+  };
 
-          <View style={styles.preferenceItem}>
-            <Text style={styles.preferenceLabel}>Email</Text>
-            <TouchableOpacity 
-              style={[styles.toggle, preferenciasEmail && styles.toggleActive]}
-              onPress={() => setPreferenciasEmail(!preferenciasEmail)}
-            >
-              <View style={[styles.toggleCircle, preferenciasEmail && styles.toggleCircleActive]} />
-            </TouchableOpacity>
-          </View>
+  // Cargar estado de 2FA
+  const load2FAStatus = async () => {
+    try {
+      console.log('🔒 [SECURITY] Cargando estado de 2FA...');
+      const status = await SecurityService.get2FAStatus();
+      setTwoFactorEnabled(status.enabled);
+      console.log('🔒 [SECURITY] Estado de 2FA cargado:', status.enabled);
+    } catch (error) {
+      console.error('🔒 [SECURITY] Error cargando estado de 2FA:', error);
+      // Mantener el estado por defecto si hay error
+    }
+  };
 
-          <TouchableOpacity style={styles.saveButton}>
-            <Text style={styles.saveButtonText}>Guardar notificaciones</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.sectionTitle}>Notificaciones recientes</Text>
-          
-          {notificaciones.length > 0 ? (
-            notificaciones.map((notificacion, index) => (
-              <View key={index} style={styles.notificationItem}>
-                 <View style={styles.notificationIcon}>
-                   <Text style={styles.notificationIconText}>
-                     {notificacion.tipo === 'asignacion' ? '🎫' : 
-                      notificacion.tipo === 'evidencia' ? '📎' :
-                      notificacion.tipo === 'finalizado' ? '✅' :
-                      notificacion.tipo === 'cambio_estado' ? '⚠' : 
-                      notificacion.tipo === 'recordatorio' ? '📧' : '🔔'}
-                   </Text>
-                 </View>
-                <View style={styles.notificationContent}>
-                  <Text style={styles.notificationTitle}>{notificacion.titulo}</Text>
-                  <Text style={styles.notificationTime}>{notificacion.fecha}</Text>
-                </View>
-              </View>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>🔔</Text>
-              <Text style={styles.emptyTitle}>Sin notificaciones</Text>
-              <Text style={styles.emptyText}>
-                No tienes notificaciones en este momento. Recibirás notificaciones cuando te asignen tickets.
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
-  );
-
-  // Componente Modal para Agregar Evidencia - SOLUCIÓN DEFINITIVA
-  const EvidenceModal = React.memo(() => {
-    const [tempDescription, setTempDescription] = useState('');
-    const [tempFile, setTempFile] = useState(null);
-    const tempTextInputRef = useRef(null);
-
-    // Resetear cuando se abre el modal
-    useEffect(() => {
-      if (showEvidenceModal) {
-        setTempDescription('');
-        setTempFile(null);
-      }
-    }, [showEvidenceModal]);
-
-    const handleSelectFile = async () => {
-      try {
-        console.log('🔍 [DEBUG] Iniciando selección de archivo...');
-        const result = await DocumentPicker.getDocumentAsync({
-          type: ['image/*', 'video/*'],
-          copyToCacheDirectory: true,
-        });
-
-        console.log('🔍 [DEBUG] Resultado del picker:', result);
-
-        if (!result.canceled && result.assets && result.assets.length > 0) {
-          const file = result.assets[0];
-          const fileData = {
-            uri: file.uri,
-            name: file.name,
-            type: file.mimeType,
-            size: file.size,
-          };
-          console.log('📎 [DEBUG] Archivo seleccionado:', fileData);
-          console.log('📎 [DEBUG] Tipo de archivo:', fileData.type);
-          console.log('📎 [DEBUG] Es imagen?', fileData.type?.startsWith('image/'));
-          console.log('📎 [DEBUG] Es video?', fileData.type?.startsWith('video/'));
-          
-          setTempFile(fileData as any);
-          setSelectedFile(fileData as any);
-          console.log('📎 [DEBUG] Estados actualizados');
-        } else {
-          console.log('📎 [DEBUG] Selección cancelada o sin archivos');
-        }
-      } catch (error: any) {
-        console.error('Error seleccionando archivo:', error);
-        Alert.alert('Error', 'No se pudo seleccionar el archivo: ' + error.message);
-      }
-    };
-
-    const handleSave = async () => {
-      console.log('🔍 [DEBUG] Intentando guardar evidencia...');
-      console.log('🔍 [DEBUG] tempFile:', tempFile);
-      console.log('🔍 [DEBUG] tempDescription:', tempDescription);
-      console.log('🔍 [DEBUG] currentTicketId:', currentTicketId);
+  // Actualizar estado de 2FA
+  const update2FAStatus = async (enabled: boolean) => {
+    try {
+      setLoading2FA(true);
+      console.log('🔒 [SECURITY] Actualizando 2FA a:', enabled);
       
-      if (!tempFile) {
-        Alert.alert('Error', 'Por favor selecciona un archivo');
-        return;
-      }
-
-      try {
-        const token = await AsyncStorage.getItem('authToken');
-        console.log('🔍 [DEBUG] Token obtenido:', token ? 'Sí' : 'No');
-        
-        const formData = new FormData();
-        formData.append('ticketId', currentTicketId?.toString() || '');
-        formData.append('descripcion', tempDescription);
-        formData.append('archivo', {
-          uri: (tempFile as any)?.uri || '',
-          type: (tempFile as any)?.type || 'application/octet-stream',
-          name: (tempFile as any)?.name || 'archivo',
-        } as any);
-
-        console.log('🔍 [DEBUG] FormData creado:', {
-          ticketId: currentTicketId,
-          descripcion: tempDescription,
-          archivo: (tempFile as any)?.name || 'archivo'
-        });
-
-        const response = await fetch('http://localhost:8080/api/tecnico/evidencias', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          body: formData,
-        });
-
-        console.log('🔍 [DEBUG] Respuesta del servidor:', response.status);
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Evidencia guardada:', data);
-          
-          // Cerrar modal y limpiar estados
-          setShowEvidenceModal(false);
-          setSelectedFile(null);
-          setEvidenceDescription('');
-          setCurrentTicketId(null);
-          
-          // Recargar datos para mostrar la evidencia
-          await loadTickets();
-          await loadEvidencias();
-          await loadStats();
-          await loadNotificaciones();
-          
-          Alert.alert('Éxito', 'Evidencia guardada correctamente. El ticket cambió a EN_PROCESO');
-        } else {
-          const errorData = await response.text();
-          console.error('Error guardando evidencia:', response.status, errorData);
-          Alert.alert('Error', 'No se pudo guardar la evidencia. Código: ' + response.status);
-        }
-      } catch (error) {
-        console.error('Error guardando evidencia:', error);
-        Alert.alert('Error', 'No se pudo guardar la evidencia');
-      }
-    };
-
-    const handleCancel = () => {
-      setShowEvidenceModal(false);
-      setSelectedFile(null);
-      setEvidenceDescription('');
-      setCurrentTicketId(null);
-    };
-
-    return (
-      <Modal visible={showEvidenceModal} animationType="slide" transparent={true}>
-        <View style={styles.evidenceModalOverlay}>
-          <View style={styles.evidenceModalContainer}>
-            <View style={styles.evidenceModalHeader}>
-              <Text style={styles.evidenceModalTitle}>Agregar Evidencia</Text>
-              <TouchableOpacity onPress={handleCancel}>
-                <Text style={styles.evidenceModalClose}>×</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.evidenceModalContent}>
-              <Text style={styles.evidenceModalLabel}>Seleccionar archivo</Text>
-              <TouchableOpacity 
-                style={[styles.evidenceFileButton, tempFile && styles.evidenceFileButtonSelected]}
-                onPress={handleSelectFile}
-              >
-                <Text style={styles.evidenceFileButtonText}>
-                  {tempFile ? `✅ ${(tempFile as any)?.name || 'archivo'}` : '📎 Seleccionar archivo'}
-                </Text>
-              </TouchableOpacity>
-              
-              {/* Vista previa del archivo seleccionado */}
-              {tempFile && (
-                <View style={styles.filePreviewContainer}>
-                  <Text style={styles.filePreviewLabel}>Vista previa:</Text>
-                  <Text style={styles.filePreviewText}>📎 {(tempFile as any)?.name || 'archivo'}</Text>
-                  <Text style={styles.filePreviewText}>Tamaño: {(((tempFile as any)?.size || 0) / 1024 / 1024).toFixed(2)} MB</Text>
-                  <Text style={styles.filePreviewText}>Tipo: {(tempFile as any)?.type || 'desconocido'}</Text>
-                  
-                  {/* Vista previa de imagen */}
-                  {(tempFile as any)?.type && ((tempFile as any).type || '').startsWith('image/') && (
-                    <View style={styles.imagePreviewContainer}>
-                      <Text style={styles.filePreviewText}>📷 Imagen seleccionada:</Text>
-                      <Image 
-                        source={{ uri: (tempFile as any)?.uri || '' }} 
-                        style={styles.filePreviewImage}
-                        resizeMode="cover"
-                        onError={(error) => console.log('Error cargando imagen:', error)}
-                        onLoad={() => console.log('Imagen cargada correctamente')}
-                      />
-                    </View>
-                  )}
-                  
-                  {/* Vista previa de video */}
-                  {(tempFile as any)?.type && ((tempFile as any).type || '').startsWith('video/') && (
-                    <View style={styles.videoPreviewContainer}>
-                      <Text style={styles.filePreviewText}>🎥 Video seleccionado:</Text>
-                      <View style={styles.videoPreviewIcon}>
-                        <Text style={styles.videoPreviewIconText}>🎥</Text>
-                      </View>
-                    </View>
-                  )}
-                </View>
-              )}
-              
-              <Text style={styles.evidenceModalLabel}>Descripción (opcional)</Text>
-              <TextInput 
-                ref={tempTextInputRef}
-                style={styles.evidenceTextInput}
-                placeholder="Describe la evidencia..."
-                multiline={true}
-                numberOfLines={4}
-                value={tempDescription}
-                onChangeText={setTempDescription}
-                autoFocus={false}
-                blurOnSubmit={false}
-                returnKeyType="default"
-                editable={true}
-                keyboardType="default"
-                textContentType="none"
-                autoCorrect={false}
-                autoCapitalize="none"
-                selectTextOnFocus={false}
-              />
-              
-              <View style={styles.evidenceModalButtons}>
-                <TouchableOpacity 
-                  style={styles.evidenceCancelButton}
-                  onPress={handleCancel}
-                >
-                  <Text style={styles.evidenceCancelText}>Cancelar</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.evidenceSaveButton}
-                  onPress={handleSave}
-                >
-                  <Text style={styles.evidenceSaveText}>Guardar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    );
-  });
+      const result = await SecurityService.toggle2FA(enabled);
+      setTwoFactorEnabled(result.enabled);
+      
+      console.log('🔒 [SECURITY] 2FA actualizado exitosamente:', result.message);
+      return result;
+    } catch (error) {
+      console.error('🔒 [SECURITY] Error actualizando 2FA:', error);
+      throw error;
+    } finally {
+      setLoading2FA(false);
+    }
+  };
 
   // Componente Modal de Seguridad
   const SeguridadModal = () => (
@@ -995,20 +831,259 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             </View>
           )}
           
-          <TouchableOpacity 
-            style={styles.saveButton}
-            onPress={() => {
-              Alert.alert(
-                'Configuración guardada',
-                twoFactorEnabled 
-                  ? 'Autenticación de dos pasos habilitada. Recibirás códigos de verificación por correo.'
-                  : 'Autenticación de dos pasos deshabilitada.',
-                [{ text: 'OK', onPress: () => setSeguridadVisible(false) }]
-              );
+          <TouchableOpacity
+            style={[styles.saveButton, loading2FA && styles.saveButtonDisabled]}
+            onPress={async () => {
+              try {
+                const result = await update2FAStatus(twoFactorEnabled);
+                Alert.alert(
+                  'Configuración guardada',
+                  result.message,
+                  [{ text: 'OK', onPress: () => setSeguridadVisible(false) }]
+                );
+              } catch (error) {
+                Alert.alert(
+                  'Error',
+                  'No se pudo actualizar la configuración de seguridad. Inténtalo de nuevo.',
+                  [{ text: 'OK' }]
+                );
+              }
             }}
+            disabled={loading2FA}
           >
-            <Text style={styles.saveButtonText}>Guardar configuración</Text>
+            <Text style={styles.saveButtonText}>
+              {loading2FA ? 'Guardando...' : 'Guardar configuración'}
+            </Text>
           </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    </Modal>
+  );
+
+  // Componente Modal Finalizar Ticket
+  const FinalizarModal = () => {
+    const [archivoAdjunto, setArchivoAdjunto] = useState<any>(null);
+    const [descripcion, setDescripcion] = useState('');
+
+    const seleccionarArchivo = () => {
+      // Crear un input de archivo oculto
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*,video/*'; // Solo imágenes y videos
+      input.style.display = 'none';
+      
+      input.onchange = (event: any) => {
+        const file = event.target.files[0];
+        if (file) {
+          // Validar que sea imagen o video
+          const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
+          
+          if (!isValidType) {
+            Alert.alert('Error', 'Solo se permiten archivos de imagen y video');
+            return;
+          }
+          
+          // Validar tamaño (máximo 50MB)
+          const maxSize = 50 * 1024 * 1024; // 50MB en bytes
+          if (file.size > maxSize) {
+            Alert.alert('Error', 'El archivo es demasiado grande. Máximo 50MB');
+            return;
+          }
+          
+          // Convertir el archivo a un formato compatible con FormData
+          const fileData = {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            uri: URL.createObjectURL(file), // Para web
+            file: file // Mantener la referencia al archivo original
+          };
+          setArchivoAdjunto(fileData);
+        }
+      };
+      
+      // Simular click en el input
+      document.body.appendChild(input);
+      input.click();
+      document.body.removeChild(input);
+    };
+
+    const removerArchivo = () => {
+      setArchivoAdjunto(null);
+    };
+
+    const handleFinalizar = () => {
+      if (selectedTicket) {
+        // Validar que se haya subido una evidencia
+        if (!archivoAdjunto) {
+          Alert.alert('Evidencia Requerida', 'Debes subir al menos una evidencia (imagen o video) para finalizar el ticket.');
+          return;
+        }
+        
+        // Validar que se haya escrito una descripción
+        if (!descripcion || descripcion.trim().length === 0) {
+          Alert.alert('Descripción Requerida', 'Debes escribir una descripción de la solución implementada.');
+          return;
+        }
+        
+        finalizarTicket(selectedTicket.id, archivoAdjunto, descripcion);
+      }
+    };
+
+    return (
+      <Modal visible={finalizarModalVisible} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Finalizar Ticket</Text>
+            <TouchableOpacity onPress={() => setFinalizarModalVisible(false)}>
+              <Text style={styles.closeButton}>×</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.modalSubtitle}>
+            Sube las evidencias y describe la solución implementada.
+          </Text>
+          
+          <ScrollView style={styles.modalContent}>
+            {selectedTicket && (
+              <View style={styles.ticketInfo}>
+                <Text style={styles.ticketInfoTitle}>Ticket #{selectedTicket.id}</Text>
+                <Text style={styles.ticketInfoDescription}>
+                  {selectedTicket.consulta || selectedTicket.descripcion}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Evidencia (Imagen o Video) *</Text>
+              <Text style={styles.archivoInfoText}>
+                Solo se permiten archivos de imagen y video. Máximo 50MB. <Text style={styles.requiredText}>*Requerido</Text>
+              </Text>
+              <TouchableOpacity style={styles.uploadButton} onPress={seleccionarArchivo}>
+                <Text style={styles.uploadButtonText}>
+                  {archivoAdjunto ? 'Cambiar Archivo' : '+ Seleccionar Imagen/Video'}
+                </Text>
+              </TouchableOpacity>
+              {archivoAdjunto && (
+                <View style={styles.archivoSeleccionado}>
+                  <View style={styles.archivoInfo}>
+                    <Text style={styles.archivoNombre}>{archivoAdjunto.name}</Text>
+                    <Text style={styles.archivoTamaño}>
+                      {(archivoAdjunto.size / 1024 / 1024).toFixed(2)} MB
+                    </Text>
+                    <Text style={styles.archivoTipo}>
+                      {archivoAdjunto.type.startsWith('image/') ? '🖼️ Imagen' : '🎥 Video'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={styles.removeButton} onPress={removerArchivo}>
+                    <Text style={styles.removeButtonText}>×</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Descripción de la Solución *</Text>
+              <Text style={styles.archivoInfoText}>
+                <Text style={styles.requiredText}>*Requerido</Text>
+              </Text>
+              <TextInput
+                style={styles.descripcionInput}
+                placeholder="Describe la solución implementada..."
+                value={descripcion}
+                onChangeText={setDescripcion}
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <TouchableOpacity 
+              style={[
+                styles.finalizarButton, 
+                (!archivoAdjunto || !descripcion || descripcion.trim().length === 0) && styles.finalizarButtonDisabled
+              ]} 
+              onPress={handleFinalizar}
+              disabled={!archivoAdjunto || !descripcion || descripcion.trim().length === 0}
+            >
+              <Text style={[
+                styles.finalizarButtonText,
+                (!archivoAdjunto || !descripcion || descripcion.trim().length === 0) && styles.finalizarButtonTextDisabled
+              ]}>
+                Finalizar Ticket
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+    );
+  };
+
+  // Componente Modal Ver Evidencias
+  const VerEvidenciasModal = () => (
+    <Modal visible={verEvidenciasModalVisible} animationType="slide" presentationStyle="pageSheet">
+      <SafeAreaView style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Evidencias del Ticket</Text>
+          <TouchableOpacity onPress={() => setVerEvidenciasModalVisible(false)}>
+            <Text style={styles.closeButton}>×</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.modalSubtitle}>
+          Evidencias subidas para este ticket.
+        </Text>
+        
+        <ScrollView style={styles.modalContent}>
+          {evidenciasLoading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Cargando evidencias...</Text>
+            </View>
+          ) : evidencias.length > 0 ? (
+            evidencias.map((evidencia, index) => {
+              const isImage = evidencia.tipoEvidencia === 'IMAGEN' || evidencia.nombreArchivo?.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
+              const isVideo = evidencia.tipoEvidencia === 'VIDEO' || evidencia.nombreArchivo?.match(/\.(mp4|avi|mov|wmv|flv|webm)$/i);
+              const isDocumento = evidencia.tipoEvidencia === 'DOCUMENTO';
+              const isAudio = evidencia.tipoEvidencia === 'AUDIO';
+              
+              return (
+                <View key={evidencia.idEvidencia || index} style={styles.evidenceItem}>
+                  <View style={styles.evidenceIcon}>
+                    <Text style={styles.evidenceIconText}>
+                      {isImage ? '🖼️' : isVideo ? '🎥' : isAudio ? '🎵' : '📄'}
+                    </Text>
+                  </View>
+                  <View style={styles.evidenceContent}>
+                    <Text style={styles.evidenceTitle}>{evidencia.nombreCompletoArchivo || evidencia.nombreArchivo}</Text>
+                    <Text style={styles.evidenceSubtitle}>{evidencia.descripcion || 'Evidencia del ticket'}</Text>
+                    <Text style={styles.evidenceDate}>
+                      Fecha: {new Date(evidencia.fechaSubida).toLocaleDateString()}
+                    </Text>
+                    <Text style={styles.evidenceSize}>
+                      Tamaño: {evidencia.tamanioFormateado || 'N/A'}
+                    </Text>
+                    <Text style={styles.evidenceType}>
+                      {isImage ? 'Imagen' : isVideo ? 'Video' : isAudio ? 'Audio' : 'Documento'}
+                    </Text>
+                    {evidencia.subidoPorNombre && (
+                      <Text style={styles.evidenceUploader}>
+                        Subido por: {evidencia.subidoPorNombre}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={styles.evidenceActions}>
+                    <TouchableOpacity 
+                      style={styles.downloadButton}
+                      onPress={() => descargarEvidencia(evidencia.ticketId, evidencia.nombreArchivo)}
+                    >
+                      <Text style={styles.downloadButtonText}>⬇ Descargar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No hay evidencias para este ticket</Text>
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
     </Modal>
@@ -1031,51 +1106,90 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             style={styles.searchInput}
             placeholder="Buscar evidencias..."
             placeholderTextColor="#999"
+            value={searchText}
+            onChangeText={setSearchText}
           />
         </View>
 
         <View style={styles.filterContainer}>
-          <Text style={styles.filterLabel}>Todos los tipos</Text>
-          <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterButtonText}>Mis Archivos</Text>
+          <Text style={styles.filterLabel}>Total: {todasLasEvidencias.length} evidencias</Text>
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={cargarTodasLasEvidencias}
+          >
+            <Text style={styles.filterButtonText}>🔄 Actualizar</Text>
           </TouchableOpacity>
         </View>
         
         <ScrollView style={styles.modalContent}>
-          {evidencias.length > 0 ? (
-            evidencias.map((evidencia, index) => (
-              <View key={index} style={styles.evidenceItem}>
-                <View style={styles.evidenceIcon}>
-                  <Text style={styles.evidenceIconText}>
-                    {evidencia.tipo === 'video' ? '🎥' : '📷'}
-                  </Text>
-                </View>
-                <View style={styles.evidenceContent}>
-                  <Text style={styles.evidenceTitle}>{evidencia.nombre}</Text>
-                  <Text style={styles.evidenceSubtitle}>{evidencia.descripcion}</Text>
-                  <Text style={styles.evidenceDate}>Fecha: {evidencia.fechaCreacion}</Text>
-                  <Text style={styles.evidenceSize}>Tamaño: {evidencia.tamaño}</Text>
-                </View>
-                <View style={styles.evidenceActions}>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>👁</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>⬇</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton}>
-                    <Text style={styles.actionButtonText}>🗑</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
+          {evidenciasGlobalesLoading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Cargando evidencias...</Text>
+            </View>
+          ) : todasLasEvidencias.length > 0 ? (
+            todasLasEvidencias
+              .filter(evidencia => 
+                !searchText || 
+                evidencia.nombreArchivo?.toLowerCase().includes(searchText.toLowerCase()) ||
+                evidencia.descripcion?.toLowerCase().includes(searchText.toLowerCase()) ||
+                evidencia.ticketConsulta?.toLowerCase().includes(searchText.toLowerCase())
+              )
+              .map((evidencia, index) => {
+                const isImage = evidencia.tipoEvidencia === 'IMAGEN' || evidencia.nombreArchivo?.match(/\.(jpg|jpeg|png|gif|bmp|webp)$/i);
+                const isVideo = evidencia.tipoEvidencia === 'VIDEO' || evidencia.nombreArchivo?.match(/\.(mp4|avi|mov|wmv|flv|webm)$/i);
+                const isDocumento = evidencia.tipoEvidencia === 'DOCUMENTO';
+                const isAudio = evidencia.tipoEvidencia === 'AUDIO';
+                
+                return (
+                  <View key={evidencia.idEvidencia || index} style={styles.evidenceItem}>
+                    <View style={styles.evidenceIcon}>
+                      <Text style={styles.evidenceIconText}>
+                        {isImage ? '🖼️' : isVideo ? '🎥' : isAudio ? '🎵' : '📄'}
+                      </Text>
+                    </View>
+                    <View style={styles.evidenceContent}>
+                      <Text style={styles.evidenceTitle}>{evidencia.nombreCompletoArchivo || evidencia.nombreArchivo}</Text>
+                      <Text style={styles.evidenceSubtitle}>{evidencia.descripcion || 'Evidencia del ticket'}</Text>
+                      <Text style={styles.evidenceDate}>
+                        Fecha: {new Date(evidencia.fechaSubida).toLocaleDateString()}
+                      </Text>
+                      <Text style={styles.evidenceSize}>
+                        Tamaño: {evidencia.tamanioFormateado || 'N/A'}
+                      </Text>
+                      <Text style={styles.evidenceType}>
+                        {isImage ? 'Imagen' : isVideo ? 'Video' : isAudio ? 'Audio' : 'Documento'}
+                      </Text>
+                      {evidencia.ticketNumero && (
+                        <Text style={styles.evidenceTicket}>
+                          Ticket #{evidencia.ticketNumero}: {evidencia.ticketConsulta?.substring(0, 50)}...
+                        </Text>
+                      )}
+                      {evidencia.subidoPorNombre && (
+                        <Text style={styles.evidenceUploader}>
+                          Subido por: {evidencia.subidoPorNombre}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={styles.evidenceActions}>
+                      <TouchableOpacity 
+                        style={styles.actionButton}
+                        onPress={() => descargarEvidencia(evidencia.ticketId, evidencia.nombreArchivo)}
+                      >
+                        <Text style={styles.actionButtonText}>⬇</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📎</Text>
-              <Text style={styles.emptyTitle}>Sin evidencias</Text>
-              <Text style={styles.emptyText}>
-                No tienes evidencias registradas. Agrega evidencias a tus tickets para verlas aquí.
-              </Text>
+              <Text style={styles.emptyText}>No hay evidencias disponibles</Text>
+              <TouchableOpacity 
+                style={styles.refreshButton}
+                onPress={cargarTodasLasEvidencias}
+              >
+                <Text style={styles.refreshButtonText}>🔄 Cargar Evidencias</Text>
+              </TouchableOpacity>
             </View>
           )}
         </ScrollView>
@@ -1149,46 +1263,6 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             )}
           </View>
 
-          {/* Vista previa de tickets recientes */}
-          {tickets.length > 0 && (
-            <View style={styles.recentTicketsContainer}>
-              <Text style={styles.recentTicketsTitle}>Tickets Recientes</Text>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.recentTicketsScroll}
-              >
-                {tickets.slice(0, 3).map((ticket, index) => (
-                  <View key={index} style={styles.recentTicketCard}>
-                    <View style={styles.recentTicketHeader}>
-                      <Text style={styles.recentTicketId}>{ticket.id}</Text>
-                      <View style={[
-                        styles.recentTicketStatus,
-                        ticket.estado === 'PENDIENTE' ? styles.recentStatusPending :
-                        ticket.estado === 'EN_PROCESO' ? styles.recentStatusInProcess :
-                        styles.recentStatusCompleted
-                      ]}>
-                        <Text style={styles.recentStatusText}>{ticket.estado}</Text>
-                      </View>
-                    </View>
-                    <Text style={styles.recentTicketTitle} numberOfLines={2}>
-                      {ticket.titulo}
-                    </Text>
-                    <Text style={styles.recentTicketDescription} numberOfLines={2}>
-                      {ticket.descripcion}
-                    </Text>
-                    <View style={styles.recentTicketFooter}>
-                      <Text style={styles.recentTicketArea}>Área: {ticket.area || 'Sistemas'}</Text>
-                      <Text style={styles.recentTicketPriority}>
-                        {ticket.prioridad === 'ALTA' ? '🔴' : ticket.prioridad === 'MEDIA' ? '🟡' : '🟢'} {ticket.prioridad}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
           {/* Secciones de acción */}
           <View style={styles.actionSectionsContainer}>
             {/* Siempre mostrar Mis Tickets */}
@@ -1199,7 +1273,13 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
               </View>
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => setMisTicketsVisible(true)}
+                onPress={() => {
+                  console.log('🎫 [FRONTEND] Botón "Mis Tickets" presionado');
+                  console.log('🎫 [FRONTEND] Llamando a loadTickets()');
+                  loadTickets();
+                  console.log('🎫 [FRONTEND] Abriendo modal Mis Tickets');
+                  setMisTicketsVisible(true);
+                }}
               >
                 <Text style={styles.actionButtonText}>Abrir</Text>
               </TouchableOpacity>
@@ -1208,11 +1288,14 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             <View style={styles.actionSection}>
               <View style={styles.actionSectionContent}>
                 <Text style={styles.actionSectionTitle}>Evidencias</Text>
-                <Text style={styles.actionSectionCount}>({stats.evidencias})</Text>
+                <Text style={styles.actionSectionCount}>({stats.totalEvidencias || 0})</Text>
               </View>
               <TouchableOpacity 
                 style={styles.actionButton}
-                onPress={() => setEvidenciasVisible(true)}
+                onPress={() => {
+                  cargarTodasLasEvidencias();
+                  setEvidenciasVisible(true);
+                }}
               >
                 <Text style={styles.actionButtonText}>Abrir</Text>
               </TouchableOpacity>
@@ -1221,13 +1304,15 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             <View style={styles.actionSection}>
               <View style={styles.actionSectionContent}>
                 <Text style={styles.actionSectionTitle}>Notificaciones</Text>
-                <Text style={styles.actionSectionCount}>({stats.notificaciones})</Text>
+                <Text style={styles.actionSectionCount}>({stats.totalNotificaciones || 0})</Text>
               </View>
               <TouchableOpacity 
                 style={styles.actionButton}
                 onPress={() => setNotificacionesVisible(true)}
               >
-                <Text style={styles.actionButtonText}>Abrir</Text>
+                <View style={styles.notificationButtonContent}>
+                  <Text style={styles.actionButtonText}>Abrir</Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -1235,10 +1320,19 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
 
         {/* Modales */}
         <MisTicketsModal />
-        <NotificacionesModal />
+        <NotificacionesModal 
+          visible={notificacionesVisible} 
+          onClose={() => setNotificacionesVisible(false)}
+          onOpenPreferences={abrirPreferenciasNotificaciones}
+        />
+        <PreferenciasNotificacionesModal 
+          visible={preferenciasModalVisible} 
+          onClose={() => setPreferenciasModalVisible(false)} 
+        />
         <EvidenciasModal />
+        <FinalizarModal />
+        <VerEvidenciasModal />
         <SeguridadModal />
-        <EvidenceModal />
         
         {/* Sidebar */}
         {sidebarVisible && (
@@ -1280,6 +1374,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   style={styles.sidebarMenuItem}
                   onPress={() => {
                     setSidebarVisible(false);
+                    cargarTodasLasEvidencias();
                     setEvidenciasVisible(true);
                   }}
                 >
@@ -1289,8 +1384,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                 
                 <TouchableOpacity 
                   style={styles.sidebarMenuItem}
-                  onPress={() => {
+                  onPress={async () => {
                     setSidebarVisible(false);
+                    await load2FAStatus(); // Cargar estado actual de 2FA
                     setSeguridadVisible(true);
                   }}
                 >
@@ -1385,61 +1481,74 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#000000',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 40,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#666666',
     textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 40,
   },
   statsContainer: {
+    paddingHorizontal: 20,
     marginBottom: 40,
   },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 20,
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 24,
     alignItems: 'center',
-    marginHorizontal: 5,
-    shadowColor: '#000',
+    marginHorizontal: 8,
+    shadowColor: '#000000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 3,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   statNumber: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 5,
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
+  },
+  statNumberPendiente: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#DC2626',
+    marginBottom: 8,
+  },
+  statNumberEnproceso: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#CA8A04',
+    marginBottom: 8,
+  },
+  statNumberFinalizado: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: '#16A34A',
+    marginBottom: 8,
   },
   statLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#666666',
     textAlign: 'center',
-  },
-  statNumberRed: {
-    color: '#ff4444',
-  },
-  statNumberOrange: {
-    color: '#ff8800',
-  },
-  statNumberGreen: {
-    color: '#00aa00',
+    fontWeight: '400',
   },
   loadingContainer: {
     padding: 40,
@@ -1447,97 +1556,42 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    color: '#666666',
     fontStyle: 'italic',
   },
-  noTicketsContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 30,
+  buttonsContainer: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  navigationButton: {
+    backgroundColor: '#000000',
+    borderRadius: 12,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: 'center',
+    shadowColor: '#000000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  noTicketsIcon: {
-    fontSize: 48,
-    marginBottom: 15,
-  },
-  noTicketsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  noTicketsMessage: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  actionSectionsContainer: {
-    gap: 15,
-  },
-  actionSection: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  actionSectionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionSectionTitle: {
+  buttonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginRight: 8,
+    marginBottom: 4,
   },
-  actionSectionCount: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-  },
-  actionButton: {
-    backgroundColor: '#000000',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  actionButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
+  buttonSubtext: {
+    color: '#CCCCCC',
+    fontSize: 12,
+    fontWeight: '400',
   },
 
-  // Estilos para los modales
+  // Estilos para los modales (mantener los existentes)
   modalContainer: {
     flex: 1,
     backgroundColor: 'white',
@@ -1565,72 +1619,9 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 10,
   },
-  modalTitleSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  modalMainTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
   modalContent: {
     flex: 1,
     paddingHorizontal: 20,
-  },
-  searchSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  searchContainer: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 15,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 10,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    fontStyle: 'italic',
   },
 
   // Estilos para tickets
@@ -1645,34 +1636,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  ticketCardNew: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    marginHorizontal: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  ticketHeaderNew: {
-    marginBottom: 8,
-  },
-  ticketTitleNew: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  ticketDescriptionNew: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
   ticketHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1685,24 +1648,6 @@ const styles = StyleSheet.create({
   },
   priorityHigh: {
     backgroundColor: '#ff4444',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityMedium: {
-    backgroundColor: '#ffa500',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityLow: {
-    backgroundColor: '#00aa00',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priorityCompleted: {
-    backgroundColor: '#00aa00',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1772,122 +1717,7 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
   },
-  completedInfo: {
-    backgroundColor: '#f0f8f0',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 10,
-    borderLeftWidth: 4,
-    borderLeftColor: '#00aa00',
-  },
-  completedText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#00aa00',
-    marginBottom: 4,
-  },
-  completedDate: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
-    gap: 8,
-    justifyContent: 'flex-start',
-  },
-  statusTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusPending: {
-    backgroundColor: '#ffebee',
-  },
-  statusInProcess: {
-    backgroundColor: '#fff3e0',
-  },
-  statusCompleted: {
-    backgroundColor: '#e8f5e8',
-  },
-  priorityTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  areaTag: {
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  evidenceTag: {
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  tagText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#333',
-  },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'flex-start',
-    marginTop: 8,
-  },
-  actionButtonWhite: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  actionButtonBlack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  actionButtonIcon: {
-    fontSize: 14,
-    marginRight: 4,
-    color: '#333',
-  },
-  actionButtonTextWhite: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-  },
-  actionButtonTextBlack: {
-    fontSize: 14,
-    color: 'white',
-    fontWeight: '500',
-  },
-  evidenceButtonNew: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  evidenceButtonIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
+
   // Estilos para notificaciones
   sectionTitle: {
     fontSize: 18,
@@ -1934,6 +1764,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
+  saveButtonDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
+  },
   saveButtonText: {
     color: 'white',
     fontSize: 16,
@@ -1974,6 +1808,16 @@ const styles = StyleSheet.create({
   },
 
   // Estilos para evidencias
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  searchInput: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
   filterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2043,6 +1887,504 @@ const styles = StyleSheet.create({
   },
   evidenceActions: {
     flexDirection: 'row',
+  },
+  actionButton: {
+    width: 35,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 5,
+  },
+  actionButtonText: {
+    fontSize: 16,
+  },
+  logoutButton: {
+    backgroundColor: '#ff4444',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Estilos para el modal de tickets
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  // Estilos para estados de tickets
+  statusPending: {
+    color: '#ff9800',
+    fontWeight: 'bold',
+  },
+  statusInProgress: {
+    color: '#2196f3',
+    fontWeight: 'bold',
+  },
+  statusCompleted: {
+    color: '#4caf50',
+    fontWeight: 'bold',
+  },
+  // Estilos para prioridades
+  priorityMedium: {
+    backgroundColor: '#ff9800',
+  },
+  priorityLow: {
+    backgroundColor: '#4caf50',
+  },
+
+  // Estilos para botones de tickets
+  acceptButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  acceptButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  finalizeButton: {
+    backgroundColor: '#FF9800',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  finalizeButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  viewEvidenceButton: {
+    backgroundColor: '#2196F3',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  viewEvidenceButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Estilos para modales de finalización
+  ticketInfo: {
+    backgroundColor: '#f8f9fa',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  ticketInfoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  ticketInfoDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  sectionContainer: {
+    marginBottom: 20,
+  },
+  uploadButton: {
+    backgroundColor: '#e9ecef',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#dee2e6',
+    borderStyle: 'dashed',
+  },
+  uploadButtonText: {
+    color: '#6c757d',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  evidenciasList: {
+    marginTop: 10,
+  },
+  evidenciaItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 5,
+  },
+  evidenciaName: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+  },
+  removeButton: {
+    backgroundColor: '#dc3545',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  descripcionInput: {
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+  finalizarButton: {
+    backgroundColor: '#28a745',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  finalizarButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  finalizarButtonDisabled: {
+    backgroundColor: '#ccc',
+    opacity: 0.6,
+  },
+  finalizarButtonTextDisabled: {
+    color: '#999',
+  },
+
+  // Estilos para archivo seleccionado
+  archivoSeleccionado: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  archivoInfo: {
+    flex: 1,
+  },
+  archivoNombre: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 4,
+  },
+  archivoTamaño: {
+    fontSize: 12,
+    color: '#666',
+  },
+  archivoTipo: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  archivoInfoText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 10,
+    fontStyle: 'italic',
+  },
+  evidenceType: {
+    fontSize: 12,
+    color: '#007AFF',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  evidenceUploader: {
+    fontSize: 11,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 2,
+  },
+  evidenceTicket: {
+    fontSize: 11,
+    color: '#007AFF',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  refreshButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 16,
+    alignSelf: 'center',
+  },
+  refreshButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  downloadButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  downloadButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  requiredText: {
+    color: '#DC2626',
+    fontWeight: 'bold',
+  },
+  
+  // Estilos para notificaciones
+  notificationButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationBadge: {
+    backgroundColor: '#DC2626',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  notificationBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
+  // Estilos nuevos para la UI mejorada
+  statNumberRed: {
+    color: '#ff4444',
+  },
+  statNumberOrange: {
+    color: '#ff8800',
+  },
+  statNumberGreen: {
+    color: '#00aa00',
+  },
+  noTicketsContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  noTicketsIcon: {
+    fontSize: 48,
+    marginBottom: 15,
+  },
+  noTicketsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  noTicketsMessage: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  actionSectionsContainer: {
+    gap: 15,
+  },
+  actionSection: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  actionSectionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 8,
+  },
+  actionSectionCount: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+
+  // Estilos para tickets mejorados
+  ticketCardNew: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  ticketHeaderNew: {
+    marginBottom: 8,
+  },
+  ticketTitleNew: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  ticketDescriptionNew: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 8,
+    justifyContent: 'flex-start',
+  },
+  statusTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  priorityTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  areaTag: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+  },
+  currentStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  currentStatusLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginRight: 8,
+  },
+  currentStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  currentStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'flex-start',
+    marginTop: 8,
+  },
+  actionButtonBlack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  actionButtonIcon: {
+    fontSize: 14,
+    marginRight: 4,
+    color: '#333',
+  },
+  actionButtonTextBlack: {
+    fontSize: 14,
+    color: 'white',
+    fontWeight: '500',
+  },
+  actionButtonGreen: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#28a745',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  actionButtonTextGreen: {
+    fontSize: 14,
+    color: 'white',
+    fontWeight: '500',
+  },
+
+  // Estilos para modales mejorados
+  modalTitleSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  modalMainTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  searchSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
 
   // Estilos para el sidebar
@@ -2144,339 +2486,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Estilos para tickets recientes
-  recentTicketsContainer: {
-    marginBottom: 30,
-  },
-  recentTicketsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-    paddingLeft: 5,
-  },
-  recentTicketsScroll: {
-    paddingLeft: 5,
-  },
-  recentTicketCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    width: 280,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  recentTicketHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  recentTicketId: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#007AFF',
-  },
-  recentTicketStatus: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  recentStatusPending: {
-    backgroundColor: '#ffebee',
-  },
-  recentStatusInProcess: {
-    backgroundColor: '#fff3e0',
-  },
-  recentStatusCompleted: {
-    backgroundColor: '#e8f5e8',
-  },
-  recentStatusText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#333',
-  },
-  recentTicketTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 6,
-    lineHeight: 20,
-  },
-  recentTicketDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  recentTicketFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  recentTicketArea: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
-  },
-  recentTicketPriority: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-  },
-
-  // Estilos para el estado actual
-  currentStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  currentStatusLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginRight: 8,
-  },
-  currentStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  currentStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-  },
-
-  // Estilos para botones de acción
-  actionButtonGreen: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#28a745',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  actionButtonTextGreen: {
-    fontSize: 14,
-    color: 'white',
-    fontWeight: '500',
-  },
-
-  // Estilos para el modal de evidencias
-  evidenceModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  evidenceModalContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  evidenceModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  evidenceModalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  evidenceModalClose: {
-    fontSize: 24,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-  evidenceModalContent: {
-    padding: 20,
-  },
-  evidenceModalLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    marginTop: 12,
-  },
-  evidenceFileOptions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  evidenceFileButton: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 2,
-    borderColor: '#007AFF',
-    borderStyle: 'dashed',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  evidenceFileButtonText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  evidenceFileButtonSelected: {
-    backgroundColor: '#e8f5e8',
-    borderColor: '#4CAF50',
-    borderWidth: 2,
-  },
-  evidenceTextInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#333',
-    textAlignVertical: 'top',
-    backgroundColor: '#fff',
-    minHeight: 100,
-    maxHeight: 120,
-    marginBottom: 20,
-    flex: 1,
-  },
-  evidenceModalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  evidenceCancelButton: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  evidenceCancelText: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
-  },
-  evidenceSaveButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
-  },
-  evidenceSaveText: {
-    fontSize: 14,
-    color: 'white',
-    fontWeight: '600',
-  },
-  evidenceSaveButtonDisabled: {
-    backgroundColor: '#ccc',
-    opacity: 0.6,
-  },
-
-  // Estilos para vista previa de archivos
-  filePreviewContainer: {
-    marginVertical: 12,
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-  },
-  filePreviewLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  filePreviewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-  },
-  filePreviewVideo: {
-    padding: 20,
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  filePreviewVideoText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  filePreviewVideoSize: {
-    fontSize: 12,
-    color: '#666',
-  },
-  filePreviewText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 4,
-  },
-  imagePreviewContainer: {
-    alignItems: 'center',
-  },
-  videoPreviewContainer: {
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  videoPreviewIcon: {
-    width: 60,
-    height: 60,
-    backgroundColor: '#333',
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  videoPreviewIconText: {
-    fontSize: 24,
-    color: '#fff',
-  },
-
-  // Estilos para evidencia deshabilitada
-  evidenceDisabledContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    opacity: 0.6,
-  },
-  evidenceDisabledIcon: {
-    fontSize: 14,
-    marginRight: 8,
-  },
-  evidenceDisabledText: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-
-  // Estilos para modal de seguridad
+  // Estilos para seguridad
   securityOption: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2521,10 +2531,9 @@ const styles = StyleSheet.create({
     color: '#2e7d32',
   },
   modalClose: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 1,
+    fontSize: 24,
+    color: '#666',
+    fontWeight: 'bold',
   },
   sectionDescription: {
     fontSize: 14,
