@@ -189,10 +189,6 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
           <h1 className="page-title">Gestión de Tickets</h1>
           <p className="page-subtitle">Administra y asigna tickets del sistema</p>
         </div>
-        <Button onClick={loadData} variant="outline" className="refresh-btn">
-          <Clock className="w-4 h-4 mr-2" />
-          Actualizar
-        </Button>
       </div>
 
       {error && (

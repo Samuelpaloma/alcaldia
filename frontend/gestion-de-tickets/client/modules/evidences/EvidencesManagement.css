@@ -10,6 +10,7 @@
   align-items: flex-start;
   margin-bottom: 2.5rem;
   gap: 1rem;
+  padding-right: 6rem; /* Espacio para los botones flotantes */
 }
 
 .header-content {
@@ -50,6 +51,7 @@
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
+    padding-right: 0; /* Sin padding extra en móviles */
   }
   
   .page-title {

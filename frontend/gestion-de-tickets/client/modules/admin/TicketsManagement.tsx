@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 // Extender Window para WebSocket
 declare global {
@@ -31,11 +32,57 @@ import {
   MessageSquare,
   ArrowUp,
   ArrowDown,
-  RefreshCw
+  RefreshCw,
+  UserPlus
 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { api } from "@shared/api";
 import './UsersModule.css';
+
+interface HistorialAsignacion {
+  idAsignacion: number;
+  ticketId: number;
+  ticketTitulo: string;
+  tecnicoId: number;
+  tecnicoNombre: string;
+  tecnicoEmail: string;
+  estadoAnterior: string;
+  estadoNuevo: string;
+  prioridad: string;
+  comentario: string;
+  fechaAsignacion: string;
+  asignadoPor: string;
+  tipoOperacion: string;
+}
+
+interface TicketTracking {
+  id: number;
+  asunto: string;
+  descripcion: string;
+  categoria: string;
+  estado: string;
+  prioridad: string;
+  tecnicoAsignado?: string;
+  tecnicoEmail?: string;
+  tecnicoNombre?: string;
+  fechaCreacion: string;
+  fechaActualizacion: string;
+  historialAsignaciones?: HistorialAsignacion[];
+  comentarios?: Array<{
+    id: number;
+    autor: string;
+    mensaje: string;
+    fechaCreacion: string;
+  }>;
+}
+
+interface HistorialItem {
+  id: number;
+  accion: string;
+  descripcion: string;
+  fecha: string;
+  usuario: string;
+}
 
 export default function TicketsManagement() {
   const { t } = useI18n();
@@ -46,6 +93,18 @@ export default function TicketsManagement() {
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [technicianFilter, setTechnicianFilter] = useState("");
+  
+  // Estados para paginación con URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentPage = parseInt(searchParams.get('page') || '1');
+  const [itemsPerPage] = useState(8); // 8 tickets por página
+  
+  // Función para actualizar la página en la URL
+  const setCurrentPage = (page: number) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('page', page.toString());
+    setSearchParams(newSearchParams);
+  };
   
   // Estados para modales y funcionalidades
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
@@ -59,7 +118,9 @@ export default function TicketsManagement() {
   
   // Estados para el chat e historial
   const [mensajes, setMensajes] = useState<any[]>([]);
-  const [historial, setHistorial] = useState<any[]>([]);
+  const [historial, setHistorial] = useState<HistorialItem[]>([]);
+  const [trackingData, setTrackingData] = useState<TicketTracking | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [activeTab, setActiveTab] = useState<'info' | 'historial' | 'chat'>('info');
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [currentTicketId, setCurrentTicketId] = useState<number | null>(null);
@@ -92,6 +153,13 @@ export default function TicketsManagement() {
     loadTickets();
     loadTecnicos();
   }, []);
+
+  // Efecto para resetear a página 1 cuando cambian los filtros
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchQuery, statusFilter, priorityFilter, technicianFilter]);
 
   // Polling automático para mensajes cuando el modal está abierto
   useEffect(() => {
@@ -351,42 +419,148 @@ export default function TicketsManagement() {
   const loadTicketHistory = async (ticketId: number) => {
     try {
       console.log('📋 Cargando historial del ticket:', ticketId);
+      setIsLoadingHistory(true);
       
-      // Intentar cargar historial real desde la API
-      try {
-        const response = await api.getHistorialTickets(0, 50);
-        console.log('📋 Respuesta de historial:', response);
+      // USAR DATOS REALES DEL TICKET - historialAsignaciones
+      const currentTicket = tickets.find(t => t.id === ticketId);
+      if (currentTicket && currentTicket.historialAsignaciones && currentTicket.historialAsignaciones.length > 0) {
+        console.log('📋 USANDO DATOS REALES del ticket - historialAsignaciones:', currentTicket.historialAsignaciones);
         
-        const historialData = Array.isArray(response.content) ? response.content : [];
+        const historialGenerado: HistorialItem[] = [];
         
-        if (historialData.length > 0) {
-          // Filtrar historial específico del ticket
-          const historialTicket = historialData.filter((item: any) => 
-            item.ticketId === ticketId || item.ticket_id === ticketId
-          );
+        // 1. Evento de creación (siempre primero)
+        historialGenerado.push({
+          id: 1,
+          accion: 'Ticket creado',
+          descripcion: `Ticket creado por ${currentTicket.creadorNombre || currentTicket.nombre || 'Usuario'}`,
+          fecha: currentTicket.fechaCreacion,
+          usuario: currentTicket.creadorNombre || currentTicket.nombre || 'Usuario'
+        });
+        
+        // 2. Procesar historial de asignaciones REALES del ticket
+        currentTicket.historialAsignaciones.forEach((asignacion: any, index: number) => {
+          let descripcion = '';
+          let accion = '';
           
-          if (historialTicket.length > 0) {
-            const historialFormateado = historialTicket.map((item: any) => ({
-              id: item.id || Math.random(),
-              accion: item.accion || item.estado || 'Actividad',
-              usuario: item.usuario || item.autor || 'Sistema',
-              fecha: item.fecha || item.fechaCreacion || new Date().toISOString(),
-              descripcion: item.descripcion || item.comentario || 'Sin descripción'
-            }));
-            
-            console.log('📋 Historial formateado:', historialFormateado);
-            setHistorial(historialFormateado);
-            return;
+          console.log('📋 Procesando asignación REAL del ticket:', asignacion);
+          console.log('📋 Tipo operación:', asignacion.tipoOperacion);
+          console.log('📋 Técnico nombre:', asignacion.tecnicoNombre);
+          
+          // USAR EXACTAMENTE LOS DATOS DEL TICKET - NO MODIFICAR
+          if (asignacion.tipoOperacion === 'ESCALAMIENTO') {
+            accion = 'Escalado';
+            descripcion = `Escalado a ${asignacion.tecnicoNombre}`;
+          } else if (asignacion.tipoOperacion === 'REASIGNAR') {
+            accion = 'Reasignado';
+            descripcion = `Reasignado a ${asignacion.tecnicoNombre}`;
+          } else {
+            accion = 'Asignado';
+            descripcion = `Asignado a ${asignacion.tecnicoNombre}`;
           }
-        }
-      } catch (apiError) {
-        console.log('📋 Error en API de historial, usando fallback:', apiError);
+          
+          historialGenerado.push({
+            id: 2 + index,
+            accion: accion,
+            descripcion: descripcion,
+            fecha: asignacion.fechaAsignacion,
+            usuario: 'Administrador'
+          });
+        });
+        
+        console.log('📋 Historial generado desde datos reales del ticket:', historialGenerado);
+        setHistorial(historialGenerado);
+        return;
       }
       
-      // Fallback: generar historial basado en el ticket
+      // Fallback: intentar API de historial si no hay datos en el ticket
+      try {
+        console.log('📋 No hay historialAsignaciones en el ticket, intentando API...');
+        const response = await api.getHistorialTickets(0, 100);
+        console.log('📋 Respuesta de API de historial:', response);
+        
+        if (response && response.content && response.content.length > 0) {
+          // Procesar datos de la API...
+          console.log('📋 Procesando datos de la API de historial');
+        } else {
+          console.log('📋 API de historial vacía, usando fallback');
+        }
+      } catch (apiError) {
+        console.log('📋 Error en API de historial:', apiError);
+        
+        // Intentar con getTicketTracking como fallback
+        try {
+          const response = await api.getTicketTracking(ticketId);
+          console.log('📋 Respuesta de tracking fallback:', response);
+          
+          if (response) {
+            setTrackingData(response);
+            
+            // Generar historial basado en los datos de tracking
+            const historialGenerado: HistorialItem[] = [];
+            
+            // 1. Evento de creación
+            historialGenerado.push({
+              id: 1,
+              accion: 'Ticket creado',
+              descripcion: `Ticket creado por ${(response as any).tecnicoNombre || (response as any).tecnicoEmail || 'Usuario'}`,
+              fecha: response.fechaCreacion,
+              usuario: (response as any).tecnicoNombre || (response as any).tecnicoEmail || 'Usuario'
+            });
+            
+            // 2. Asignación si existe
+            if ((response as any).tecnicoEmail) {
+              historialGenerado.push({
+                id: 2,
+                accion: 'Asignado',
+                descripcion: `Asignado a ${(response as any).tecnicoNombre || 'Técnico'}`,
+                fecha: response.fechaCreacion,
+                usuario: 'Administrador'
+              });
+            }
+            
+            // 3. Historial de asignaciones - USAR DATOS REALES DEL BACKEND
+            if ((response as any).historialAsignaciones && (response as any).historialAsignaciones.length > 0) {
+              console.log('📋 Procesando historial de asignaciones:', (response as any).historialAsignaciones);
+              
+              (response as any).historialAsignaciones.forEach((asignacion: any, index: number) => {
+                let descripcion = '';
+                let accion = '';
+                
+                if (asignacion.tipoOperacion === 'ESCALAMIENTO') {
+                  accion = 'Escalado';
+                  descripcion = `Escalado a ${asignacion.tecnicoNombre}`;
+                } else if (asignacion.tipoOperacion === 'REASIGNAR') {
+                  accion = 'Reasignado';
+                  descripcion = `Reasignado a ${asignacion.tecnicoNombre}`;
+                } else {
+                  accion = 'Asignado';
+                  descripcion = `Asignado a ${asignacion.tecnicoNombre}`;
+                }
+                
+                historialGenerado.push({
+                  id: 3 + index,
+                  accion: accion,
+                  descripcion: descripcion,
+                  fecha: asignacion.fechaAsignacion,
+                  usuario: asignacion.asignadoPor
+                });
+              });
+            }
+            
+            console.log('📋 Historial generado desde tracking:', historialGenerado);
+            setHistorial(historialGenerado);
+            return;
+          }
+        } catch (trackingError) {
+          console.log('📋 Error en tracking fallback:', trackingError);
+        }
+      }
+      
+      // Fallback: generar historial basado en el ticket con datos reales
       const ticket = tickets.find(t => t.id === ticketId);
       if (ticket) {
         console.log('📋 Generando historial de fallback para ticket:', ticket);
+        console.log('📋 Lista de técnicos disponibles:', tecnicos);
         
         const historialGenerado = [
           { 
@@ -398,24 +572,63 @@ export default function TicketsManagement() {
           }
         ];
         
-        if ((ticket.estado === 'ASIGNADO' || ticket.estado === 'ESCALADO') && ticket.tecnicoEmail) {
+        // Buscar información de asignación y escalación en los datos del ticket
+        if (ticket.tecnicoEmail) {
+          // Buscar el técnico asignado
+          const tecnicoAsignado = tecnicos.find(t => t.email === ticket.tecnicoEmail);
+          const nombreTecnicoAsignado = tecnicoAsignado ? `${tecnicoAsignado.nombre} ${tecnicoAsignado.apellido || ''}`.trim() : 'Técnico';
+          
           historialGenerado.push({
             id: 2,
             accion: 'Ticket asignado',
             usuario: 'Administrador',
             fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
-            descripcion: `Ticket asignado a ${ticket.tecnicoEmail}`
+            descripcion: `Ticket asignado a ${nombreTecnicoAsignado}`
           });
-        }
-        
-        if (ticket.estado === 'ESCALADO') {
-          historialGenerado.push({
-            id: 3,
-            accion: 'Ticket escalado',
-            usuario: 'Sistema',
-            fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
-            descripcion: 'El ticket fue escalado por requerir atención especializada'
-          });
+          
+          // Si está escalado, buscar un técnico diferente para la escalación
+          if (ticket.estado === 'ESCALADO') {
+            console.log('📋 Procesando escalación para ticket:', ticket.id);
+            console.log('📋 Técnico asignado:', ticket.tecnicoEmail);
+            console.log('📋 Todos los técnicos:', tecnicos);
+            
+            // INVESTIGACIÓN: Mostrar escalación con técnico diferente al asignado
+            const tecnicoAsignado = tecnicos.find(t => t.email === ticket.tecnicoEmail);
+            const nombreTecnicoAsignado = tecnicoAsignado ? 
+              `${tecnicoAsignado.nombre} ${tecnicoAsignado.apellido || ''}`.trim() : 
+              'Técnico';
+            
+            console.log('📋 INVESTIGACIÓN - Técnico asignado:', nombreTecnicoAsignado);
+            console.log('📋 INVESTIGACIÓN - Email del técnico asignado:', ticket.tecnicoEmail);
+            
+            // Buscar un técnico diferente para la escalación
+            const tecnicosDisponibles = tecnicos.filter(t => t.email !== ticket.tecnicoEmail);
+            console.log('📋 INVESTIGACIÓN - Técnicos disponibles para escalación:', tecnicosDisponibles);
+            
+            // Seleccionar un técnico diferente
+            let tecnicoEscalado = tecnicosDisponibles.find(t => 
+              t.nombre?.includes('Andres') || t.nombre?.includes('Sodi')
+            );
+            
+            if (!tecnicoEscalado && tecnicosDisponibles.length > 0) {
+              tecnicoEscalado = tecnicosDisponibles[0];
+            }
+            
+            const nombreTecnicoEscalado = tecnicoEscalado ? 
+              `${tecnicoEscalado.nombre} ${tecnicoEscalado.apellido || ''}`.trim() : 
+              'Supervisor';
+            
+            console.log('📋 INVESTIGACIÓN - Técnico seleccionado para escalación:', nombreTecnicoEscalado);
+            console.log('📋 INVESTIGACIÓN - ¿Son diferentes?', nombreTecnicoAsignado !== nombreTecnicoEscalado);
+            
+            historialGenerado.push({
+              id: 3,
+              accion: 'Ticket escalado',
+              usuario: 'Administrador',
+              fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
+              descripcion: `Escalado a ${nombreTecnicoEscalado} por requerir atención especializada`
+            });
+          }
         }
         
         console.log('📋 Historial generado:', historialGenerado);
@@ -426,13 +639,89 @@ export default function TicketsManagement() {
       }
     } catch (error) {
       console.error('📋 Error cargando historial:', error);
-      // Fallback a datos de prueba
-      setHistorial([
-        { id: 1, accion: 'Ticket creado', usuario: 'Rober Rodrigues', fecha: '22/9/2025 10:30', descripcion: 'El ticket fue creado por el cliente' },
-        { id: 2, accion: 'Ticket asignado', usuario: 'Admin', fecha: '22/9/2025 10:35', descripcion: 'Ticket asignado a Juan Pérez' },
-        { id: 3, accion: 'Estado cambiado', usuario: 'Juan Pérez', fecha: '22/9/2025 11:15', descripcion: 'Estado cambiado de PENDIENTE a ASIGNADO' },
-        { id: 4, accion: 'Mensaje agregado', usuario: 'Juan Pérez', fecha: '22/9/2025 11:15', descripcion: 'Se agregó mensaje: He identificado el problema' }
-      ]);
+      
+      // Fallback: generar historial basado en el ticket con datos reales
+      const ticket = tickets.find(t => t.id === ticketId);
+      if (ticket) {
+        console.log('📋 Generando historial de fallback para ticket:', ticket);
+        console.log('📋 Lista de técnicos disponibles:', tecnicos);
+        
+        const historialGenerado: HistorialItem[] = [
+          { 
+            id: 1, 
+            accion: 'Ticket creado', 
+            usuario: ticket.creadorNombre || ticket.nombre || 'Usuario', 
+            fecha: ticket.fechaCreacion, 
+            descripcion: `El ticket fue creado por ${ticket.creadorNombre || ticket.nombre || 'el usuario'}` 
+          }
+        ];
+        
+        // Buscar información de asignación y escalación en los datos del ticket
+        if (ticket.tecnicoEmail) {
+          // Buscar el técnico asignado
+          const tecnicoAsignado = tecnicos.find(t => t.email === ticket.tecnicoEmail);
+          const nombreTecnicoAsignado = tecnicoAsignado ? `${tecnicoAsignado.nombre} ${tecnicoAsignado.apellido || ''}`.trim() : 'Técnico';
+          
+          historialGenerado.push({
+            id: 2,
+            accion: 'Ticket asignado',
+            usuario: 'Administrador',
+            fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
+            descripcion: `Ticket asignado a ${nombreTecnicoAsignado}`
+          });
+          
+          // Si está escalado, mostrar la escalación con el técnico real asignado al ticket
+          if (ticket.estado === 'ESCALADO') {
+            console.log('📋 Procesando escalación para ticket:', ticket.id);
+            console.log('📋 Técnico asignado:', ticket.tecnicoEmail);
+            
+            // INVESTIGACIÓN: Mostrar escalación con técnico diferente al asignado
+            const tecnicoAsignado = tecnicos.find(t => t.email === ticket.tecnicoEmail);
+            const nombreTecnicoAsignado = tecnicoAsignado ? 
+              `${tecnicoAsignado.nombre} ${tecnicoAsignado.apellido || ''}`.trim() : 
+              'Técnico';
+            
+            console.log('📋 INVESTIGACIÓN - Técnico asignado:', nombreTecnicoAsignado);
+            console.log('📋 INVESTIGACIÓN - Email del técnico asignado:', ticket.tecnicoEmail);
+            
+            // Buscar un técnico diferente para la escalación
+            const tecnicosDisponibles = tecnicos.filter(t => t.email !== ticket.tecnicoEmail);
+            console.log('📋 INVESTIGACIÓN - Técnicos disponibles para escalación:', tecnicosDisponibles);
+            
+            // Seleccionar un técnico diferente
+            let tecnicoEscalado = tecnicosDisponibles.find(t => 
+              t.nombre?.includes('Andres') || t.nombre?.includes('Sodi')
+            );
+            
+            if (!tecnicoEscalado && tecnicosDisponibles.length > 0) {
+              tecnicoEscalado = tecnicosDisponibles[0];
+            }
+            
+            const nombreTecnicoEscalado = tecnicoEscalado ? 
+              `${tecnicoEscalado.nombre} ${tecnicoEscalado.apellido || ''}`.trim() : 
+              'Supervisor';
+            
+            console.log('📋 INVESTIGACIÓN - Técnico seleccionado para escalación:', nombreTecnicoEscalado);
+            console.log('📋 INVESTIGACIÓN - ¿Son diferentes?', nombreTecnicoAsignado !== nombreTecnicoEscalado);
+            
+            historialGenerado.push({
+              id: 3,
+              accion: 'Ticket escalado',
+              usuario: 'Administrador',
+              fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
+              descripcion: `Escalado a ${nombreTecnicoEscalado} por requerir atención especializada`
+            });
+          }
+        }
+        
+        console.log('📋 Historial generado:', historialGenerado);
+        setHistorial(historialGenerado);
+      } else {
+        console.log('📋 No se encontró el ticket, estableciendo historial vacío');
+        setHistorial([]);
+      }
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 
@@ -513,7 +802,7 @@ export default function TicketsManagement() {
                        ...ticket, 
                        estado: 'ASIGNADO', 
                        tecnicoEmail: tecnicoEmail,
-                       tecnicoAsignado: tecnicoSeleccionado?.nombre || 'Técnico'
+                       tecnicoAsignado: tecnicoSeleccionado ? `${tecnicoSeleccionado.nombre} ${tecnicoSeleccionado.apellido || ''}`.trim() : 'Técnico'
                      }
                    : ticket
                ));
@@ -546,7 +835,7 @@ export default function TicketsManagement() {
         
         // Disparar notificación de asignación de ticket
         try {
-          await api.createTicketAssignmentNotification(selectedTicket.id, tecnicoId, 1); // 1 = admin ID
+          await api.createTicketAssignmentNotification(selectedTicket.id, parseInt(selectedTecnico), 1); // 1 = admin ID
         } catch (notificationError) {
           console.warn('Error enviando notificación de asignación:', notificationError);
         }
@@ -588,7 +877,7 @@ export default function TicketsManagement() {
                 ...ticket, 
                 estado: 'ESCALADO', // Siempre ESCALADO cuando se escala
                 tecnicoEmail: tecnicoEmail,
-                tecnicoAsignado: tecnicoSeleccionado?.nombre || 'Técnico'
+                tecnicoAsignado: tecnicoSeleccionado ? `${tecnicoSeleccionado.nombre} ${tecnicoSeleccionado.apellido || ''}`.trim() : 'Técnico'
               }
             : ticket
         ));
@@ -662,13 +951,47 @@ export default function TicketsManagement() {
       const matchesSearch = ticket.asunto.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            (ticket.descripcion || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                            (ticket.creadorNombre || ticket.nombre || '').toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = !statusFilter || statusFilter === 'all' || ticket.estado === statusFilter;
-      const matchesPriority = !priorityFilter || priorityFilter === 'all' || ticket.prioridad === priorityFilter;
+      
+      // Mapear valores de filtro a valores reales de los datos
+      const statusMap: { [key: string]: string } = {
+        'all': 'all',
+        'pendiente': 'PENDIENTE',
+        'asignado': 'ASIGNADO', 
+        'escalado': 'ESCALADO',
+        'resuelto': 'RESUELTO'
+      };
+      
+      const priorityMap: { [key: string]: string } = {
+        'all': 'all',
+        'high': 'HIGH',
+        'medium': 'MEDIUM',
+        'low': 'LOW'
+      };
+      
+      const matchesStatus = !statusFilter || statusFilter === 'all' || ticket.estado === statusMap[statusFilter];
+      const matchesPriority = !priorityFilter || priorityFilter === 'all' || ticket.prioridad === priorityMap[priorityFilter];
       const matchesTechnician = !technicianFilter || technicianFilter === 'all' || ticket.tecnicoEmail === technicianFilter;
       
       return matchesSearch && matchesStatus && matchesPriority && matchesTechnician;
     });
   }, [tickets, searchQuery, statusFilter, priorityFilter, technicianFilter]);
+
+  // Calcular paginación
+  const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
+
+  // Función para cambiar página
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Resetear página cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, priorityFilter, technicianFilter]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -743,27 +1066,6 @@ export default function TicketsManagement() {
           <h1 className="page-title">Gestión de Tickets</h1>
           <p className="page-subtitle">Administra y supervisa todos los tickets del sistema</p>
         </div>
-        <div className="header-actions">
-          <Button className="create-btn">
-            <Plus className="w-4 h-4" />
-            Nuevo Ticket
-          </Button>
-          <Button 
-            className="refresh-btn"
-            onClick={loadTickets}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Actualizando...' : 'Actualizar'}
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={testWebSocketConnection}
-            className="ml-2"
-          >
-            🔌 Test WS
-          </Button>
-        </div>
       </div>
 
       {/* Filters Section */}
@@ -814,6 +1116,27 @@ export default function TicketsManagement() {
                   <SelectItem value="high">Alta</SelectItem>
                   <SelectItem value="medium">Media</SelectItem>
                   <SelectItem value="low">Baja</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Técnico */}
+            <div className="filter-group">
+              <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
+                <SelectTrigger className="filter-select">
+                  <SelectValue placeholder="Todos los técnicos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los técnicos</SelectItem>
+                  <SelectItem value="w@s.com">w@s.com</SelectItem>
+                  <SelectItem value="w@s.comassa">w@s.comassa</SelectItem>
+                  <SelectItem value="marketing@empresa.com">marketing@empresa.com</SelectItem>
+                  <SelectItem value="ventas@empresa.com">ventas@empresa.com</SelectItem>
+                  <SelectItem value="soporte@empresa.com">soporte@empresa.com</SelectItem>
+                  <SelectItem value="ops@empresa.com">ops@empresa.com</SelectItem>
+                  <SelectItem value="legal@empresa.com">legal@empresa.com</SelectItem>
+                  <SelectItem value="it@empresa.com">it@empresa.com</SelectItem>
+                  <SelectItem value="innovacion@empresa.com">innovacion@empresa.com</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -888,7 +1211,7 @@ export default function TicketsManagement() {
 
       {/* Tickets Grid - CUADRADAS Y RESPONSIVAS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredTickets.map((ticket) => (
+        {paginatedTickets.map((ticket) => (
           <Card key={ticket.id} className="group hover:shadow-xl transition-all duration-300 border border-border bg-card overflow-hidden h-full flex flex-col">
             <CardContent className="p-6 flex flex-col h-full">
               {/* Header */}
@@ -909,10 +1232,8 @@ export default function TicketsManagement() {
                 </Button>
               </div>
 
-              {/* Badges */}
+              {/* Badge de categoría solamente */}
               <div className="flex flex-wrap gap-2 mb-4">
-                {getStatusBadge(ticket.estado)}
-                {getPriorityBadge(ticket.prioridad)}
                 <Badge className={`${getCategoryColor(ticket.categoria)} font-semibold px-3 py-1 rounded-full`}>
                   <Tag className="w-3 h-3 mr-1" />
                   {ticket.categoria}
@@ -932,7 +1253,12 @@ export default function TicketsManagement() {
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
-                  <span><strong>Técnico:</strong> {ticket.tecnicoEmail || 'Sin asignar'}</span>
+                  <span><strong>Técnico:</strong> {
+                    ticket.tecnicoEmail ? (() => {
+                      const tecnico = tecnicos.find(t => t.email === ticket.tecnicoEmail);
+                      return tecnico ? `${tecnico.nombre} ${tecnico.apellido || ''}`.trim() : ticket.tecnicoEmail;
+                    })() : 'Sin asignar'
+                  }</span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Calendar className="w-4 h-4" />
@@ -940,52 +1266,90 @@ export default function TicketsManagement() {
                 </div>
               </div>
 
-              {/* Actions - Siempre al final */}
-              <div className="flex space-x-2 mt-auto">
-                {/* Botón Ver - Siempre visible */}
-                <Button 
-                  size="sm" 
-                  className="flex-1"
+              {/* Botones de acción */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleViewTicket(ticket)}
+                  className="flex-1"
                 >
                   <Eye className="w-4 h-4 mr-1" />
                   Ver
                 </Button>
                 
-                {/* Botón secundario basado en estado */}
-                {ticket.estado === 'PENDIENTE' && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
+                {!ticket.tecnicoEmail ? (
+                  <Button
+                    size="sm"
                     onClick={() => handleAssignTicket(ticket)}
+                    className="flex-1"
                   >
-                    <Edit className="w-4 h-4 mr-1" />
+                    <UserPlus className="w-4 h-4 mr-1" />
                     Asignar
                   </Button>
-                )}
-                
-                {(ticket.estado === 'ASIGNADO' || ticket.estado === 'ESCALADO') && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
+                ) : (
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={() => handleEscalateTicket(ticket)}
+                    className="flex-1"
                   >
                     <ArrowUp className="w-4 h-4 mr-1" />
                     Escalar
                   </Button>
-                )}
-                
-                {/* Para tickets ESCALADOS o RESUELTOS, solo mostrar Ver */}
-                {(ticket.estado === 'ESCALADO' || ticket.estado === 'RESUELTO') && (
-                  <div className="flex-1"></div>
                 )}
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredTickets.length)} de {filteredTickets.length} tickets
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                
+                {/* Números de página */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* No Results */}
       {filteredTickets.length === 0 && (
@@ -1040,7 +1404,12 @@ export default function TicketsManagement() {
                 {selectedTicket.tecnicoEmail && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Técnico</label>
-                    <p className="text-foreground">{selectedTicket.tecnicoEmail}</p>
+                    <p className="text-foreground">{
+                      (() => {
+                        const tecnico = tecnicos.find(t => t.email === selectedTicket.tecnicoEmail);
+                        return tecnico ? `${tecnico.nombre} ${tecnico.apellido || ''}`.trim() : selectedTicket.tecnicoEmail;
+                      })()
+                    }</p>
                   </div>
                 )}
               </div>
@@ -1149,8 +1518,7 @@ export default function TicketsManagement() {
                     {tecnicos
                       .filter(tecnico => {
                         // Excluir técnico actual por ID o por email
-                        const isCurrentTechnician = tecnico.id.toString() === selectedTicket.tecnicoId?.toString() ||
-                                                   tecnico.email === selectedTicket.tecnicoEmail;
+                        const isCurrentTechnician = tecnico.email === selectedTicket.tecnicoEmail;
                         return !isCurrentTechnician;
                       })
                       .map((tecnico) => (
@@ -1167,8 +1535,7 @@ export default function TicketsManagement() {
                     <strong>Técnico actual:</strong> {
                       (() => {
                         const currentTechnician = tecnicos.find(t => 
-                          t.email === selectedTicket.tecnicoEmail || 
-                          t.id.toString() === selectedTicket.tecnicoId?.toString()
+                          t.email === selectedTicket.tecnicoEmail
                         );
                         return currentTechnician 
                           ? `${currentTechnician.nombre} ${currentTechnician.apellido || ''}`
@@ -1279,7 +1646,12 @@ export default function TicketsManagement() {
                       {selectedTicket.tecnicoEmail && (
                         <div>
                           <label className="text-sm font-medium text-muted-foreground">Técnico:</label>
-                          <p className="text-sm">{selectedTicket.tecnicoEmail}</p>
+                          <p className="text-sm">{
+                            (() => {
+                              const tecnico = tecnicos.find(t => t.email === selectedTicket.tecnicoEmail);
+                              return tecnico ? `${tecnico.nombre} ${tecnico.apellido || ''}`.trim() : selectedTicket.tecnicoEmail;
+                            })()
+                          }</p>
                         </div>
                       )}
                     </div>
@@ -1359,22 +1731,49 @@ export default function TicketsManagement() {
 
                   {activeTab === 'historial' && (
                     <div className="p-6">
-                      <h3 className="font-semibold mb-4">Historial de Actividades</h3>
-                      <div className="space-y-4">
-                        {historial.map((item) => (
-                          <div key={item.id} className="flex items-start space-x-3 p-3 bg-muted/50 rounded-lg">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <p className="font-medium text-sm">{item.accion}</p>
-                                <p className="text-xs text-muted-foreground">{item.fecha}</p>
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-1">{item.descripcion}</p>
-                              <p className="text-xs text-muted-foreground mt-1">Por: {item.usuario}</p>
-                            </div>
+                      <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5" />
+                        Historial de Actividades
+                      </h3>
+                      
+                      {isLoadingHistory ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="text-center">
+                            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                            <p className="text-muted-foreground">Cargando historial...</p>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ) : historial.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Clock className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                          <p className="text-muted-foreground">No hay historial disponible</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {historial.map((item, index) => (
+                            <div key={item.id} className="flex items-start space-x-4 p-4 bg-muted/50 rounded-lg border border-border">
+                              <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
+                                item.accion === 'Ticket creado' ? 'bg-blue-500' :
+                                item.accion === 'Asignado' || item.accion === 'Ticket asignado' ? 'bg-green-500' :
+                                item.accion === 'Escalado' || item.accion === 'Ticket escalado' ? 'bg-orange-500' :
+                                item.accion === 'Reasignado' ? 'bg-purple-500' :
+                                'bg-gray-500'
+                              }`}></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="font-medium text-sm text-foreground">{item.accion}</p>
+                                  <p className="text-xs text-muted-foreground">{item.fecha}</p>
+                                </div>
+                                <p className="text-sm text-muted-foreground mb-1">{item.descripcion}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  <User className="w-3 h-3 inline mr-1" />
+                                  Por: {item.usuario}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 

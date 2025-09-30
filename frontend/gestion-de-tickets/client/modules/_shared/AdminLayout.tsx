@@ -120,13 +120,7 @@ export default function AdminLayout() {
       </main>
       
       {/* Botones flotantes en la esquina superior derecha - solo en desktop */}
-      <div className="hidden md:flex fixed top-4 right-4 flex items-center gap-2 z-50">
-        <button 
-          className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors shadow-lg border border-blue-700 flex items-center gap-2"
-          onClick={() => window.location.reload()}
-        >
-          <i className="fas fa-sync-alt"></i> Actualizar
-        </button>
+      <div className="hidden md:flex fixed top-6 right-6 flex items-center gap-2 z-50">
         <button 
           aria-label="Notifications" 
           onClick={() => setShowNotifications(true)}

@@ -185,12 +185,12 @@ export const EvidencesManagement: React.FC<EvidencesManagementProps> = ({ userRo
 
   return (
     <div className="evidences-module">
-      <div className="module-header">
+      <div className="module-header" style={{ marginTop: '-1rem' }}>
         <div className="header-content">
           <h1 className="page-title">Gestión de Evidencias</h1>
           <p className="page-subtitle">Administra las evidencias de los tickets</p>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" style={{ marginTop: '-0.5rem' }}>
           {selectedTicket && (
             <Button onClick={() => setShowUploadDialog(true)} className="upload-btn">
               <Upload className="h-4 w-4" />

@@ -235,7 +235,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
   }
 
   return (
-    <div className="users-module">
+    <div className="users-module" style={{ paddingTop: '0.5rem' }}>
       <div className="module-header">
         <div className="header-content">
           <h1 className="page-title">Gestión de Usuarios</h1>

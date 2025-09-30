@@ -92,15 +92,11 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
 
   return (
     <div className="dashboard-module">
-      <div className="dashboard-header">
+      <div className="dashboard-header" style={{ marginTop: '-1rem' }}>
         <div className="header-content">
           <h1 className="page-title">Dashboard de Administración</h1>
           <p className="page-subtitle">Vista general del sistema de gestión de tickets</p>
         </div>
-        <Button onClick={loadData} variant="outline" className="refresh-btn">
-          <Activity className="w-4 h-4 mr-2" />
-          Actualizar
-        </Button>
       </div>
 
       {error && (
