@@ -87,6 +87,7 @@ interface HistorialItem {
 export default function TicketsManagement() {
   const { t } = useI18n();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1066,6 +1067,33 @@ export default function TicketsManagement() {
           <h1 className="page-title">Gestión de Tickets</h1>
           <p className="page-subtitle">Administra y supervisa todos los tickets del sistema</p>
         </div>
+<<<<<<< HEAD
+=======
+        <div className="header-actions">
+          <Button 
+            className="create-btn"
+            onClick={() => navigate('/client/crear')}
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo Ticket
+          </Button>
+          <Button 
+            className="refresh-btn"
+            onClick={loadTickets}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Actualizando...' : 'Actualizar'}
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={testWebSocketConnection}
+            className="ml-2"
+          >
+            🔌 Test WS
+          </Button>
+        </div>
+>>>>>>> paloma-HU-4
       </div>
 
       {/* Filters Section */}

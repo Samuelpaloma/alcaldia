@@ -38,6 +38,7 @@ const AutomationRules: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [reglaEditando, setReglaEditando] = useState<AutomationRule | null>(null);
   const [filtros, setFiltros] = useState({
     busqueda: '',
     estado: '',
@@ -56,6 +57,46 @@ const AutomationRules: React.FC = () => {
   const loadReglas = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Cargando reglas de automatización...');
+      
+      const response = await fetch('http://localhost:8080/api/automation-rules');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Reglas cargadas desde backend:', data);
+        setReglas(data);
+      } else {
+        console.log('⚠️ Backend no disponible, usando datos de prueba');
+        // Datos de prueba si no hay respuesta del servidor
+        const reglasData = [
+          {
+            id: 1,
+            nombre: 'Asignación automática por categoría',
+            descripcion: 'Asigna automáticamente tickets de redes a técnicos especializados',
+            activa: true,
+            condicion: "categoria == 'Redes' AND prioridad == 'high'",
+            accion: 'Asignar a técnico especializado en redes',
+            prioridad: 'high',
+            fechaCreacion: new Date().toISOString(),
+            ejecuciones: 15
+          },
+          {
+            id: 2,
+            nombre: 'Escalación por tiempo',
+            descripcion: 'Escala tickets que llevan más de 24 horas sin resolver',
+            activa: true,
+            condicion: "tiempo_sin_resolver > 24 AND estado == 'EN_PROGRESO'",
+            accion: 'Escalar a supervisor técnico',
+            prioridad: 'medium',
+            fechaCreacion: new Date(Date.now() - 86400000).toISOString(),
+            ejecuciones: 8
+          }
+        ];
+        setReglas(reglasData);
+      }
+    } catch (error) {
+      console.error('❌ Error al cargar reglas:', error);
+      setError('Error al cargar reglas');
+      // Datos de prueba en caso de error
       const reglasData = [
         {
           id: 1,
@@ -67,22 +108,9 @@ const AutomationRules: React.FC = () => {
           prioridad: 'high',
           fechaCreacion: new Date().toISOString(),
           ejecuciones: 15
-        },
-        {
-          id: 2,
-          nombre: 'Escalación por tiempo',
-          descripcion: 'Escala tickets que llevan más de 24 horas sin resolver',
-          activa: true,
-          condicion: "tiempo_sin_resolver > 24 AND estado == 'EN_PROGRESO'",
-          accion: 'Escalar a supervisor técnico',
-          prioridad: 'medium',
-          fechaCreacion: new Date(Date.now() - 86400000).toISOString(),
-          ejecuciones: 8
         }
       ];
       setReglas(reglasData);
-    } catch (err) {
-      setError('Error al cargar reglas');
     } finally {
       setLoading(false);
     }
@@ -113,33 +141,137 @@ const AutomationRules: React.FC = () => {
       activa: true
     });
     setModoEdicion(false);
+    setReglaEditando(null);
+    setMostrarModal(true);
+  };
+
+  const abrirModalEditar = (regla: AutomationRule) => {
+    setFormulario({
+      nombre: regla.nombre,
+      descripcion: regla.descripcion,
+      condicion: regla.condicion,
+      accion: regla.accion,
+      prioridad: regla.prioridad,
+      activa: regla.activa
+    });
+    setModoEdicion(true);
+    setReglaEditando(regla);
     setMostrarModal(true);
   };
 
   const guardarRegla = async () => {
     try {
-      const nuevaRegla: AutomationRule = {
-        id: Date.now(),
-        ...formulario,
-        fechaCreacion: new Date().toISOString(),
-        ejecuciones: 0
-      };
-      setReglas(prev => [nuevaRegla, ...prev]);
+      console.log('💾 Guardando regla de automatización:', formulario);
+      
+      const url = modoEdicion && reglaEditando 
+        ? `http://localhost:8080/api/automation-rules/${reglaEditando.id}`
+        : 'http://localhost:8080/api/automation-rules';
+      
+      const method = modoEdicion ? 'PATCH' : 'POST';
+      
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formulario),
+      });
+      
+      if (response.ok) {
+        const apiResponse = await response.json();
+        console.log('✅ Respuesta del backend:', apiResponse);
+        
+        // El backend devuelve un ApiResponse con la regla en el campo 'data'
+        const reglaGuardada = apiResponse.data;
+        console.log(`✅ Regla ${modoEdicion ? 'actualizada' : 'creada'} en backend:`, reglaGuardada);
+        
+        await loadReglas(); // Recargar las reglas desde el backend
+        setMostrarModal(false);
+        setReglaEditando(null);
+        alert(`✅ Regla de automatización ${modoEdicion ? 'actualizada' : 'creada'} exitosamente!`);
+      } else {
+        const errorResponse = await response.json();
+        console.error('❌ Error del backend:', errorResponse);
+        throw new Error(errorResponse.message || `Error al ${modoEdicion ? 'actualizar' : 'crear'} regla de automatización`);
+      }
+    } catch (error) {
+      console.log('⚠️ Backend no disponible, guardando en modo demo');
+      
+      // Modo demo: guardar localmente
+      if (modoEdicion && reglaEditando) {
+        setReglas(prev => prev.map(r => 
+          r.id === reglaEditando.id ? { ...r, ...formulario } : r
+        ));
+        alert('✅ Regla de automatización actualizada en modo demo! (Backend no disponible)');
+      } else {
+        const nuevaRegla: AutomationRule = {
+          id: Date.now(),
+          ...formulario,
+          fechaCreacion: new Date().toISOString(),
+          ejecuciones: 0
+        };
+        setReglas(prev => [nuevaRegla, ...prev]);
+        alert('✅ Regla de automatización creada en modo demo! (Backend no disponible)');
+      }
       setMostrarModal(false);
-    } catch (err) {
-      setError('Error al guardar regla');
+      setReglaEditando(null);
     }
   };
 
   const eliminarRegla = async (id: number) => {
     if (!confirm('¿Estás seguro de que quieres eliminar esta regla?')) return;
-    setReglas(prev => prev.filter(regla => regla.id !== id));
+    
+    try {
+      console.log('🗑️ Eliminando regla con ID:', id);
+      
+      const response = await fetch(`http://localhost:8080/api/automation-rules/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        const apiResponse = await response.json();
+        console.log('✅ Regla eliminada:', apiResponse);
+        await loadReglas(); // Recargar las reglas desde el backend
+        alert('✅ Regla de automatización eliminada exitosamente!');
+      } else {
+        const errorResponse = await response.json();
+        console.error('❌ Error del backend:', errorResponse);
+        throw new Error(errorResponse.message || 'Error al eliminar regla de automatización');
+      }
+    } catch (error) {
+      console.log('⚠️ Backend no disponible, eliminando en modo demo');
+      
+      // Modo demo: eliminar localmente
+      setReglas(prev => prev.filter(regla => regla.id !== id));
+      alert('✅ Regla de automatización eliminada en modo demo! (Backend no disponible)');
+    }
   };
 
   const toggleRegla = async (regla: AutomationRule) => {
-    setReglas(prev => prev.map(r => 
-      r.id === regla.id ? { ...r, activa: !r.activa } : r
-    ));
+    try {
+      console.log('🔄 Cambiando estado de regla con ID:', regla.id);
+      
+      const response = await fetch(`http://localhost:8080/api/automation-rules/${regla.id}/toggle`, {
+        method: 'PATCH',
+      });
+      
+      if (response.ok) {
+        const apiResponse = await response.json();
+        console.log('✅ Estado de regla actualizado:', apiResponse);
+        await loadReglas(); // Recargar las reglas desde el backend
+      } else {
+        const errorResponse = await response.json();
+        console.error('❌ Error del backend:', errorResponse);
+        throw new Error(errorResponse.message || 'Error al cambiar estado de regla');
+      }
+    } catch (error) {
+      console.log('⚠️ Backend no disponible, cambiando estado en modo demo');
+      
+      // Modo demo: cambiar estado localmente
+      setReglas(prev => prev.map(r => 
+        r.id === regla.id ? { ...r, activa: !r.activa } : r
+      ));
+    }
   };
 
   const getPrioridadColor = (prioridad: string) => {
@@ -346,7 +478,7 @@ const AutomationRules: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {/* Editar */}}
+                  onClick={() => abrirModalEditar(regla)}
                 >
                   <Edit className="w-4 h-4 mr-1" />
                   Editar
@@ -370,7 +502,7 @@ const AutomationRules: React.FC = () => {
         <div className="modal-overlay" onClick={() => setMostrarModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Nueva Regla</h2>
+              <h2>{modoEdicion ? 'Editar Regla' : 'Nueva Regla'}</h2>
               <button onClick={() => setMostrarModal(false)} className="modal-close">×</button>
             </div>
             
@@ -455,7 +587,7 @@ const AutomationRules: React.FC = () => {
                 Cancelar
               </Button>
               <Button onClick={guardarRegla}>
-                Crear Regla
+                {modoEdicion ? 'Actualizar Regla' : 'Crear Regla'}
               </Button>
             </div>
           </div>

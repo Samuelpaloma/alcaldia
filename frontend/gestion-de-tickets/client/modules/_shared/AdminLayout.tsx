@@ -66,6 +66,7 @@ export default function AdminLayout() {
               <NavLink to="/categories" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Categorías</NavLink>
               {/* Módulos especializados */}
               <NavLink to="/automation-rules" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Reglas de Automatización</NavLink>
+              <NavLink to="/sla-configuration" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Configuración SLA</NavLink>
               <NavLink to="/analytics" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>Análisis y Reportes</NavLink>
               <NavLink to="/logout" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("auth.logout")}</NavLink>
             </div>
@@ -108,6 +109,10 @@ export default function AdminLayout() {
               <NavLink to="/admin" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Dashboard</NavLink>
               <NavLink to="/tickets" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Gestión de Tickets</NavLink>
               <NavLink to="/users-roles" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Gestión de Usuarios</NavLink>
+              <NavLink to="/categories" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Categorías</NavLink>
+              <NavLink to="/automation-rules" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Reglas de Automatización</NavLink>
+              <NavLink to="/sla-configuration" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Configuración SLA</NavLink>
+              <NavLink to="/analytics" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Análisis y Reportes</NavLink>
               <NavLink to="/evidences" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>Gestión de Evidencias</NavLink>
               <NavLink to="/logout" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileMenuOpen(false)}>{t("auth.logout")}</NavLink>
             </div>

@@ -46,6 +46,7 @@ import GlobalWebSocket, { NotificationProvider } from "./modules/_shared/GlobalW
 import TechnicianLayout from "./modules/_shared/TechnicianLayout";
 // Nuevos módulos implementados
 import AutomationRules from "./modules/automation_rules/AutomationRules";
+import SLAConfiguration from "./modules/sla_configuration/SLAConfigurationFinal";
 import AdvancedDashboard from "./modules/advanced_dashboard/AdvancedDashboard";
 import SatisfactionSurvey from "./modules/satisfaction_survey/SatisfactionSurvey";
 import Reports from "./modules/reports/Reports";
@@ -108,6 +109,7 @@ const App = () => (
             <Route path="/categories" element={<CategoriesManagement userRole="admin" />} />
             {/* Módulos especializados */}
             <Route path="/automation-rules" element={<AutomationRules />} />
+            <Route path="/sla-configuration" element={<SLAConfiguration />} />
             <Route path="/analytics" element={<UnifiedAnalytics />} />
           </Route>
         </Route>

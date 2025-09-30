@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Automation Rules API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .success {
+            color: #28a745;
+            background: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            color: #0c5460;
+            background: #d1ecf1;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Automation Rules API</h1>
+    
+    <div class="container">
+        <h2>📊 Estado del Backend</h2>
+        <button onclick="testConnection()">🔍 Probar Conexión</button>
+        <div id="connectionStatus"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Listar Reglas de Automatización</h2>
+        <button onclick="getAllAutomationRules()">📥 Obtener Todas</button>
+        <div id="rulesList"></div>
+    </div>
+
+    <div class="container">
+        <h2>➕ Crear Nueva Regla de Automatización</h2>
+        <div class="form-group">
+            <label>Nombre:</label>
+            <input type="text" id="nombre" placeholder="Ej: Asignación automática por categoría">
+        </div>
+        <div class="form-group">
+            <label>Descripción:</label>
+            <textarea id="descripcion" placeholder="Describe qué hace esta regla..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Condición:</label>
+            <textarea id="condicion" placeholder="Ej: categoria == 'Redes' AND prioridad == 'high'"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Acción:</label>
+            <textarea id="accion" placeholder="Ej: Asignar a técnico especializado en redes"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Prioridad:</label>
+            <select id="prioridad">
+                <option value="low">Baja</option>
+                <option value="medium" selected>Media</option>
+                <option value="high">Alta</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="activa" checked> Activa
+            </label>
+        </div>
+        <button onclick="createAutomationRule()">💾 Crear Regla</button>
+        <div id="createResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>✏️ Actualizar Regla de Automatización</h2>
+        <div class="form-group">
+            <label>ID de la regla a actualizar:</label>
+            <input type="number" id="updateId" placeholder="Ingresa el ID">
+        </div>
+        <button onclick="updateAutomationRule()">🔄 Actualizar Regla</button>
+        <div id="updateResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🗑️ Eliminar Regla de Automatización</h2>
+        <div class="form-group">
+            <label>ID de la regla a eliminar:</label>
+            <input type="number" id="deleteId" placeholder="Ingresa el ID">
+        </div>
+        <button onclick="deleteAutomationRule()">❌ Eliminar Regla</button>
+        <div id="deleteResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>🔄 Cambiar Estado de Regla</h2>
+        <div class="form-group">
+            <label>ID de la regla:</label>
+            <input type="number" id="toggleId" placeholder="Ingresa el ID">
+        </div>
+        <button onclick="toggleAutomationRule()">🔄 Cambiar Estado</button>
+        <div id="toggleResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/automation-rules';
+
+        function showMessage(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function showData(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        async function testConnection() {
+            try {
+                showMessage('connectionStatus', '🔄 Probando conexión...', 'info');
+                
+                const response = await fetch(API_BASE);
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage('connectionStatus', '✅ Backend conectado correctamente!', 'success');
+                    showData('connectionStatus', data);
+                } else {
+                    showMessage('connectionStatus', `❌ Error del servidor: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showMessage('connectionStatus', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        async function getAllAutomationRules() {
+            try {
+                showMessage('rulesList', '🔄 Obteniendo reglas...', 'info');
+                
+                const response = await fetch(API_BASE);
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage('rulesList', `✅ Se encontraron ${data.length} reglas`, 'success');
+                    showData('rulesList', data);
+                } else {
+                    showMessage('rulesList', `❌ Error del servidor: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showMessage('rulesList', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        async function createAutomationRule() {
+            try {
+                const rule = {
+                    nombre: document.getElementById('nombre').value,
+                    descripcion: document.getElementById('descripcion').value,
+                    condicion: document.getElementById('condicion').value,
+                    accion: document.getElementById('accion').value,
+                    prioridad: document.getElementById('prioridad').value,
+                    activa: document.getElementById('activa').checked
+                };
+
+                showMessage('createResult', '🔄 Creando regla...', 'info');
+                
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(rule),
+                });
+
+                if (response.ok) {
+                    const apiResponse = await response.json();
+                    showMessage('createResult', '✅ Regla creada exitosamente!', 'success');
+                    showData('createResult', apiResponse);
+                    
+                    // Limpiar formulario
+                    document.getElementById('nombre').value = '';
+                    document.getElementById('descripcion').value = '';
+                    document.getElementById('condicion').value = '';
+                    document.getElementById('accion').value = '';
+                } else {
+                    const errorResponse = await response.json();
+                    showMessage('createResult', `❌ Error: ${errorResponse.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('createResult', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        async function updateAutomationRule() {
+            try {
+                const id = document.getElementById('updateId').value;
+                if (!id) {
+                    showMessage('updateResult', '❌ Por favor ingresa un ID', 'error');
+                    return;
+                }
+
+                const rule = {
+                    nombre: document.getElementById('nombre').value || 'Regla Actualizada',
+                    descripcion: document.getElementById('descripcion').value || 'Descripción actualizada',
+                    condicion: document.getElementById('condicion').value || 'condicion == "test"',
+                    accion: document.getElementById('accion').value || 'Acción actualizada',
+                    prioridad: document.getElementById('prioridad').value,
+                    activa: document.getElementById('activa').checked
+                };
+
+                showMessage('updateResult', '🔄 Actualizando regla...', 'info');
+                
+                const response = await fetch(`${API_BASE}/${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(rule),
+                });
+
+                if (response.ok) {
+                    const apiResponse = await response.json();
+                    showMessage('updateResult', '✅ Regla actualizada exitosamente!', 'success');
+                    showData('updateResult', apiResponse);
+                } else {
+                    const errorResponse = await response.json();
+                    showMessage('updateResult', `❌ Error: ${errorResponse.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('updateResult', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteAutomationRule() {
+            try {
+                const id = document.getElementById('deleteId').value;
+                if (!id) {
+                    showMessage('deleteResult', '❌ Por favor ingresa un ID', 'error');
+                    return;
+                }
+
+                if (!confirm(`¿Estás seguro de que quieres eliminar la regla con ID ${id}?`)) {
+                    return;
+                }
+
+                showMessage('deleteResult', '🔄 Eliminando regla...', 'info');
+                
+                const response = await fetch(`${API_BASE}/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    const apiResponse = await response.json();
+                    showMessage('deleteResult', '✅ Regla eliminada exitosamente!', 'success');
+                    showData('deleteResult', apiResponse);
+                } else {
+                    const errorResponse = await response.json();
+                    showMessage('deleteResult', `❌ Error: ${errorResponse.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('deleteResult', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        async function toggleAutomationRule() {
+            try {
+                const id = document.getElementById('toggleId').value;
+                if (!id) {
+                    showMessage('toggleResult', '❌ Por favor ingresa un ID', 'error');
+                    return;
+                }
+
+                showMessage('toggleResult', '🔄 Cambiando estado de regla...', 'info');
+                
+                const response = await fetch(`${API_BASE}/${id}/toggle`, {
+                    method: 'PATCH',
+                });
+
+                if (response.ok) {
+                    const apiResponse = await response.json();
+                    showMessage('toggleResult', '✅ Estado de regla actualizado exitosamente!', 'success');
+                    showData('toggleResult', apiResponse);
+                } else {
+                    const errorResponse = await response.json();
+                    showMessage('toggleResult', `❌ Error: ${errorResponse.message}`, 'error');
+                }
+            } catch (error) {
+                showMessage('toggleResult', `❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        // Cargar reglas al iniciar
+        window.onload = function() {
+            getAllAutomationRules();
+        };
+    </script>
+</body>
+</html>

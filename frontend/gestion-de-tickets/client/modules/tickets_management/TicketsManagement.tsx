@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ import { api } from "@shared/api";
 
 export default function TicketsManagement() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -230,7 +232,12 @@ export default function TicketsManagement() {
             <p className="text-blue-100 text-lg">Administra y supervisa todos los tickets del sistema</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="secondary" size="lg" className="bg-white/20 hover:bg-white/30 text-white border-white/30">
+            <Button 
+              variant="secondary" 
+              size="lg" 
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              onClick={() => navigate('/client/crear')}
+            >
               <Plus className="w-5 h-5 mr-2" />
               Nuevo Ticket
             </Button>

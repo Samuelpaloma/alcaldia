@@ -40,7 +40,7 @@ public class DataInitializerService implements CommandLineRunner {
      * Crea el superadmin por defecto si no existe
      */
     private void crearSuperAdminPorDefecto() {
-        String emailSuperAdmin = "rarodrigues.300@gmail.com";
+        String emailSuperAdmin = "samupaloma30@gmail.com";
         
         // Verificar si ya existe
         if (usuarioRepository.findByEmail(emailSuperAdmin).isPresent()) {
