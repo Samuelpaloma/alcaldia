@@ -10,8 +10,10 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '../hooks/useTheme';
 
 const ChangePasswordScreen = () => {
+  const { theme } = useTheme();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -154,6 +156,8 @@ const ChangePasswordScreen = () => {
       navigation.goBack();
     }
   };
+
+  const styles = createStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -335,7 +339,8 @@ const ChangePasswordScreen = () => {
                 style={styles.sidebarMenuItem}
                 onPress={() => {
                   setSidebarVisible(false);
-                  // Aquí puedes agregar navegación a notificaciones
+                  // Navegar a notificaciones - esto abrirá el modal desde el dashboard
+                  navigation.navigate('Home');
                 }}
               >
                 <Text style={styles.sidebarMenuIcon}>🔔</Text>
@@ -346,7 +351,8 @@ const ChangePasswordScreen = () => {
                 style={styles.sidebarMenuItem}
                 onPress={() => {
                   setSidebarVisible(false);
-                  // Aquí puedes agregar navegación a evidencias
+                  // Navegar a evidencias - esto abrirá el modal desde el dashboard
+                  navigation.navigate('Home');
                 }}
               >
                 <Text style={styles.sidebarMenuIcon}>📄</Text>
@@ -357,7 +363,7 @@ const ChangePasswordScreen = () => {
                 style={styles.sidebarMenuItem}
                 onPress={() => {
                   setSidebarVisible(false);
-                  // Aquí puedes agregar navegación al historial
+                  navigation.navigate('HistorialPorArea');
                 }}
               >
                 <Text style={styles.sidebarMenuIcon}>🔄</Text>
@@ -371,8 +377,19 @@ const ChangePasswordScreen = () => {
                   // Ya estamos en cambiar contraseña, no hacer nada
                 }}
               >
-                <Text style={styles.sidebarMenuIcon}>⚙️</Text>
+                <Text style={styles.sidebarMenuIcon}>🔑</Text>
                 <Text style={styles.sidebarMenuText}>Cambiar contraseña</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.sidebarMenuItem}
+                onPress={() => {
+                  setSidebarVisible(false);
+                  navigation.navigate('Configuraciones');
+                }}
+              >
+                <Text style={styles.sidebarMenuIcon}>⚙️</Text>
+                <Text style={styles.sidebarMenuText}>Configuraciones</Text>
               </TouchableOpacity>
             </View>
             
@@ -394,10 +411,10 @@ const ChangePasswordScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.background,
   },
   header: {
     backgroundColor: '#000000',
@@ -591,7 +608,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: '70%',
     height: '100%',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.surface,
     paddingTop: 50,
     shadowColor: '#000',
     shadowOffset: {
@@ -609,16 +626,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border,
   },
   sidebarTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
   },
   sidebarCloseButton: {
     fontSize: 24,
-    color: '#666',
+    color: theme.colors.textSecondary,
     fontWeight: 'bold',
   },
   sidebarSection: {
@@ -626,7 +643,7 @@ const styles = StyleSheet.create({
   },
   sidebarSectionTitle: {
     fontSize: 12,
-    color: '#999',
+    color: theme.colors.textSecondary,
     fontWeight: '600',
     textTransform: 'uppercase',
     paddingHorizontal: 20,
@@ -647,7 +664,7 @@ const styles = StyleSheet.create({
   },
   sidebarMenuText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   sidebarLogout: {
@@ -670,7 +687,7 @@ const styles = StyleSheet.create({
   },
   sidebarLogoutText: {
     fontSize: 16,
-    color: '#ff4444',
+    color: theme.colors.error,
     fontWeight: '500',
   },
 });

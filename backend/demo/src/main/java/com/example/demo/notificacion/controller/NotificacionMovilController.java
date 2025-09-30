@@ -2,8 +2,10 @@ package com.example.demo.notificacion.controller;
 
 import com.example.demo.notificacion.model.NotificacionMejorada;
 import com.example.demo.notificacion.service.NotificacionMejoradaService;
+import com.example.demo.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -24,20 +26,42 @@ public class NotificacionMovilController {
      */
     @GetMapping
     public ResponseEntity<Map<String, Object>> obtenerNotificacionesMovil(
-            @RequestParam(required = false) String email) {
+            @RequestParam(required = false) String email,
+            Authentication authentication) {
         try {
-            // Usar email por defecto si no se proporciona
-            String emailUsuario = email != null ? email : "admin@test.com";
+            System.out.println("🔔 [CONTROLLER] ===== OBTENIENDO NOTIFICACIONES MÓVIL =====");
+            System.out.println("🔔 [CONTROLLER] Email recibido: " + email);
+            System.out.println("🔔 [CONTROLLER] Authentication: " + (authentication != null ? "Presente" : "Null"));
+            
+            String emailUsuario;
+            if (email != null && !email.isEmpty()) {
+                emailUsuario = email;
+            } else if (authentication != null && authentication.getPrincipal() != null) {
+                // Obtener email del usuario autenticado
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+                emailUsuario = userDetails.getEmail();
+            } else {
+                emailUsuario = "admin@test.com";
+            }
+            
+            System.out.println("🔔 [CONTROLLER] Email a usar: " + emailUsuario);
             
             List<NotificacionMejorada> notificaciones = notificacionMejoradaService
                 .obtenerNotificacionesPorUsuario(emailUsuario);
+            
+            System.out.println("🔔 [CONTROLLER] Notificaciones encontradas: " + notificaciones.size());
             
             Map<String, Object> response = new HashMap<>();
             response.put("notificaciones", notificaciones);
             response.put("total", notificaciones.size());
             
+            System.out.println("🔔 [CONTROLLER] Respuesta enviada: " + response);
+            System.out.println("🔔 [CONTROLLER] ===== FIN NOTIFICACIONES MÓVIL =====");
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("❌ [CONTROLLER] Error obteniendo notificaciones: " + e.getMessage());
+            e.printStackTrace();
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Error al obtener notificaciones: " + e.getMessage());
             return ResponseEntity.badRequest().body(errorResponse);
@@ -111,17 +135,27 @@ public class NotificacionMovilController {
     public ResponseEntity<Map<String, Object>> obtenerContadorMovil(
             @RequestParam(required = false) String email) {
         try {
+            System.out.println("🔔 [CONTROLLER] ===== OBTENIENDO CONTADOR MÓVIL =====");
+            System.out.println("🔔 [CONTROLLER] Email recibido: " + email);
+            
             // Usar email por defecto si no se proporciona
             String emailUsuario = email != null ? email : "admin@test.com";
+            System.out.println("🔔 [CONTROLLER] Email a usar: " + emailUsuario);
             
             Long count = notificacionMejoradaService.contarNotificacionesNoLeidas(emailUsuario);
+            System.out.println("🔔 [CONTROLLER] Contador obtenido del servicio: " + count);
             
             Map<String, Object> response = new HashMap<>();
             response.put("count", count);
             response.put("email", emailUsuario);
             
+            System.out.println("🔔 [CONTROLLER] Respuesta enviada: " + response);
+            System.out.println("🔔 [CONTROLLER] ===== FIN CONTADOR MÓVIL =====");
+            
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            System.err.println("❌ [CONTROLLER] Error obteniendo contador: " + e.getMessage());
+            e.printStackTrace();
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Error al obtener contador: " + e.getMessage());
             errorResponse.put("count", 0);

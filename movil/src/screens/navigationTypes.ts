@@ -11,6 +11,6 @@ export type RootStackParamList = {
   Config: undefined;
   ChangePassword: undefined;
   TwoFactorAuth: undefined;
-  Chat: undefined;
+  Chat: { ticketId: number };
   HistorialPorArea: undefined;
 };

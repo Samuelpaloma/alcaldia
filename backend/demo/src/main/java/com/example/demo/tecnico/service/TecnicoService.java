@@ -16,6 +16,8 @@ import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.notificacion.service.NotificacionAutomaticaService;
 import com.example.demo.notificacion.service.NotificacionServiceSimple;
+import com.example.demo.ticket.service.ComentarioService;
+import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ public class TecnicoService {
     private final HistorialEstadoTicketRepository historialRepository;
     private final NotificacionAutomaticaService notificacionAutomaticaService;
     private final NotificacionServiceSimple notificacionServiceSimple;
+    private final ComentarioService comentarioService;
     
     /**
      * Obtener tickets asignados a un técnico
@@ -394,7 +397,7 @@ public class TecnicoService {
         
         TicketTecnicoResponseDTO response = new TicketTecnicoResponseDTO();
         response.setId(ticket.getId());
-        response.setTitulo(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Ticket");
+        response.setTitulo(ticket.getAsunto() != null ? ticket.getAsunto() : "Ticket");
         response.setDescripcion(ticket.getDescripcion());
         response.setEstado(ticket.getEstado());
         response.setPrioridad(ticket.getPrioridad());
@@ -412,6 +415,11 @@ public class TecnicoService {
         response.setTecnicoEmail(ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null);
         response.setEvidencias(evidenciasDTO);
         response.setHistorialEstados(historialDTO);
+        
+        // Obtener comentarios del ticket
+        List<ComentarioResponseDTO> comentariosDTO = comentarioService.obtenerComentariosPorTicket(ticket.getId());
+        response.setComentarios(comentariosDTO);
+        
         return response;
     }
     

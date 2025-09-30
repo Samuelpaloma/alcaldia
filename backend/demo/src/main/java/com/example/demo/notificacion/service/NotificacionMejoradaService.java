@@ -20,7 +20,10 @@ public class NotificacionMejoradaService {
     }
     
     public List<NotificacionMejorada> obtenerNotificacionesPorUsuario(String email) {
-        return notificacionMejoradaRepository.findByDestinatariosContaining(email);
+        System.out.println("🔔 [NOTIFICACION MEJORADA] Obteniendo notificaciones para usuario: " + email);
+        List<NotificacionMejorada> notificaciones = notificacionMejoradaRepository.findByDestinatariosContaining(email);
+        System.out.println("🔔 [NOTIFICACION MEJORADA] Notificaciones encontradas: " + notificaciones.size());
+        return notificaciones;
     }
     
     public List<NotificacionMejorada> obtenerNotificacionesPorRol(String rol) {
@@ -59,6 +62,22 @@ public class NotificacionMejoradaService {
     }
     
     public Long contarNotificacionesNoLeidas(String email) {
-        return notificacionMejoradaRepository.countByDestinatariosContainingAndLeidaFalse(email);
+        System.out.println("🔔 [NOTIFICACION MEJORADA] Contando notificaciones no leídas para: " + email);
+        
+        // Primero, obtener todas las notificaciones para debug
+        List<NotificacionMejorada> todasLasNotificaciones = notificacionMejoradaRepository.findAll();
+        System.out.println("🔔 [NOTIFICACION MEJORADA] Total notificaciones en BD: " + todasLasNotificaciones.size());
+        
+        for (NotificacionMejorada notif : todasLasNotificaciones) {
+            System.out.println("🔔 [NOTIFICACION MEJORADA] - ID: " + notif.getId() + 
+                             ", Destinatarios: " + notif.getDestinatarios() + 
+                             ", Leída: " + notif.getLeida() + 
+                             ", Tipo: " + notif.getTipo());
+        }
+        
+        Long count = notificacionMejoradaRepository.countByDestinatariosContainingAndLeidaFalse(email);
+        System.out.println("🔔 [NOTIFICACION MEJORADA] Contador encontrado: " + count);
+        
+        return count;
     }
 }

@@ -85,6 +85,9 @@ public class Usuario {
     @Column(name = "device_token")
     private String deviceToken; // Token para notificaciones push
     
+    @Column(name = "tema_preferido", length = 10, columnDefinition = "VARCHAR(10) DEFAULT 'light'")
+    private String temaPreferido = "light"; // Tema preferido: 'light' o 'dark'
+    
     @Column(name = "rol")
     private String rol; // Campo adicional para compatibilidad
     
