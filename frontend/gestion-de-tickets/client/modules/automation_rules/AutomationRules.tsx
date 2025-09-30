@@ -24,6 +24,23 @@ import {
   Pause
 } from 'lucide-react';
 
+<<<<<<< Updated upstream
+=======
+interface AutomationRule {
+  id: number;
+  nombre: string;
+  descripcion: string;
+  activa: boolean;
+  condicion: string;
+  accion: string;
+  prioridad: string;
+  categoriaId?: number;
+  categoriaNombre?: string;
+  fechaCreacion: string;
+  ejecuciones: number;
+}
+
+>>>>>>> Stashed changes
 const AutomationRules: React.FC = () => {
   const { toast } = useToast();
   const [reglas, setReglas] = useState<ReglaAutomatizacionResponseDTO[]>([]);
@@ -43,7 +60,13 @@ const AutomationRules: React.FC = () => {
     descripcion: '',
     condicion: '',
     accion: '',
+<<<<<<< Updated upstream
     prioridad: 2,
+=======
+    prioridad: 'medium',
+    categoriaId: '',
+    categoriaNombre: '',
+>>>>>>> Stashed changes
     activa: true
   });
 
@@ -95,7 +118,13 @@ const AutomationRules: React.FC = () => {
       descripcion: '',
       condicion: '',
       accion: '',
+<<<<<<< Updated upstream
       prioridad: 2,
+=======
+      prioridad: 'medium',
+      categoriaId: '',
+      categoriaNombre: '',
+>>>>>>> Stashed changes
       activa: true
     });
     setModoEdicion(false);
@@ -109,7 +138,13 @@ const AutomationRules: React.FC = () => {
       descripcion: regla.descripcion || '',
       condicion: regla.condicion,
       accion: regla.accion,
+<<<<<<< Updated upstream
       prioridad: typeof regla.prioridad === 'string' ? parseInt(regla.prioridad) : regla.prioridad,
+=======
+      prioridad: regla.prioridad,
+      categoriaId: regla.categoriaId?.toString() || '',
+      categoriaNombre: regla.categoriaNombre || '',
+>>>>>>> Stashed changes
       activa: regla.activa
     });
     setModoEdicion(true);
@@ -457,6 +492,7 @@ const AutomationRules: React.FC = () => {
                   <p className="text-sm text-gray-600 mt-1">{regla.accion}</p>
                 </div>
 
+
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-1">
@@ -557,6 +593,7 @@ const AutomationRules: React.FC = () => {
                     rows={2}
                   />
                 </div>
+
 
                 <div className="form-group">
                   <Label htmlFor="prioridad">Prioridad</Label>
