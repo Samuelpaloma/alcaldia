@@ -8,7 +8,8 @@ import { useI18n } from "@/i18n";
 import { createTicket, Priority } from "../client_tickets/apiStore";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { useUserInfo } from "@/hooks/use-user-info";
-import { Bot, Building, Calculator, Users, Folder, Monitor, Database, Wifi, Code, Wrench, Shield, User, MessageSquare, Info, FileText, Upload, Send, CheckCircle, AlertCircle, Clock, X, Loader2 } from "lucide-react";
+import { api, CategoriaSimpleDTO } from "../../../shared/api";
+import { Bot, Building, Calculator, Users, Folder, Monitor, Database, Wifi, Code, Wrench, Shield, User, MessageSquare, Info, FileText, Upload, Send, CheckCircle, AlertCircle, Clock, X, Loader2, Tag } from "lucide-react";
 
 interface SenaOption {
   id: string;
@@ -31,117 +32,81 @@ export default function CreateTicket() {
   const { toast } = useToast();
   const { profile, isLoading: userLoading, error: userError } = useUserProfile();
   const { userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
+  
+  // Estado para categorías dinámicas
+  const [dynamicCategories, setDynamicCategories] = useState<CategoriaSimpleDTO[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // Generate SENA areas using translations - regenerates when language changes
+  // Función para cargar categorías dinámicamente
+  const loadDynamicCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const categories = await api.getCategoriasActivas();
+      setDynamicCategories(categories);
+      console.log('📋 Categorías cargadas dinámicamente:', categories);
+    } catch (error) {
+      console.error('❌ Error cargando categorías:', error);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las categorías",
+        variant: "destructive",
+      });
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  // Función para obtener el icono apropiado según el nombre de la categoría
+  const getIconForCategory = (categoryName: string) => {
+    const name = categoryName.toLowerCase();
+    
+    if (name.includes('administración') || name.includes('gestión')) return Building;
+    if (name.includes('contabilidad') || name.includes('financiero')) return Calculator;
+    if (name.includes('recursos humanos') || name.includes('personal')) return Users;
+    if (name.includes('documental') || name.includes('archivo')) return Folder;
+    if (name.includes('tecnología') || name.includes('informática') || name.includes('sistemas')) return Monitor;
+    if (name.includes('redes') || name.includes('comunicaciones')) return Wifi;
+    if (name.includes('desarrollo') || name.includes('software')) return Code;
+    if (name.includes('infraestructura') || name.includes('mantenimiento')) return Wrench;
+    if (name.includes('atención') || name.includes('ciudadano') || name.includes('servicio')) return User;
+    if (name.includes('quejas') || name.includes('reclamos')) return MessageSquare;
+    if (name.includes('información') || name.includes('consulta')) return Info;
+    if (name.includes('tramites') || name.includes('procedimientos')) return FileText;
+    if (name.includes('seguridad')) return Shield;
+    
+    // Icono por defecto
+    return Tag;
+  };
+
+  // Cargar categorías al montar el componente
+  useEffect(() => {
+    loadDynamicCategories();
+  }, []);
+
+  // Generate SENA areas using dynamic categories - regenerates when categories or language changes
   const SENA_AREAS: SenaOption[] = useMemo(() => {
-    console.log("Regenerando SENA_AREAS para idioma:", locale);
-    return [
-      {
-        id: "administracion",
-        title: t("sena.administration"),
-        description: t("sena.administration.desc"),
-        icon: Building,
-        children: [
-          {
-            id: "contabilidad",
-            title: t("sena.accounting"),
-            description: t("sena.accounting.desc"),
-            icon: Calculator
-          },
-          {
-            id: "recursos_humanos",
-            title: t("sena.human_resources"),
-            description: t("sena.human_resources.desc"),
-            icon: Users
-          },
-          {
-            id: "gestion_documental",
-            title: t("sena.document_management"),
-            description: t("sena.document_management.desc"),
-            icon: Folder
-          }
-        ]
-      },
-      {
-        id: "tecnologia",
-        title: t("sena.technology"),
-        description: t("sena.technology.desc"),
-        icon: Monitor,
-        children: [
-          {
-            id: "sistemas",
-            title: t("sena.information_systems"),
-            description: t("sena.information_systems.desc"),
-            icon: Database
-          },
-          {
-            id: "redes",
-            title: t("sena.networks"),
-            description: t("sena.networks.desc"),
-            icon: Wifi
-          },
-          {
-            id: "desarrollo",
-            title: t("sena.development"),
-            description: t("sena.development.desc"),
-            icon: Code
-          }
-        ]
-      },
-      {
-        id: "infraestructura",
-        title: t("sena.infrastructure"),
-        description: t("sena.infrastructure.desc"),
-        icon: Wrench,
-        children: [
-          {
-            id: "mantenimiento",
-            title: t("sena.maintenance"),
-            description: t("sena.maintenance.desc"),
-            icon: Wrench
-          },
-          {
-            id: "limpieza",
-            title: t("sena.cleaning"),
-            description: t("sena.cleaning.desc"),
-            icon: Shield
-          },
-          {
-            id: "seguridad",
-            title: t("sena.security"),
-            description: t("sena.security.desc"),
-            icon: Shield
-          }
-        ]
-      },
-      {
-        id: "atencion_ciudadana",
-        title: t("sena.citizen_service"),
-        description: t("sena.citizen_service.desc"),
-        icon: User,
-        children: [
-          {
-            id: "tramites",
-            title: t("sena.procedures"),
-            description: t("sena.procedures.desc"),
-            icon: FileText
-          },
-          {
-            id: "quejas",
-            title: t("sena.complaints"),
-            description: t("sena.complaints.desc"),
-            icon: MessageSquare
-          },
-          {
-            id: "informacion",
-            title: t("sena.information"),
-            description: t("sena.information.desc"),
-            icon: Info
-          }
-        ]
-      }
-    ];
-  }, [t, locale]); // Regenera cuando cambia el idioma
+    console.log("Regenerando SENA_AREAS con categorías dinámicas:", dynamicCategories);
+    
+    if (dynamicCategories.length === 0) {
+      // Fallback a categorías básicas si no hay categorías dinámicas
+      return [
+        {
+          id: "general",
+          title: "General",
+          description: "Categoría general para consultas",
+          icon: Info
+        }
+      ];
+    }
+
+    // Convertir categorías dinámicas al formato SenaOption
+    return dynamicCategories.map((category) => ({
+      id: category.id.toString(),
+      title: category.nombre,
+      description: category.descripcion || `Categoría: ${category.nombre}`,
+      icon: getIconForCategory(category.nombre)
+    }));
+  }, [dynamicCategories, t, locale]); // Regenera cuando cambian las categorías o el idioma
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [message, setMessage] = useState("");

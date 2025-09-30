@@ -262,19 +262,50 @@ export interface ApiResponse {
 // ========== TIPOS PARA CATEGORÍAS ==========
 
 export interface CategoriaResponseDTO {
-  idCategoria: number;
+  id: number;
   nombre: string;
   descripcion?: string;
   activa: boolean;
   orden: number;
   fechaCreacion: string;
   fechaActualizacion: string;
+  colorHex?: string;
+  icono?: string;
+  displayName?: string;
+}
+
+// ========== TIPOS PARA REGLAS DE AUTOMATIZACIÓN ==========
+
+export interface ReglaAutomatizacionRequestDTO {
+  nombre: string;
+  descripcion?: string;
+  condicion: string;
+  accion: string;
+  prioridad?: number;
+  activa?: boolean;
+}
+
+export interface ReglaAutomatizacionResponseDTO {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  condicion: string;
+  accion: string;
+  prioridad: number;
+  activa: boolean;
+  ejecuciones: number;
+  ultimaEjecucion?: string;
+  creadoPor?: string;
+  fechaCreacion: string;
 }
 
 export interface CategoriaSimpleDTO {
-  idCategoria: number;
+  id: number;
   nombre: string;
   activa: boolean;
+  colorHex?: string;
+  icono?: string;
+  displayName?: string;
 }
 
 export interface CategoriaRequestDTO {
@@ -533,8 +564,9 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    console.log(`🌐 Realizando petición a: ${url}`);
-    console.log(`📤 Datos enviados:`, options.body);
+      console.log(`🌐 Realizando petición a: ${url}`);
+      console.log(`📤 Datos enviados:`, options.body);
+      console.log(`🔧 Método:`, options.method || 'GET');
     
     try {
       const headers: Record<string, string> = {
@@ -584,6 +616,9 @@ class ApiClient {
       if (!response.ok) {
         const errorMessage = responseData.message || `Error ${response.status}: ${response.statusText}`;
         console.error(`❌ Error del servidor:`, errorMessage);
+        console.error(`❌ Respuesta completa:`, responseData);
+        console.error(`❌ URL de la petición:`, url);
+        console.error(`❌ Datos enviados:`, options.body);
         throw new Error(errorMessage);
       }
 
@@ -1868,6 +1903,11 @@ class ApiClient {
    * Actualizar categoría
    */
   async updateCategoria(id: number, categoriaData: any): Promise<CategoriaResponseDTO> {
+    console.log('🔄 [API] Actualizando categoría:', {
+      id: id,
+      data: categoriaData
+    });
+    
     return this.request(`/categorias/${id}`, {
       method: 'PUT',
       body: JSON.stringify(categoriaData)
@@ -2530,6 +2570,112 @@ class ApiClient {
         resolve(base64);
       };
       reader.onerror = error => reject(error);
+    });
+  }
+
+  // ========== REGLAS DE AUTOMATIZACIÓN ==========
+
+  /**
+   * Obtener todas las reglas de automatización
+   */
+  async getReglasAutomatizacion(page: number = 0, size: number = 20): Promise<ReglaAutomatizacionResponseDTO[]> {
+    return this.request(`/automation-rules?page=${page}&size=${size}`);
+  }
+
+  /**
+   * Obtener reglas activas
+   */
+  async getReglasActivas(): Promise<ReglaAutomatizacionResponseDTO[]> {
+    return this.request('/automation-rules/activas');
+  }
+
+  /**
+   * Crear regla de automatización
+   */
+  async createReglaAutomatizacion(reglaData: ReglaAutomatizacionRequestDTO): Promise<ReglaAutomatizacionResponseDTO> {
+    return this.request('/automation-rules', {
+      method: 'POST',
+      body: JSON.stringify(reglaData)
+    });
+  }
+
+  /**
+   * Obtener regla por ID
+   */
+  async getReglaAutomatizacion(id: number): Promise<ReglaAutomatizacionResponseDTO> {
+    return this.request(`/automation-rules/${id}`);
+  }
+
+  /**
+   * Actualizar regla de automatización
+   */
+  async updateReglaAutomatizacion(id: number, reglaData: ReglaAutomatizacionRequestDTO): Promise<ReglaAutomatizacionResponseDTO> {
+    return this.request(`/automation-rules/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(reglaData)
+    });
+  }
+
+  /**
+   * Eliminar regla de automatización
+   */
+  async deleteReglaAutomatizacion(id: number): Promise<ApiResponse> {
+    return this.request(`/automation-rules/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Activar/Desactivar regla
+   */
+  async toggleReglaAutomatizacion(id: number): Promise<ReglaAutomatizacionResponseDTO> {
+    return this.request(`/automation-rules/${id}/toggle`, {
+      method: 'PATCH'
+    });
+  }
+
+  /**
+   * Buscar reglas con filtros
+   */
+  async buscarReglasAutomatizacion(filtros: {
+    nombre?: string;
+    activa?: boolean;
+    prioridad?: number;
+    page?: number;
+    size?: number;
+  }): Promise<PageResponse<ReglaAutomatizacionResponseDTO>> {
+    const params = new URLSearchParams();
+    if (filtros.nombre) params.append('nombre', filtros.nombre);
+    if (filtros.activa !== undefined) params.append('activa', filtros.activa.toString());
+    if (filtros.prioridad) params.append('prioridad', filtros.prioridad.toString());
+    if (filtros.page !== undefined) params.append('page', filtros.page.toString());
+    if (filtros.size !== undefined) params.append('size', filtros.size.toString());
+    
+    return this.request(`/automation-rules/buscar?${params.toString()}`);
+  }
+
+  /**
+   * Obtener estadísticas de reglas
+   */
+  async getEstadisticasReglas(): Promise<any> {
+    return this.request('/automation-rules/estadisticas');
+  }
+
+  /**
+   * Ejecutar todas las reglas
+   */
+  async ejecutarReglas(): Promise<ApiResponse> {
+    return this.request('/automation-rules/ejecutar', {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Ejecutar regla específica
+   */
+  async ejecutarRegla(id: number): Promise<ApiResponse> {
+    return this.request(`/automation-rules/${id}/ejecutar`, {
+      method: 'POST'
     });
   }
 

@@ -110,6 +110,26 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
   const handleCreate = async () => {
     try {
       setSaving(true);
+      
+      // Validar datos antes de enviar
+      if (!formData.nombre || formData.nombre.trim().length < 2) {
+        toast({
+          title: "Error de validación",
+          description: "El nombre debe tener al menos 2 caracteres",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!formData.colorHex || !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(formData.colorHex)) {
+        toast({
+          title: "Error de validación",
+          description: "El color debe ser un código hexadecimal válido (ej: #FF5733)",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       await api.createCategoria(formData);
       setShowCreateDialog(false);
       resetForm();
@@ -136,7 +156,32 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
 
     try {
       setSaving(true);
-      await api.updateCategoria(editingCategory.idCategoria, formData);
+      
+      // Validar datos antes de enviar
+      if (!formData.nombre || formData.nombre.trim().length < 2) {
+        toast({
+          title: "Error de validación",
+          description: "El nombre debe tener al menos 2 caracteres",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!formData.colorHex || !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(formData.colorHex)) {
+        toast({
+          title: "Error de validación",
+          description: "El color debe ser un código hexadecimal válido (ej: #FF5733)",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('🔄 Actualizando categoría:', {
+        id: editingCategory.id,
+        formData: formData
+      });
+      
+      await api.updateCategoria(editingCategory.id, formData);
       setEditingCategory(null);
       resetForm();
       loadCategories();
@@ -146,7 +191,11 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
         description: "La categoría se actualizó correctamente",
       });
     } catch (error) {
-      console.error('Error actualizando categoría:', error);
+      console.error('❌ Error actualizando categoría:', error);
+      console.error('❌ Datos enviados:', {
+        id: editingCategory.id,
+        formData: formData
+      });
       toast({
         title: "Error",
         description: "No se pudo actualizar la categoría",
@@ -158,21 +207,34 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta categoría?')) return;
+    if (!confirm('¿Estás seguro de que quieres desactivar esta categoría?\n\nℹ️ NOTA: La categoría se desactivará (no se eliminará físicamente) para preservar los tickets existentes.')) return;
 
     try {
+      console.log('🗑️ Desactivando categoría ID:', id);
       await api.deleteCategoria(id);
       loadCategories();
       loadStats();
       toast({
-        title: "Categoría eliminada",
-        description: "La categoría se eliminó correctamente",
+        title: "Categoría desactivada",
+        description: "La categoría se desactivó correctamente y ya no aparecerá en las opciones de creación de tickets",
       });
     } catch (error) {
-      console.error('Error eliminando categoría:', error);
+      console.error('❌ Error desactivando categoría:', error);
+      
+      // Determinar el tipo de error y mostrar mensaje apropiado
+      let errorMessage = "No se pudo desactivar la categoría";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('404')) {
+          errorMessage = "La categoría no existe o ya fue eliminada.";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "No se pudo eliminar la categoría",
+        title: "Error al desactivar",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -183,8 +245,8 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
     setFormData({
       nombre: category.nombre,
       descripcion: category.descripcion || '',
-      colorHex: getCategoryColor(category.idCategoria),
-      icono: 'tag',
+      colorHex: getCategoryColor(category),
+      icono: category.icono || 'tag',
       orden: category.orden,
       activa: category.activa
     });
@@ -239,54 +301,42 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
     return iconMap[iconName] || '🏷️';
   };
 
-  const getCategoryIcon = (idCategoria: number) => {
-    const iconMap: { [key: number]: string } = {
-      1: '👤', // Atención al Ciudadano
-      2: '⚠️', // Quejas y Reclamos
-      3: '📄', // Solicitudes
-      4: '❓', // General
-      5: '💼', // Administración y Gestión
-      6: '🧮', // Contabilidad
-      7: '👥', // Recursos Humanos
-      8: '📁', // Gestión Documental
-      9: '🖥️', // Tecnología e IT
-      10: '🗄️', // Sistemas de Información
-      11: '📶', // Redes y Comunicaciones
-      12: '💻', // Desarrollo de Software
-      13: '🔧', // Infraestructura y Mantenimiento
-      14: '🛠️', // Mantenimiento
-      15: '🛡️', // Servicios Generales
-      16: '🖥️', // Hardware
-      17: '📚', // Software
-      18: '🌐', // Redes
-      19: '🎧' // Soporte Técnico
-    };
-    return iconMap[idCategoria] || '🏷️';
+  const getCategoryIcon = (category: CategoriaResponseDTO) => {
+    // Usar el icono real de la categoría si existe
+    if (category.icono) {
+      const iconMap: { [key: string]: string } = {
+        'user': '👤',
+        'alert-triangle': '⚠️',
+        'file-text': '📄',
+        'help-circle': '❓',
+        'briefcase': '💼',
+        'calculator': '🧮',
+        'users': '👥',
+        'folder': '📁',
+        'monitor': '🖥️',
+        'database': '🗄️',
+        'wifi': '📶',
+        'code': '💻',
+        'wrench': '🔧',
+        'tool': '🛠️',
+        'shield': '🛡️',
+        'cpu': '🖥️',
+        'layers': '📚',
+        'globe': '🌐',
+        'headphones': '🎧',
+        'tag': '🏷️'
+      };
+      return iconMap[category.icono] || '🏷️';
+    }
+    return '🏷️';
   };
 
-  const getCategoryColor = (idCategoria: number) => {
-    const colorMap: { [key: number]: string } = {
-      1: '#FF5733', // Atención al Ciudadano
-      2: '#F59E0B', // Quejas y Reclamos
-      3: '#3498DB', // Solicitudes
-      4: '#95A5A6', // General
-      5: '#9B59B6', // Administración y Gestión
-      6: '#8E44AD', // Contabilidad
-      7: '#8E44AD', // Recursos Humanos
-      8: '#8E44AD', // Gestión Documental
-      9: '#2ECC71', // Tecnología e IT
-      10: '#27AE60', // Sistemas de Información
-      11: '#27AE60', // Redes y Comunicaciones
-      12: '#27AE60', // Desarrollo de Software
-      13: '#F39C12', // Infraestructura y Mantenimiento
-      14: '#E67E22', // Mantenimiento
-      15: '#E67E22', // Servicios Generales
-      16: '#34495E', // Hardware
-      17: '#2C3E50', // Software
-      18: '#1ABC9C', // Redes
-      19: '#16A085' // Soporte Técnico
-    };
-    return colorMap[idCategoria] || '#95A5A6';
+  const getCategoryColor = (category: CategoriaResponseDTO) => {
+    // Usar el color real de la categoría si existe
+    if (category.colorHex) {
+      return category.colorHex;
+    }
+    return '#95A5A6'; // Color por defecto
   };
 
   return (
@@ -440,15 +490,15 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
           </div>
         ) : (
           filteredCategories.map((category) => (
-            <Card key={category.idCategoria} className="hover:shadow-md transition-shadow">
+            <Card key={category.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-8">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-6 min-w-0 flex-1">
                     <div 
                       className="w-8 h-8 rounded flex items-center justify-center text-white text-base flex-shrink-0"
-                      style={{ backgroundColor: getCategoryColor(category.idCategoria) }}
+                      style={{ backgroundColor: getCategoryColor(category) }}
                     >
-                      {getCategoryIcon(category.idCategoria)}
+                      {getCategoryIcon(category)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -458,7 +508,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>#{category.idCategoria}</span>
+                        <span>#{category.id}</span>
                         <span>•</span>
                         <span>Orden: {category.orden}</span>
                       </div>
@@ -476,8 +526,9 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDelete(category.idCategoria)}
+                      onClick={() => handleDelete(category.id)}
                       className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                      title="Desactivar categoría"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

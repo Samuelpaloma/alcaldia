@@ -125,7 +125,7 @@ function convertToTicket(dto: TicketResponseDTO): Ticket {
 }
 
 // Función para convertir TicketRequestDTO desde el frontend
-function convertToRequestDTO(input: {
+async function convertToRequestDTO(input: {
   name: string;
   location: string;
   message: string;
@@ -135,32 +135,26 @@ function convertToRequestDTO(input: {
   attachmentName?: string;
   archivoAdjunto?: string;
   nombreArchivo?: string;
-}): TicketRequestDTO {
-  // Mapear categorías de texto a IDs numéricos basado en la base de datos
-  const categoryMap: { [key: string]: number } = {
-    "Atención al Ciudadano": 1,
-    "Quejas y Reclamos": 2,
-    "Solicitudes": 3,
-    "General": 4,
-    "Administración y Gestión": 5,
-    "Contabilidad": 6,
-    "Recursos Humanos": 7,
-    "Gestión Documental": 8,
-    "Tecnología e IT": 9,
-    "Sistemas de Información": 10,
-    "Redes y Comunicaciones": 11,
-    "Desarrollo de Software": 12,
-    "Infraestructura y Mantenimiento": 13,
-    "Mantenimiento": 14,
-    "Servicios Generales": 15,
-    "Hardware": 16,
-    "Software": 17,
-    "Redes": 18,
-    "Soporte Técnico": 19
-  };
+}): Promise<TicketRequestDTO> {
+  let categoriaId = 1; // ID por defecto
   
-  // Obtener el ID de la categoría seleccionada o usar 1 por defecto
-  const categoriaId = input.category ? categoryMap[input.category] || 1 : 1;
+  if (input.category) {
+    try {
+      // Obtener categorías dinámicamente desde la API
+      const categories = await api.getCategoriasActivas();
+      const selectedCategory = categories.find(cat => cat.nombre === input.category);
+      categoriaId = selectedCategory ? selectedCategory.id : 1;
+      console.log('🔍 Categoría encontrada:', { 
+        buscada: input.category, 
+        encontrada: selectedCategory?.nombre, 
+        id: categoriaId 
+      });
+    } catch (error) {
+      console.error('❌ Error obteniendo categorías:', error);
+      // Usar ID por defecto si hay error
+      categoriaId = 1;
+    }
+  }
   
   const requestData = {
     ubicacion: input.location,
@@ -225,7 +219,7 @@ export async function createTicket(input: {
   notify();
 
   try {
-    const requestData = convertToRequestDTO(input);
+    const requestData = await convertToRequestDTO(input);
     const response = await api.createTicket(requestData);
     
     // Crear un ticket temporal hasta que se actualize la lista

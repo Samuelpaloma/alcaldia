@@ -39,7 +39,7 @@ public class CategoriaServiceImpl implements CategoriaService {
             .descripcion(request.getDescripcion() != null ? request.getDescripcion().trim() : null)
             .colorHex(request.getColorHex())
             .icono(request.getIcono())
-            .orden(request.getOrden() != null ? request.getOrden() : categoriaRepository.getNextOrden())
+            .orden(request.getOrden() != null ? request.getOrden() : 999)
             .activa(request.getActiva() != null ? request.getActiva() : true)
             .build();
         

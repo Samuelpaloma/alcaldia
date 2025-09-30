@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import { api, ReglaAutomatizacionRequestDTO, ReglaAutomatizacionResponseDTO } from '../../../shared/api';
 import { 
   Settings, 
   Plus, 
@@ -17,40 +19,31 @@ import {
   CheckCircle,
   Clock,
   Zap,
-  Search
+  Search,
+  Play,
+  Pause
 } from 'lucide-react';
 
-interface AutomationRule {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  activa: boolean;
-  condicion: string;
-  accion: string;
-  prioridad: string;
-  fechaCreacion: string;
-  ejecuciones: number;
-}
-
 const AutomationRules: React.FC = () => {
-  const [reglas, setReglas] = useState<AutomationRule[]>([]);
+  const { toast } = useToast();
+  const [reglas, setReglas] = useState<ReglaAutomatizacionResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [reglaEditando, setReglaEditando] = useState<AutomationRule | null>(null);
+  const [reglaEditando, setReglaEditando] = useState<ReglaAutomatizacionResponseDTO | null>(null);
   const [filtros, setFiltros] = useState({
     busqueda: '',
     estado: '',
     prioridad: ''
   });
 
-  const [formulario, setFormulario] = useState({
+  const [formulario, setFormulario] = useState<ReglaAutomatizacionRequestDTO>({
     nombre: '',
     descripcion: '',
     condicion: '',
     accion: '',
-    prioridad: 'medium',
+    prioridad: 2,
     activa: true
   });
 
@@ -59,58 +52,22 @@ const AutomationRules: React.FC = () => {
       setLoading(true);
       console.log('🔄 Cargando reglas de automatización...');
       
-      const response = await fetch('http://localhost:8080/api/automation-rules');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Reglas cargadas desde backend:', data);
-        setReglas(data);
-      } else {
-        console.log('⚠️ Backend no disponible, usando datos de prueba');
-        // Datos de prueba si no hay respuesta del servidor
-        const reglasData = [
-          {
-            id: 1,
-            nombre: 'Asignación automática por categoría',
-            descripcion: 'Asigna automáticamente tickets de redes a técnicos especializados',
-            activa: true,
-            condicion: "categoria == 'Redes' AND prioridad == 'high'",
-            accion: 'Asignar a técnico especializado en redes',
-            prioridad: 'high',
-            fechaCreacion: new Date().toISOString(),
-            ejecuciones: 15
-          },
-          {
-            id: 2,
-            nombre: 'Escalación por tiempo',
-            descripcion: 'Escala tickets que llevan más de 24 horas sin resolver',
-            activa: true,
-            condicion: "tiempo_sin_resolver > 24 AND estado == 'EN_PROGRESO'",
-            accion: 'Escalar a supervisor técnico',
-            prioridad: 'medium',
-            fechaCreacion: new Date(Date.now() - 86400000).toISOString(),
-            ejecuciones: 8
-          }
-        ];
-        setReglas(reglasData);
-      }
+      const response = await api.getReglasAutomatizacion(0, 100);
+      console.log('✅ Reglas cargadas desde backend:', response);
+      
+      // Asegurar que siempre sea un array
+      const reglasArray = Array.isArray(response) ? response : [];
+      setReglas(reglasArray);
+      setError(null);
     } catch (error) {
       console.error('❌ Error al cargar reglas:', error);
       setError('Error al cargar reglas');
-      // Datos de prueba en caso de error
-      const reglasData = [
-        {
-          id: 1,
-          nombre: 'Asignación automática por categoría',
-          descripcion: 'Asigna automáticamente tickets de redes a técnicos especializados',
-          activa: true,
-          condicion: "categoria == 'Redes' AND prioridad == 'high'",
-          accion: 'Asignar a técnico especializado en redes',
-          prioridad: 'high',
-          fechaCreacion: new Date().toISOString(),
-          ejecuciones: 15
-        }
-      ];
-      setReglas(reglasData);
+      setReglas([]); // Establecer array vacío en caso de error
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar las reglas de automatización",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -120,13 +77,14 @@ const AutomationRules: React.FC = () => {
     loadReglas();
   }, []);
 
-  const reglasFiltradas = reglas.filter(regla => {
+  const reglasFiltradas = (Array.isArray(reglas) ? reglas : []).filter(regla => {
     const cumpleBusqueda = !filtros.busqueda || 
       regla.nombre.toLowerCase().includes(filtros.busqueda.toLowerCase());
     const cumpleEstado = !filtros.estado || filtros.estado === 'all' ||
       (filtros.estado === 'activa' && regla.activa) ||
       (filtros.estado === 'inactiva' && !regla.activa);
-    const cumplePrioridad = !filtros.prioridad || filtros.prioridad === 'all' || regla.prioridad === filtros.prioridad;
+    const cumplePrioridad = !filtros.prioridad || filtros.prioridad === 'all' || 
+      regla.prioridad.toString() === filtros.prioridad;
     
     return cumpleBusqueda && cumpleEstado && cumplePrioridad;
   });
@@ -137,7 +95,7 @@ const AutomationRules: React.FC = () => {
       descripcion: '',
       condicion: '',
       accion: '',
-      prioridad: 'medium',
+      prioridad: 2,
       activa: true
     });
     setModoEdicion(false);
@@ -145,13 +103,13 @@ const AutomationRules: React.FC = () => {
     setMostrarModal(true);
   };
 
-  const abrirModalEditar = (regla: AutomationRule) => {
+  const abrirModalEditar = (regla: ReglaAutomatizacionResponseDTO) => {
     setFormulario({
       nombre: regla.nombre,
-      descripcion: regla.descripcion,
+      descripcion: regla.descripcion || '',
       condicion: regla.condicion,
       accion: regla.accion,
-      prioridad: regla.prioridad,
+      prioridad: typeof regla.prioridad === 'string' ? parseInt(regla.prioridad) : regla.prioridad,
       activa: regla.activa
     });
     setModoEdicion(true);
@@ -163,58 +121,37 @@ const AutomationRules: React.FC = () => {
     try {
       console.log('💾 Guardando regla de automatización:', formulario);
       
-      const url = modoEdicion && reglaEditando 
-        ? `http://localhost:8080/api/automation-rules/${reglaEditando.id}`
-        : 'http://localhost:8080/api/automation-rules';
+      // Asegurar que prioridad sea un número
+      const datosFormulario = {
+        ...formulario,
+        prioridad: typeof formulario.prioridad === 'string' ? parseInt(formulario.prioridad) : formulario.prioridad
+      };
       
-      const method = modoEdicion ? 'PATCH' : 'POST';
+      let reglaGuardada: ReglaAutomatizacionResponseDTO;
       
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formulario),
-      });
-      
-      if (response.ok) {
-        const apiResponse = await response.json();
-        console.log('✅ Respuesta del backend:', apiResponse);
-        
-        // El backend devuelve un ApiResponse con la regla en el campo 'data'
-        const reglaGuardada = apiResponse.data;
-        console.log(`✅ Regla ${modoEdicion ? 'actualizada' : 'creada'} en backend:`, reglaGuardada);
-        
-        await loadReglas(); // Recargar las reglas desde el backend
-        setMostrarModal(false);
-        setReglaEditando(null);
-        alert(`✅ Regla de automatización ${modoEdicion ? 'actualizada' : 'creada'} exitosamente!`);
-      } else {
-        const errorResponse = await response.json();
-        console.error('❌ Error del backend:', errorResponse);
-        throw new Error(errorResponse.message || `Error al ${modoEdicion ? 'actualizar' : 'crear'} regla de automatización`);
-      }
-    } catch (error) {
-      console.log('⚠️ Backend no disponible, guardando en modo demo');
-      
-      // Modo demo: guardar localmente
       if (modoEdicion && reglaEditando) {
-        setReglas(prev => prev.map(r => 
-          r.id === reglaEditando.id ? { ...r, ...formulario } : r
-        ));
-        alert('✅ Regla de automatización actualizada en modo demo! (Backend no disponible)');
+        reglaGuardada = await api.updateReglaAutomatizacion(reglaEditando.id, datosFormulario);
+        console.log('✅ Regla actualizada en backend:', reglaGuardada);
       } else {
-        const nuevaRegla: AutomationRule = {
-          id: Date.now(),
-          ...formulario,
-          fechaCreacion: new Date().toISOString(),
-          ejecuciones: 0
-        };
-        setReglas(prev => [nuevaRegla, ...prev]);
-        alert('✅ Regla de automatización creada en modo demo! (Backend no disponible)');
+        reglaGuardada = await api.createReglaAutomatizacion(datosFormulario);
+        console.log('✅ Regla creada en backend:', reglaGuardada);
       }
+      
+      await loadReglas(); // Recargar las reglas desde el backend
       setMostrarModal(false);
       setReglaEditando(null);
+      
+      toast({
+        title: "Éxito",
+        description: `Regla de automatización ${modoEdicion ? 'actualizada' : 'creada'} exitosamente`,
+      });
+    } catch (error) {
+      console.error('❌ Error al guardar regla:', error);
+      toast({
+        title: "Error",
+        description: `Error al ${modoEdicion ? 'actualizar' : 'crear'} regla de automatización`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -224,62 +161,111 @@ const AutomationRules: React.FC = () => {
     try {
       console.log('🗑️ Eliminando regla con ID:', id);
       
-      const response = await fetch(`http://localhost:8080/api/automation-rules/${id}`, {
-        method: 'DELETE',
+      await api.deleteReglaAutomatizacion(id);
+      console.log('✅ Regla eliminada exitosamente');
+      
+      await loadReglas(); // Recargar las reglas desde el backend
+      
+      toast({
+        title: "Éxito",
+        description: "Regla de automatización eliminada exitosamente",
       });
-      
-      if (response.ok) {
-        const apiResponse = await response.json();
-        console.log('✅ Regla eliminada:', apiResponse);
-        await loadReglas(); // Recargar las reglas desde el backend
-        alert('✅ Regla de automatización eliminada exitosamente!');
-      } else {
-        const errorResponse = await response.json();
-        console.error('❌ Error del backend:', errorResponse);
-        throw new Error(errorResponse.message || 'Error al eliminar regla de automatización');
-      }
     } catch (error) {
-      console.log('⚠️ Backend no disponible, eliminando en modo demo');
-      
-      // Modo demo: eliminar localmente
-      setReglas(prev => prev.filter(regla => regla.id !== id));
-      alert('✅ Regla de automatización eliminada en modo demo! (Backend no disponible)');
+      console.error('❌ Error al eliminar regla:', error);
+      toast({
+        title: "Error",
+        description: "Error al eliminar regla de automatización",
+        variant: "destructive",
+      });
     }
   };
 
-  const toggleRegla = async (regla: AutomationRule) => {
+  const toggleRegla = async (regla: ReglaAutomatizacionResponseDTO) => {
     try {
       console.log('🔄 Cambiando estado de regla con ID:', regla.id);
       
-      const response = await fetch(`http://localhost:8080/api/automation-rules/${regla.id}/toggle`, {
-        method: 'PATCH',
+      await api.toggleReglaAutomatizacion(regla.id);
+      console.log('✅ Estado de regla actualizado');
+      
+      await loadReglas(); // Recargar las reglas desde el backend
+      
+      toast({
+        title: "Éxito",
+        description: `Regla ${regla.activa ? 'desactivada' : 'activada'} exitosamente`,
       });
-      
-      if (response.ok) {
-        const apiResponse = await response.json();
-        console.log('✅ Estado de regla actualizado:', apiResponse);
-        await loadReglas(); // Recargar las reglas desde el backend
-      } else {
-        const errorResponse = await response.json();
-        console.error('❌ Error del backend:', errorResponse);
-        throw new Error(errorResponse.message || 'Error al cambiar estado de regla');
-      }
     } catch (error) {
-      console.log('⚠️ Backend no disponible, cambiando estado en modo demo');
-      
-      // Modo demo: cambiar estado localmente
-      setReglas(prev => prev.map(r => 
-        r.id === regla.id ? { ...r, activa: !r.activa } : r
-      ));
+      console.error('❌ Error al cambiar estado de regla:', error);
+      toast({
+        title: "Error",
+        description: "Error al cambiar estado de la regla",
+        variant: "destructive",
+      });
     }
   };
 
-  const getPrioridadColor = (prioridad: string) => {
+  const ejecutarRegla = async (id: number) => {
+    try {
+      console.log('🚀 Ejecutando regla con ID:', id);
+      
+      await api.ejecutarRegla(id);
+      console.log('✅ Regla ejecutada exitosamente');
+      
+      await loadReglas(); // Recargar las reglas para ver el contador actualizado
+      
+      toast({
+        title: "Éxito",
+        description: "Regla ejecutada exitosamente",
+      });
+    } catch (error) {
+      console.error('❌ Error al ejecutar regla:', error);
+      toast({
+        title: "Error",
+        description: "Error al ejecutar la regla",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const ejecutarTodasLasReglas = async () => {
+    try {
+      console.log('🚀 Ejecutando todas las reglas de automatización');
+      
+      await api.ejecutarReglas();
+      console.log('✅ Todas las reglas ejecutadas exitosamente');
+      
+      await loadReglas(); // Recargar las reglas para ver los contadores actualizados
+      
+      toast({
+        title: "Éxito",
+        description: "Todas las reglas ejecutadas exitosamente",
+      });
+    } catch (error) {
+      console.error('❌ Error al ejecutar todas las reglas:', error);
+      toast({
+        title: "Error",
+        description: "Error al ejecutar todas las reglas",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getPrioridadColor = (prioridad: number) => {
     switch (prioridad) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
+      case 4: return 'bg-red-100 text-red-800';
+      case 3: return 'bg-orange-100 text-orange-800';
+      case 2: return 'bg-yellow-100 text-yellow-800';
+      case 1: return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPrioridadTexto = (prioridad: number) => {
+    switch (prioridad) {
+      case 4: return 'Crítica';
+      case 3: return 'Alta';
+      case 2: return 'Media';
+      case 1: return 'Baja';
+      default: return 'Desconocida';
     }
   };
 
@@ -305,10 +291,20 @@ const AutomationRules: React.FC = () => {
           <h1 className="rules-title">Reglas de Automatización</h1>
           <p className="rules-subtitle">Configura reglas automáticas para optimizar el flujo de tickets</p>
         </div>
-        <Button onClick={abrirModalCrear} className="btn-create">
-          <Plus className="w-4 h-4 mr-2" />
-          Nueva Regla
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            onClick={() => ejecutarTodasLasReglas()} 
+            variant="outline"
+            className="btn-create"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            Ejecutar Todas
+          </Button>
+          <Button onClick={abrirModalCrear} className="btn-create">
+            <Plus className="w-4 h-4 mr-2" />
+            Nueva Regla
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -364,9 +360,10 @@ const AutomationRules: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas las prioridades</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="medium">Media</SelectItem>
-                  <SelectItem value="low">Baja</SelectItem>
+                  <SelectItem value="4">Crítica</SelectItem>
+                  <SelectItem value="3">Alta</SelectItem>
+                  <SelectItem value="2">Media</SelectItem>
+                  <SelectItem value="1">Baja</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -436,7 +433,7 @@ const AutomationRules: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge className={getPrioridadColor(regla.prioridad)}>
-                    {regla.prioridad}
+                    {getPrioridadTexto(regla.prioridad)}
                   </Badge>
                   <Switch
                     checked={regla.activa}
@@ -475,6 +472,15 @@ const AutomationRules: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-end space-x-2 mt-4 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => ejecutarRegla(regla.id)}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <Play className="w-4 h-4 mr-1" />
+                  Ejecutar
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -555,16 +561,17 @@ const AutomationRules: React.FC = () => {
                 <div className="form-group">
                   <Label htmlFor="prioridad">Prioridad</Label>
                   <Select
-                    value={formulario.prioridad}
-                    onValueChange={(value) => setFormulario({ ...formulario, prioridad: value })}
+                    value={formulario.prioridad.toString()}
+                    onValueChange={(value) => setFormulario({ ...formulario, prioridad: parseInt(value) })}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Baja</SelectItem>
-                      <SelectItem value="medium">Media</SelectItem>
-                      <SelectItem value="high">Alta</SelectItem>
+                      <SelectItem value="1">Baja</SelectItem>
+                      <SelectItem value="2">Media</SelectItem>
+                      <SelectItem value="3">Alta</SelectItem>
+                      <SelectItem value="4">Crítica</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
