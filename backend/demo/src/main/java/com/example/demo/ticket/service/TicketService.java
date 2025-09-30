@@ -19,7 +19,7 @@ public interface TicketService {
     // Historial de tickets
     Page<HistorialTicketResponseDTO> obtenerHistorialTickets(String emailUsuario, Pageable pageable);
     
-    // Búsqueda de tickets
+    // Búsqueda de ticketss
     List<TicketResponseDTO> buscarTickets(String emailUsuario, String categoria, String estado, String prioridad);
     
     // Obtener ticket por ID

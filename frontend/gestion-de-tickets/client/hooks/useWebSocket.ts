@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { Client } from '@stomp/stompjs';
+import { getAuth } from '../modules/auth/auth';
 
 interface WebSocketMessage {
   id: number;
@@ -30,15 +31,42 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
     console.log('🔥 INICIANDO WEBSOCKET para ticket:', ticketId);
     setIsConnecting(true);
     
+    // Obtener token de autenticación
+    const auth = getAuth();
+    const token = auth?.accessToken;
+    
+    console.log('🔥 [WEBSOCKET] Token de autenticación:', token ? 'Presente' : 'No presente');
+    
     // Crear conexión WebSocket con configuración más robusta
-    const socket = new SockJS('http://localhost:8080/ws');
+    const socket = new SockJS('http://localhost:8080/ws', null, {
+      debug: true,
+      devel: true
+    });
+    
+    // Agregar listeners adicionales al socket para debugging
+    socket.onopen = (event) => {
+      console.log('🔥 [SOCKET] Socket abierto:', event);
+    };
+    
+    socket.onclose = (event) => {
+      console.log('🔥 [SOCKET] Socket cerrado:', event.code, event.reason, event.wasClean);
+    };
+    
+    socket.onerror = (event) => {
+      console.error('🔥 [SOCKET] Error en socket:', event);
+    };
+    
     const client = new Client({
-      webSocketFactory: () => socket,
+      webSocketFactory: () => {
+        console.log('🔥 [WEBSOCKET] Creando WebSocket factory...');
+        return socket;
+      },
       debug: (str) => {
         console.log('🔥 WebSocket Debug:', str);
       },
       connectHeaders: {
-        // Headers básicos
+        // Incluir token JWT en los headers de conexión
+        ...(token && { Authorization: `Bearer ${token}` })
       },
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,

@@ -30,7 +30,8 @@
                     
                     // Suscribirse a mensajes de prueba
                     client.subscribe('/topic/test', (message) => {
-                        const data = JSON.parse(message.body);
+                        console.log('🔥 [TEST] Mensaje recibido:', message.body);
+                        const data = message.body;
                         document.getElementById('messages').innerHTML += '<div>Recibido: ' + data + '</div>';
                     });
                 },

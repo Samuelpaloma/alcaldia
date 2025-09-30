@@ -15,6 +15,7 @@ import VerifyEmailScreen from './src/screens/verifyEmailScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './src/screens/ResetPasswordScreen';
 import ChatScreen from './src/screens/ChatScreen';
+import TicketTrackingScreen from './src/screens/TicketTrackingScreen';
 import ConfiguracionesScreen from './src/screens/ConfiguracionesScreen';
 import HistorialPorAreaScreen from './src/screens/HistorialPorAreaScreen';
 import { ThemeProvider } from './src/components/ThemeProvider';
@@ -31,6 +32,7 @@ type RootStackParamList = {
   ForgotPasswordScreen: undefined;
   ResetPasswordScreen: { email: string };
   Chat: { ticketId: number };
+  TicketTracking: { ticketId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -206,6 +208,11 @@ export default function App() {
           name="Chat"
           component={ChatScreen}
           options={{ title: 'Chat del Ticket' }}
+        />
+        <Stack.Screen 
+          name="TicketTracking"
+          component={TicketTrackingScreen}
+          options={{ title: 'Seguimiento del Ticket' }}
         />
         </Stack.Navigator>
       </NavigationContainer>

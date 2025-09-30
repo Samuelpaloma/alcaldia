@@ -121,6 +121,10 @@ export default function TicketsManagement() {
   const [historial, setHistorial] = useState<HistorialItem[]>([]);
   const [trackingData, setTrackingData] = useState<TicketTracking | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  
+  // Estados para el chat del admin
+  const [newMessage, setNewMessage] = useState("");
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [activeTab, setActiveTab] = useState<'info' | 'historial' | 'chat'>('info');
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [currentTicketId, setCurrentTicketId] = useState<number | null>(null);
@@ -235,6 +239,32 @@ export default function TicketsManagement() {
     }
   };
 
+  // Función para enviar mensaje como administrador
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || isSendingMessage || !selectedTicket) return;
+
+    try {
+      setIsSendingMessage(true);
+      console.log('📤 [ADMIN] Enviando mensaje:', newMessage);
+      
+      // Enviar mensaje usando la API
+      await api.enviarComentario(selectedTicket.id, newMessage.trim());
+      
+      console.log('✅ [ADMIN] Mensaje enviado exitosamente');
+      
+      // Limpiar el input
+      setNewMessage('');
+      
+      // Recargar mensajes inmediatamente
+      await loadMessages(selectedTicket.id);
+      
+    } catch (error) {
+      console.error('❌ [ADMIN] Error enviando mensaje:', error);
+      // Aquí podrías mostrar una notificación de error al usuario
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
 
   // Manejar mensajes del WebSocket
   const handleWebSocketMessage = (data: any) => {
@@ -1827,9 +1857,30 @@ export default function TicketsManagement() {
                         <div ref={chatEndRef} />
                       </div>
                       
-                      {/* Nota para Admin */}
+                      {/* Área de envío de mensajes para Admin */}
                       <div className="border-t p-4 bg-muted/30">
-                        <p className="text-sm text-muted-foreground text-center">
+                        <div className="flex gap-2">
+                          <Input
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                              }
+                            }}
+                            placeholder="Escribe un mensaje como administrador..."
+                            className="flex-1"
+                          />
+                          <Button 
+                            onClick={handleSendMessage}
+                            disabled={!newMessage.trim() || isSendingMessage}
+                            size="sm"
+                          >
+                            {isSendingMessage ? 'Enviando...' : 'Enviar'}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
                           💬 Los mensajes se actualizan automáticamente cada 3 segundos
                         </p>
                       </div>

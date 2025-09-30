@@ -571,7 +571,7 @@ class ApiClient {
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...(options.headers as Record<string, string>),
+        ...options.headers,
       };
 
       // Agregar token de autenticación si existe
@@ -635,7 +635,8 @@ class ApiClient {
     }
   }
 
-  // Autenticación
+  // ========== AUTENTICACIÓN ==========
+
   async validateCredentials(data: LoginRequest): Promise<{ success: boolean }> {
     return this.request('/auth/validate-credentials', {
       method: 'POST',
@@ -678,7 +679,8 @@ class ApiClient {
     });
   }
 
-  // Tickets - API real del backend
+  // ========== TICKETS ==========
+
   async createTicket(data: TicketRequestDTO): Promise<TicketResponseDTO> {
     return this.request('/tickets/crear', {
       method: 'POST',
@@ -705,26 +707,7 @@ class ApiClient {
   }
 
   async getMensajesTicket(ticketId: number): Promise<any[]> {
-    console.log('💬 [API] Obteniendo mensajes del ticket:', ticketId);
-    
-    try {
-      const response = await this.request(`/tickets/${ticketId}/comentarios`);
-      console.log('✅ [API] Mensajes obtenidos:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ [API] Error obteniendo mensajes:', error);
-      return [];
-    }
-  }
-
-  async getTicketsHistory(page: number = 0, size: number = 10): Promise<{
-    content: TicketResponseDTO[];
-    totalElements: number;
-    totalPages: number;
-    size: number;
-    number: number;
-  }> {
-    return this.request(`/tickets/historial?page=${page}&size=${size}`);
+    return this.request(`/tickets/${ticketId}/comentarios`);
   }
 
   async buscarTickets(filtros: {
@@ -743,6 +726,8 @@ class ApiClient {
   async getCategorias(): Promise<string[]> {
     return this.request('/tickets/categorias');
   }
+
+  // ========== USUARIOS ==========
 
   async getUsuarioInfo(): Promise<{
     email: string;
@@ -806,7 +791,6 @@ class ApiClient {
 
   // ========== GESTIÓN DE USUARIOS ==========
 
-  // Técnicos (Solo Admin)
   async createTechnician(data: CreateTecnicoRequest): Promise<UsuarioDTO> {
     return this.request('/usuarios/tecnico', {
       method: 'POST',
@@ -828,7 +812,6 @@ class ApiClient {
     return this.request('/usuarios/tecnicos/select');
   }
 
-  // Administradores (Solo SuperAdmin)
   async createAdmin(data: CreateAdminRequest): Promise<UsuarioDTO> {
     return this.request('/usuarios/admin', {
       method: 'POST',
@@ -846,7 +829,6 @@ class ApiClient {
     return this.request(`/usuarios/admins?${params.toString()}`);
   }
 
-  // Gestión General
   async getUserById(id: number): Promise<UsuarioDTO> {
     return this.request(`/usuarios/${id}`);
   }
@@ -871,25 +853,7 @@ class ApiClient {
     });
   }
 
-  // Auditoría
-  async getUsersCreatedBy(creatorId: number): Promise<UsuarioDTO[]> {
-    return this.request(`/usuarios/created-by/${creatorId}`);
-  }
-
-  async getMyCreatedUsers(): Promise<UsuarioDTO[]> {
-    return this.request('/usuarios/my-created-users');
-  }
-
-  // Métricas
-  async getTotalUsersByType(tipo: string): Promise<number> {
-    return this.request(`/usuarios/metrics/total/${tipo}`);
-  }
-
-  async getActiveUsersByType(tipo: string): Promise<number> {
-    return this.request(`/usuarios/metrics/active/${tipo}`);
-  }
-
-  // ========== GESTIÓN DE CATEGORÍAS ==========
+  // ========== CATEGORÍAS ==========
 
   async getCategoriasActivas(): Promise<CategoriaSimpleDTO[]> {
     return this.request('/categorias/activas');
@@ -953,18 +917,29 @@ class ApiClient {
     return this.request('/categorias/estadisticas');
   }
 
-  // ========== GESTIÓN DE EVIDENCIAS ==========
+  // ========== EVIDENCIAS ==========
 
   async getEvidenciasPorTicket(ticketId: number): Promise<any[]> {
     return this.request(`/evidencias/ticket/${ticketId}`);
   }
 
+  async subirEvidencia(ticketId: number, archivo: File, descripcion: string): Promise<ApiResponse> {
+    const formData = new FormData();
+    formData.append('ticketId', ticketId.toString());
+    formData.append('archivo', archivo);
+    formData.append('descripcion', descripcion);
+    
+    return this.request('/evidencias/subir', {
+      method: 'POST',
+      body: formData
+    });
+  }
 
   async descargarEvidencia(ticketId: number, nombreArchivo: string): Promise<any> {
     return this.request(`/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`);
   }
 
-  // ========== GESTIÓN DE NOTIFICACIONES ==========
+  // ========== NOTIFICACIONES ==========
 
   async getNotificaciones(page: number = 0, size: number = 10, leida?: boolean): Promise<PageResponse<any>> {
     const params = new URLSearchParams({
@@ -1010,53 +985,7 @@ class ApiClient {
     return this.request('/notificaciones/estadisticas');
   }
 
-  // ========== NOTIFICACIONES POR ROLES ==========
-  
-  async getRoleNotifications(userEmail: string, page: number = 0, size: number = 20): Promise<any> {
-    return this.request(`/notifications/role-based/user/${userEmail}?page=${page}&size=${size}`);
-  }
-
-  async getUnreadRoleNotifications(userEmail: string): Promise<any> {
-    return this.request(`/notifications/role-based/user/${userEmail}/unread`);
-  }
-
-  async markRoleNotificationAsRead(id: number, userEmail: string): Promise<any> {
-    return this.request(`/notifications/role-based/${id}/mark-read?email=${userEmail}`, {
-      method: 'PUT'
-    });
-  }
-
-  async deleteRoleNotification(id: number): Promise<any> {
-    return this.request(`/notifications/role-based/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  async getNotificationExamples(): Promise<any> {
-    return this.request('/notifications/role-based/examples');
-  }
-
-  async createTestNotifications(): Promise<any> {
-    return this.request('/notifications/role-based/create-test-notifications', {
-      method: 'POST'
-    });
-  }
-
-  async createTicketNotification(ticketId: number, creatorId: number): Promise<any> {
-    return this.request('/notifications/role-based/trigger-ticket-created', {
-      method: 'POST',
-      body: JSON.stringify({ ticketId, creatorId })
-    });
-  }
-
-  async createTicketAssignmentNotification(ticketId: number, technicianId: number, assignerId: number): Promise<any> {
-    return this.request('/notifications/role-based/trigger-ticket-assigned', {
-      method: 'POST',
-      body: JSON.stringify({ ticketId, technicianId, assignerId })
-    });
-  }
-
-  // ========== GESTIÓN DE ASIGNACIONES ==========
+  // ========== ASIGNACIONES ==========
 
   async asignarTicket(data: AsignarTicketRequestDTO): Promise<AsignacionResponseDTO> {
     return this.request('/asignaciones/asignar', {
@@ -1093,155 +1022,13 @@ class ApiClient {
   }
 
   async enviarComentario(ticketId: number, mensaje: string): Promise<ApiResponse> {
-    console.log('💬 [API] Enviando comentario:', { ticketId, mensaje });
-    
-    try {
-      const response = await this.request(`/tickets/${ticketId}/comentarios`, {
-        method: 'POST',
-        body: JSON.stringify({ mensaje })
-      });
-      
-      console.log('✅ [API] Comentario enviado exitosamente:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ [API] Error enviando comentario:', error);
-      throw error;
-    }
-  }
-
-  // Funciones de comentarios adicionales para compatibilidad
-  async enviarComentarioDebug(ticketId: number, mensaje: string): Promise<ApiResponse> {
-    console.log('🔥 [DEBUG] Enviando comentario con método de depuración');
-    return this.enviarComentario(ticketId, mensaje);
-  }
-
-  async enviarComentarioConQuery(ticketId: number, mensaje: string): Promise<ApiResponse> {
-    console.log('🔥 [QUERY] Enviando comentario con query');
-    return this.enviarComentario(ticketId, mensaje);
-  }
-
-  async enviarComentarioFuncional(ticketId: number, mensaje: string): Promise<ApiResponse> {
-    console.log('🔥 [FUNCIONAL] Enviando comentario funcional');
-    return this.enviarComentario(ticketId, mensaje);
-  }
-
-  async enviarComentarioEmergencia(ticketId: number, mensaje: string): Promise<ApiResponse> {
-    console.log('🔥 [EMERGENCIA] Enviando comentario de emergencia');
-    return this.enviarComentario(ticketId, mensaje);
-  }
-
-  // ========== ENCUESTA DE SATISFACCIÓN ==========
-  
-  /**
-   * Enviar encuesta de satisfacción
-   */
-  async enviarEncuestaSatisfaccion(data: {
-    ticketId: number;
-    calificacion: number;
-    comentario: string;
-    aspectosPositivos: string[];
-    aspectosNegativos: string[];
-  }): Promise<ApiResponse> {
-    return this.request('/encuestas/satisfaccion', {
+    return this.request(`/tickets/${ticketId}/comentarios`, {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify({ mensaje })
     });
   }
 
-  // ========== INTELIGENCIA ARTIFICIAL ==========
-  
-  /**
-   * Clasificar ticket con IA
-   */
-  async clasificarTicketConIA(ticketId: number): Promise<any> {
-    return this.request(`/ai/clasificar/${ticketId}`, {
-      method: 'POST'
-    });
-  }
-
-  /**
-   * Obtener sugerencias de IA
-   */
-  async obtenerSugerenciasIA(ticketId: number): Promise<any> {
-    return this.request(`/ai/sugerencias/${ticketId}`);
-  }
-
-  // ========== AUTOMATIZACIÓN Y REGLAS ==========
-  
-  /**
-   * Obtener reglas de automatización
-   */
-  async obtenerReglasAutomatizacion(): Promise<any[]> {
-    return this.request('/automation/rules');
-  }
-
-  /**
-   * Crear regla de automatización
-   */
-  async crearReglaAutomatizacion(rule: any): Promise<ApiResponse> {
-    return this.request('/automation/rules', {
-      method: 'POST',
-      body: JSON.stringify(rule)
-    });
-  }
-
-  /**
-   * Actualizar regla de automatización
-   */
-  async actualizarReglaAutomatizacion(ruleId: number, updates: any): Promise<ApiResponse> {
-    return this.request(`/automation/rules/${ruleId}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates)
-    });
-  }
-
-  /**
-   * Eliminar regla de automatización
-   */
-  async eliminarReglaAutomatizacion(ruleId: number): Promise<ApiResponse> {
-    return this.request(`/automation/rules/${ruleId}`, {
-      method: 'DELETE'
-    });
-  }
-
-  // ========== DASHBOARD AVANZADO ==========
-  
-  /**
-   * Obtener métricas del dashboard
-   */
-  async obtenerMetricasDashboard(timeRange: string = '7d'): Promise<any> {
-    return this.request(`/dashboard/metrics?range=${timeRange}`);
-  }
-
-  /**
-   * Exportar reporte del dashboard
-   */
-  async exportarReporteDashboard(timeRange: string, format: 'pdf' | 'excel'): Promise<ApiResponse> {
-    return this.request(`/dashboard/export?range=${timeRange}&format=${format}`, {
-      method: 'POST'
-    });
-  }
-
-  // ========== SOPORTE MULTI-IDIOMA ==========
-  
-  /**
-   * Cambiar idioma del sistema
-   */
-  async cambiarIdioma(language: string): Promise<ApiResponse> {
-    return this.request('/settings/language', {
-      method: 'POST',
-      body: JSON.stringify({ language })
-    });
-  }
-
-  /**
-   * Obtener idioma actual
-   */
-  async obtenerIdiomaActual(): Promise<{ language: string }> {
-    return this.request('/settings/language');
-  }
-
-  // ========== GESTIÓN DE TÉCNICOS ==========
+  // ========== TÉCNICOS ==========
 
   async getTicketsAsignadosTecnico(): Promise<TicketTecnicoResponseDTO[]> {
     return this.request('/tecnico/tickets');
@@ -1273,7 +1060,7 @@ class ApiClient {
     return this.request('/tecnico/estadisticas');
   }
 
-  // ========== GESTIÓN DE ADMINISTRADORES ==========
+  // ========== ADMINISTRADORES ==========
 
   async getTodosLosTickets(): Promise<TicketResponseDTO[]> {
     return this.request('/admin/tickets');
@@ -1333,7 +1120,7 @@ class ApiClient {
     });
   }
 
-  // ========== GESTIÓN DE SUPERADMIN ==========
+  // ========== SUPERADMIN ==========
 
   async getEstadisticasSistema(): Promise<EstadisticasSistemaDTO> {
     return this.request('/superadmin/estadisticas');
@@ -1447,599 +1234,16 @@ class ApiClient {
     return this.request('/demo');
   }
 
-  // ========== SEGUIMIENTO DE TICKETS ==========
-
-  /**
-   * Obtener seguimiento de un ticket específico
-   */
-  async getTicketTracking(ticketId: number): Promise<{
-    id: number;
-    asunto: string;
-    descripcion: string;
-    categoria: string;
-    estado: string;
-    prioridad: string;
-    tecnicoAsignado?: string;
-    fechaCreacion: string;
-    fechaActualizacion: string;
-    comentarios?: Array<{
-      id: number;
-      autor: string;
-      mensaje: string;
-      fechaCreacion: string;
-    }>;
-  }> {
-    return this.request(`/tickets/seguimiento/${ticketId}`);
-  }
-
-  /**
-   * Obtener un ticket específico por ID
-   */
-  async getTicketById(ticketId: number): Promise<{
-    id: number;
-    asunto: string;
-    descripcion: string;
-    categoria: string;
-    estado: string;
-    prioridad: string;
-    tecnicoAsignado?: string;
-    fechaCreacion: string;
-    fechaActualizacion: string;
-  }> {
-    return this.request(`/tickets/${ticketId}`);
-  }
-
-  /**
-   * Buscar tickets por criterios
-   */
-  async searchTickets(filters: {
-    categoria?: string;
-    estado?: string;
-    prioridad?: string;
-  }): Promise<Array<{
-    id: number;
-    asunto: string;
-    categoria: string;
-    estado: string;
-    prioridad: string;
-    fechaCreacion: string;
-  }>> {
-    const params = new URLSearchParams();
-    if (filters.categoria) params.append('categoria', filters.categoria);
-    if (filters.estado) params.append('estado', filters.estado);
-    if (filters.prioridad) params.append('prioridad', filters.prioridad);
-    
-    const queryString = params.toString();
-    return this.request(`/tickets/buscar${queryString ? `?${queryString}` : ''}`);
-  }
-
-  // ========== MÓDULOS ADMINISTRATIVOS ==========
-
-  // ========== ADMIN - GESTIÓN DE TICKETS ==========
-
-  /**
-   * Obtener todos los tickets para administradores
-   */
-  async getAdminTickets(): Promise<TicketResponseDTO[]> {
-    return this.request('/admin/tickets');
-  }
-
-  /**
-   * Obtener ticket detallado para administradores
-   */
-  async getAdminTicketDetail(ticketId: number): Promise<TicketResponseDTO> {
-    return this.request(`/admin/tickets/${ticketId}`);
-  }
-
-  /**
-   * Obtener tickets por estado
-   */
-  async getAdminTicketsByStatus(estado: string): Promise<TicketResponseDTO[]> {
-    return this.request(`/admin/tickets/estado/${estado}`);
-  }
-
-  /**
-   * Obtener tickets sin asignar
-   */
-  async getAdminTicketsUnassigned(): Promise<TicketResponseDTO[]> {
-    return this.request('/admin/tickets/sin-asignar');
-  }
-
-  /**
-   * Obtener tickets por técnico
-   */
-  async getAdminTicketsByTechnician(tecnicoId: number): Promise<TicketResponseDTO[]> {
-    return this.request(`/admin/tickets/tecnico/${tecnicoId}`);
-  }
-
-  /**
-   * Obtener estadísticas generales para administradores
-   */
-  async getAdminStatistics(): Promise<EstadisticasAdminResponseDTO> {
-    return this.request('/admin/estadisticas');
-  }
-
-  // ========== ADMIN - GESTIÓN DE TÉCNICOS ==========
-
-
-  /**
-   * Obtener todos los técnicos
-   */
-  async getAdminTechnicians(): Promise<UsuarioDTO[]> {
-    return this.request('/admin/tecnicos');
-  }
-
-  /**
-   * Obtener técnico por ID
-   */
-  async getAdminTechnicianById(id: number): Promise<UsuarioDTO> {
-    return this.request(`/admin/tecnicos/${id}`);
-  }
-
-  /**
-   * Activar/desactivar técnico
-   */
-  async toggleTechnicianStatus(id: number): Promise<UsuarioDTO> {
-    return this.request(`/admin/tecnicos/${id}/toggle-estado`, {
-      method: 'PUT'
-    });
-  }
-
-  /**
-   * Obtener estadísticas de técnicos
-   */
-  async getTechnicianStatistics(): Promise<EstadisticasTecnicosResponseDTO> {
-    return this.request('/admin/tecnicos/estadisticas');
-  }
-
-  /**
-   * Cambiar contraseña de técnico
-   */
-  async changeTechnicianPassword(id: number, request: { newPassword: string; confirmPassword: string }): Promise<UsuarioDTO> {
-    return this.request(`/admin/tecnicos/${id}/cambiar-password`, {
-      method: 'PUT',
-      body: JSON.stringify(request)
-    });
-  }
-
-  // ========== CATEGORÍAS ==========
-
-  /**
-   * Obtener categorías activas
-   */
-  async getActiveCategories(): Promise<CategoriaSimpleDTO[]> {
-    return this.request('/categorias/activas');
-  }
-
-  /**
-   * Buscar categorías por nombre
-   */
-  async searchCategories(nombre: string): Promise<CategoriaSimpleDTO[]> {
-    return this.request(`/categorias/buscar?nombre=${encodeURIComponent(nombre)}`);
-  }
-
-  /**
-   * Crear categoría
-   */
-  async createCategory(request: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
-    return this.request('/categorias', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Obtener categoría por ID
-   */
-  async getCategoryById(id: number): Promise<CategoriaResponseDTO> {
-    return this.request(`/categorias/${id}`);
-  }
-
-  /**
-   * Actualizar categoría
-   */
-  async updateCategory(id: number, request: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
-    return this.request(`/categorias/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Eliminar categoría
-   */
-  async deleteCategory(id: number): Promise<ApiResponse> {
-    return this.request(`/categorias/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  /**
-   * Activar/desactivar categoría
-   */
-  async toggleCategoryStatus(id: number): Promise<CategoriaResponseDTO> {
-    return this.request(`/categorias/${id}/toggle`, {
-      method: 'PATCH'
-    });
-  }
-
-  /**
-   * Obtener todas las categorías con paginación
-   */
-  async getAllCategories(params: {
-    page?: number;
-    size?: number;
-    sortBy?: string;
-    sortDir?: string;
-    activa?: boolean;
-    nombre?: string;
-  } = {}): Promise<PageResponse<CategoriaResponseDTO>> {
-    const searchParams = new URLSearchParams();
-    if (params.page !== undefined) searchParams.append('page', params.page.toString());
-    if (params.size !== undefined) searchParams.append('size', params.size.toString());
-    if (params.sortBy) searchParams.append('sortBy', params.sortBy);
-    if (params.sortDir) searchParams.append('sortDir', params.sortDir);
-    if (params.activa !== undefined) searchParams.append('activa', params.activa.toString());
-    if (params.nombre) searchParams.append('nombre', params.nombre);
-
-    const queryString = searchParams.toString();
-    return this.request(`/categorias${queryString ? `?${queryString}` : ''}`);
-  }
-
-  /**
-   * Obtener estadísticas de categorías
-   */
-  async getCategoryStatistics(): Promise<{
-    totalCategorias: number;
-    categoriasActivas: number;
-    categoriasInactivas: number;
-  }> {
-    return this.request('/categorias/estadisticas');
-  }
-
-  // ========== EVIDENCIAS ==========
-
-  /**
-   * Obtener evidencias de un ticket
-   */
-  async getTicketEvidences(ticketId: number): Promise<any[]> {
-    return this.request(`/evidencias/ticket/${ticketId}`);
-  }
-
-  /**
-   * Descargar evidencia
-   */
-  async downloadEvidence(ticketId: number, nombreArchivo: string): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`, {
-      headers: {
-        'Authorization': `Bearer ${this.getToken()}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Error descargando evidencia: ${response.statusText}`);
-    }
-    
-    return response.blob();
-  }
-
-  // ========== ASIGNACIONES ==========
-
-  /**
-   * Asignar ticket a técnico
-   */
-  async assignTicket(request: AsignarTicketRequestDTO): Promise<AsignacionResponseDTO> {
-    return this.request('/asignaciones/asignar', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Reasignar ticket a otro técnico
-   */
-  async reassignTicket(request: AsignarTicketRequestDTO): Promise<AsignacionResponseDTO> {
-    return this.request('/asignaciones/reasignar', {
-      method: 'PUT',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Desasignar ticket
-   */
-  async unassignTicket(ticketId: number): Promise<AsignacionResponseDTO> {
-    return this.request(`/asignaciones/desasignar/${ticketId}`, {
-      method: 'DELETE'
-    });
-  }
-
-  /**
-   * Obtener tickets asignados a un técnico
-   */
-  async getAssignedTickets(tecnicoId: number): Promise<AsignacionResponseDTO[]> {
-    return this.request(`/asignaciones/tecnico/${tecnicoId}`);
-  }
-
-  /**
-   * Obtener tickets sin asignar
-   */
-  async getUnassignedTickets(): Promise<AsignacionResponseDTO[]> {
-    return this.request('/asignaciones/sin-asignar');
-  }
-
-  // ========== TÉCNICO ==========
-
-  /**
-   * Obtener tickets asignados al técnico actual
-   */
-  async getTechnicianTickets(): Promise<TicketTecnicoResponseDTO[]> {
-    return this.request('/tecnico/tickets');
-  }
-
-  /**
-   * Obtener ticket detallado para técnico
-   */
-  async getTechnicianTicketDetail(ticketId: number): Promise<TicketTecnicoResponseDTO> {
-    return this.request(`/tecnico/tickets/${ticketId}`);
-  }
-
-  /**
-   * Cambiar estado de ticket
-   */
-  async changeTicketStatus(request: CambiarEstadoTicketRequestDTO): Promise<TicketTecnicoResponseDTO> {
-    return this.request('/tecnico/tickets/cambiar-estado', {
-      method: 'PUT',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Subir evidencia a ticket
-   */
-  async uploadEvidence(request: SubirEvidenciaRequestDTO): Promise<EvidenciaResponseDTO> {
-    return this.request('/tecnico/tickets/subir-evidencia', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Obtener historial de tickets del técnico
-   */
-  async getTechnicianHistory(): Promise<TicketTecnicoResponseDTO[]> {
-    return this.request('/tecnico/historial');
-  }
-
-
-  // ========== MÉTODOS FALTANTES ==========
-
-
-  /**
-   * Obtener estadísticas para administradores
-   */
-  async getAdminStats(): Promise<EstadisticasAdminResponseDTO> {
-    return this.request('/admin/estadisticas');
-  }
-
-
-
-
-
-  // ========== GESTIÓN DE ARCHIVOS DE TICKETS ==========
-  
-  /**
-   * Subir archivo a un ticket
-   */
-  async subirArchivoTicket(archivo: File, ticketId: number, comentario?: string): Promise<any> {
-    // Convertir archivo a Base64
-    const contenidoBase64 = await this.fileToBase64(archivo);
-    
-    const request: SubirArchivoRequestDTO = {
-      ticketId,
-      nombreArchivo: archivo.name.split('.')[0], // Nombre sin extensión
-      tipoMime: archivo.type,
-      tamañoArchivo: archivo.size,
-      extension: archivo.name.split('.').pop() || '',
-      contenidoArchivo: contenidoBase64,
-      comentario
-    };
-
-    return this.request('/archivos-conversacion/subir', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Obtener información del archivo del ticket
-   */
-  async getArchivoTicketInfo(ticketId: number): Promise<ArchivoTicketInfo> {
-    return this.request(`/archivos-conversacion/info/${ticketId}`);
-  }
-
-  /**
-   * Descargar archivo
-   */
-  async descargarArchivoTicket(ticketId: number): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/archivos-conversacion/descargar/${ticketId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.token}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Error descargando archivo');
-    }
-    
-    return response.blob();
-  }
-
-  /**
-   * Previsualizar archivo (para imágenes y PDFs)
-   */
-  async previsualizarArchivoTicket(ticketId: number): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/archivos-conversacion/preview/${ticketId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.token}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Error previsualizando archivo');
-    }
-    
-    return response.blob();
-  }
-
-  /**
-   * Obtener tipos de archivo permitidos
-   */
-  async getTiposArchivoPermitidos(): Promise<any> {
-    return this.request('/archivos-conversacion/tipos-permitidos');
-  }
-
-  // ========== GESTIÓN DE MÚLTIPLES ARCHIVOS POR TICKET ==========
-  
-  /**
-   * Subir archivo a un ticket (nuevo sistema de múltiples archivos)
-   */
-  async subirArchivoTicketNuevo(archivo: File, ticketId: number, comentario?: string): Promise<any> {
-    // Convertir archivo a Base64
-    const contenidoBase64 = await this.fileToBase64(archivo);
-    
-    const request: SubirArchivoRequestDTO = {
-      ticketId,
-      nombreArchivo: archivo.name.split('.')[0], // Nombre sin extensión
-      tipoMime: archivo.type,
-      tamañoArchivo: archivo.size,
-      extension: archivo.name.split('.').pop() || '',
-      contenidoArchivo: contenidoBase64,
-      comentario
-    };
-
-    return this.request('/archivos-ticket/subir', {
-      method: 'POST',
-      body: JSON.stringify(request)
-    });
-  }
-
-  /**
-   * Obtener múltiples archivos de un ticket
-   */
-  async getArchivosTicket(ticketId: number): Promise<any> {
-    const response = await this.request(`/archivos-ticket/ticket/${ticketId}`);
-    console.log('🔍 [DEBUG] getArchivosTicket response:', response);
-    
-    // El backend devuelve directamente un array, no una estructura {success, data}
-    if (Array.isArray(response)) {
-      return response;
-    }
-    
-    // Si viene envuelto en una estructura de respuesta estándar
-    if (response && (response as any).data && Array.isArray((response as any).data)) {
-      return (response as any).data;
-    }
-    
-    // Si viene con success: true
-    if (response && (response as any).success && Array.isArray((response as any).data)) {
-      return (response as any).data;
-    }
-    
-    console.warn('⚠️ [DEBUG] Formato de respuesta inesperado:', response);
-    return [];
-  }
-
-  /**
-   * Descargar archivo específico
-   */
-  async descargarArchivoTicketEspecifico(ticketId: number, archivoId: number): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/archivos-ticket/descargar/${ticketId}/${archivoId}`, {
-      headers: {
-        'Authorization': `Bearer ${this.token}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Error descargando archivo');
-    }
-    
-    return response.blob();
-  }
-
-  /**
-   * Previsualizar archivo específico
-   */
-  async previsualizarArchivoTicketEspecifico(ticketId: number, archivoId: number): Promise<Blob> {
-    console.log('🔍 [DEBUG] previsualizarArchivoTicketEspecifico:', { ticketId, archivoId });
-    console.log('🔍 [DEBUG] baseURL:', this.baseUrl);
-    const url = `${this.baseUrl}/archivos-ticket/preview/${ticketId}/${archivoId}`;
-    console.log('🔍 [DEBUG] URL de previsualización:', url);
-    
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${this.token}`
-      }
-    });
-    
-    console.log('🔍 [DEBUG] Respuesta de previsualización:', response.status, response.statusText);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [DEBUG] Error en previsualización:', errorText);
-      throw new Error(`Error previsualizando archivo: ${response.status} ${response.statusText}`);
-    }
-    
-    const blob = await response.blob();
-    console.log('✅ [DEBUG] Blob de previsualización creado:', blob.size, 'bytes');
-    return blob;
-  }
-
-  /**
-   * Eliminar archivo específico
-   */
-  async eliminarArchivoTicketEspecifico(ticketId: number, archivoId: number): Promise<ApiResponse> {
-    return this.request(`/archivos-ticket/${ticketId}/${archivoId}`, {
-      method: 'DELETE'
-    });
-  }
-
-  /**
-   * Convertir archivo a Base64
-   */
-  private fileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        // Remover el prefijo "data:image/jpeg;base64," etc.
-        const base64 = result.split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = error => reject(error);
-    });
-  }
-
   // ========== REGLAS DE AUTOMATIZACIÓN ==========
 
-  /**
-   * Obtener todas las reglas de automatización
-   */
   async getReglasAutomatizacion(page: number = 0, size: number = 20): Promise<ReglaAutomatizacionResponseDTO[]> {
     return this.request(`/automation-rules?page=${page}&size=${size}`);
   }
 
-  /**
-   * Obtener reglas activas
-   */
   async getReglasActivas(): Promise<ReglaAutomatizacionResponseDTO[]> {
     return this.request('/automation-rules/activas');
   }
 
-  /**
-   * Crear regla de automatización
-   */
   async createReglaAutomatizacion(reglaData: ReglaAutomatizacionRequestDTO): Promise<ReglaAutomatizacionResponseDTO> {
     return this.request('/automation-rules', {
       method: 'POST',
@@ -2047,16 +1251,10 @@ class ApiClient {
     });
   }
 
-  /**
-   * Obtener regla por ID
-   */
   async getReglaAutomatizacion(id: number): Promise<ReglaAutomatizacionResponseDTO> {
     return this.request(`/automation-rules/${id}`);
   }
 
-  /**
-   * Actualizar regla de automatización
-   */
   async updateReglaAutomatizacion(id: number, reglaData: ReglaAutomatizacionRequestDTO): Promise<ReglaAutomatizacionResponseDTO> {
     return this.request(`/automation-rules/${id}`, {
       method: 'PATCH',
@@ -2064,27 +1262,18 @@ class ApiClient {
     });
   }
 
-  /**
-   * Eliminar regla de automatización
-   */
   async deleteReglaAutomatizacion(id: number): Promise<ApiResponse> {
     return this.request(`/automation-rules/${id}`, {
       method: 'DELETE'
     });
   }
 
-  /**
-   * Activar/Desactivar regla
-   */
   async toggleReglaAutomatizacion(id: number): Promise<ReglaAutomatizacionResponseDTO> {
     return this.request(`/automation-rules/${id}/toggle`, {
       method: 'PATCH'
     });
   }
 
-  /**
-   * Buscar reglas con filtros
-   */
   async buscarReglasAutomatizacion(filtros: {
     nombre?: string;
     activa?: boolean;
@@ -2102,25 +1291,16 @@ class ApiClient {
     return this.request(`/automation-rules/buscar?${params.toString()}`);
   }
 
-  /**
-   * Obtener estadísticas de reglas
-   */
   async getEstadisticasReglas(): Promise<any> {
     return this.request('/automation-rules/estadisticas');
   }
 
-  /**
-   * Ejecutar todas las reglas
-   */
   async ejecutarReglas(): Promise<ApiResponse> {
     return this.request('/automation-rules/ejecutar', {
       method: 'POST'
     });
   }
 
-  /**
-   * Ejecutar regla específica
-   */
   async ejecutarRegla(id: number): Promise<ApiResponse> {
     return this.request(`/automation-rules/${id}/ejecutar`, {
       method: 'POST'
@@ -2131,3 +1311,4 @@ class ApiClient {
 
 // Exportar instancia única del cliente API
 export const api = new ApiClient();
+

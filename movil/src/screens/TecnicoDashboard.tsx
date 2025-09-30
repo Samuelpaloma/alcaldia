@@ -674,7 +674,14 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             </View>
           ) : filteredTickets.length > 0 ? (
             filteredTickets.map((ticket, index) => (
-              <View key={ticket.id || index} style={styles.ticketCardNew}>
+              <TouchableOpacity 
+                key={ticket.id || index} 
+                style={styles.ticketCardNew}
+                onPress={() => {
+                  setMisTicketsVisible(false); // Cerrar el modal
+                  navigation.navigate('TicketTracking', { ticketId: ticket.id });
+                }}
+              >
                 {/* Header del ticket */}
                 <View style={styles.ticketHeaderNew}>
                   <Text style={styles.ticketTitleNew}>{ticket.id}: {ticket.consulta || ticket.descripcion}</Text>
@@ -752,19 +759,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                     </TouchableOpacity>
                   )}
 
-                  {/* Botón de Chat - Disponible para todos los estados */}
-                  <TouchableOpacity 
-                    style={styles.chatButton}
-                    onPress={() => {
-                      setSelectedTicket(null); // Cerrar el modal
-                      navigation.navigate('Chat', { ticketId: ticket.id });
-                    }}
-                  >
-                    <Text style={styles.chatButtonIcon}>💬</Text>
-                    <Text style={styles.chatButtonText}>Chat</Text>
-                  </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           ) : (
             <View style={styles.emptyState}>
