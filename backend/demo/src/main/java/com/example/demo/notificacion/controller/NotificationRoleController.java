@@ -6,6 +6,7 @@ import com.example.demo.notificacion.service.NotificationRoleService;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -59,8 +60,10 @@ public class NotificationRoleController {
             
             for (NotificacionMejorada notif : todasLasNotificaciones.getContent()) {
                 try {
-                    @SuppressWarnings("unchecked")
-                    List<String> destinatarios = objectMapper.readValue(notif.getDestinatarios(), List.class);
+                    List<String> destinatarios = objectMapper.readValue(
+                        notif.getDestinatarios(), 
+                        new TypeReference<List<String>>() {}
+                    );
                     
                     // Verificar si el usuario está en los destinatarios
                     boolean esDestinatario = destinatarios.stream()
@@ -133,8 +136,10 @@ public class NotificationRoleController {
                 }
                 
                 try {
-                    @SuppressWarnings("unchecked")
-                    List<String> destinatarios = objectMapper.readValue(notif.getDestinatarios(), List.class);
+                    List<String> destinatarios = objectMapper.readValue(
+                        notif.getDestinatarios(), 
+                        new TypeReference<List<String>>() {}
+                    );
                     
                     // Verificar si el usuario está en los destinatarios
                     boolean esDestinatario = destinatarios.stream()
@@ -202,8 +207,10 @@ public class NotificationRoleController {
                 NotificacionMejorada notificacion = notificacionOpt.get();
                 
                 // Verificar si el usuario es destinatario
-                @SuppressWarnings("unchecked")
-                List<String> destinatarios = objectMapper.readValue(notificacion.getDestinatarios(), List.class);
+                List<String> destinatarios = objectMapper.readValue(
+                    notificacion.getDestinatarios(), 
+                    new TypeReference<List<String>>() {}
+                );
                 final String userRole = getUsuarioRole(email);
                 boolean esDestinatario = destinatarios.stream()
                     .anyMatch(dest -> {
@@ -435,8 +442,10 @@ public class NotificationRoleController {
             List<NotificacionMejorada> notificacionesEspecificas = new ArrayList<>();
             for (NotificacionMejorada notif : todasLasNotificaciones) {
                 try {
-                    @SuppressWarnings("unchecked")
-                    List<String> destinatarios = objectMapper.readValue(notif.getDestinatarios(), List.class);
+                    List<String> destinatarios = objectMapper.readValue(
+                        notif.getDestinatarios(), 
+                        new TypeReference<List<String>>() {}
+                    );
                     boolean esDestinatario = destinatarios.stream()
                         .anyMatch(dest -> dest.endsWith(":" + email));
                     if (esDestinatario) {
@@ -455,8 +464,10 @@ public class NotificationRoleController {
             List<NotificacionMejorada> notificacionesPorRol = new ArrayList<>();
             for (NotificacionMejorada notif : todasLasNotificaciones) {
                 try {
-                    @SuppressWarnings("unchecked")
-                    List<String> destinatarios = objectMapper.readValue(notif.getDestinatarios(), List.class);
+                    List<String> destinatarios = objectMapper.readValue(
+                        notif.getDestinatarios(), 
+                        new TypeReference<List<String>>() {}
+                    );
                     boolean esDestinatarioPorRol = destinatarios.stream()
                         .anyMatch(dest -> dest.equals("rol:" + userRole));
                     if (esDestinatarioPorRol) {

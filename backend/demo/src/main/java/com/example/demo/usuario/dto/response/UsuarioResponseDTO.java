@@ -18,7 +18,6 @@ public class UsuarioResponseDTO {
     private String email;
     private String nombre;
     private String apellido;
-    private String telefono;
     private TipoUsuario tipoUsuario;
     private Boolean activo;
     private Boolean emailVerificado;

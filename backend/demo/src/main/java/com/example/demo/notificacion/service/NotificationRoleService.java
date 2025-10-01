@@ -609,6 +609,68 @@ public class NotificationRoleService {
     }
 
     /**
+     * Notificar a un rol específico (para uso de otros servicios)
+     */
+    public void crearNotificacionParaRol(String tipo, String mensaje, String rol, Long ticketId, Long usuarioActorId, String prioridad) {
+        try {
+            Usuario usuarioActor = usuarioRepository.findById(usuarioActorId)
+                .orElseThrow(() -> new RuntimeException("Usuario actor no encontrado"));
+            
+            List<String> destinatarios = Arrays.asList(rol);
+            
+            crearNotificacion(
+                tipo,
+                mensaje,
+                destinatarios,
+                ticketId,
+                usuarioActorId,
+                usuarioActor.getEmail(),
+                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                prioridad
+            );
+        } catch (Exception e) {
+            System.err.println("Error creando notificación para rol: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Notificar a un usuario específico por email (para uso de otros servicios)
+     */
+    public void crearNotificacionParaUsuario(String tipo, String mensaje, String emailUsuario, Long ticketId, Long usuarioActorId, String prioridad) {
+        try {
+            Usuario usuarioActor = usuarioRepository.findById(usuarioActorId)
+                .orElseThrow(() -> new RuntimeException("Usuario actor no encontrado"));
+            
+            // Determinar el tipo de usuario para el prefijo
+            Usuario destinatario = usuarioRepository.findByEmail(emailUsuario).orElse(null);
+            String prefijoDestinatario = "funcionario:"; // Por defecto
+            
+            if (destinatario != null) {
+                if ("TECNICO".equals(destinatario.getTipoUsuario())) {
+                    prefijoDestinatario = "tecnico:";
+                } else if ("ADMINISTRADOR".equals(destinatario.getTipoUsuario()) || "SUPERADMIN".equals(destinatario.getTipoUsuario())) {
+                    prefijoDestinatario = "administrador:";
+                }
+            }
+            
+            List<String> destinatarios = Arrays.asList(prefijoDestinatario + emailUsuario);
+            
+            crearNotificacion(
+                tipo,
+                mensaje,
+                destinatarios,
+                ticketId,
+                usuarioActorId,
+                usuarioActor.getEmail(),
+                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                prioridad
+            );
+        } catch (Exception e) {
+            System.err.println("Error creando notificación para usuario: " + e.getMessage());
+        }
+    }
+
+    /**
      * Crea una notificación y la envía por WebSocket
      */
     private void crearNotificacion(String tipo, String mensaje, List<String> destinatarios, 

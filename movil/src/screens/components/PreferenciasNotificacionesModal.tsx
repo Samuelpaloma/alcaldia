@@ -216,7 +216,7 @@ const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalP
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#0a0a0a',
   },
   header: {
     flexDirection: 'row',
@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: '#333333',
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#ffffff',
     flex: 1,
     textAlign: 'center',
   },
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#9ca3af',
   },
   saveButton: {
     backgroundColor: '#3b82f6',
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   saveButtonDisabled: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#4b5563',
   },
   saveButtonText: {
     fontSize: 16,
@@ -258,11 +258,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   saveButtonTextDisabled: {
-    color: '#e5e7eb',
+    color: '#6b7280',
   },
   content: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#0a0a0a',
   },
   loadingContainer: {
     flex: 1,
@@ -271,23 +272,20 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#9ca3af',
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#ffffff',
     marginBottom: 16,
   },
   switchContainer: {
@@ -296,7 +294,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#2a2a2a',
   },
   switchInfo: {
     flex: 1,
@@ -305,20 +303,22 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: '#e5e7eb',
     marginBottom: 4,
   },
   switchDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#9ca3af',
     lineHeight: 20,
   },
   infoContainer: {
     flexDirection: 'row',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#1e3a5f',
     borderRadius: 12,
     padding: 16,
     marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#2563eb',
   },
   infoIcon: {
     fontSize: 20,
@@ -328,35 +328,35 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 14,
-    color: '#1e40af',
+    color: '#93c5fd',
     lineHeight: 20,
   },
   obligatoryText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#9ca3af',
     marginBottom: 16,
     lineHeight: 20,
   },
   optionalText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#9ca3af',
     marginBottom: 16,
     lineHeight: 20,
   },
   obligatoryItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#2a2a2a',
   },
   obligatoryLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: '#e5e7eb',
     marginBottom: 4,
   },
   obligatoryDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#9ca3af',
   },
 });
 

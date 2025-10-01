@@ -382,11 +382,13 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                   className="form-select"
                 >
                   <option value="">Seleccionar técnico...</option>
-                  {tecnicos.map(tecnico => (
-                    <option key={tecnico.id} value={tecnico.id}>
-                      {tecnico.nombreCompleto} - {tecnico.email}
-                    </option>
-                  ))}
+                  {tecnicos
+                    .filter(tecnico => tecnico.email !== selectedTicket?.tecnicoEmail)
+                    .map(tecnico => (
+                      <option key={tecnico.id} value={tecnico.id}>
+                        {tecnico.nombreCompleto} - {tecnico.email}
+                      </option>
+                    ))}
                 </select>
               </div>
               

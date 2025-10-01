@@ -6,7 +6,8 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Alert
+  Alert,
+  StatusBar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import authService from '../services/authService';
@@ -57,8 +58,15 @@ export default function ConfigScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar 
+        barStyle="light-content"
+        backgroundColor="#0a0a0a" 
+      />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Configuración</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>×</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
@@ -101,23 +109,34 @@ export default function ConfigScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#30692E',
+    backgroundColor: '#0a0a0a',
   },
   header: {
-    backgroundColor: '#30692E',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: '#333333',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#ffffff',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 28,
+    color: '#9ca3af',
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#0a0a0a',
   },
   section: {
     marginTop: 20,
@@ -125,7 +144,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 10,
     paddingHorizontal: 20,
   },
@@ -134,12 +153,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#333333',
   },
   logoutOption: {
-    backgroundColor: '#fff5f5',
+    backgroundColor: '#1f1414',
   },
   optionIcon: {
     fontSize: 20,
@@ -148,14 +167,14 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#e5e7eb',
   },
   logoutText: {
-    color: '#dc2626',
+    color: '#ef4444',
     fontWeight: '500',
   },
   optionArrow: {
     fontSize: 18,
-    color: '#999',
+    color: '#9ca3af',
   },
 });

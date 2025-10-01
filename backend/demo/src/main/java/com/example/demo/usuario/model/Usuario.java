@@ -35,9 +35,6 @@ public class Usuario {
     @Column(nullable = false, length = 100)
     private String apellido;
     
-    @Column(length = 20)
-    private String telefono;
-    
     @Column(length = 200)
     private String ubicacion;
     
@@ -88,10 +85,7 @@ public class Usuario {
     @Column(name = "tema_preferido", length = 10, columnDefinition = "VARCHAR(10) DEFAULT 'light'")
     private String temaPreferido = "light"; // Tema preferido: 'light' o 'dark'
     
-    @Column(name = "rol")
-    private String rol; // Campo adicional para compatibilidad
-    
-        // Tickets donde el usuario es el técnico asignado
+    // Tickets donde el usuario es el técnico asignado
         @OneToMany(mappedBy = "tecnicoAsignado")
         private java.util.List<com.example.demo.ticket.model.Ticket> ticketsAsignados;
 

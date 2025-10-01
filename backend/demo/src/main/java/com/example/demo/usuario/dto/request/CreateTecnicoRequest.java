@@ -28,9 +28,6 @@ public class CreateTecnicoRequest {
     @Size(min = 2, max = 50, message = "El apellido debe tener entre 2 y 50 caracteres")
     private String apellido;
     
-    @Pattern(regexp = "^[0-9+\\-\\s()]*$", message = "El teléfono debe contener solo números y caracteres permitidos")
-    private String telefono;
-    
     private Boolean require2fa = false;
     
     // Campos opcionales para especialización

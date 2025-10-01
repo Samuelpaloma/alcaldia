@@ -165,7 +165,7 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#0a0a0a',
   },
   header: {
     flexDirection: 'row',
@@ -173,9 +173,9 @@ const createStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: '#333333',
   },
   headerButtons: {
     flexDirection: 'row',
@@ -185,7 +185,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#2a2a2a',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
@@ -196,24 +196,25 @@ const createStyles = (theme: any) => StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: '#ffffff',
   },
   closeButton: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#2a2a2a',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#9ca3af',
     fontWeight: 'bold',
   },
   content: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#0a0a0a',
   },
   loadingContainer: {
     flex: 1,
@@ -223,24 +224,21 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#9ca3af',
   },
   notificacionItem: {
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderLeftColor: '#333333',
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   notificacionNoLeida: {
     borderLeftColor: '#3b82f6',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#1f2937',
   },
   notificacionHeader: {
     flexDirection: 'row',
@@ -256,13 +254,13 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   notificacionMensaje: {
     fontSize: 16,
-    color: '#374151',
+    color: '#e5e7eb',
     lineHeight: 22,
     marginBottom: 8,
   },
   notificacionMensajeNoLeida: {
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#ffffff',
   },
   notificacionMeta: {
     flexDirection: 'row',
@@ -271,7 +269,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   notificacionFecha: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#9ca3af',
   },
   prioridadBadge: {
     paddingHorizontal: 8,
@@ -310,12 +308,12 @@ const createStyles = (theme: any) => StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: '#e5e7eb',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#9ca3af',
     textAlign: 'center',
     lineHeight: 20,
   },

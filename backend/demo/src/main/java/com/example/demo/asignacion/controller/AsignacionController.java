@@ -96,10 +96,15 @@ public class AsignacionController {
             @Valid @RequestBody AsignarTicketRequestDTO request,
             Authentication authentication) {
         try {
-            log.info("Escalando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
+            log.info("🚀 [CONTROLLER] ===== ESCALACIÓN INICIADA =====");
+            log.info("🚀 [CONTROLLER] Ticket ID: {}", request.getTicketId());
+            log.info("🚀 [CONTROLLER] Técnico ID: {}", request.getTecnicoId());
+            log.info("🚀 [CONTROLLER] Comentario: {}", request.getComentario());
             
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailEscalador = userDetails.getEmail();
+            
+            log.info("🚀 [CONTROLLER] Email escalador: {}", emailEscalador);
             
             AsignacionResponseDTO asignacion = asignacionService.escalarTicket(
                 request.getTicketId(), 

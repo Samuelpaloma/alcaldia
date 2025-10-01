@@ -21,6 +21,9 @@ import Metrics from "./modules/metrics/Metrics";
 import AiClassification from "./modules/ai_classification/AiClassification";
 import Login from "./modules/auth/Login";
 import Register from "./modules/auth/Register";
+import ForgotPassword from "./modules/auth/ForgotPassword";
+import ResetPassword from "./modules/auth/ResetPassword";
+import RootRedirect from "./modules/auth/RootRedirect";
 import AdminDashboard from "./modules/admin/AdminDashboard";
 import UnifiedDashboard from "./modules/admin/UnifiedDashboard";
 import SuperAdminDashboard from "./modules/superadmin/SuperAdminDashboard";
@@ -80,7 +83,9 @@ const App = () => (
             <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/" element={<RootRedirect />} />
             <Route path="/logout" element={<LogoutNavigate />} />
 
             {/* Client section (role-restricted) */}

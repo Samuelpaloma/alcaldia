@@ -4,35 +4,49 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Switch,
   Alert,
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
 } from 'react-native';
-import { useTheme } from '../hooks/useTheme';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ConfiguracionesScreenProps {
   onLogout: () => void;
 }
 
-export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScreenProps) {
-  const { theme, toggleTheme, isDark, isLoading } = useTheme();
-  const [isSaving, setIsSaving] = useState(false);
+interface UserInfo {
+  id: number;
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  tipoUsuario: string;
+}
 
-  const handleThemeToggle = async () => {
+export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScreenProps) {
+  const navigation = useNavigation();
+  const [isLoading, setIsLoading] = useState(true);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+
+  useEffect(() => {
+    loadUserInfo();
+  }, []);
+
+  const loadUserInfo = async () => {
     try {
-      setIsSaving(true);
-      await toggleTheme();
-      Alert.alert(
-        'Tema Actualizado',
-        isDark ? 'Cambiado a tema claro' : 'Cambiado a tema oscuro'
-      );
+      setIsLoading(true);
+      const userInfoString = await AsyncStorage.getItem('userInfo');
+      if (userInfoString) {
+        const userData = JSON.parse(userInfoString);
+        setUserInfo(userData);
+      }
     } catch (error) {
-      console.error('Error actualizando tema:', error);
-      Alert.alert('Error', 'No se pudo actualizar el tema');
+      console.error('Error cargando información del usuario:', error);
+      Alert.alert('Error', 'No se pudo cargar la información del usuario');
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
 
@@ -47,13 +61,13 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
     );
   };
 
-  const styles = createStyles(theme);
+  const styles = createStyles();
 
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <ActivityIndicator size="large" color="#3b82f6" />
           <Text style={styles.loadingText}>Cargando configuraciones...</Text>
         </View>
       </SafeAreaView>
@@ -63,34 +77,51 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar 
-        barStyle={isDark ? 'light-content' : 'dark-content'} 
-        backgroundColor={theme.colors.background} 
+        barStyle="light-content"
+        backgroundColor="#0a0a0a" 
       />
       
       <View style={styles.header}>
         <Text style={styles.title}>Configuraciones</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>×</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
-        {/* Sección de Apariencia */}
+        {/* Información Personal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎨 Apariencia</Text>
+          <Text style={styles.sectionTitle}>👤 Información Personal</Text>
           
-          <View style={styles.settingItem}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Tema Oscuro</Text>
-              <Text style={styles.settingDescription}>
-                {isDark ? 'Actualmente usando tema oscuro' : 'Actualmente usando tema claro'}
-              </Text>
+          {userInfo && (
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Nombre completo</Text>
+                <Text style={styles.infoValue}>
+                  {userInfo.nombre && userInfo.apellido 
+                    ? `${userInfo.nombre} ${userInfo.apellido}`
+                    : userInfo.apellido || userInfo.nombre || 'No especificado'}
+                </Text>
+              </View>
+              
+              <View style={styles.infoDivider} />
+              
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{userInfo.email}</Text>
+              </View>
+
+              {userInfo.telefono && (
+                <>
+                  <View style={styles.infoDivider} />
+                  <View style={styles.infoRow}>
+                    <Text style={styles.infoLabel}>Teléfono</Text>
+                    <Text style={styles.infoValue}>{userInfo.telefono}</Text>
+                  </View>
+                </>
+              )}
             </View>
-            <Switch
-              value={isDark}
-              onValueChange={handleThemeToggle}
-              disabled={isSaving}
-              trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-              thumbColor={isDark ? '#ffffff' : '#f4f3f4'}
-            />
-          </View>
+          )}
         </View>
 
         {/* Botón de Cerrar Sesión */}
@@ -102,10 +133,10 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
   );
 }
 
-const createStyles = (theme: any) => StyleSheet.create({
+const createStyles = () => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#0a0a0a',
   },
   loadingContainer: {
     flex: 1,
@@ -115,23 +146,36 @@ const createStyles = (theme: any) => StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: theme.colors.textSecondary,
+    color: '#9ca3af',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: '#333333',
+    backgroundColor: '#1a1a1a',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: theme.colors.text,
+    color: '#ffffff',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  closeButtonText: {
+    fontSize: 28,
+    color: '#9ca3af',
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 24,
+    backgroundColor: '#0a0a0a',
   },
   section: {
     marginBottom: 32,
@@ -139,35 +183,35 @@ const createStyles = (theme: any) => StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: theme.colors.text,
+    color: '#ffffff',
     marginBottom: 12,
   },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    backgroundColor: theme.colors.surface,
+  infoCard: {
+    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#333333',
+    padding: 16,
   },
-  settingInfo: {
-    flex: 1,
-    marginRight: 12,
+  infoRow: {
+    paddingVertical: 12,
   },
-  settingTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: theme.colors.text,
+  infoLabel: {
+    fontSize: 14,
+    color: '#9ca3af',
     marginBottom: 4,
   },
-  settingDescription: {
-    fontSize: 14,
-    color: theme.colors.textSecondary,
+  infoValue: {
+    fontSize: 16,
+    color: '#e5e7eb',
+    fontWeight: '500',
+  },
+  infoDivider: {
+    height: 1,
+    backgroundColor: '#333333',
   },
   logoutButton: {
-    backgroundColor: '#ff4444',
+    backgroundColor: '#ef4444',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,

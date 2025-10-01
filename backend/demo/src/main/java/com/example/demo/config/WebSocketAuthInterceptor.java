@@ -26,13 +26,18 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
-        
-        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-            log.info("🔐 [WEBSOCKET AUTH] Procesando conexión WebSocket");
+        try {
+            StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
             
-            // Permitir todas las conexiones para debugging
-            log.info("🔐 [WEBSOCKET AUTH] ✅ Permitiendo conexión WebSocket");
+            if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
+                log.info("🔐 [WEBSOCKET AUTH] Procesando conexión WebSocket");
+                
+                // Permitir todas las conexiones para debugging
+                log.info("🔐 [WEBSOCKET AUTH] ✅ Permitiendo conexión WebSocket");
+            }
+        } catch (Exception e) {
+            log.error("❌ [WEBSOCKET AUTH] Error en interceptor: {}", e.getMessage(), e);
+            // No bloquear la conexión por errores del interceptor
         }
         
         return message;

@@ -132,7 +132,6 @@ public class SuperAdminUsuarioService {
             .nombre(usuario.getNombre())
             .apellido(usuario.getApellido())
             .nombreCompleto(usuario.getNombreCompleto())
-            .telefono(usuario.getTelefono())
             .tipoUsuario(usuario.getTipoUsuario().toString())
             .activo(usuario.isActivo())
             .require2fa(usuario.getRequire2fa() != null ? usuario.getRequire2fa() : false)

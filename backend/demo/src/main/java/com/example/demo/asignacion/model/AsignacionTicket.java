@@ -38,6 +38,9 @@ public class AsignacionTicket {
     @Column(name = "activa", nullable = false)
     @Builder.Default
     private Boolean activa = true;
+    
+    @Column(name = "tipo_operacion", length = 50)
+    private String tipoOperacion;
 }
 
 

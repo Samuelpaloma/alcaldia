@@ -248,7 +248,11 @@ export default function ClientLayout() {
           userName={userName}
         />
         
-        {/* Sistema de notificaciones toast en tiempo real - Integrado en GlobalWebSocket */}
+        {/* Sistema de notificaciones toast en tiempo real */}
+        <NotificationSystem 
+          userEmail={userEmail} 
+          userRole={userRole} 
+        />
     </div>
   );
 }

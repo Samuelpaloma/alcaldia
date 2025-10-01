@@ -118,55 +118,103 @@ class EvidenceService {
 
   /**
    * Subir evidencia para un ticket usando el endpoint correcto
+   * @param evidenceData Datos de la evidencia a subir
+   * @param isFinalEvidence true = evidencia final (tabla evidencias), false = archivo de chat
    */
-  async subirEvidencia(evidenceData: EvidenceRequest): Promise<EvidenceResponse> {
+  async subirEvidencia(evidenceData: EvidenceRequest, isFinalEvidence: boolean = false): Promise<EvidenceResponse> {
     try {
-      console.log('📎 Subiendo evidencia para ticket:', evidenceData.ticketId);
+      const tipoTexto = isFinalEvidence ? 'evidencia final' : 'archivo de chat';
+      console.log(`📎 Subiendo ${tipoTexto} para ticket:`, evidenceData.ticketId);
       
       const token = await AsyncStorage.getItem('authToken');
       
-      const formData = new FormData();
-      formData.append('ticketId', evidenceData.ticketId.toString());
-      formData.append('descripcion', evidenceData.descripcion);
-      
-      // Para web, necesitamos convertir el blob URL a File
-      if (evidenceData.archivo.uri.startsWith('blob:')) {
-        // Es un blob URL, necesitamos convertirlo a File
-        const response = await fetch(evidenceData.archivo.uri);
-        const blob = await response.blob();
-        const file = new File([blob], evidenceData.archivo.name, { type: evidenceData.archivo.type });
-        formData.append('archivo', file);
-      } else {
-        // Es un URI normal (móvil)
-        formData.append('archivo', {
-          uri: evidenceData.archivo.uri,
-          type: evidenceData.archivo.type,
-          name: evidenceData.archivo.name,
-        } as any);
-      }
+      // Usar endpoint específico según el tipo de evidencia
+      const endpoint = isFinalEvidence 
+        ? `${this.baseUrl}/evidencias/subir`        // Tabla evidencias - evidencias finales (FormData)
+        : `${this.baseUrl}/archivos-ticket/subir`;  // Tabla archivos_ticket - archivos del chat (JSON + Base64)
 
-      console.log('📎 Enviando FormData:', {
-        ticketId: evidenceData.ticketId,
-        descripcion: evidenceData.descripcion,
-        archivo: {
-          name: evidenceData.archivo.name,
-          type: evidenceData.archivo.type,
-          size: evidenceData.archivo.size
+      console.log('📎 Endpoint:', endpoint);
+
+      let response: Response;
+
+      if (isFinalEvidence) {
+        // Evidencias finales: usar FormData
+        const formData = new FormData();
+        formData.append('ticketId', evidenceData.ticketId.toString());
+        formData.append('descripcion', evidenceData.descripcion);
+        
+        // Para web, necesitamos convertir el blob URL a File
+        if (evidenceData.archivo.uri.startsWith('blob:')) {
+          const blobResponse = await fetch(evidenceData.archivo.uri);
+          const blob = await blobResponse.blob();
+          const file = new File([blob], evidenceData.archivo.name, { type: evidenceData.archivo.type });
+          formData.append('archivo', file);
+        } else {
+          formData.append('archivo', {
+            uri: evidenceData.archivo.uri,
+            type: evidenceData.archivo.type,
+            name: evidenceData.archivo.name,
+          } as any);
         }
-      });
 
-      const response = await fetch(`${this.baseUrl}/evidencias/subir`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // NO incluir Content-Type para FormData - el navegador lo establece automáticamente
-        },
-        body: formData,
-      });
+        console.log('📎 Enviando FormData para evidencia final');
+
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      } else {
+        // Archivos del chat: usar JSON con Base64
+        // Convertir archivo a Base64
+        let contenidoBase64 = '';
+        
+        if (evidenceData.archivo.uri.startsWith('blob:')) {
+          const blobResponse = await fetch(evidenceData.archivo.uri);
+          const blob = await blobResponse.blob();
+          contenidoBase64 = await this.blobToBase64(blob);
+        } else {
+          // Móvil nativo
+          contenidoBase64 = evidenceData.archivo.uri;
+        }
+
+        // Extraer extensión del nombre del archivo
+        const extension = evidenceData.archivo.name.split('.').pop() || '';
+        
+        const requestBody = {
+          ticketId: evidenceData.ticketId,
+          nombreArchivo: evidenceData.archivo.name,
+          tipoMime: evidenceData.archivo.type,
+          tamañoArchivo: evidenceData.archivo.size || 0,
+          extension: extension,
+          contenidoArchivo: contenidoBase64,
+          comentario: evidenceData.descripcion
+        };
+
+        console.log('📎 Enviando JSON con Base64 para archivo del chat:', {
+          ticketId: requestBody.ticketId,
+          nombreArchivo: requestBody.nombreArchivo,
+          tipoMime: requestBody.tipoMime,
+          tamañoArchivo: requestBody.tamañoArchivo,
+          extension: requestBody.extension,
+          comentario: requestBody.comentario,
+          contenidoBase64Length: contenidoBase64.length
+        });
+
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      }
 
       console.log('📎 Response status:', response.status);
       console.log('📎 Response ok:', response.ok);
-      console.log('📎 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -175,12 +223,29 @@ class EvidenceService {
       }
 
       const data = await response.json();
-      console.log('✅ Evidencia subida:', data);
+      console.log(`✅ ${tipoTexto.charAt(0).toUpperCase() + tipoTexto.slice(1)} subida:`, data);
       return data;
     } catch (error) {
       console.error('❌ Error subiendo evidencia:', error);
       throw error;
     }
+  }
+
+  /**
+   * Convertir Blob a Base64
+   */
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        // Remover el prefijo "data:*/*;base64,"
+        const base64 = base64String.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
   /**

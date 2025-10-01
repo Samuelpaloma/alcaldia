@@ -19,6 +19,10 @@ public interface UsuarioService {
     UsuarioDTO createAdmin(CreateAdminRequest request, Long superAdminId);
     PageResponse<UsuarioDTO> getAdmins(Pageable pageable, String search);
     
+    // 👥 Gestión de funcionarios (Admin puede gestionar)
+    UsuarioDTO createFuncionario(CreateFuncionarioRequest request, Long adminId);
+    PageResponse<UsuarioDTO> getFuncionarios(Pageable pageable, String search);
+    
     // ✏️ Actualización de usuarios
     UsuarioDTO updateUser(Long userId, UpdateUsuarioRequest request, Long currentUserId);
     void toggleUserStatus(Long userId, Long currentUserId);

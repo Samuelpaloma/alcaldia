@@ -32,9 +32,6 @@ public class UsuarioRequestDTO {
     @Size(max = 100, message = "El apellido no puede exceder 100 caracteres")
     private String apellido;
     
-    @Size(max = 20, message = "El teléfono no puede exceder 20 caracteres")
-    private String telefono;
-    
     @NotNull(message = "El tipo de usuario es obligatorio")
     private TipoUsuario tipoUsuario;
 }

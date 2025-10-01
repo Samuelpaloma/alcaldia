@@ -22,7 +22,6 @@ public class UsuarioMapper {
             .nombre(usuario.getNombre())
             .apellido(usuario.getApellido())
             .nombreCompleto(usuario.getNombreCompleto())
-            .telefono(usuario.getTelefono())
             .ubicacion(usuario.getUbicacion())
             .departamento(usuario.getDepartamento())
             .cargo(usuario.getCargo())

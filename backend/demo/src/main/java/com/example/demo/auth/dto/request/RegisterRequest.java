@@ -31,9 +31,6 @@ public class RegisterRequest {
     @Size(min = 2, max = 50, message = "El apellido debe tener entre 2 y 50 caracteres")
     private String apellido;
     
-    @Pattern(regexp = "^[0-9+\\-\\s()]*$", message = "El teléfono debe contener solo números y caracteres permitidos")
-    private String telefono;
-    
     // Validación personalizada
     @AssertTrue(message = "Las contraseñas no coinciden")
     public boolean isPasswordMatching() {

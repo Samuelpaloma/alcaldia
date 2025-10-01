@@ -54,7 +54,6 @@ public class DataInitializerService implements CommandLineRunner {
             .passwordHash(passwordEncoder.encode("SuperAdmin123")) // Contraseña por defecto
             .nombre("Super")
             .apellido("Administrador")
-            .telefono("+57 300 000 0000")
             .tipoUsuario(TipoUsuario.SUPERADMIN)
             .activo(true)
             .emailVerificado(true) // Ya verificado por defecto
@@ -91,14 +90,12 @@ public class DataInitializerService implements CommandLineRunner {
             .passwordHash(passwordEncoder.encode("Julio066")) // Contraseña que mencionaste
             .nombre("Técnico")
             .apellido("Prueba")
-            .telefono("+57 300 000 0001")
             .tipoUsuario(TipoUsuario.TECNICO)
             .activo(true)
             .emailVerificado(true) // Ya verificado por defecto
             .passwordTemporal(false) // No es temporal
             .require2fa(false)
             .deviceToken("test-device-token-12345") // Token de prueba para notificaciones
-            .rol("TECNICO")
             .build();
         
         Usuario savedTecnico = usuarioRepository.save(tecnico);
