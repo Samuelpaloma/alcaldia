@@ -99,12 +99,20 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const [searchText, setSearchText] = useState('');
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
 
+  // Cargar datos al montar el componente
   useEffect(() => {
     loadUserData();
     loadStats();
     loadContadorNotificaciones();
     loadTickets();
   }, []);
+
+  // Cargar evidencias automáticamente cuando se abre el modal
+  useEffect(() => {
+    if (evidenciasVisible && todasLasEvidencias.length === 0) {
+      cargarTodasLasEvidencias();
+    }
+  }, [evidenciasVisible]);
 
   // Efecto para filtrar tickets cuando cambia la búsqueda
   useEffect(() => {
@@ -150,9 +158,10 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         }
       }
 
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('userInfo');
-      console.log('✅ [LOGOUT] Almacenamiento local limpiado');
+      // Limpiar TODO el almacenamiento local
+      console.log('🗑️ [LOGOUT] Limpiando todo el almacenamiento local...');
+      await AsyncStorage.clear();
+      console.log('✅ [LOGOUT] Almacenamiento local completamente limpio');
 
       Alert.alert(
         'Sesión cerrada',
@@ -170,8 +179,10 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     } catch (error) {
       console.error('❌ [LOGOUT] Error en logout:', error);
       
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('userInfo');
+      // Limpiar TODO el almacenamiento incluso con error
+      console.log('🗑️ [LOGOUT] Limpiando almacenamiento por error...');
+      await AsyncStorage.clear();
+      console.log('✅ [LOGOUT] Almacenamiento limpio después de error');
       
       Alert.alert(
         'Sesión cerrada',
@@ -638,20 +649,16 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   // Componente Modal Mis Tickets
   const MisTicketsModal = () => (
     <Modal visible={misTicketsVisible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={styles.modalContainer}>
-        {/* Header */}
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>TicketFlow - Técnico</Text>
-          <TouchableOpacity onPress={() => setMisTicketsVisible(false)}>
-            <Text style={styles.closeButton}>×</Text>
-          </TouchableOpacity>
-        </View>
+        <SafeAreaView style={styles.modalContainer}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Mis Tickets</Text>
+            <TouchableOpacity onPress={() => setMisTicketsVisible(false)}>
+              <Text style={styles.closeButton}>×</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* Título principal */}
-        <View style={styles.modalTitleSection}>
-          <Text style={styles.modalMainTitle}>Mis Tickets</Text>
-          <Text style={styles.modalSubtitle}>Visualiza y actualiza tus tickets asignados</Text>
-        </View>
+        <Text style={styles.modalSubtitle}>Visualiza y actualiza tus tickets asignados</Text>
 
         {/* Barra de búsqueda */}
         <View style={styles.searchSection}>
@@ -694,9 +701,13 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                 <View style={styles.tagsContainer}>
                   <View style={[
                     styles.statusTag, 
-                    ticket.estado === 'PENDIENTE' ? { backgroundColor: '#ffebee' } :
-                    ticket.estado === 'EN_PROCESO' ? { backgroundColor: '#fff3e0' } :
-                    { backgroundColor: '#e8f5e8' }
+                    ticket.estado === 'PENDIENTE' ? { backgroundColor: '#dc2626' } :
+                    ticket.estado === 'ASIGNADO' ? { backgroundColor: '#2563eb' } :
+                    ticket.estado === 'EN_PROCESO' ? { backgroundColor: '#f59e0b' } :
+                    ticket.estado === 'RESUELTO' ? { backgroundColor: '#10b981' } :
+                    ticket.estado === 'CERRADO' ? { backgroundColor: '#6b7280' } :
+                    ticket.estado === 'ESCALADO' ? { backgroundColor: '#8b5cf6' } :
+                    { backgroundColor: '#6b7280' }
                   ]}>
                     <Text style={styles.tagText}>{ticket.estado}</Text>
                   </View>
@@ -720,9 +731,13 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   <Text style={styles.currentStatusLabel}>Estado actual:</Text>
                   <View style={[
                     styles.currentStatusBadge,
-                    ticket.estado === 'PENDIENTE' ? { backgroundColor: '#ffebee' } :
-                    ticket.estado === 'EN_PROCESO' ? { backgroundColor: '#fff3e0' } :
-                    { backgroundColor: '#e8f5e8' }
+                    ticket.estado === 'PENDIENTE' ? { backgroundColor: '#dc2626' } :
+                    ticket.estado === 'ASIGNADO' ? { backgroundColor: '#2563eb' } :
+                    ticket.estado === 'EN_PROCESO' ? { backgroundColor: '#f59e0b' } :
+                    ticket.estado === 'RESUELTO' ? { backgroundColor: '#10b981' } :
+                    ticket.estado === 'CERRADO' ? { backgroundColor: '#6b7280' } :
+                    ticket.estado === 'ESCALADO' ? { backgroundColor: '#8b5cf6' } :
+                    { backgroundColor: '#6b7280' }
                   ]}>
                     <Text style={styles.currentStatusText}>{ticket.estado}</Text>
                   </View>
@@ -1117,13 +1132,13 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   // Componente Modal Mis Evidencias
   const EvidenciasModal = () => (
     <Modal visible={evidenciasVisible} animationType="slide" presentationStyle="pageSheet">
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Mis Evidencias</Text>
-          <TouchableOpacity onPress={() => setEvidenciasVisible(false)}>
-            <Text style={styles.closeButton}>×</Text>
-          </TouchableOpacity>
-        </View>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Mis Evidencias</Text>
+            <TouchableOpacity onPress={() => setEvidenciasVisible(false)}>
+              <Text style={styles.closeButton}>×</Text>
+            </TouchableOpacity>
+          </View>
         <Text style={styles.modalSubtitle}>Registra y consulta las evidencias de tus tickets.</Text>
         
         <View style={styles.searchContainer}>
@@ -1231,19 +1246,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          {/* Header con menú hamburguesa */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>TicketFlow - Técnico</Text>
-            <TouchableOpacity 
-              style={styles.menuButton}
-              onPress={() => setSidebarVisible(true)}
-            >
-              <Text style={styles.menuIcon}>☰</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Título principal */}
-          <Text style={styles.mainTitle}>Inicio del Técnico</Text>
+          {/* Título principal - sin header de navegación */}
+          <Text style={styles.mainTitle}>Panel de Técnico</Text>
           <Text style={styles.subtitle}>
             Resumen rápido de tus tickets asignados
           </Text>
@@ -1297,7 +1301,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                 <Text style={styles.actionSectionCount}>({stats.total})</Text>
               </View>
               <TouchableOpacity 
-                style={styles.actionButton}
+                style={styles.openSectionButton}
                 onPress={() => {
                   console.log('🎫 [FRONTEND] Botón "Mis Tickets" presionado');
                   console.log('🎫 [FRONTEND] Llamando a loadTickets()');
@@ -1306,7 +1310,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   setMisTicketsVisible(true);
                 }}
               >
-                <Text style={styles.actionButtonText}>Abrir</Text>
+                <Text style={styles.openSectionButtonText}>Abrir</Text>
               </TouchableOpacity>
             </View>
 
@@ -1316,30 +1320,59 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                 <Text style={styles.actionSectionCount}>({stats.totalEvidencias || 0})</Text>
               </View>
               <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => {
-                  cargarTodasLasEvidencias();
-                  setEvidenciasVisible(true);
-                }}
+                style={styles.openSectionButton}
+                onPress={() => setEvidenciasVisible(true)}
               >
-                <Text style={styles.actionButtonText}>Abrir</Text>
+                <Text style={styles.openSectionButtonText}>Abrir</Text>
               </TouchableOpacity>
             </View>
-
-            <View style={styles.actionSection}>
-              <View style={styles.actionSectionContent}>
-                <Text style={styles.actionSectionTitle}>Notificaciones</Text>
-                <Text style={styles.actionSectionCount}>({stats.totalNotificaciones || 0})</Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.actionButton}
-                onPress={() => setNotificacionesVisible(true)}
-              >
-                <View style={styles.notificationButtonContent}>
-                  <Text style={styles.actionButtonText}>Abrir</Text>
+          </View>
+          
+          {/* Botones flotantes en esquina superior derecha */}
+          <View style={styles.floatingButtonsContainer}>
+            {/* Botón de Notificaciones */}
+            <TouchableOpacity 
+              style={styles.floatingButton}
+              onPress={() => setNotificacionesVisible(true)}
+            >
+              <Text style={styles.floatingButtonIcon}>🔔</Text>
+              {contadorNotificaciones > 0 && (
+                <View style={styles.notificationBadgeFloat}>
+                  <Text style={styles.notificationBadgeTextFloat}>
+                    {contadorNotificaciones > 9 ? '9+' : contadorNotificaciones}
+                  </Text>
                 </View>
-              </TouchableOpacity>
-            </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Botón de Configuración */}
+            <TouchableOpacity 
+              style={styles.floatingButton}
+              onPress={() => {
+                // @ts-ignore - Navegación a pantalla existente
+                navigation.navigate('Configuraciones');
+              }}
+            >
+              <Text style={styles.floatingButtonIcon}>⚙️</Text>
+            </TouchableOpacity>
+
+            {/* Botón de Cerrar Sesión */}
+            <TouchableOpacity 
+              style={[styles.floatingButton, styles.floatingButtonLogout]}
+              onPress={async () => {
+                const confirmado = window.confirm('¿Estás seguro de que quieres cerrar sesión?');
+                if (confirmado) {
+                  if (onLogout) {
+                    await onLogout();
+                  } else {
+                    await AsyncStorage.removeItem('authToken');
+                    await AsyncStorage.removeItem('userInfo');
+                  }
+                }
+              }}
+            >
+              <Text style={[styles.floatingButtonIcon, styles.logoutIcon]}>→</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -1364,7 +1397,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           <View style={styles.sidebarOverlay}>
             <View style={styles.sidebar}>
               <View style={styles.sidebarHeader}>
-                <Text style={styles.sidebarTitle}>TicketFlow</Text>
+                <Text style={styles.sidebarTitle}>NEITickets</Text>
                 <TouchableOpacity onPress={() => setSidebarVisible(false)}>
                   <Text style={styles.sidebarCloseButton}>×</Text>
                 </TouchableOpacity>
@@ -1399,7 +1432,6 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   style={styles.sidebarMenuItem}
                   onPress={() => {
                     setSidebarVisible(false);
-                    cargarTodasLasEvidencias();
                     setEvidenciasVisible(true);
                   }}
                 >
@@ -1423,6 +1455,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   style={styles.sidebarMenuItem}
                   onPress={() => {
                     setSidebarVisible(false);
+                    // @ts-ignore - Navegación a pantalla existente
                     navigation.navigate('Configuraciones');
                   }}
                 >
@@ -1434,10 +1467,11 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   style={styles.sidebarMenuItem}
                   onPress={() => {
                     setSidebarVisible(false);
+                    // @ts-ignore - Navegación a pantalla existente
                     navigation.navigate('ChangePassword');
                   }}
                 >
-                  <Text style={styles.sidebarMenuIcon}>⚙️</Text>
+                  <Text style={styles.sidebarMenuIcon}>🔑</Text>
                   <Text style={styles.sidebarMenuText}>Cambiar contraseña</Text>
                 </TouchableOpacity>
               </View>
@@ -1484,48 +1518,30 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
 const createStyles = (theme: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#0a0a0a', // Fondo oscuro completo
   },
   safeArea: {
     flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 20,
+    paddingTop: 40, // Espacio reducido ya que no hay header
     paddingBottom: 30,
-    backgroundColor: theme.colors.background,
-  },
-  header: {
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  menuButton: {
-    padding: 5,
-  },
-  menuIcon: {
-    fontSize: 20,
-    color: 'white',
+    backgroundColor: '#0a0a0a',
   },
   mainTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
+    color: '#ffffff',
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 0,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 15,
+    color: '#9ca3af',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -1540,7 +1556,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1a1a1a', // Fondo oscuro tipo card
     borderRadius: 12,
     padding: 24,
     alignItems: 'center',
@@ -1548,18 +1564,18 @@ const createStyles = (theme: any) => StyleSheet.create({
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: '#333333',
   },
   statNumber: {
     fontSize: 36,
     fontWeight: '700',
-    color: '#000000',
+    color: '#ffffff', // Texto blanco
     marginBottom: 8,
   },
   statNumberPendiente: {
@@ -1582,17 +1598,18 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   statLabel: {
     fontSize: 14,
-    color: '#666666',
+    color: '#9ca3af', // Texto gris claro
     textAlign: 'center',
     fontWeight: '400',
   },
   loadingContainer: {
     padding: 40,
     alignItems: 'center',
+    backgroundColor: '#0a0a0a',
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#9ca3af',
     fontStyle: 'italic',
   },
   buttonsContainer: {
@@ -1627,10 +1644,10 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontWeight: '400',
   },
 
-  // Estilos para los modales (mantener los existentes)
+  // Estilos para los modales (tema oscuro)
   modalContainer: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#0a0a0a',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1638,26 +1655,28 @@ const createStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#333333',
+    backgroundColor: '#1a1a1a',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: theme.colors.text,
+    color: '#ffffff',
   },
   closeButton: {
     fontSize: 24,
-    color: theme.colors.textSecondary,
+    color: '#9ca3af',
   },
   modalSubtitle: {
     fontSize: 14,
-    color: theme.colors.textSecondary,
+    color: '#9ca3af',
     padding: 20,
     paddingTop: 10,
   },
   modalContent: {
     flex: 1,
     paddingHorizontal: 20,
+    backgroundColor: '#0a0a0a',
   },
 
   // Estilos para tickets
@@ -1758,7 +1777,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 15,
   },
   preferenceItem: {
@@ -1767,22 +1786,22 @@ const createStyles = (theme: any) => StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#333333',
   },
   preferenceLabel: {
     fontSize: 16,
-    color: '#333',
+    color: '#e5e7eb',
   },
   toggle: {
     width: 50,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#ccc',
+    backgroundColor: '#374151',
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
   toggleActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3b82f6',
   },
   toggleCircle: {
     width: 24,
@@ -1849,10 +1868,13 @@ const createStyles = (theme: any) => StyleSheet.create({
     marginBottom: 15,
   },
   searchInput: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#1a1a1a',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    color: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#374151',
   },
   filterContainer: {
     flexDirection: 'row',
@@ -1863,7 +1885,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   filterLabel: {
     fontSize: 16,
-    color: '#333',
+    color: '#e5e7eb',
   },
   filterButton: {
     backgroundColor: '#333',
@@ -1877,15 +1899,17 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   evidenceItem: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   evidenceIcon: {
     width: 50,
@@ -1904,22 +1928,22 @@ const createStyles = (theme: any) => StyleSheet.create({
   evidenceTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 4,
   },
   evidenceSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#d1d5db',
     marginBottom: 4,
   },
   evidenceDate: {
     fontSize: 12,
-    color: '#999',
+    color: '#9ca3af',
     marginBottom: 2,
   },
   evidenceSize: {
     fontSize: 12,
-    color: '#007AFF',
+    color: '#60a5fa',
   },
   evidenceActions: {
     flexDirection: 'row',
@@ -1953,10 +1977,11 @@ const createStyles = (theme: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 50,
+    backgroundColor: '#0a0a0a',
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#9ca3af',
     textAlign: 'center',
   },
   // Estilos para estados de tickets
@@ -2037,35 +2062,37 @@ const createStyles = (theme: any) => StyleSheet.create({
 
   // Estilos para modales de finalización
   ticketInfo: {
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1a1a1a',
     padding: 15,
     borderRadius: 8,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   ticketInfoTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 8,
   },
   ticketInfoDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#d1d5db',
   },
   sectionContainer: {
     marginBottom: 20,
   },
   uploadButton: {
-    backgroundColor: '#e9ecef',
+    backgroundColor: '#1a1a1a',
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#dee2e6',
+    borderColor: '#374151',
     borderStyle: 'dashed',
   },
   uploadButtonText: {
-    color: '#6c757d',
+    color: '#9ca3af',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -2076,15 +2103,17 @@ const createStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1a1a1a',
     padding: 10,
     borderRadius: 6,
     marginBottom: 5,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   evidenciaName: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: '#e5e7eb',
   },
   removeButton: {
     backgroundColor: '#dc3545',
@@ -2101,12 +2130,14 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   descripcionInput: {
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#374151',
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
     textAlignVertical: 'top',
     minHeight: 80,
+    backgroundColor: '#1a1a1a',
+    color: '#ffffff',
   },
   finalizarButton: {
     backgroundColor: '#28a745',
@@ -2133,12 +2164,12 @@ const createStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#1a1a1a',
     padding: 12,
     borderRadius: 8,
     marginTop: 10,
     borderWidth: 1,
-    borderColor: '#dee2e6',
+    borderColor: '#374151',
   },
   archivoInfo: {
     flex: 1,
@@ -2146,40 +2177,40 @@ const createStyles = (theme: any) => StyleSheet.create({
   archivoNombre: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 4,
   },
   archivoTamaño: {
     fontSize: 12,
-    color: '#666',
+    color: '#9ca3af',
   },
   archivoTipo: {
     fontSize: 12,
-    color: '#007AFF',
+    color: '#60a5fa',
     fontWeight: '500',
     marginTop: 2,
   },
   archivoInfoText: {
     fontSize: 12,
-    color: '#666',
+    color: '#9ca3af',
     marginBottom: 10,
     fontStyle: 'italic',
   },
   evidenceType: {
     fontSize: 12,
-    color: '#007AFF',
+    color: '#60a5fa',
     fontWeight: '500',
     marginTop: 2,
   },
   evidenceUploader: {
     fontSize: 11,
-    color: '#666',
+    color: '#9ca3af',
     fontStyle: 'italic',
     marginTop: 2,
   },
   evidenceTicket: {
     fontSize: 11,
-    color: '#007AFF',
+    color: '#60a5fa',
     fontWeight: '500',
     marginTop: 2,
   },
@@ -2243,8 +2274,8 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: '#00aa00',
   },
   noTicketsContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
     padding: 30,
     alignItems: 'center',
     shadowColor: '#000',
@@ -2252,9 +2283,11 @@ const createStyles = (theme: any) => StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   noTicketsIcon: {
     fontSize: 48,
@@ -2263,13 +2296,13 @@ const createStyles = (theme: any) => StyleSheet.create({
   noTicketsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 10,
     textAlign: 'center',
   },
   noTicketsMessage: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -2277,8 +2310,8 @@ const createStyles = (theme: any) => StyleSheet.create({
     gap: 15,
   },
   actionSection: {
-    backgroundColor: 'white',
-    borderRadius: 10,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
     padding: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2288,9 +2321,11 @@ const createStyles = (theme: any) => StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   actionSectionContent: {
     flexDirection: 'row',
@@ -2299,29 +2334,40 @@ const createStyles = (theme: any) => StyleSheet.create({
   actionSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
     marginRight: 8,
   },
   actionSectionCount: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666',
+    color: '#9ca3af',
+  },
+  openSectionButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  openSectionButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   // Estilos para tickets mejorados
   ticketCardNew: {
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: '#333333',
   },
   ticketHeaderNew: {
     marginBottom: 8,
@@ -2329,11 +2375,11 @@ const createStyles = (theme: any) => StyleSheet.create({
   ticketTitleNew: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
   },
   ticketDescriptionNew: {
     fontSize: 14,
-    color: '#666',
+    color: '#d1d5db',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -2355,7 +2401,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderRadius: 12,
   },
   areaTag: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#6b7280',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -2363,7 +2409,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   tagText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#333',
+    color: '#ffffff',
   },
   currentStatusContainer: {
     flexDirection: 'row',
@@ -2372,7 +2418,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   currentStatusLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
     marginRight: 8,
   },
   currentStatusBadge: {
@@ -2383,7 +2429,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   currentStatusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
   },
   actionButtonsContainer: {
     flexDirection: 'row',
@@ -2428,16 +2474,18 @@ const createStyles = (theme: any) => StyleSheet.create({
   modalTitleSection: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+    backgroundColor: '#0a0a0a',
   },
   modalMainTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 8,
   },
   searchSection: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+    backgroundColor: '#0a0a0a',
   },
 
   // Estilos para el sidebar
@@ -2456,16 +2504,16 @@ const createStyles = (theme: any) => StyleSheet.create({
     left: 0,
     width: '70%',
     height: '100%',
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1a1a1a',
     paddingTop: 50,
     shadowColor: '#000',
     shadowOffset: {
       width: 2,
       height: 0,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 12,
   },
   sidebarHeader: {
     flexDirection: 'row',
@@ -2474,16 +2522,16 @@ const createStyles = (theme: any) => StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#333333',
   },
   sidebarTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: theme.colors.text,
+    color: '#ffffff',
   },
   sidebarCloseButton: {
     fontSize: 24,
-    color: theme.colors.textSecondary,
+    color: '#9ca3af',
     fontWeight: 'bold',
   },
   sidebarSection: {
@@ -2512,7 +2560,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   },
   sidebarMenuText: {
     fontSize: 16,
-    color: theme.colors.text,
+    color: '#e5e7eb',
     fontWeight: '500',
   },
   sidebarLogout: {
@@ -2544,9 +2592,9 @@ const createStyles = (theme: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: '#374151',
     borderRadius: 12,
     padding: 16,
     marginVertical: 8,
@@ -2558,15 +2606,15 @@ const createStyles = (theme: any) => StyleSheet.create({
   securityOptionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 4,
   },
   securityOptionDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
   },
   securityInfo: {
-    backgroundColor: '#e8f5e8',
+    backgroundColor: '#1e3a1a',
     borderWidth: 1,
     borderColor: '#4CAF50',
     borderRadius: 8,
@@ -2576,21 +2624,78 @@ const createStyles = (theme: any) => StyleSheet.create({
   securityInfoTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#2e7d32',
+    color: '#86efac',
     marginBottom: 4,
   },
   securityInfoText: {
     fontSize: 12,
-    color: '#2e7d32',
+    color: '#bbf7d0',
   },
   modalClose: {
     fontSize: 24,
-    color: '#666',
+    color: '#9ca3af',
     fontWeight: 'bold',
   },
   sectionDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
     marginBottom: 16,
+  },
+  
+  // Estilos para botones flotantes (muy pequeños)
+  floatingButtonsContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 4,
+    zIndex: 1000,
+  },
+  floatingButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#1f2937',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#374151',
+  },
+  floatingButtonLogout: {
+    backgroundColor: '#7f1d1d',
+    borderColor: '#991b1b',
+  },
+  floatingButtonIcon: {
+    fontSize: 14,
+    color: '#ffffff',
+  },
+  logoutIcon: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fca5a5',
+  },
+  notificationBadgeFloat: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#ef4444',
+    borderRadius: 7,
+    minWidth: 14,
+    height: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#0a0a0a',
+  },
+  notificationBadgeTextFloat: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: 'bold',
   },
 });

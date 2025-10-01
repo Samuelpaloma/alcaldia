@@ -20,9 +20,10 @@ interface EvidenceModalProps {
   onClose: () => void;
   ticketId: number;
   onEvidenceUploaded: () => void;
+  isFinalEvidence?: boolean; // true = evidencia final (tabla evidencias), false = archivo de chat
 }
 
-export default function EvidenceModal({ visible, onClose, ticketId, onEvidenceUploaded }: EvidenceModalProps) {
+export default function EvidenceModal({ visible, onClose, ticketId, onEvidenceUploaded, isFinalEvidence = false }: EvidenceModalProps) {
   const { theme } = useTheme();
   const [descripcion, setDescripcion] = useState('');
   const [archivo, setArchivo] = useState<any>(null);
@@ -112,11 +113,12 @@ export default function EvidenceModal({ visible, onClose, ticketId, onEvidenceUp
         archivo,
       };
 
-      // Subir evidencia real
-      console.log('📎 Subiendo evidencia...');
-      await EvidenceService.subirEvidencia(evidenceData);
+      // Subir evidencia según el tipo
+      console.log('📎 Subiendo evidencia...', isFinalEvidence ? '(Evidencia Final)' : '(Archivo de Chat)');
+      await EvidenceService.subirEvidencia(evidenceData, isFinalEvidence);
       
-      Alert.alert('Éxito', 'Evidencia subida correctamente');
+      const tipoEvidencia = isFinalEvidence ? 'evidencia final' : 'archivo';
+      Alert.alert('Éxito', `${tipoEvidencia.charAt(0).toUpperCase() + tipoEvidencia.slice(1)} subido correctamente`);
       onEvidenceUploaded();
       limpiarFormulario();
       onClose();
@@ -152,7 +154,9 @@ export default function EvidenceModal({ visible, onClose, ticketId, onEvidenceUp
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Subir Evidencia</Text>
+          <Text style={styles.title}>
+            {isFinalEvidence ? 'Subir Evidencia Final' : 'Subir Evidencia'}
+          </Text>
           <View style={styles.placeholder} />
         </View>
 

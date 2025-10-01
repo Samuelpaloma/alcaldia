@@ -7,10 +7,13 @@ import com.example.demo.asignacion.model.HistorialAsignacion;
 import com.example.demo.asignacion.repository.AsignacionTicketRepository;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.ticket.model.Ticket;
+import com.example.demo.ticket.model.HistorialEstadoTicket;
 import com.example.demo.ticket.repository.TicketRepository;
+import com.example.demo.ticket.repository.HistorialEstadoTicketRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.notificacion.service.NotificationRoleService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +24,7 @@ import java.util.Optional;
 
 @Service
 @Transactional
+@Slf4j
 public class AsignacionService {
     
     @Autowired
@@ -28,6 +32,9 @@ public class AsignacionService {
     
     @Autowired
     private HistorialAsignacionRepository historialAsignacionRepository;
+    
+    @Autowired
+    private HistorialEstadoTicketRepository historialEstadoTicketRepository;
     
     @Autowired
     private TicketRepository ticketRepository;
@@ -134,6 +141,12 @@ public class AsignacionService {
     }
     
     public AsignacionResponseDTO escalarTicket(Long ticketId, Long tecnicoId, String emailEscalador, String comentario) {
+        log.info("🚀 [ESCALACION] ===== INICIANDO ESCALACIÓN =====");
+        log.info("🚀 [ESCALACION] Ticket ID: {}", ticketId);
+        log.info("🚀 [ESCALACION] Nuevo técnico ID: {}", tecnicoId);
+        log.info("🚀 [ESCALACION] Escalado por: {}", emailEscalador);
+        log.info("🚀 [ESCALACION] Comentario: {}", comentario);
+        
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
         if (ticketOpt.isEmpty()) {
             throw new RuntimeException("Ticket no encontrado con ID: " + ticketId);
@@ -144,13 +157,23 @@ public class AsignacionService {
             throw new RuntimeException("Técnico no encontrado con ID: " + tecnicoId);
         }
         
+        Ticket ticket = ticketOpt.get();
+        
+        // Verificar que no se esté escalando al mismo técnico ya asignado
+        if (ticket.getTecnicoAsignado() != null && ticket.getTecnicoAsignado().getIdUsuario().equals(tecnicoId)) {
+            throw new RuntimeException("No se puede escalar un ticket al mismo técnico que ya está asignado: " + ticket.getTecnicoAsignado().getEmail());
+        }
+        
+        // NO desactivar la asignación anterior - mantenerla como historial
+        // Solo verificar que existe para logging
         Optional<AsignacionTicket> asignacionAnterior = asignacionTicketRepository
-            .findByTicketIdAndActivaTrue(ticketId);
+            .findAsignacionActivaMasReciente(ticketId);
         
         if (asignacionAnterior.isPresent()) {
             AsignacionTicket anterior = asignacionAnterior.get();
-            anterior.setActiva(false);
-            asignacionTicketRepository.save(anterior);
+            log.info("📋 [ESCALACION] Asignación anterior encontrada - Técnico ID: {} (se mantiene como historial)", 
+                anterior.getTecnicoId());
+            // NO desactivar - mantener la relación del técnico original
         }
         
         AsignacionTicket escalacion = new AsignacionTicket();
@@ -163,13 +186,50 @@ public class AsignacionService {
         
         AsignacionTicket escalacionGuardada = asignacionTicketRepository.save(escalacion);
         
-        Ticket ticket = ticketOpt.get();
         Usuario tecnico = tecnicoOpt.get();
-        ticket.setEstado("ESCALADO");
-        // NO actualizar tecnicoAsignado ni tecnicoEmail - mantener el técnico original
+        
+        // Obtener estado anterior antes de cambiarlo
+        String estadoAnterior = ticket.getEstado();
+        
+        // NO cambiar el técnico asignado del ticket - solo crear registro de escalación
+        log.info("🔄 [ESCALACION] Manteniendo técnico asignado original: {} (NO cambiar)", 
+            ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : "null");
+        
+        // NO cambiar el técnico asignado - mantener el original
+        // ticket.setTecnicoAsignado(tecnico);
+        // ticket.setTecnicoEmail(tecnico.getEmail());
+        
+        // Cambiar estado a ESCALADO cuando se hace una escalación
+        String nuevoEstado = "ESCALADO";
+        
+        log.info("🔄 [ESCALACION] Cambiando estado: {} → {} (escalación)", estadoAnterior, nuevoEstado);
+        ticket.setEstado(nuevoEstado);
+        
         ticketRepository.save(ticket);
         
+        log.info("✅ [ESCALACION] Ticket {} escalado correctamente. Técnico escalado: {} ({}). Estado: {} → {}", 
+            ticketId, tecnico.getNombreCompleto(), tecnico.getEmail(), estadoAnterior, nuevoEstado);
+        
+        // Verificar que se guardó correctamente
+        Ticket ticketVerificado = ticketRepository.findById(ticketId).orElse(null);
+        if (ticketVerificado != null) {
+            log.info("✅ [ESCALACION] Verificación - Ticket {} guardado con técnico original: {} y estado: {}", 
+                ticketId, 
+                ticketVerificado.getTecnicoEmail(), 
+                ticketVerificado.getEstado());
+        } else {
+            log.error("❌ [ESCALACION] Error - No se pudo verificar el ticket {} después de guardar", ticketId);
+        }
+        
+        // Guardar historial de asignación
         guardarHistorialAsignacion(ticketId, tecnicoId, emailEscalador, "ESCALAMIENTO", comentario);
+        
+        // Guardar historial de cambio de estado solo si cambió
+        if (!estadoAnterior.equals(nuevoEstado)) {
+            guardarHistorialEstadoTicket(ticketId, estadoAnterior, nuevoEstado, 
+                "Ticket escalado a técnico de mayor nivel: " + comentario, 
+                emailEscalador, "ADMINISTRADOR");
+        }
         
         // Enviar notificaciones por roles específicas para escalación
         Usuario admin = usuarioRepository.findByEmail(emailEscalador).orElse(null);
@@ -255,6 +315,23 @@ public class AsignacionService {
     }
     
     /**
+     * Obtiene el técnico asignado actual (más reciente) de un ticket
+     */
+    public Usuario obtenerTecnicoAsignado(Long ticketId) {
+        // Buscar la asignación activa más reciente
+        Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository
+            .findAsignacionActivaMasReciente(ticketId);
+        
+        if (asignacionActiva.isPresent()) {
+            return usuarioRepository.findById(asignacionActiva.get().getTecnicoId()).orElse(null);
+        }
+        
+        // Fallback: usar el técnico asignado actual del ticket
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        return ticketOpt.map(Ticket::getTecnicoAsignado).orElse(null);
+    }
+    
+    /**
      * Obtiene el técnico asignado original (primera asignación) de un ticket
      */
     public Usuario obtenerTecnicoAsignadoOriginal(Long ticketId) {
@@ -327,6 +404,35 @@ public class AsignacionService {
         dto.setComentario(asignacion.getComentario());
         dto.setTipoOperacion(asignacion.getTipoOperacion());
         return dto;
+    }
+    
+    /**
+     * Guardar historial de cambio de estado
+     */
+    private void guardarHistorialEstadoTicket(Long ticketId, String estadoAnterior, String estadoNuevo, 
+                                            String comentario, String emailUsuario, String tipoUsuario) {
+        try {
+            Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+            Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(emailUsuario);
+            
+            if (ticketOpt.isPresent() && usuarioOpt.isPresent()) {
+                HistorialEstadoTicket historial = HistorialEstadoTicket.builder()
+                    .ticket(ticketOpt.get())
+                    .cambiadoPor(usuarioOpt.get())
+                    .estadoAnterior(estadoAnterior)
+                    .estadoNuevo(estadoNuevo)
+                    .comentario(comentario)
+                    .tipoUsuario(tipoUsuario)
+                    .build();
+                
+                historialEstadoTicketRepository.save(historial);
+                
+                log.info("📝 [HISTORIAL] Guardado cambio de estado: {} → {} por {}", 
+                    estadoAnterior, estadoNuevo, tipoUsuario);
+            }
+        } catch (Exception e) {
+            log.error("❌ [HISTORIAL] Error guardando historial de estado: {}", e.getMessage());
+        }
     }
 }
 

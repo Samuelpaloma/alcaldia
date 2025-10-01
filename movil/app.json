@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TicketFlow Mobile",
-    "slug": "ticketflow-mobile",
+    "name": "NEITickets Mobile",
+    "slug": "neitickets-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNotificationToasts } from '../hooks/useNotificationToasts';
 import { getAuth } from '../modules/auth/auth';
+import { toast } from 'sonner';
 
 // Hook para manejar notificaciones en tiempo real con toasts
 export const useRealtimeNotificationToasts = () => {

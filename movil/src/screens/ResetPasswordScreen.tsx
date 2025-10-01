@@ -207,7 +207,7 @@ export default function ResetPasswordScreen() {
         >
           <View style={styles.formContainer}>
             <View style={styles.headerSection}>
-              <Text style={styles.logoText}>TicketFlow</Text>
+              <Text style={styles.logoText}>NEITickets</Text>
               <Text style={styles.titleText}>Nueva Contraseña</Text>
               <Text style={styles.subtitleText}>
                 Ingresa el código que recibiste por email y tu nueva contraseña

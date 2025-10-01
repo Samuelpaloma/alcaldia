@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Image, Modal, StatusBar } from 'react-native';
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -84,11 +84,16 @@ export default function LoginScreen() {
           await AsyncStorage.setItem('userInfo', JSON.stringify({
             userId: data.userId,
             email: data.email,
-            nombre: data.nombre
+            nombre: data.nombre,
+            apellido: data.apellido,
+            telefono: data.telefono
           }));
           // Navegar manualmente a Home después del login exitoso
           console.log('✅ Login exitoso, navegando a Home');
-          navigation.navigate('Home');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          });
         } else if (data.require2fa) {
           // Login requiere 2FA - NO guardar token todavía
           console.log('🔐 Login requiere 2FA, navegando a Verify2FA');
@@ -124,6 +129,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0a0a0a" />
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -132,8 +138,8 @@ export default function LoginScreen() {
           <View style={styles.formContainer}>
             <View style={styles.headerSection}>
               <View style={styles.logoContainer}>
-                {/* Reemplazamos la imagen por texto TicketFlow */}
-                <Text style={styles.logoText}>TicketFlow</Text>
+                {/* Reemplazamos la imagen por texto NEITickets */}
+                <Text style={styles.logoText}>NEITickets</Text>
               </View>
               {/* Agregamos el texto descriptivo */}
               <Text style={styles.subtitleText}>Inicia sesión para continuar</Text>
@@ -219,7 +225,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0a0a0a',
   },
   safeArea: {
     flex: 1,
@@ -233,17 +239,11 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '90%',
     maxWidth: 400,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1a1a',
     borderRadius: 15,
     padding: 40,
-    shadowColor: '#000000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
     position: 'relative',
   },
   // Estilos para el ícono de información
@@ -275,11 +275,11 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#ffffff',
     marginBottom: 10,
   },
   subtitleText: {
-    color: '#666666',
+    color: '#9ca3af',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 10,
@@ -288,33 +288,35 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   inputLabel: {
-    color: '#333333',
+    color: '#e5e7eb',
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
     marginTop: 15,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f0f0f',
     borderRadius: 8,
     padding: 15,
     fontSize: 16,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#333333',
+    color: '#ffffff',
   },
   passwordContainer: {
     position: 'relative',
     marginBottom: 15,
   },
   passwordInput: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0f0f0f',
     borderRadius: 8,
     padding: 15,
     paddingRight: 50,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#333333',
+    color: '#ffffff',
   },
   eyeButton: {
     position: 'absolute',
@@ -367,7 +369,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   forgotPasswordText: {
-    color: '#007AFF',
+    color: '#60a5fa',
     fontSize: 14,
     textDecorationLine: 'underline',
   },
@@ -379,16 +381,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#1a1a1a',
     borderRadius: 15,
     padding: 25,
     margin: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
+    borderWidth: 1,
+    borderColor: '#333333',
     shadowRadius: 4,
     elevation: 5,
     minWidth: 280,
@@ -396,13 +394,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 15,
     textAlign: 'center',
   },
   modalText: {
     fontSize: 16,
-    color: '#666',
+    color: '#9ca3af',
     lineHeight: 22,
     marginBottom: 20,
     textAlign: 'center',

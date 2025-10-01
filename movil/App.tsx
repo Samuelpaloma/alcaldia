@@ -40,6 +40,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   const handleLogout = async () => {
@@ -68,27 +69,35 @@ export default function App() {
         }
       }
       
-      // Limpiar almacenamiento local
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('userInfo');
+      // Limpiar TODO el almacenamiento local para asegurar la autenticación
+      console.log('🗑️ [APP] Limpiando todo el almacenamiento local...');
+      await AsyncStorage.clear();
+      console.log('✅ [APP] Almacenamiento local completamente limpio');
       
       // Actualizar estado de autenticación
       setIsAuthenticated(false);
       
-      // Navegar a la pantalla de login
+      // Navegar a la pantalla de login sin poder volver atrás
       if (navigationRef.current?.isReady()) {
-        navigationRef.current.navigate('Login');
+        navigationRef.current.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
       }
       
       console.log('✅ [APP] Logout completado exitosamente');
     } catch (error) {
       console.error('❌ [APP] Error en logout:', error);
-      // Limpiar almacenamiento incluso si hay error
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('userInfo');
+      // Limpiar TODO el almacenamiento incluso si hay error
+      console.log('🗑️ [APP] Limpiando almacenamiento por error...');
+      await AsyncStorage.clear();
+      console.log('✅ [APP] Almacenamiento limpio después de error');
       setIsAuthenticated(false);
       if (navigationRef.current?.isReady()) {
-        navigationRef.current.navigate('Login');
+        navigationRef.current.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
       }
     }
   };
@@ -105,33 +114,26 @@ export default function App() {
         });
         
         if (response.ok) {
-          // Token válido, ir directo a Home
+          // Token válido
           setIsAuthenticated(true);
-          if (navigationRef.current?.isReady()) {
-            navigationRef.current.navigate('Home');
-          }
+          console.log('✅ [APP] Token válido, usuario autenticado');
         } else {
           // Token expirado, ir a Login
           await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.clear();
           setIsAuthenticated(false);
-          if (navigationRef.current?.isReady()) {
-            navigationRef.current.navigate('Login');
-          }
+          console.log('⚠️ [APP] Token expirado, requiere nuevo login');
         }
       } else {
         // Sin token, ir a Login
         setIsAuthenticated(false);
-        if (navigationRef.current?.isReady()) {
-          navigationRef.current.navigate('Login');
-        }
+        console.log('ℹ️ [APP] Sin token, mostrando login');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
-      if (navigationRef.current?.isReady()) {
-        navigationRef.current.navigate('Login');
-      }
     } finally {
+      setIsReady(true);
       setLoading(false);
     }
   };
@@ -140,7 +142,7 @@ export default function App() {
     checkAuthStatus();
   }, []);
 
-  if (loading) {
+  if (loading || !isReady) {
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -150,29 +152,29 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <NavigationContainer ref={navigationRef} onReady={checkAuthStatus}>
+      <NavigationContainer ref={navigationRef}>
         <StatusBar style="auto" />
-        <Stack.Navigator initialRouteName="Login">
+        <Stack.Navigator initialRouteName={isAuthenticated ? "Home" : "Login"}>
         <Stack.Screen 
           name="Login" 
           component={LoginScreen} 
-          options={{ title: 'Iniciar Sesión' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen 
           name="Home" 
-          options={{ title: 'Home' }}
+          options={{ headerShown: false }}
         >
           {() => <IndexScreen onLogout={handleLogout} />}
         </Stack.Screen>
         <Stack.Screen 
           name="Config" 
           component={ConfigScreen} 
-          options={{ title: 'Configuración' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen 
           name="Configuraciones" 
           component={ConfiguracionesScreen} 
-          options={{ title: 'Configuraciones' }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen 
           name="Verify2FA" 
@@ -212,7 +214,7 @@ export default function App() {
         <Stack.Screen 
           name="TicketTracking"
           component={TicketTrackingScreen}
-          options={{ title: 'Seguimiento del Ticket' }}
+          options={{ headerShown: false }}
         />
         </Stack.Navigator>
       </NavigationContainer>

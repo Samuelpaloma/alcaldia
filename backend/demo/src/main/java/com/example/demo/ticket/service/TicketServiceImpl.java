@@ -1,5 +1,6 @@
 package com.example.demo.ticket.service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -178,6 +179,14 @@ public class TicketServiceImpl implements TicketService {
             throw new RuntimeException("No tienes permisos para ver este ticket");
         }
 
+        // Debug logs
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Ticket ID: " + ticket.getId());
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Estado: " + ticket.getEstado());
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico asignado: " + (ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : "null"));
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico nombre: " + (ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getNombre() + " " + ticket.getTecnicoAsignado().getApellido() : "null"));
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico ID: " + (ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getIdUsuario() : "null"));
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Fecha actualización: " + ticket.getFechaActualizacion());
+
         return convertirTicketAResponseDTO(ticket);
     }
 
@@ -235,8 +244,16 @@ public class TicketServiceImpl implements TicketService {
 
     // Métodos auxiliares
     private TicketResponseDTO convertirTicketAResponseDTOBasico(Ticket ticket) {
-        // Obtener el técnico asignado original (primera asignación)
-        Usuario tecnicoOriginal = asignacionService.obtenerTecnicoAsignadoOriginal(ticket.getId());
+        // Usar el técnico actualmente asignado (no el original)
+        Usuario tecnicoActual = ticket.getTecnicoAsignado();
+        
+        // Debug logs
+        System.out.println("🔍 [TICKET DEBUG] Ticket ID: " + ticket.getId());
+        System.out.println("🔍 [TICKET DEBUG] Estado: " + ticket.getEstado());
+        System.out.println("🔍 [TICKET DEBUG] Técnico asignado: " + (tecnicoActual != null ? tecnicoActual.getEmail() : "null"));
+        System.out.println("🔍 [TICKET DEBUG] Técnico nombre: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+        System.out.println("🔍 [TICKET DEBUG] Técnico ID: " + (tecnicoActual != null ? tecnicoActual.getIdUsuario() : "null"));
+        System.out.println("🔍 [TICKET DEBUG] Fecha actualización: " + ticket.getFechaActualizacion());
         
         return new TicketResponseDTO(
                 ticket.getId(),
@@ -246,8 +263,8 @@ public class TicketServiceImpl implements TicketService {
                 ticket.getEstado(),
                 ticket.getCreadorEmail(), // Usar método seguro
                 ticket.getCreadorNombre(), // Usar método seguro
-                tecnicoOriginal != null ? tecnicoOriginal.getEmail() : null,
-                tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : null,
+                tecnicoActual != null ? tecnicoActual.getEmail() : null,
+                tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : null,
                 ticket.getFechaCreacion(),
                 ticket.getFechaActualizacion(),
                 ticket.getCreadorNombre(), // Usar método seguro
@@ -306,8 +323,32 @@ public class TicketServiceImpl implements TicketService {
         // Obtener comentarios
         List<ComentarioResponseDTO> comentariosDTO = comentarioService.obtenerComentariosPorTicket(ticket.getId());
         
-        // Obtener el técnico asignado original (primera asignación)
-        Usuario tecnicoOriginal = asignacionService.obtenerTecnicoAsignadoOriginal(ticket.getId());
+        // Obtener el técnico asignado ACTUAL (última asignación por fecha)
+        Usuario tecnicoActual = null;
+        System.out.println("🔍 [TICKET DEBUG] Historial asignaciones encontradas: " + historialAsignaciones.size());
+        for (HistorialAsignacion ha : historialAsignaciones) {
+            System.out.println("🔍 [TICKET DEBUG] - Asignación: " + ha.getTipoOperacion() + ", Técnico ID: " + ha.getTecnicoId() + ", Fecha: " + ha.getFechaOperacion());
+        }
+        
+        if (!historialAsignaciones.isEmpty()) {
+            // Obtener la última asignación por fecha
+            HistorialAsignacion ultimaAsignacion = historialAsignaciones.stream()
+                .max(Comparator.comparing(HistorialAsignacion::getFechaOperacion))
+                .orElse(null);
+            
+            System.out.println("🔍 [TICKET DEBUG] Última asignación: " + (ultimaAsignacion != null ? ultimaAsignacion.getTipoOperacion() + " - Técnico ID: " + ultimaAsignacion.getTecnicoId() : "null"));
+            
+            if (ultimaAsignacion != null) {
+                tecnicoActual = usuarioRepository.findById(ultimaAsignacion.getTecnicoId()).orElse(null);
+                System.out.println("🔍 [TICKET DEBUG] Técnico actual encontrado: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+            }
+        }
+        
+        // Si no hay asignación, usar el técnico del ticket
+        if (tecnicoActual == null) {
+            tecnicoActual = ticket.getTecnicoAsignado();
+            System.out.println("🔍 [TICKET DEBUG] Usando técnico del ticket: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+        }
         
         return new TicketResponseDTO(
             ticket.getId(),
@@ -317,8 +358,8 @@ public class TicketServiceImpl implements TicketService {
             ticket.getEstado(),
             ticket.getCreadorEmail(), // Usar método seguro
             ticket.getCreadorNombre(), // Usar método seguro
-            tecnicoOriginal != null ? tecnicoOriginal.getEmail() : null,
-            tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : null,
+            tecnicoActual != null ? tecnicoActual.getEmail() : null,
+            tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : null,
             ticket.getFechaCreacion(),
             ticket.getFechaActualizacion(),
             ticket.getCreadorNombre(), // Usar método seguro
