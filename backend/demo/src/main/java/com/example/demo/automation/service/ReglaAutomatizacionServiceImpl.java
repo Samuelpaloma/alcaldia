@@ -22,6 +22,9 @@ import java.util.stream.Collectors;
 public class ReglaAutomatizacionServiceImpl implements ReglaAutomatizacionService {
     
     private final ReglaAutomatizacionRepository reglaAutomatizacionRepository;
+    private final com.example.demo.usuario.repository.UsuarioRepository usuarioRepository;
+    private final com.example.demo.ticket.repository.TicketRepository ticketRepository;
+    private final com.example.demo.notificacion.service.NotificationRoleService notificationRoleService;
     
     @Override
     public ReglaAutomatizacionResponseDTO crearRegla(ReglaAutomatizacionRequestDTO request) {
@@ -211,14 +214,132 @@ public class ReglaAutomatizacionServiceImpl implements ReglaAutomatizacionServic
             return;
         }
         
-        // TODO: Implementar lógica de ejecución de reglas
-        // Por ahora solo incrementamos el contador de ejecuciones
+        // Sin contexto de ticket, no hay ejecución concreta aún
         regla.incrementarEjecuciones();
         reglaAutomatizacionRepository.save(regla);
         
         log.info("Regla {} ejecutada exitosamente. Total ejecuciones: {}", regla.getNombre(), regla.getEjecuciones());
     }
     
+    @Override
+    public void ejecutarReglasParaTicket(com.example.demo.ticket.model.Ticket ticket) {
+        log.info("Ejecutando reglas para ticket {}", ticket.getId());
+        List<com.example.demo.automation.model.ReglaAutomatizacion> reglasActivas =
+            reglaAutomatizacionRepository.findByActivaTrueOrderByPrioridadDescFechaCreacionAsc();
+
+        for (com.example.demo.automation.model.ReglaAutomatizacion regla : reglasActivas) {
+            try {
+                if (evaluarCondicion(regla.getCondicion(), ticket)) {
+                    ejecutarAccion(regla.getAccion(), ticket);
+                    regla.incrementarEjecuciones();
+                    reglaAutomatizacionRepository.save(regla);
+                }
+            } catch (Exception e) {
+                log.error("Error al ejecutar regla {} para ticket {}: {}", regla.getNombre(), ticket.getId(), e.getMessage());
+            }
+        }
+    }
+
+    private boolean evaluarCondicion(String condicion, com.example.demo.ticket.model.Ticket ticket) {
+        if (condicion == null || condicion.trim().isEmpty()) return false;
+        String c = condicion.trim().toLowerCase();
+        // Condiciones soportadas simples:
+        // categoria == "Soporte" | prioridad == "ALTA" | estado == "PENDIENTE" | consulta contains "palabra"
+        try {
+            if (c.startsWith("categoria ==")) {
+                String valor = extraerValorLiteral(c);
+                String categoria = ticket.getCategoriaNombre();
+                return categoria != null && categoria.equalsIgnoreCase(valor);
+            }
+            if (c.startsWith("prioridad ==")) {
+                String valor = extraerValorLiteral(c);
+                String prioridad = ticket.getPrioridad();
+                return prioridad != null && prioridad.equalsIgnoreCase(valor);
+            }
+            if (c.startsWith("estado ==")) {
+                String valor = extraerValorLiteral(c);
+                String estado = ticket.getEstado();
+                return estado != null && estado.equalsIgnoreCase(valor);
+            }
+            if (c.startsWith("consulta contains")) {
+                String valor = extraerValorLiteral(c);
+                String consulta = ticket.getConsulta();
+                return consulta != null && consulta.toLowerCase().contains(valor.toLowerCase());
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo evaluar condición '{}': {}", condicion, e.getMessage());
+        }
+        return false;
+    }
+
+    private String extraerValorLiteral(String expr) {
+        int i = expr.indexOf('"');
+        int j = expr.lastIndexOf('"');
+        if (i >= 0 && j > i) {
+            return expr.substring(i + 1, j);
+        }
+        String[] parts = expr.split("\\s+", 3);
+        return parts.length >= 3 ? parts[2].replace("'", "").replace("\"", "") : "";
+    }
+
+    private void ejecutarAccion(String accion, com.example.demo.ticket.model.Ticket ticket) {
+        if (accion == null || accion.trim().isEmpty()) return;
+        String a = accion.trim().toLowerCase();
+        try {
+            // Acciones soportadas:
+            // set_prioridad("ALTA")
+            // asignar_tecnico_por_minima_carga()
+            // notificar("rol:administrador","Mensaje ...")
+            if (a.startsWith("set_prioridad")) {
+                String valor = extraerValorLiteral(a);
+                ticket.setPrioridad(valor.toUpperCase());
+                ticketRepository.save(ticket);
+                return;
+            }
+            if (a.startsWith("asignar_tecnico_por_minima_carga")) {
+                usuarioRepository.findTechnicianWithLeastActiveTickets().ifPresent(tecnico -> {
+                    ticket.setTecnicoAsignado(tecnico);
+                    ticket.setEstado("ASIGNADO");
+                    ticketRepository.save(ticket);
+                    try {
+                        if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
+                            notificationRoleService.notificarAsignacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario(), tecnico.getIdUsuario());
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Fallo al notificar asignación automática: {}", ex.getMessage());
+                    }
+                });
+                return;
+            }
+            if (a.startsWith("notificar")) {
+                // notificar("rol:administrador","Mensaje") -> envia por WebSocket a admin
+                int first = accion.indexOf('(');
+                int last = accion.lastIndexOf(')');
+                if (first > 0 && last > first) {
+                    String inside = accion.substring(first + 1, last);
+                    String[] args = inside.split(",");
+                    if (args.length >= 2) {
+                        String destino = limpiarComillas(args[0]);
+                        String mensaje = limpiarComillas(inside.substring(inside.indexOf(',') + 1));
+                        // Reusar NotificationRoleService con tipos predefinidos
+                        try {
+                            if ("rol:administrador".equalsIgnoreCase(destino)) {
+                                notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                            }
+                        } catch (Exception ex) {
+                            log.warn("Fallo al notificar acción: {}", ex.getMessage());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error ejecutando acción '{}' para ticket {}: {}", accion, ticket.getId(), e.getMessage());
+        }
+    }
+
+    private String limpiarComillas(String s) {
+        return s == null ? null : s.trim().replaceAll("^\\\"|\\\"$", "").replaceAll("^'|'$", "");
+    }
     private ReglaAutomatizacionResponseDTO convertirAReglaResponseDTO(ReglaAutomatizacion regla) {
         return ReglaAutomatizacionResponseDTO.builder()
             .id(regla.getId())

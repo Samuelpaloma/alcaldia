@@ -24,23 +24,6 @@ import {
   Pause
 } from 'lucide-react';
 
-<<<<<<< Updated upstream
-=======
-interface AutomationRule {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  activa: boolean;
-  condicion: string;
-  accion: string;
-  prioridad: string;
-  categoriaId?: number;
-  categoriaNombre?: string;
-  fechaCreacion: string;
-  ejecuciones: number;
-}
-
->>>>>>> Stashed changes
 const AutomationRules: React.FC = () => {
   const { toast } = useToast();
   const [reglas, setReglas] = useState<ReglaAutomatizacionResponseDTO[]>([]);
@@ -60,13 +43,7 @@ const AutomationRules: React.FC = () => {
     descripcion: '',
     condicion: '',
     accion: '',
-<<<<<<< Updated upstream
     prioridad: 2,
-=======
-    prioridad: 'medium',
-    categoriaId: '',
-    categoriaNombre: '',
->>>>>>> Stashed changes
     activa: true
   });
 
@@ -118,13 +95,7 @@ const AutomationRules: React.FC = () => {
       descripcion: '',
       condicion: '',
       accion: '',
-<<<<<<< Updated upstream
       prioridad: 2,
-=======
-      prioridad: 'medium',
-      categoriaId: '',
-      categoriaNombre: '',
->>>>>>> Stashed changes
       activa: true
     });
     setModoEdicion(false);
@@ -138,13 +109,7 @@ const AutomationRules: React.FC = () => {
       descripcion: regla.descripcion || '',
       condicion: regla.condicion,
       accion: regla.accion,
-<<<<<<< Updated upstream
       prioridad: typeof regla.prioridad === 'string' ? parseInt(regla.prioridad) : regla.prioridad,
-=======
-      prioridad: regla.prioridad,
-      categoriaId: regla.categoriaId?.toString() || '',
-      categoriaNombre: regla.categoriaNombre || '',
->>>>>>> Stashed changes
       activa: regla.activa
     });
     setModoEdicion(true);
@@ -598,7 +563,7 @@ const AutomationRules: React.FC = () => {
                 <div className="form-group">
                   <Label htmlFor="prioridad">Prioridad</Label>
                   <Select
-                    value={formulario.prioridad.toString()}
+                    value={formulario.prioridad?.toString() || '2'}
                     onValueChange={(value) => setFormulario({ ...formulario, prioridad: parseInt(value) })}
                   >
                     <SelectTrigger>

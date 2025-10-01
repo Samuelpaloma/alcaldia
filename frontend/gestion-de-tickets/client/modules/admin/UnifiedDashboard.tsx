@@ -22,6 +22,7 @@ import {
   Settings,
   Zap
 } from 'lucide-react';
+import SLAMonitoringWidget from '../sla_monitoring/SLAMonitoringWidget';
 
 interface DashboardMetrics {
   totalTickets: number;
@@ -301,11 +302,12 @@ const UnifiedDashboard: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="analytics">Análisis</TabsTrigger>
           <TabsTrigger value="performance">Rendimiento</TabsTrigger>
           <TabsTrigger value="trends">Tendencias</TabsTrigger>
+          <TabsTrigger value="sla">Monitoreo SLA</TabsTrigger>
         </TabsList>
 
         {/* Pestaña Resumen */}
@@ -391,6 +393,9 @@ const UnifiedDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Widget de Monitoreo SLA */}
+          <SLAMonitoringWidget className="mb-6" />
 
           {/* Contenido adicional para el resumen */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -645,6 +650,53 @@ const UnifiedDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
+
+        {/* Pestaña Monitoreo SLA */}
+        <TabsContent value="sla" className="space-y-6">
+          <div className="grid gap-6">
+            <SLAMonitoringWidget />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
+                    Tickets con SLA Vencido
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+                    <p className="text-gray-600 mb-4">Verificando tickets con SLA vencido...</p>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Verificar Ahora
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Clock className="w-5 h-5 mr-2 text-orange-500" />
+                    Tickets Próximos a Vencer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <Clock className="w-12 h-12 mx-auto mb-4 text-orange-500" />
+                    <p className="text-gray-600 mb-4">Verificando tickets próximos a vencer...</p>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Verificar Ahora
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

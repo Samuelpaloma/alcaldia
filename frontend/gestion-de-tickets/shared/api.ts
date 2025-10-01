@@ -2127,6 +2127,73 @@ class ApiClient {
     });
   }
 
+  // ========== MONITOREO DE SLA ==========
+
+  /**
+   * Obtener estadísticas de monitoreo de SLA
+   */
+  async getSLAMonitoringStats(): Promise<{
+    data: {
+      totalTicketsActivos: number;
+      ticketsVencidos: number;
+      ticketsProximosVencer: number;
+      ticketsEnTiempo: number;
+      ticketsSinSLA: number;
+      porcentajeCumplimiento: number;
+      ultimaVerificacion: string;
+    }
+  }> {
+    return this.request('/sla/monitoring/stats');
+  }
+
+  /**
+   * Ejecutar verificación manual de SLA
+   */
+  async executeSLAMonitoringCheck(): Promise<{
+    data: {
+      exito: boolean;
+      mensaje: string;
+      estadisticas: any;
+      timestamp: string;
+    }
+  }> {
+    return this.request('/sla/monitoring/execute', {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Obtener tickets con SLA vencido
+   */
+  async getSLATicketsExpired(): Promise<{
+    data: Array<{
+      id: number;
+      titulo: string;
+      creadorNombre: string;
+      estado: string;
+      fechaCreacion: string;
+      slaStatus: any;
+    }>
+  }> {
+    return this.request('/sla/monitoring/expired');
+  }
+
+  /**
+   * Obtener tickets próximos a vencer
+   */
+  async getSLATicketsExpiring(): Promise<{
+    data: Array<{
+      id: number;
+      titulo: string;
+      creadorNombre: string;
+      estado: string;
+      fechaCreacion: string;
+      slaStatus: any;
+    }>
+  }> {
+    return this.request('/sla/monitoring/expiring');
+  }
+
 }
 
 // Exportar instancia única del cliente API

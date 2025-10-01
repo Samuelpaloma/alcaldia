@@ -61,6 +61,25 @@ public class Ticket {
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
 
+    // Campos SLA
+    @Column(name = "sla_configuracion_id")
+    private Long slaConfiguracionId;
+    
+    @Column(name = "sla_fecha_limite_respuesta")
+    private LocalDateTime slaFechaLimiteRespuesta;
+    
+    @Column(name = "sla_fecha_limite_resolucion")
+    private LocalDateTime slaFechaLimiteResolucion;
+    
+    @Column(name = "sla_tiempo_respuesta_horas")
+    private Integer slaTiempoRespuestaHoras;
+    
+    @Column(name = "sla_tiempo_resolucion_horas")
+    private Integer slaTiempoResolucionHoras;
+    
+    @Column(name = "sla_violado")
+    private Boolean slaViolado = false;
+
     // Campos existentes
     private String asunto;
     private String descripcion;
@@ -127,6 +146,25 @@ public class Ticket {
 
     public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
     public void setFechaActualizacion(LocalDateTime fechaActualizacion) { this.fechaActualizacion = fechaActualizacion; }
+
+    // Getters y setters para campos SLA
+    public Long getSlaConfiguracionId() { return slaConfiguracionId; }
+    public void setSlaConfiguracionId(Long slaConfiguracionId) { this.slaConfiguracionId = slaConfiguracionId; }
+    
+    public LocalDateTime getSlaFechaLimiteRespuesta() { return slaFechaLimiteRespuesta; }
+    public void setSlaFechaLimiteRespuesta(LocalDateTime slaFechaLimiteRespuesta) { this.slaFechaLimiteRespuesta = slaFechaLimiteRespuesta; }
+    
+    public LocalDateTime getSlaFechaLimiteResolucion() { return slaFechaLimiteResolucion; }
+    public void setSlaFechaLimiteResolucion(LocalDateTime slaFechaLimiteResolucion) { this.slaFechaLimiteResolucion = slaFechaLimiteResolucion; }
+    
+    public Integer getSlaTiempoRespuestaHoras() { return slaTiempoRespuestaHoras; }
+    public void setSlaTiempoRespuestaHoras(Integer slaTiempoRespuestaHoras) { this.slaTiempoRespuestaHoras = slaTiempoRespuestaHoras; }
+    
+    public Integer getSlaTiempoResolucionHoras() { return slaTiempoResolucionHoras; }
+    public void setSlaTiempoResolucionHoras(Integer slaTiempoResolucionHoras) { this.slaTiempoResolucionHoras = slaTiempoResolucionHoras; }
+    
+    public Boolean getSlaViolado() { return slaViolado; }
+    public void setSlaViolado(Boolean slaViolado) { this.slaViolado = slaViolado; }
 
     // Método para inicializar fechas
     @PrePersist
