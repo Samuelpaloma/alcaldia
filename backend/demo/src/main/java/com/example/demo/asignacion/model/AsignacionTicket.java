@@ -41,6 +41,16 @@ public class AsignacionTicket {
     
     @Column(name = "tipo_operacion", length = 50)
     private String tipoOperacion;
+    
+    @Column(name = "es_escalacion", nullable = false)
+    @Builder.Default
+    private Boolean esEscalacion = false;
+    
+    @Column(name = "tecnico_original_id")
+    private Long tecnicoOriginalId;
+    
+    @Column(name = "motivo_escalacion", columnDefinition = "TEXT")
+    private String motivoEscalacion;
 }
 
 
