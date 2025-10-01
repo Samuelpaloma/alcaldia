@@ -75,6 +75,12 @@ export default function ChatScreen() {
       setTicketInfo(ticketData);
       // Los comentarios ya vienen incluidos en la respuesta del ticket
       if (ticketData.comentarios) {
+        console.log('📨 Mensajes cargados:', ticketData.comentarios.length);
+        console.log('📋 Detalle de mensajes:', ticketData.comentarios.map(m => ({
+          id: m.id,
+          tipoAutor: m.tipoAutor,
+          autor: m.autor
+        })));
         setMessages(ticketData.comentarios);
       }
       
@@ -161,6 +167,17 @@ export default function ChatScreen() {
 
   const isCurrentUser = (message: ChatMessage) => {
     return message.autorEmail === userEmail;
+  };
+
+  const isTechnician = (message: ChatMessage) => {
+    console.log('🔍 Verificando mensaje:', {
+      id: message.id,
+      tipoAutor: message.tipoAutor,
+      autor: message.autor,
+      autorEmail: message.autorEmail,
+      esTecnico: message.tipoAutor === 'TECNICO'
+    });
+    return message.tipoAutor === 'TECNICO';
   };
 
   const getStatusColor = (estado: string) => {
@@ -340,30 +357,45 @@ export default function ChatScreen() {
               <Text style={styles.emptyStateSubtext}>Sé el primero en escribir</Text>
             </View>
           ) : (
-            messages.map((message) => (
-              <View
-                key={message.id}
-                style={[
-                  styles.messageContainer,
-                  isCurrentUser(message) ? styles.messageContainerRight : styles.messageContainerLeft
-                ]}
-              >
+            messages.map((message) => {
+              const isTech = isTechnician(message);
+              console.log(`💬 Renderizando mensaje ${message.id}: ${isTech ? 'TÉCNICO (azul, derecha)' : 'USUARIO (verde, izquierda)'}`);
+              return (
                 <View
+                  key={message.id}
                   style={[
-                    styles.messageBubble,
-                    isCurrentUser(message) ? styles.messageBubbleRight : styles.messageBubbleLeft
+                    styles.messageContainer,
+                    isTech ? styles.messageContainerRight : styles.messageContainerLeft
                   ]}
                 >
-                  <Text style={styles.messageAuthor}>
-                    {getAuthorName(message)}
-                  </Text>
-                  <Text style={styles.messageText}>{message.mensaje}</Text>
-                  <Text style={styles.messageTime}>
-                    {formatTimestamp(message.fechaCreacion)}
-                  </Text>
+                  <View
+                    style={[
+                      styles.messageBubble,
+                      isTech ? styles.messageBubbleTechnician : styles.messageBubbleUser
+                    ]}
+                  >
+                    <Text style={[
+                      styles.messageAuthor,
+                      isTech ? styles.messageAuthorTechnician : styles.messageAuthorUser
+                    ]}>
+                      {getAuthorName(message)}
+                    </Text>
+                    <Text style={[
+                      styles.messageText,
+                      isTech ? styles.messageTextTechnician : styles.messageTextUser
+                    ]}>
+                      {message.mensaje}
+                    </Text>
+                    <Text style={[
+                      styles.messageTime,
+                      isTech ? styles.messageTimeTechnician : styles.messageTimeUser
+                    ]}>
+                      {formatTimestamp(message.fechaCreacion)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
 
@@ -684,20 +716,48 @@ const createStyles = (theme: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
     borderBottomRightRadius: 4,
   },
+  // Estilos para mensajes del usuario/cliente (verde, izquierda)
+  messageBubbleUser: {
+    backgroundColor: '#4CAF50',
+    borderBottomLeftRadius: 4,
+  },
+  // Estilos para mensajes del técnico (azul, derecha)
+  messageBubbleTechnician: {
+    backgroundColor: '#2196F3',
+    borderBottomRightRadius: 4,
+  },
   messageAuthor: {
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 4,
     opacity: 0.8,
   },
+  messageAuthorUser: {
+    color: '#fff',
+  },
+  messageAuthorTechnician: {
+    color: '#fff',
+  },
   messageText: {
     fontSize: 16,
     lineHeight: 20,
     marginBottom: 4,
   },
+  messageTextUser: {
+    color: '#fff',
+  },
+  messageTextTechnician: {
+    color: '#fff',
+  },
   messageTime: {
     fontSize: 11,
     opacity: 0.6,
+  },
+  messageTimeUser: {
+    color: '#fff',
+  },
+  messageTimeTechnician: {
+    color: '#fff',
   },
   inputContainer: {
     backgroundColor: '#fff',

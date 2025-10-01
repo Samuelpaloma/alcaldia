@@ -6,6 +6,8 @@ import com.example.demo.tecnico.dto.response.TicketTecnicoResponseDTO;
 import com.example.demo.tecnico.dto.response.EstadisticasTecnicoResponseDTO;
 import com.example.demo.ticket.dto.response.EvidenciaResponseDTO;
 import com.example.demo.tecnico.service.TecnicoService;
+import com.example.demo.evidencia.service.EvidenciaService;
+import com.example.demo.evidencia.dto.EvidenciaMovilDTO;
 import com.example.demo.security.CustomUserDetails;
 import com.example.demo.shared.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -25,6 +27,7 @@ import java.util.List;
 public class TecnicoController {
     
     private final TecnicoService tecnicoService;
+    private final EvidenciaService evidenciaService;
     
     /**
      * Obtener tickets asignados al técnico
@@ -340,9 +343,10 @@ public class TecnicoController {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailTecnico = userDetails.getEmail();
             
-            // TODO: Implementar lógica de obtener evidencias en TecnicoService
-            // Por ahora retornamos lista vacía
-            List<Object> evidencias = List.of();
+            // Obtener evidencias usando el servicio
+            List<EvidenciaMovilDTO> evidencias = evidenciaService.obtenerEvidenciasPorTicketMovil(ticketId);
+            
+            log.info("Total evidencias encontradas: {}", evidencias.size());
             
             return ResponseEntity.ok(ApiResponse.success("Evidencias obtenidas exitosamente", evidencias));
         } catch (Exception e) {

@@ -49,12 +49,20 @@ public class EvidenciaService {
      * Obtener evidencias de un ticket en formato móvil
      */
     public List<EvidenciaMovilDTO> obtenerEvidenciasPorTicketMovil(Long ticketId) {
-        log.info("Obteniendo evidencias del ticket {} para móvil", ticketId);
+        log.info("📎 [BACKEND] Obteniendo evidencias del ticket {} para móvil", ticketId);
         
         List<EvidenciaMovilDTO> evidenciasDTO = new ArrayList<>();
         
         // 1. Obtener evidencias de la tabla evidencias
+        log.info("📎 [BACKEND] Buscando en tabla evidencias...");
         List<Evidencia> evidencias = obtenerEvidenciasPorTicket(ticketId);
+        log.info("📎 [BACKEND] Evidencias encontradas en tabla: {}", evidencias.size());
+        
+        if (!evidencias.isEmpty()) {
+            evidencias.forEach(ev -> log.info("📎 [BACKEND] Evidencia: ID={}, Nombre={}, Tipo={}", 
+                ev.getIdEvidencia(), ev.getNombreArchivo(), ev.getTipoEvidencia()));
+        }
+        
         evidenciasDTO.addAll(evidencias.stream()
             .map(this::convertirAEvidenciaMovilDTO)
             .collect(Collectors.toList()));
@@ -63,8 +71,12 @@ public class EvidenciaService {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
+        log.info("📎 [BACKEND] Verificando archivo adjunto del ticket...");
+        log.info("📎 [BACKEND] ArchivoAdjunto: {}", ticket.getArchivoAdjunto());
+        log.info("📎 [BACKEND] NombreArchivo: {}", ticket.getNombreArchivo());
+        
         if (ticket.getArchivoAdjunto() != null && !ticket.getArchivoAdjunto().trim().isEmpty()) {
-            log.info("Ticket {} tiene archivo adjunto: {}", ticketId, ticket.getArchivoAdjunto());
+            log.info("📎 [BACKEND] Ticket {} tiene archivo adjunto: {}", ticketId, ticket.getArchivoAdjunto());
             
             EvidenciaMovilDTO archivoAdjuntoDTO = EvidenciaMovilDTO.builder()
                 .idEvidencia(-1L) // ID especial para archivo adjunto

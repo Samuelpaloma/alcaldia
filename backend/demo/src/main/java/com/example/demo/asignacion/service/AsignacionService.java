@@ -66,6 +66,7 @@ public class AsignacionService {
         asignacion.setFechaAsignacion(LocalDateTime.now());
         asignacion.setActiva(true);
         asignacion.setComentario(request.getComentario());
+        asignacion.setTipoOperacion("ASIGNACION");
         
         AsignacionTicket asignacionGuardada = asignacionTicketRepository.save(asignacion);
         
@@ -111,6 +112,7 @@ public class AsignacionService {
         nuevaAsignacion.setTecnicoId(nuevoTecnicoId);
         nuevaAsignacion.setFechaAsignacion(LocalDateTime.now());
         nuevaAsignacion.setActiva(true);
+        nuevaAsignacion.setTipoOperacion("REASIGNAR");
         
         AsignacionTicket asignacionGuardada = asignacionTicketRepository.save(nuevaAsignacion);
         
@@ -157,6 +159,7 @@ public class AsignacionService {
         escalacion.setFechaAsignacion(LocalDateTime.now());
         escalacion.setActiva(true);
         escalacion.setComentario(comentario);
+        escalacion.setTipoOperacion("ESCALAMIENTO");
         
         AsignacionTicket escalacionGuardada = asignacionTicketRepository.save(escalacion);
         
@@ -310,9 +313,19 @@ public class AsignacionService {
         dto.setId(asignacion.getId());
         dto.setTicketId(asignacion.getTicketId());
         dto.setTecnicoId(asignacion.getTecnicoId());
+        
+        // Obtener información del técnico
+        Optional<Usuario> tecnicoOpt = usuarioRepository.findById(asignacion.getTecnicoId());
+        if (tecnicoOpt.isPresent()) {
+            Usuario tecnico = tecnicoOpt.get();
+            dto.setTecnicoNombre(tecnico.getNombre() + " " + tecnico.getApellido());
+            dto.setTecnicoEmail(tecnico.getEmail());
+        }
+        
         dto.setFechaAsignacion(asignacion.getFechaAsignacion());
         dto.setActiva(asignacion.getActiva());
         dto.setComentario(asignacion.getComentario());
+        dto.setTipoOperacion(asignacion.getTipoOperacion());
         return dto;
     }
 }
