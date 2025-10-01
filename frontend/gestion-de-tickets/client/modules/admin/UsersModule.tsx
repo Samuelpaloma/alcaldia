@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api, UsuarioDTO, CreateTecnicoRequest, CreateAdminRequest } from '../../../shared/api';
+import { api, UsuarioDTO, CreateTecnicoRequest, CreateFuncionarioRequest } from '../../../shared/api';
 import { 
   Search, 
   Filter, 
@@ -11,7 +11,6 @@ import {
   UserCheck, 
   UserX,
   Mail,
-  Phone,
   Calendar,
   Shield,
   Wrench,
@@ -33,20 +32,19 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
   const [selectedUser, setSelectedUser] = useState<UsuarioDTO | null>(null);
 
   const [tecnicos, setTecnicos] = useState<UsuarioDTO[]>([]);
-  const [administradores, setAdministradores] = useState<UsuarioDTO[]>([]);
+  const [funcionarios, setFuncionarios] = useState<UsuarioDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [userTypeFilter, setUserTypeFilter] = useState('TODOS');
   const [statusFilter, setStatusFilter] = useState('TODOS');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createUserType, setCreateUserType] = useState<'TECNICO' | 'ADMINISTRADOR'>('TECNICO');
+  const [createUserType, setCreateUserType] = useState<'TECNICO' | 'FUNCIONARIO'>('TECNICO');
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
     email: '',
     password: '',
-    telefono: '',
     cargo: '',
     departamento: '',
     ubicacion: ''
@@ -59,19 +57,20 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
       
       console.log('🔍 Cargando datos...', { userRole });
       
-      const [tecnicosData, administradoresData] = await Promise.all([
+      const [tecnicosData, funcionariosData] = await Promise.all([
         api.getTechnicians(0, 50),
-        userRole === 'superadmin' ? api.getAdmins(0, 50) : Promise.resolve({ content: [] })
+        // Admin y SuperAdmin pueden ver funcionarios
+        api.getFuncionarios(0, 50)
       ]);
       
       console.log('📊 Datos cargados:', {
         tecnicos: tecnicosData.content?.length || 0,
-        administradores: administradoresData.content?.length || 0,
+        funcionarios: funcionariosData.content?.length || 0,
         userRole
       });
       
       setTecnicos(tecnicosData.content || []);
-      setAdministradores(administradoresData.content || []);
+      setFuncionarios(funcionariosData.content || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar datos');
       console.error('Error cargando datos:', err);
@@ -84,40 +83,46 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
     loadData();
   }, [userRole]);
 
-  const allUsers = [...tecnicos, ...administradores];
+  const allUsers = [...tecnicos, ...funcionarios];
   
-  // Debug: Mostrar total de usuarios
+  // Debug: Mostrar total de usuarios y sus tipos
   console.log('👥 Total usuarios:', {
     tecnicos: tecnicos.length,
-    administradores: administradores.length,
+    funcionarios: funcionarios.length,
     total: allUsers.length,
     userTypeFilter,
-    statusFilter
+    statusFilter,
+    tiposUnicos: [...new Set(allUsers.map(u => u.tipoUsuario))]
   });
 
   const filteredUsers = allUsers.filter(user => {
     const matchesSearch = 
       (user.nombreCompleto || `${user.nombre} ${user.apellido}`).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.telefono?.toLowerCase().includes(searchTerm.toLowerCase());
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Normalizar el tipo de usuario para comparación (convertir a mayúsculas y sin acentos)
+    const normalizedUserType = (user.tipoUsuario || '')
+      .toUpperCase()
+      .normalize('NFD') // Descomponer caracteres con acento
+      .replace(/[\u0300-\u036f]/g, ''); // Eliminar diacríticos (acentos)
     
     const matchesType = userTypeFilter === 'TODOS' || 
-      (userTypeFilter === 'TECNICO' && (user.tipoUsuario === 'TECNICO' || user.tipoUsuario === 'Técnico')) ||
-      (userTypeFilter === 'ADMINISTRADOR' && (user.tipoUsuario === 'ADMINISTRADOR' || user.tipoUsuario === 'Administrador'));
+      (userTypeFilter === 'TECNICO' && normalizedUserType === 'TECNICO') ||
+      (userTypeFilter === 'FUNCIONARIO' && normalizedUserType === 'FUNCIONARIO');
     
     const matchesStatus = statusFilter === 'TODOS' || 
-      (statusFilter === 'ACTIVO' && user.activo) ||
-      (statusFilter === 'INACTIVO' && !user.activo);
+      (statusFilter === 'ACTIVO' && user.activo === true) ||
+      (statusFilter === 'INACTIVO' && user.activo === false);
     
-    // Debug log para el filtro
-    if (userTypeFilter !== 'TODOS') {
-      console.log('🔍 Filtro aplicado:', {
-        userTypeFilter,
-        userTipo: user.tipoUsuario,
-        matchesType,
-        userName: user.nombreCompleto || `${user.nombre} ${user.apellido}`
-      });
-    }
+    console.log('🔍 Filtrando usuario:', {
+      nombre: user.nombreCompleto || `${user.nombre} ${user.apellido}`,
+      tipoOriginal: user.tipoUsuario,
+      tipoNormalizado: normalizedUserType,
+      filtroActual: userTypeFilter,
+      matchesType,
+      matchesStatus,
+      matchesSearch
+    });
     
     return matchesSearch && matchesType && matchesStatus;
   });
@@ -144,7 +149,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
           apellido: formData.apellido,
           email: formData.email,
           password: formData.password,
-          telefono: formData.telefono,
           require2fa: false,
           area: formData.departamento || 'Sistemas',
           nivel: 'Junior',
@@ -152,17 +156,17 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
         };
         await api.createTechnician(request);
       } else {
-        const request: CreateAdminRequest = {
+        const request: CreateFuncionarioRequest = {
           nombre: formData.nombre,
           apellido: formData.apellido,
           email: formData.email,
           password: formData.password,
-          telefono: formData.telefono,
-          cargo: formData.cargo || 'Administrador',
-          departamento: formData.departamento || 'Sistemas',
-          ubicacion: formData.ubicacion || 'Bogotá, Colombia'
+          cargo: formData.cargo || 'Funcionario',
+          departamento: formData.departamento || 'General',
+          ubicacion: formData.ubicacion || 'Oficina Principal',
+          require2fa: false
         };
-        await api.crearAdministrador(request);
+        await api.createFuncionario(request);
       }
       
       await loadData();
@@ -188,7 +192,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
       apellido: '',
       email: '',
       password: '',
-      telefono: '',
       cargo: '',
       departamento: '',
       ubicacion: ''
@@ -216,6 +219,9 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
       case 'ADMINISTRADOR':
       case 'Administrador':
         return 'user-type-admin';
+      case 'FUNCIONARIO':
+      case 'Funcionario':
+        return 'user-type-default';
       default:
         return 'user-type-default';
     }
@@ -252,19 +258,17 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
             <Plus className="w-4 h-4 mr-2" />
             Nuevo Técnico
           </Button>
-          {userRole === 'superadmin' && (
-            <Button
-              onClick={() => {
-                setCreateUserType('ADMINISTRADOR');
-                setShowCreateModal(true);
-              }}
-              variant="outline"
-              className="create-btn"
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Nuevo Admin
-            </Button>
-          )}
+          <Button
+            onClick={() => {
+              setCreateUserType('FUNCIONARIO');
+              setShowCreateModal(true);
+            }}
+            variant="outline"
+            className="create-btn"
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Nuevo Funcionario
+          </Button>
         </div>
       </div>
 
@@ -297,12 +301,15 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
               <Filter className="w-4 h-4 mr-2" />
               <select
                 value={userTypeFilter}
-                onChange={(e) => setUserTypeFilter(e.target.value)}
+                onChange={(e) => {
+                  console.log('🔍 Filtro cambiado a:', e.target.value);
+                  setUserTypeFilter(e.target.value);
+                }}
                 className="filter-select"
               >
                 <option value="TODOS">Todos los tipos ({allUsers.length})</option>
                 <option value="TECNICO">Técnicos ({tecnicos.length})</option>
-                <option value="ADMINISTRADOR">Usuarios ({administradores.length})</option>
+                <option value="FUNCIONARIO">Funcionarios ({funcionarios.length})</option>
               </select>
             </div>
             
@@ -359,12 +366,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                       <Mail className="w-4 h-4" />
                       <span>{user.email}</span>
                     </div>
-                    {user.telefono && (
-                      <div className="detail-item">
-                        <Phone className="w-4 h-4" />
-                        <span>{user.telefono}</span>
-                      </div>
-                    )}
                     <div className="detail-item">
                       <Calendar className="w-4 h-4" />
                       <span>Creado: {new Date(user.fechaCreacion).toLocaleDateString()}</span>
@@ -441,7 +442,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                 <div>
                   <p><strong>Nombre:</strong> {selectedUser.nombreCompleto || `${selectedUser.nombre} ${selectedUser.apellido}`}</p>
                   <p><strong>Email:</strong> {selectedUser.email}</p>
-                  <p><strong>Teléfono:</strong> {selectedUser.telefono || 'No especificado'}</p>
                   <p><strong>Tipo:</strong> {selectedUser.tipoUsuario}</p>
                   <p><strong>Estado:</strong> {selectedUser.activo ? 'Activo' : 'Inactivo'}</p>
                   <p><strong>Creado:</strong> {selectedUser.fechaCreacion ? new Date(selectedUser.fechaCreacion).toLocaleDateString() : 'N/A'}</p>
@@ -477,13 +477,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                       El email no se puede modificar por seguridad
                     </small>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Teléfono</label>
-                    <Input
-                      value={selectedUser.telefono || ''}
-                      onChange={e => setSelectedUser({...selectedUser, telefono: e.target.value})}
-                    />
-                  </div>
                   {/* Puedes agregar más campos editables si lo necesitas */}
                 </div>
               )}
@@ -511,7 +504,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                       await api.updateUser(selectedUser.id, {
                         nombre: selectedUser.nombre,
                         apellido: selectedUser.apellido,
-                        telefono: selectedUser.telefono,
                         ubicacion: selectedUser.ubicacion,
                         departamento: selectedUser.departamento,
                         cargo: selectedUser.cargo
@@ -546,7 +538,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
           <div className="modal-content">
             <div className="modal-header">
               <h3 className="modal-title">
-                Crear {createUserType === 'TECNICO' ? 'Técnico' : 'Administrador'}
+                Crear {createUserType === 'TECNICO' ? 'Técnico' : 'Funcionario'}
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -604,14 +596,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                   </p>
                 </div>
                 
-                <div className="form-group">
-                  <label className="form-label">Teléfono</label>
-                  <Input
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({...formData, telefono: e.target.value})}
-                    placeholder="+57 300 000 0000"
-                  />
-                </div>
                 
                 <div className="form-group">
                   <label className="form-label">Cargo</label>

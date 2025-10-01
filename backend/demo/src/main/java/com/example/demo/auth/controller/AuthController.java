@@ -61,15 +61,35 @@ public class AuthController {
      * Verificar email con código - Para usuarios existentes
      */
     @PostMapping("/verify-email")
-    public ResponseEntity<ApiResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+    public ResponseEntity<?> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         log.info("Verificación de email para: {}", request.getEmail());
         
         try {
             authService.verifyExistingUserEmail(request.getEmail(), request.getCode());
-            return ResponseEntity.ok(ApiResponse.success("Email verificado exitosamente. Ya puedes iniciar sesión."));
+            
+            Map<String, Object> successResponse = new HashMap<>();
+            successResponse.put("success", true);
+            successResponse.put("message", "Email verificado exitosamente. Ya puedes iniciar sesión.");
+            
+            return ResponseEntity.ok(successResponse);
         } catch (Exception e) {
             log.error("Error verificando email: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(ApiResponse.error("Error verificando email: " + e.getMessage()));
+            
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            // Determinar mensaje específico según el error
+            String errorMessage = e.getMessage();
+            if (errorMessage.contains("incorrecto") || errorMessage.contains("inválido")) {
+                errorResponse.put("message", "El código ingresado es incorrecto");
+            } else if (errorMessage.contains("expirado")) {
+                errorResponse.put("message", "El código ha expirado. Por favor solicita uno nuevo");
+            } else {
+                errorResponse.put("message", "Error al verificar el código: " + errorMessage);
+            }
+            
+            return ResponseEntity.badRequest().body(errorResponse);
         }
     }
     
@@ -238,7 +258,7 @@ public class AuthController {
      * Verificar código de login
      */
     @PostMapping("/verify-login-code")
-    public ResponseEntity<LoginResponse> verifyLoginCode(@Valid @RequestBody VerifyEmailRequest request) {
+    public ResponseEntity<?> verifyLoginCode(@Valid @RequestBody VerifyEmailRequest request) {
         log.info("Verificación de código de login para: {}", request.getEmail());
         
         try {
@@ -246,7 +266,31 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error verificando código de login: {}", e.getMessage());
-            throw e; // Re-lanzar para que el frontend maneje el error
+            
+            // Preparar respuesta de error
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            // Determinar mensaje y código de error específico
+            String errorMessage = e.getMessage();
+            HttpStatus status;
+            
+            if (errorMessage.contains("incorrecto") || errorMessage.contains("no existe")) {
+                errorResponse.put("message", "El código ingresado es incorrecto");
+                status = HttpStatus.BAD_REQUEST; // 400
+            } else if (errorMessage.contains("expirado")) {
+                errorResponse.put("message", "El código ha expirado. Por favor solicita uno nuevo");
+                status = HttpStatus.BAD_REQUEST; // 400
+            } else if (errorMessage.contains("inválido")) {
+                errorResponse.put("message", "Código de verificación inválido");
+                status = HttpStatus.BAD_REQUEST; // 400
+            } else {
+                errorResponse.put("message", "Error al verificar el código. Por favor intenta nuevamente");
+                status = HttpStatus.BAD_REQUEST; // 400
+            }
+            
+            return ResponseEntity.status(status).body(errorResponse);
         }
     }
     

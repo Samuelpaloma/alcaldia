@@ -84,10 +84,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                               path.equals("/favicon.ico") ||
                               path.equals("/api/superadmin/check-superadmin");
         
-        boolean shouldNotFilter = isAuthPath || isPublicPath;
+        // No filtrar rutas de WebSocket
+        boolean isWebSocketPath = path.startsWith("/ws");
         
-        log.info("🔍 JwtRequestFilter - Ruta: {} - Es auth: {} - Es pública: {} - NO FILTRAR: {}", 
-                 path, isAuthPath, isPublicPath, shouldNotFilter);
+        boolean shouldNotFilter = isAuthPath || isPublicPath || isWebSocketPath;
+        
+        log.info("🔍 JwtRequestFilter - Ruta: {} - Es auth: {} - Es pública: {} - Es WebSocket: {} - NO FILTRAR: {}", 
+                 path, isAuthPath, isPublicPath, isWebSocketPath, shouldNotFilter);
         
         return shouldNotFilter;
     }

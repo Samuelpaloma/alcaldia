@@ -32,8 +32,6 @@ public class PendingUser {
     @Column(nullable = false)
     private String apellido;
     
-    private String telefono;
-    
     @Column(nullable = false)
     private String verificationCode;
     

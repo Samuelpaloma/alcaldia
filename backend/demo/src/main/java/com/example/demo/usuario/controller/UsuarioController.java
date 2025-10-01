@@ -102,6 +102,38 @@ public class UsuarioController {
         return ResponseEntity.ok(admins);
     }
     
+    // ========== GESTIÓN DE FUNCIONARIOS (Admin puede gestionar) ==========
+    
+    @PostMapping("/funcionario")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
+    public ResponseEntity<UsuarioDTO> createFuncionario(
+            @Valid @RequestBody CreateFuncionarioRequest request,
+            Authentication authentication) {
+        
+        log.info("Admin creando funcionario: {}", request.getEmail());
+        Long adminId = getUserIdFromAuth(authentication);
+        UsuarioDTO funcionario = usuarioService.createFuncionario(request, adminId);
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(funcionario);
+    }
+    
+    @GetMapping("/funcionarios")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
+    public ResponseEntity<PageResponse<UsuarioDTO>> getFuncionarios(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "fechaCreacion") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String search) {
+        
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) 
+            ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        
+        PageResponse<UsuarioDTO> funcionarios = usuarioService.getFuncionarios(pageable, search);
+        return ResponseEntity.ok(funcionarios);
+    }
+    
     // ========== GESTIÓN GENERAL DE USUARIOS ==========
     
     @GetMapping("/{id}")

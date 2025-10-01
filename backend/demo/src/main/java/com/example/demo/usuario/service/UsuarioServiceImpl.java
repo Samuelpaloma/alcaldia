@@ -53,7 +53,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             .passwordHash(passwordEncoder.encode(request.getPassword()))
             .nombre(request.getNombre())
             .apellido(request.getApellido())
-            .telefono(request.getTelefono())
             .tipoUsuario(TipoUsuario.TECNICO)
             .creadoPor(admin)
             .passwordTemporal(true) // Marcar como contraseña temporal
@@ -89,7 +88,6 @@ public class UsuarioServiceImpl implements UsuarioService {
             .passwordHash(passwordEncoder.encode(request.getPassword()))
             .nombre(request.getNombre())
             .apellido(request.getApellido())
-            .telefono(request.getTelefono())
             .tipoUsuario(TipoUsuario.ADMINISTRADOR)
             .creadoPor(superAdmin)
             .passwordTemporal(true) // Marcar como contraseña temporal
@@ -143,6 +141,58 @@ public class UsuarioServiceImpl implements UsuarioService {
         return usuarioRepository.findSummaryByTipo(TipoUsuario.TECNICO);
     }
     
+    // ========== GESTIÓN DE FUNCIONARIOS ==========
+    
+    @Override
+    @Transactional
+    public UsuarioDTO createFuncionario(CreateFuncionarioRequest request, Long adminId) {
+        log.info("Admin {} creando funcionario: {}", adminId, request.getEmail());
+        
+        // Validar que el admin existe
+        Usuario admin = validateAdmin(adminId);
+        
+        // Verificar que el email no existe
+        if (usuarioRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("El email ya está registrado");
+        }
+        
+        // Crear funcionario
+        Usuario funcionario = Usuario.builder()
+            .email(request.getEmail())
+            .passwordHash(passwordEncoder.encode(request.getPassword()))
+            .nombre(request.getNombre())
+            .apellido(request.getApellido())
+            .ubicacion(request.getUbicacion())
+            .departamento(request.getDepartamento())
+            .cargo(request.getCargo())
+            .tipoUsuario(TipoUsuario.FUNCIONARIO)
+            .activo(true)
+            .emailVerificado(true) // Creados por admin ya verificados
+            .passwordTemporal(true) // Debe cambiar contraseña en primer acceso
+            .require2fa(request.getRequire2fa())
+            .creadoPor(admin)
+            .build();
+        
+        Usuario savedFuncionario = usuarioRepository.save(funcionario);
+        log.info("Funcionario creado exitosamente: {} por admin: {}", 
+                 savedFuncionario.getEmail(), admin.getEmail());
+        return usuarioMapper.toDTO(savedFuncionario);
+    }
+    
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<UsuarioDTO> getFuncionarios(Pageable pageable, String search) {
+        Page<Usuario> page = usuarioRepository.findByTipoUsuarioWithSearch(
+            TipoUsuario.FUNCIONARIO, search, pageable
+        );
+        
+        List<UsuarioDTO> content = page.getContent().stream()
+            .map(usuarioMapper::toDTO)
+            .collect(Collectors.toList());
+        
+        return PageResponse.<UsuarioDTO>of(content, page.getNumber(), page.getSize(), page.getTotalElements(), page.getTotalPages(), page.isFirst(), page.isLast());
+    }
+    
     @Override
     public UsuarioDTO updateUser(Long userId, UpdateUsuarioRequest request, Long currentUserId) {
         log.info("Usuario {} actualizando datos de usuario {}", currentUserId, userId);
@@ -156,10 +206,13 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Validar permisos
         validateUpdatePermissions(usuario, currentUser);
         
-        // Aplicar cambios
-        usuario.setNombre(request.getNombre());
-        usuario.setApellido(request.getApellido());
-        usuario.setTelefono(request.getTelefono());
+        // Aplicar cambios solo si los campos vienen en la petición
+        if (request.getNombre() != null) {
+            usuario.setNombre(request.getNombre());
+        }
+        if (request.getApellido() != null) {
+            usuario.setApellido(request.getApellido());
+        }
         
         // Actualizar campos de perfil personal
         if (request.getUbicacion() != null) {

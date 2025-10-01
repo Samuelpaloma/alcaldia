@@ -19,6 +19,18 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   accessToken: string;
+  tokenType?: string;
+  expiresIn?: number;
+  userId?: number;
+  nombre?: string;
+  apellido?: string;
+  email?: string;
+  tipoUsuario?: string;
+  require2fa?: boolean;
+  requireEmailVerification?: boolean;
+  requiereCambioPassword?: boolean;
+  redirectUrl?: string;
+  // Campos legacy para compatibilidad
   refreshToken?: string;
   user?: {
     id: string;
@@ -43,6 +55,25 @@ export interface RegisterRequest {
 export interface RegisterResponse {
   success: boolean;
   message: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordRequest {
+  email: string;
+  token: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ResetPasswordResponse extends LoginResponse {
+  message?: string;
 }
 
 // Tipos para estadísticas del sistema
@@ -174,7 +205,6 @@ export interface UsuarioDTO {
   email: string;
   nombre: string;
   apellido: string;
-  telefono?: string;
   ubicacion?: string;
   departamento?: string;
   cargo?: string;
@@ -206,7 +236,6 @@ export interface CreateTecnicoRequest {
   password: string;
   nombre: string;
   apellido: string;
-  telefono?: string;
   require2fa?: boolean;
   area?: string;
   nivel?: string;
@@ -218,16 +247,25 @@ export interface CreateAdminRequest {
   password: string;
   nombre: string;
   apellido: string;
-  telefono?: string;
   ubicacion?: string;
   departamento?: string;
   cargo?: string;
 }
 
+export interface CreateFuncionarioRequest {
+  email: string;
+  password: string;
+  nombre: string;
+  apellido: string;
+  ubicacion?: string;
+  departamento?: string;
+  cargo?: string;
+  require2fa?: boolean;
+}
+
 export interface UpdateUsuarioRequest {
   nombre?: string;
   apellido?: string;
-  telefono?: string;
   ubicacion?: string;
   departamento?: string;
   cargo?: string;
@@ -237,6 +275,21 @@ export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+}
+
+export interface PreferenciasNotificacionDTO {
+  id?: number;
+  usuarioId?: number;
+  pushActivo: boolean;
+  emailActivo: boolean;
+  notificacionesTicketAsignado?: boolean;
+  notificacionesTicketEnProceso?: boolean;
+  notificacionesTicketResuelto?: boolean;
+  notificacionesComentarios?: boolean;
+  notificacionesEvidencias?: boolean;
+  notificacionesSla?: boolean;
+  notificacionesSistema?: boolean;
+  frecuenciaEmail?: string;
 }
 
 // ========== TIPOS PARA PAGINACIÓN ==========
@@ -678,6 +731,20 @@ class ApiClient {
     });
   }
 
+  async forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resetPassword(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Tickets - API real del backend
   async createTicket(data: TicketRequestDTO): Promise<TicketResponseDTO> {
     return this.request('/tickets/crear', {
@@ -759,7 +826,6 @@ class ApiClient {
     email: string;
     nombre: string;
     apellido: string;
-    telefono: string;
     ubicacion: string;
     departamento: string;
     cargo: string;
@@ -771,9 +837,8 @@ class ApiClient {
   }
 
   async updateMyProfile(data: {
-    nombre: string;
-    apellido: string;
-    telefono?: string;
+    nombre?: string;
+    apellido?: string;
     ubicacion?: string;
     departamento?: string;
     cargo?: string;
@@ -782,7 +847,6 @@ class ApiClient {
     email: string;
     nombre: string;
     apellido: string;
-    telefono: string;
     ubicacion: string;
     departamento: string;
     cargo: string;
@@ -846,6 +910,24 @@ class ApiClient {
     return this.request(`/usuarios/admins?${params.toString()}`);
   }
 
+  // Funcionarios (Admin puede gestionar)
+  async createFuncionario(data: CreateFuncionarioRequest): Promise<UsuarioDTO> {
+    return this.request('/usuarios/funcionario', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFuncionarios(page: number = 0, size: number = 20, search?: string): Promise<PageResponse<UsuarioDTO>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (search) params.append('search', search);
+    
+    return this.request(`/usuarios/funcionarios?${params.toString()}`);
+  }
+
   // Gestión General
   async getUserById(id: number): Promise<UsuarioDTO> {
     return this.request(`/usuarios/${id}`);
@@ -866,6 +948,18 @@ class ApiClient {
 
   async changePassword(data: ChangePasswordRequest): Promise<ApiResponse> {
     return this.request('/usuarios/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Preferencias de Notificaciones
+  async getNotificationPreferences(): Promise<PreferenciasNotificacionDTO> {
+    return this.request('/notificaciones/preferencias');
+  }
+
+  async updateNotificationPreferences(data: Partial<PreferenciasNotificacionDTO>): Promise<PreferenciasNotificacionDTO> {
+    return this.request('/notificaciones/preferencias', {
       method: 'PUT',
       body: JSON.stringify(data),
     });

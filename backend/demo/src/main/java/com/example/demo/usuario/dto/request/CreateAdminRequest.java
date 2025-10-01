@@ -28,9 +28,6 @@ public class CreateAdminRequest {
     @Size(min = 2, max = 50)
     private String apellido;
     
-    @Pattern(regexp = "^[0-9+\\-\\s()]*$")
-    private String telefono;
-    
     private Boolean require2fa = true; // Admins por defecto con 2FA
     
     // Permisos específicos del admin

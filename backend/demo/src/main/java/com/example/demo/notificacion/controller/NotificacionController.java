@@ -1,6 +1,7 @@
 package com.example.demo.notificacion.controller;
 
 import com.example.demo.notificacion.dto.request.CreateNotificacionRequest;
+import com.example.demo.notificacion.dto.PreferenciasNotificacionDTO;
 import com.example.demo.notificacion.model.Notificacion;
 import com.example.demo.notificacion.service.NotificacionService;
 import com.example.demo.security.CustomUserDetails;
@@ -206,6 +207,62 @@ public class NotificacionController {
                 ApiResponse.error("Error al obtener estadísticas: " + e.getMessage())
             );
         }
+    }
+    
+    /**
+     * Obtener preferencias de notificación del usuario autenticado
+     * GET /api/notificaciones/preferencias
+     */
+    @GetMapping("/preferencias")
+    public ResponseEntity<?> obtenerPreferencias(Authentication authentication) {
+        try {
+            log.info("Obteniendo preferencias de notificación");
+            
+            Long userId = getUserIdFromAuth(authentication);
+            PreferenciasNotificacionDTO preferencias = notificacionService.getPreferenciasByUsuario(userId);
+            
+            return ResponseEntity.ok(preferencias);
+        } catch (Exception e) {
+            log.error("Error obteniendo preferencias de notificación", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al obtener preferencias: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Actualizar preferencias de notificación del usuario autenticado
+     * PUT /api/notificaciones/preferencias
+     */
+    @PutMapping("/preferencias")
+    public ResponseEntity<?> actualizarPreferencias(
+            @RequestBody PreferenciasNotificacionDTO preferenciasDTO,
+            Authentication authentication) {
+        try {
+            log.info("Actualizando preferencias de notificación");
+            
+            Long userId = getUserIdFromAuth(authentication);
+            PreferenciasNotificacionDTO preferenciasActualizadas = 
+                notificacionService.actualizarPreferencias(userId, preferenciasDTO);
+            
+            return ResponseEntity.ok(preferenciasActualizadas);
+        } catch (Exception e) {
+            log.error("Error actualizando preferencias de notificación", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al actualizar preferencias: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Obtener userId desde el Authentication
+     */
+    private Long getUserIdFromAuth(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            return userDetails.getUserId();
+        }
+        return 1L; // Default temporal
     }
     
     // ===== ENDPOINTS PARA MÓVIL =====

@@ -18,7 +18,6 @@ public class UsuarioDTO {
     private String nombre;
     private String apellido;
     private String nombreCompleto;
-    private String telefono;
     private String ubicacion;
     private String departamento;
     private String cargo;

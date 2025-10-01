@@ -10,16 +10,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateUsuarioRequest {
     
-    @NotBlank(message = "El nombre es requerido")
-    @Size(min = 2, max = 50)
+    // Campos opcionales - solo se actualizan si se envían
+    @Size(min = 2, max = 50, message = "El nombre debe tener entre 2 y 50 caracteres")
     private String nombre;
     
-    @NotBlank(message = "El apellido es requerido")
-    @Size(min = 2, max = 50)
+    @Size(min = 2, max = 50, message = "El apellido debe tener entre 2 y 50 caracteres")
     private String apellido;
-    
-    @Pattern(regexp = "^[0-9+\\-\\s()]*$")
-    private String telefono;
     
     private Boolean require2fa;
     

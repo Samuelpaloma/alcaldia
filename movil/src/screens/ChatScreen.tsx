@@ -35,7 +35,15 @@ interface TicketInfo {
   fechaActualizacion: string;
   creadorEmail?: string;
   creadorNombre?: string;
+  ubicacion?: string;
   comentarios?: ChatMessage[];
+  evidencias?: any[];
+  historialEstados?: Array<{
+    estadoAnterior: string;
+    estadoNuevo: string;
+    fechaCambio: string;
+    comentario?: string;
+  }>;
 }
 
 export default function ChatScreen() {
@@ -354,11 +362,20 @@ export default function ChatScreen() {
                     isCurrentUser(message) ? styles.messageBubbleRight : styles.messageBubbleLeft
                   ]}
                 >
-                  <Text style={styles.messageAuthor}>
+                  <Text style={[
+                    styles.messageAuthor,
+                    isCurrentUser(message) ? styles.textLight : styles.textDark
+                  ]}>
                     {getAuthorName(message)}
                   </Text>
-                  <Text style={styles.messageText}>{message.mensaje}</Text>
-                  <Text style={styles.messageTime}>
+                  <Text style={[
+                    styles.messageText,
+                    isCurrentUser(message) ? styles.textLight : styles.textDark
+                  ]}>{message.mensaje}</Text>
+                  <Text style={[
+                    styles.messageTime,
+                    isCurrentUser(message) ? styles.textLight : styles.textDark
+                  ]}>
                     {formatTimestamp(message.fechaCreacion)}
                   </Text>
                 </View>
@@ -677,7 +694,7 @@ const createStyles = (theme: any) => StyleSheet.create({
     borderRadius: 16,
   },
   messageBubbleLeft: {
-    backgroundColor: '#fff',
+    backgroundColor: '#E5E5EA',
     borderBottomLeftRadius: 4,
   },
   messageBubbleRight: {
@@ -698,6 +715,12 @@ const createStyles = (theme: any) => StyleSheet.create({
   messageTime: {
     fontSize: 11,
     opacity: 0.6,
+  },
+  textLight: {
+    color: '#ffffff',
+  },
+  textDark: {
+    color: '#000000',
   },
   inputContainer: {
     backgroundColor: '#fff',

@@ -24,7 +24,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(webSocketAuthInterceptor);
+        // TEMPORAL: Comentado para debugging - el interceptor puede estar causando el error 500
+        // registration.interceptors(webSocketAuthInterceptor);
+        System.out.println("🔥🔥🔥 [WEBSOCKET CONFIG] Interceptor de autenticación DESHABILITADO temporalmente");
     }
 
     @Override

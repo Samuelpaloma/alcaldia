@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff } from "lucide-react";
 import { useI18n } from "@/i18n";
-import { setAuth, AuthState, getAuth, isAuthenticated } from "./auth";
+import { setAuth, AuthState, getAuth, isAuthenticated, getUserInfo } from "./auth";
 import { useNavigate, Link } from "react-router-dom";
 import { api, LoginRequest, LoginResponse, VerifyEmailRequest } from "@shared/api";
 
@@ -66,6 +67,36 @@ export default function Login() {
   const [step, setStep] = useState<"credentials" | "verification">("credentials");
   const [verificationCode, setVerificationCode] = useState("");
   const [tempCredentials, setTempCredentials] = useState<FormData | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Verificar si ya hay sesión activa al montar el componente
+  useEffect(() => {
+    if (isAuthenticated()) {
+      const auth = getAuth();
+      console.log("✅ Usuario ya autenticado, redirigiendo...");
+      
+      // Detectar rol y redirigir
+      const userRole = auth?.user?.role || getRoleFromTipoUsuario(
+        getUserInfo()?.tipoUsuario || "FUNCIONARIO"
+      );
+      
+      let redirectPath = "/client";
+      switch (userRole) {
+        case "superadmin":
+          redirectPath = "/superadmin";
+          break;
+        case "admin":
+          redirectPath = "/admin";
+          break;
+        case "client":
+        default:
+          redirectPath = "/client";
+          break;
+      }
+      
+      navigate(redirectPath, { replace: true });
+    }
+  }, [navigate]);
 
   // Limpiar mensajes al montar el componente
   useEffect(() => {
@@ -186,7 +217,7 @@ export default function Login() {
       });
       
       // Determinar la ruta de redirección basada en el tipo de usuario
-      const userRole = getRoleFromTipoUsuario(response.tipoUsuario);
+      const userRole = getRoleFromTipoUsuario(response.tipoUsuario || "FUNCIONARIO");
       let redirectPath = "/client"; // Default
       
       switch (userRole) {
@@ -220,31 +251,6 @@ export default function Login() {
     }
   };
 
-  // Acceso directo para pruebas
-  const handleDirectAccess = (role: "admin" | "client") => {
-    const authState: AuthState = { 
-      token: `mock-token-${role}-${Date.now()}`,
-      user: {
-        id: "1",
-        email: role === "admin" ? "admin@alcaldia.gov.co" : "cliente@alcaldia.gov.co",
-        role: role,
-        name: role === "admin" ? "Administrador" : "Cliente"
-      }
-    };
-    
-    setAuth(authState);
-    
-    setMessage({ 
-      type: "success", 
-      text: `Acceso directo como ${role === "admin" ? "Administrador" : "Cliente"}` 
-    });
-    
-    const redirectPath = role === "admin" ? "/admin" : "/client";
-    
-    setTimeout(() => {
-      navigate(redirectPath, { replace: true });
-    }, 1000);
-  };
 
   return (
     <div className="section auth-center">
@@ -274,14 +280,23 @@ export default function Login() {
               {/* Contraseña */}
               <div className="grid gap-1">
                 <Label htmlFor="password">Contraseña *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
-                  placeholder="Ingresa tu contraseña"
-                  className={errors.password ? "border-red-500" : ""}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    placeholder="Ingresa tu contraseña"
+                    className={errors.password ? "border-red-500 pr-10" : "pr-10"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
               </div>
 
@@ -303,36 +318,18 @@ export default function Login() {
                 {isLoading ? "Validando credenciales..." : "Continuar"}
               </Button>
 
+              {/* Enlace a recuperar contraseña */}
+              <div className="text-center">
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+
               {/* Enlace a registro */}
               <p className="auth-links text-center">
                 <span>¿No tienes cuenta? </span>
                 <Link to="/register" className="underline">Regístrate aquí</Link>
               </p>
-
-              {/* Acceso directo para pruebas */}
-              <div className="border-t pt-4 mt-4">
-                <p className="text-sm text-gray-600 text-center mb-3">Acceso directo para pruebas:</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDirectAccess("admin")}
-                    className="text-xs"
-                  >
-                    🔧 Admin
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleDirectAccess("client")}
-                    className="text-xs"
-                  >
-                    👤 Cliente
-                  </Button>
-                </div>
-              </div>
             </form>
           ) : (
             <form className="grid gap-4" onSubmit={handleVerification}>

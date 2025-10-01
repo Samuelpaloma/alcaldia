@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateTecnicoRequest {
+public class CreateFuncionarioRequest {
     
     @NotBlank(message = "El email es requerido")
     @Email(message = "El email debe tener un formato válido")
@@ -21,17 +21,22 @@ public class CreateTecnicoRequest {
     private String password;
     
     @NotBlank(message = "El nombre es requerido")
-    @Size(min = 2, max = 50, message = "El nombre debe tener entre 2 y 50 caracteres")
+    @Size(min = 2, max = 50)
     private String nombre;
     
     @NotBlank(message = "El apellido es requerido")
-    @Size(min = 2, max = 50, message = "El apellido debe tener entre 2 y 50 caracteres")
+    @Size(min = 2, max = 50)
     private String apellido;
     
-    private Boolean require2fa = false;
+    @Size(max = 100)
+    private String ubicacion;
     
-    // Campos opcionales para especialización
-    private String area;          // Área de especialización
-    private String nivel;         // Junior, Senior, etc.
-    private String observaciones; // Notas adicionales
+    @Size(max = 100)
+    private String departamento;
+    
+    @Size(max = 100)
+    private String cargo;
+    
+    private Boolean require2fa = false; // Funcionarios por defecto sin 2FA
 }
+
