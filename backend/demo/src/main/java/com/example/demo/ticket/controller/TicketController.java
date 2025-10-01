@@ -60,12 +60,18 @@ public class TicketController {
             @PathVariable Long ticketId,
             Authentication authentication) {
         try {
+            System.out.println("🔍 [CONTROLLER DEBUG] Iniciando obtenerSeguimiento para ticket: " + ticketId);
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailUsuario = userDetails.getEmail();
+            System.out.println("🔍 [CONTROLLER DEBUG] Email usuario: " + emailUsuario);
+            
             TicketResponseDTO ticket = ticketService.obtenerTicketParaSeguimiento(ticketId, emailUsuario);
+            System.out.println("🔍 [CONTROLLER DEBUG] Ticket obtenido exitosamente");
             
             return ResponseEntity.ok(ticket);
         } catch (Exception e) {
+            System.out.println("🔍 [CONTROLLER DEBUG] Error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener el ticket: " + e.getMessage())
             );

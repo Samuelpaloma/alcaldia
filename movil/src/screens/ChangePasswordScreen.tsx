@@ -161,9 +161,9 @@ const ChangePasswordScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header con TicketFlow */}
+      {/* Header con NEITickets */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>TicketFlow - Técnico</Text>
+        <Text style={styles.headerTitle}>NEITickets - Técnico</Text>
         <TouchableOpacity 
           style={styles.menuButton}
           onPress={() => setSidebarVisible(true)}
@@ -315,7 +315,7 @@ const ChangePasswordScreen = () => {
         <View style={styles.sidebarOverlay}>
           <View style={styles.sidebar}>
             <View style={styles.sidebarHeader}>
-              <Text style={styles.sidebarTitle}>TicketFlow</Text>
+              <Text style={styles.sidebarTitle}>NEITickets</Text>
               <TouchableOpacity onPress={() => setSidebarVisible(false)}>
                 <Text style={styles.sidebarCloseButton}>×</Text>
               </TouchableOpacity>

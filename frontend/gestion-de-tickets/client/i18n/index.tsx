@@ -14,7 +14,7 @@ const I18nContext = createContext<I18nContextType | null>(null);
 
 const DICTS: Record<Locale, Dict> = {
   en: {
-    "brand.name": "TicketFlow",
+    "brand.name": "NEITickets",
     "nav.tickets": "Tickets",
     "nav.users_roles": "Users & Roles",
     "nav.notifications": "Notifications",
@@ -262,7 +262,7 @@ const DICTS: Record<Locale, Dict> = {
     "lang": "EN",
   },
   es: {
-    "brand.name": "TicketFlow",
+    "brand.name": "NEITickets",
     "nav.tickets": "Tickets",
     "nav.users_roles": "Usuarios y Roles",
     "nav.notifications": "Notificaciones",

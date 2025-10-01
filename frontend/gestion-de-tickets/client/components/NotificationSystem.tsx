@@ -11,8 +11,8 @@ export const NotificationSystem: React.FC<NotificationSystemProps> = ({
   userEmail,
   userRole
 }) => {
-  // Inicializar el sistema de toasts en tiempo real
-  useRealtimeNotificationToasts();
+  // NO usar useRealtimeNotificationToasts() - ya está en GlobalWebSocket
+  // useRealtimeNotificationToasts();
 
   return (
     <>

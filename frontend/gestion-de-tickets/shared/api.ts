@@ -832,6 +832,7 @@ class ApiClient {
     tipoUsuario: string;
     activo: boolean;
     require2fa: boolean;
+    fechaCreacion: string;
   }> {
     return this.request('/usuarios/profile');
   }
@@ -853,6 +854,7 @@ class ApiClient {
     tipoUsuario: string;
     activo: boolean;
     require2fa: boolean;
+    fechaCreacion: string;
   }> {
     return this.request('/usuarios/profile', {
       method: 'PUT',
@@ -1166,9 +1168,29 @@ class ApiClient {
     });
   }
 
+  async escalarTicket(data: AsignarTicketRequestDTO): Promise<AsignacionResponseDTO> {
+    return this.request('/asignaciones/escalar', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async desasignarTicket(ticketId: number): Promise<AsignacionResponseDTO> {
     return this.request(`/asignaciones/desasignar/${ticketId}`, {
       method: 'DELETE',
+    });
+  }
+
+  // ========== GESTIÓN DE CLIENTES ==========
+  
+  async responderResolucionTicket(ticketId: number, accion: 'CONFIRMAR' | 'RECHAZAR', comentario?: string): Promise<void> {
+    return this.request('/cliente/tickets/responder-resolucion', {
+      method: 'POST',
+      body: JSON.stringify({
+        ticketId,
+        accion,
+        comentario
+      }),
     });
   }
 

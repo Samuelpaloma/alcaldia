@@ -83,7 +83,7 @@ export default function ForgotPasswordScreen() {
         >
           <View style={styles.formContainer}>
             <View style={styles.headerSection}>
-              <Text style={styles.logoText}>TicketFlow</Text>
+              <Text style={styles.logoText}>NEITickets</Text>
               <Text style={styles.titleText}>Recuperar Contraseña</Text>
               <Text style={styles.subtitleText}>
                 Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña

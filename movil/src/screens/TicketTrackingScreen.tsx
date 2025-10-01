@@ -12,6 +12,8 @@ import {
   Platform,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  Image,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,6 +21,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from './navigationTypes';
 import { useTheme } from '../hooks/useTheme';
 import { webSocketService } from '../services/WebSocketService';
+import EvidenceModal from './components/EvidenceModal';
 
 type TicketTrackingRouteProp = RouteProp<RootStackParamList, 'TicketTracking'>;
 
@@ -43,13 +46,27 @@ interface TicketInfo {
 }
 
 interface HistorialItem {
-  id: number;
-  estado: string;
+  id: number | string;
+  estado?: string;
   comentarios?: string;
-  fechaCambio: string;
-  cambiadoPor: string;
+  fechaCambio?: string;
+  cambiadoPor?: string;
   tecnicoNombre?: string;
   tipoOperacion?: string;
+  // Campos adicionales para el historial completo
+  fecha?: string;
+  accion?: string;
+  descripcion?: string;
+  usuario?: string;
+  esCreacion?: boolean;
+  esAsignacion?: boolean;
+  esEstadoActual?: boolean;
+  estadoActual?: string;
+  activa?: boolean;
+  tecnico?: string;
+  estadoAnterior?: string;
+  estadoNuevo?: string;
+  observaciones?: string;
 }
 
 interface ChatMessage {
@@ -58,19 +75,42 @@ interface ChatMessage {
   mensaje: string;
   fechaCreacion: string;
   esTecnico?: boolean;
+  tipoAutor?: string;
 }
 
 interface EvidenciaItem {
-  idEvidencia: number;
-  nombreArchivo: string;
-  nombreCompletoArchivo: string;
-  tipoArchivo: string;
-  tamañoArchivo: number;
-  fechaSubida: string;
-  subidoPor: {
+  // Campos de evidencias (tabla evidencias)
+  idEvidencia?: number;
+  ticketId?: number;
+  tipoEvidencia?: string;
+  tipoArchivo?: string;
+  descripcion?: string;
+  nombreArchivo?: string;
+  nombreCompletoArchivo?: string;
+  extensionArchivo?: string;
+  tamanioArchivo?: number;
+  tamañoArchivo?: number;
+  tamanioFormateado?: string;
+  urlArchivo?: string;
+  fechaSubida?: string;
+  subidoPorNombre?: string;
+  subidoPorEmail?: string;
+  subidoPor?: {
     nombre: string;
     email: string;
   };
+  // Campos de archivos (tabla archivos_ticket)
+  id?: number;
+  idArchivo?: number;
+  nombreCompleto?: string;
+  rutaArchivo?: string;
+  extension?: string;
+  tipoMime?: string;
+  tamano?: number;
+  esImagen?: boolean;
+  esPDF?: boolean;
+  esVideo?: boolean;
+  comentario?: string;
 }
 
 export default function TicketTrackingScreen() {
@@ -89,6 +129,21 @@ export default function TicketTrackingScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<'info' | 'historial' | 'chat' | 'evidencias'>('info');
   const [userEmail, setUserEmail] = useState<string>('');
+  const [activeEvidenceTab, setActiveEvidenceTab] = useState<'chat' | 'finales'>('chat');
+  const [evidenciasChat, setEvidenciasChat] = useState<EvidenciaItem[]>([]);
+  const [evidenciasFinales, setEvidenciasFinales] = useState<EvidenciaItem[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showUploadEvidenceModal, setShowUploadEvidenceModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [archivoEnPreview, setArchivoEnPreview] = useState<EvidenciaItem | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    title: string;
+    message: string;
+    confirmText: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -287,6 +342,9 @@ export default function TicketTrackingScreen() {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ [TICKET] Información del ticket cargada:', data);
+        console.log('📜 [TICKET] HistorialEstados del backend:', data.historialEstados);
+        console.log('📎 [TICKET] Evidencias del backend:', data.evidencias);
+        console.log('💬 [TICKET] Comentarios del backend:', data.comentarios);
         
         // Mapear la respuesta del backend al formato esperado
         const ticketInfo = {
@@ -296,25 +354,87 @@ export default function TicketTrackingScreen() {
           categoria: data.categoria || 'Sin categoría',
           estado: data.estado || 'PENDIENTE',
           prioridad: data.prioridad || 'MEDIA',
-          tecnicoAsignado: data.tecnicoAsignado || 'Sin asignar',
+          tecnicoAsignado: data.tecnicoNombre || data.tecnicoAsignado || 'Sin asignar',
+          tecnicoNombre: data.tecnicoNombre,
+          creadorNombre: data.creadorNombre,
           fechaCreacion: data.fechaCreacion || new Date().toISOString(),
           fechaActualizacion: data.fechaActualizacion || new Date().toISOString(),
           ubicacion: data.ubicacion || 'Sin ubicación',
           creador: data.creador || { nombre: 'Usuario' },
           evidencias: data.evidencias || [],
-          historial: data.historial || []
+          historial: data.historialEstados || data.historial || [],
+          historialEstados: data.historialEstados || []
         };
         
+        console.log('📜 [TICKET] Historial mapeado:', ticketInfo.historial);
+        
         setTicketInfo(ticketInfo);
+        
+        // Si viene historialEstados en el ticket, usarlo directamente
+        if (data.historialEstados && data.historialEstados.length > 0) {
+          console.log('📜 [TICKET] Usando historialEstados del ticket:', data.historialEstados);
+          const historialMapeado = data.historialEstados.map((item: any) => ({
+            id: item.idHistorial || item.id,
+            fecha: item.fechaCambio,
+            fechaCambio: item.fechaCambio,
+            accion: 'Cambio de estado',
+            descripcion: item.comentario || `${item.estadoAnterior} → ${item.estadoNuevo}`,
+            usuario: item.cambiadoPor || item.nombreCambiadoPor || 'Sistema',
+            cambiadoPor: item.cambiadoPor || item.nombreCambiadoPor || 'Sistema',
+            estadoAnterior: item.estadoAnterior,
+            estadoNuevo: item.estadoNuevo,
+            observaciones: item.observaciones
+          }));
+          console.log('📜 [TICKET] Historial procesado desde ticket:', historialMapeado);
+          setHistorial(historialMapeado);
+        }
+        
+        // Siempre cargar evidencias con la llamada separada para asegurar que se obtengan
+        console.log('📎 [TICKET] Evidencias en respuesta inicial:', data.evidencias);
+        // No usamos las evidencias del ticket inicial, siempre hacemos la llamada específica
+        // para asegurar que se carguen todas las evidencias
+        
+        // Si vienen comentarios en el ticket, usarlos directamente
+        if (data.comentarios && data.comentarios.length > 0) {
+          console.log('💬 [TICKET] Usando comentarios del ticket:', data.comentarios);
+          const comentariosMapeados = data.comentarios.map((comment: any) => ({
+            id: comment.id,
+            autor: comment.autor || comment.nombreUsuario || 'Usuario',
+            mensaje: comment.mensaje || comment.contenido,
+            fechaCreacion: comment.fechaCreacion || comment.fecha,
+            esTecnico: comment.esTecnico || false,
+            tipoAutor: comment.tipoAutor
+          }));
+          setMessages(comentariosMapeados.sort((a: ChatMessage, b: ChatMessage) => {
+            return new Date(a.fechaCreacion).getTime() - new Date(b.fechaCreacion).getTime();
+          }));
+        }
       } else {
         const errorText = await response.text();
         console.error('❌ [TICKET] Error cargando información del ticket:', response.status, errorText);
         
-        // Si es error de permisos, mostrar mensaje específico
-        if (response.status === 400) {
+        // Intentar extraer el mensaje de error del backend
+        let errorMessage = 'No se pudo cargar la información del ticket.';
+        
+        try {
+          const errorJson = JSON.parse(errorText);
+          // El backend puede devolver el mensaje en diferentes formatos
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch (e) {
+          // Si no es JSON, usar el texto directamente si es legible
+          if (errorText && errorText.length < 200 && !errorText.includes('<html')) {
+            errorMessage = errorText;
+          }
+        }
+        
+        // Guardar el mensaje de error para mostrarlo en la pantalla
+        setErrorMessage(errorMessage);
+        
+        // Si es error de permisos, mostrar el mensaje específico del backend
+        if (response.status === 400 || response.status === 403) {
           Alert.alert(
-            'Sin Permisos', 
-            'No tienes permisos para ver este ticket. Solo puedes ver tickets asignados a ti.',
+            '🚫 Acceso Denegado', 
+            errorMessage,
             [
               {
                 text: 'Volver al Dashboard',
@@ -323,12 +443,12 @@ export default function TicketTrackingScreen() {
             ]
           );
         } else {
-          Alert.alert('Error', `No se pudo cargar la información del ticket: ${response.status}`);
+          Alert.alert('Error', errorMessage);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [TICKET] Error cargando información del ticket:', error);
-      Alert.alert('Error', 'Error de conexión al cargar el ticket');
+      Alert.alert('Error', error?.message || 'Error de conexión al cargar el ticket');
     }
   };
 
@@ -346,18 +466,29 @@ export default function TicketTrackingScreen() {
       if (response.ok) {
         const data = await response.json();
         console.log('✅ [CHAT] Mensajes cargados:', data);
+        console.log('📋 [CHAT] Primer mensaje de ejemplo:', data[0]);
         
         // Mapear los comentarios al formato esperado
-        const mappedMessages = (data || []).map((comment: any) => ({
+        const mappedMessages = (data || []).map((comment: any) => {
+          console.log('🔄 [MAPEO] Mensaje original:', {
+            id: comment.id,
+            tipoAutor: comment.tipoAutor,
+            esTecnico: comment.esTecnico,
+            autor: comment.autor
+          });
+          
+          return {
           id: comment.id,
           autor: comment.autor || comment.nombreUsuario || 'Usuario',
           mensaje: comment.mensaje || comment.contenido,
           fechaCreacion: comment.fechaCreacion || comment.fecha,
-          esTecnico: comment.esTecnico || false
-        }));
+            esTecnico: comment.esTecnico || false,
+            tipoAutor: comment.tipoAutor
+          };
+        });
         
         // Ordenar mensajes por fecha (del más antiguo al más nuevo - orden ascendente)
-        const mensajesOrdenados = mappedMessages.sort((a, b) => {
+        const mensajesOrdenados = mappedMessages.sort((a: ChatMessage, b: ChatMessage) => {
           const fechaA = new Date(a.fechaCreacion).getTime();
           const fechaB = new Date(b.fechaCreacion).getTime();
           return fechaA - fechaB; // Orden ascendente (más antiguo primero, más nuevo al final)
@@ -407,7 +538,7 @@ export default function TicketTrackingScreen() {
         }));
 
         // Ordenar mensajes por fecha (del más antiguo al más nuevo - orden ascendente)
-        const mensajesOrdenados = newMessages.sort((a, b) => {
+        const mensajesOrdenados = newMessages.sort((a: ChatMessage, b: ChatMessage) => {
           const fechaA = new Date(a.fechaCreacion).getTime();
           const fechaB = new Date(b.fechaCreacion).getTime();
           return fechaA - fechaB; // Orden ascendente (más antiguo primero, más nuevo al final)
@@ -430,8 +561,8 @@ export default function TicketTrackingScreen() {
             return mensajesOrdenados;
           } else {
             // Si la cantidad es igual, comparar por contenido
-            const prevContent = prevMessages.map(msg => `${msg.mensaje}-${msg.fechaCreacion}`).join('|');
-            const newContent = mensajesOrdenados.map(msg => `${msg.mensaje}-${msg.fechaCreacion}`).join('|');
+            const prevContent = prevMessages.map((msg: ChatMessage) => `${msg.mensaje}-${msg.fechaCreacion}`).join('|');
+            const newContent = mensajesOrdenados.map((msg: ChatMessage) => `${msg.mensaje}-${msg.fechaCreacion}`).join('|');
             
             if (prevContent !== newContent) {
               console.log('🔄 [TÉCNICO] Cambio en contenido de mensajes detectado');
@@ -460,9 +591,13 @@ export default function TicketTrackingScreen() {
 
   const loadHistorial = async () => {
     try {
+      console.log('📜 [HISTORIAL] ===== INICIANDO loadHistorial =====');
+      console.log('📜 [HISTORIAL] Ticket ID:', ticketId);
       const token = await AsyncStorage.getItem('authToken');
+      console.log('📜 [HISTORIAL] Token presente:', !!token);
       
       // Intentar primero con el endpoint específico del ticket
+      console.log('📜 [HISTORIAL] Intentando endpoint: /api/tickets/${ticketId}/historial');
       let response = await fetch(`http://localhost:8080/api/tickets/${ticketId}/historial`, {
         method: 'GET',
         headers: {
@@ -470,6 +605,8 @@ export default function TicketTrackingScreen() {
           'Content-Type': 'application/json',
         }
       });
+
+      console.log('📜 [HISTORIAL] Respuesta status:', response.status);
 
       // Si no existe, usar el endpoint de asignaciones
       if (!response.ok && response.status === 404) {
@@ -485,21 +622,114 @@ export default function TicketTrackingScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ [HISTORIAL] Historial cargado:', data);
+        console.log('✅ [HISTORIAL] Historial cargado, cantidad:', data?.length || 0);
+        console.log('📜 [HISTORIAL] Datos de asignaciones:', JSON.stringify(data, null, 2));
         
-        // Mapear el historial al formato esperado
-        const mappedHistorial = (data || []).map((item: any) => ({
-          id: item.id || item.idAsignacion,
-          fecha: item.fechaAsignacion || item.fechaCreacion || item.fecha,
-          accion: item.tipoOperacion || item.accion || 'Cambio de estado',
-          descripcion: item.comentario || item.descripcion || `${item.estadoAnterior} → ${item.estadoNuevo}`,
-          usuario: item.asignadoPor || item.usuario || 'Sistema',
-          estadoAnterior: item.estadoAnterior,
-          estadoNuevo: item.estadoNuevo,
-          tecnico: item.tecnicoNombre || item.tecnicoAsignado
-        }));
+        // Generar historial completo como en la web
+        const historialCompleto: any[] = [];
         
-        setHistorial(mappedHistorial);
+        // 1. Evento de creación del ticket (siempre primero)
+        if (ticketInfo) {
+          historialCompleto.push({
+            id: 'creacion',
+            fecha: ticketInfo.fechaCreacion,
+            fechaCambio: ticketInfo.fechaCreacion,
+            accion: 'Ticket creado',
+            descripcion: `Ticket creado`,
+            usuario: ticketInfo.creadorNombre || 'Usuario',
+            cambiadoPor: ticketInfo.creadorNombre || 'Usuario',
+            esCreacion: true
+          });
+        }
+        
+        // 2. Procesar asignaciones del ticket - ORDENAR POR FECHA para mostrar cronológicamente
+        const asignacionesOrdenadas = (data || []).sort((a: any, b: any) => 
+          new Date(a.fechaAsignacion).getTime() - new Date(b.fechaAsignacion).getTime()
+        );
+        
+        asignacionesOrdenadas.forEach((item: any, index: number) => {
+          console.log('🔄 [HISTORIAL-MAP] Procesando asignación:', item);
+          
+          let accion = '';
+          let descripcion = '';
+          let nombreTecnico = item.tecnicoNombre;
+          
+          // Si no hay nombre, intentar obtenerlo del tecnicoAsignado del ticket
+          if (!nombreTecnico && ticketInfo && ticketInfo.tecnicoAsignado) {
+            nombreTecnico = ticketInfo.tecnicoAsignado;
+          }
+          
+          // Determinar el tipo de operación basado en tipoOperacion
+          // Si tipoOperacion es null, inferir del contexto
+          let tipoOp = item.tipoOperacion;
+          
+          // Inferir tipo de operación si es null
+          if (!tipoOp) {
+            if (index === 0 && item.activa) {
+              tipoOp = 'ASIGNACION'; // Primera asignación
+            } else if (!item.activa) {
+              tipoOp = 'REASIGNAR'; // Si no está activa, fue reasignada
+            } else {
+              // Si es activa y no es la primera, probablemente es escalamiento
+              tipoOp = 'ESCALAMIENTO';
+            }
+          }
+          
+          if (tipoOp === 'ESCALAMIENTO') {
+            accion = 'Escalado';
+            descripcion = `Escalado a ${nombreTecnico || item.tecnicoEmail || 'Técnico'}`;
+          } else if (tipoOp === 'REASIGNAR') {
+            accion = 'Reasignado';
+            descripcion = `Reasignado a ${nombreTecnico || item.tecnicoEmail || 'Técnico'}`;
+          } else {
+            accion = 'Asignado';
+            descripcion = `Asignado a ${nombreTecnico || item.tecnicoEmail || 'Técnico'}`;
+          }
+          
+          historialCompleto.push({
+            id: item.id,
+            fecha: item.fechaAsignacion,
+            fechaCambio: item.fechaAsignacion,
+            accion: accion,
+            descripcion: descripcion,
+            usuario: item.asignadoPor || 'Sistema',
+            cambiadoPor: item.asignadoPor || 'Sistema',
+            tecnico: nombreTecnico,
+            tipoOperacion: tipoOp, // Usar el tipoOp procesado
+            esAsignacion: true,
+            activa: item.activa
+          });
+        });
+        
+        // 3. Agregar estado actual al final SOLO si no hay eventos recientes de escalación
+        if (ticketInfo) {
+          // Verificar si el último evento es una escalación reciente (últimos 5 minutos)
+          const ultimoEvento = historialCompleto[historialCompleto.length - 1];
+          const ahora = new Date();
+          const hace5Minutos = new Date(ahora.getTime() - 5 * 60 * 1000);
+          
+          const esEscalacionReciente = ultimoEvento && 
+            ultimoEvento.tipoOperacion === 'ESCALAMIENTO' && 
+            new Date(ultimoEvento.fecha) > hace5Minutos;
+          
+          // Solo agregar "Estado actual" si NO hay una escalación reciente
+          if (!esEscalacionReciente) {
+            historialCompleto.push({
+              id: 'estado-actual',
+              fecha: ticketInfo.fechaActualizacion,
+              fechaCambio: ticketInfo.fechaActualizacion,
+              accion: 'Estado actual',
+              descripcion: `Estado: ${ticketInfo.estado}`,
+              usuario: 'Sistema',
+              cambiadoPor: 'Sistema',
+              estadoActual: ticketInfo.estado,
+              esEstadoActual: true
+            });
+          }
+        }
+        
+        console.log('📜 [HISTORIAL] Historial completo generado:', historialCompleto);
+        setHistorial(historialCompleto);
       } else {
         console.warn('⚠️ [HISTORIAL] No se pudo cargar el historial:', response.status);
         setHistorial([]); // Inicializar con array vacío
@@ -512,8 +742,16 @@ export default function TicketTrackingScreen() {
 
   const loadEvidencias = async () => {
     try {
+      console.log('📎 [EVIDENCIAS] ===== INICIANDO loadEvidencias =====');
+      console.log('📎 [EVIDENCIAS] Ticket ID:', ticketId);
       const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:8080/api/evidencias/ticket/${ticketId}`, {
+      console.log('📎 [EVIDENCIAS] Token presente:', !!token);
+      
+      // Cargar evidencias de chat (archivos_ticket)
+      let evidenciasDelChat: any[] = [];
+      try {
+        console.log('💬 [EVIDENCIAS CHAT] Cargando archivos del chat...');
+        const responseChatFiles = await fetch(`http://localhost:8080/api/archivos-ticket/ticket/${ticketId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -521,16 +759,64 @@ export default function TicketTrackingScreen() {
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setEvidencias(data || []);
-      } else {
-        console.warn('⚠️ [EVIDENCIAS] No se pudieron cargar las evidencias:', response.status);
-        setEvidencias([]); // Inicializar con array vacío
+        if (responseChatFiles.ok) {
+          const dataChatFiles = await responseChatFiles.json();
+          if (Array.isArray(dataChatFiles) && dataChatFiles.length > 0) {
+            evidenciasDelChat = dataChatFiles;
+            console.log('✅ [EVIDENCIAS CHAT] Archivos de chat encontrados:', evidenciasDelChat.length);
+          }
+        }
+      } catch (err) {
+        console.log('⚠️ [EVIDENCIAS CHAT] No se pudieron cargar archivos del chat:', err);
       }
+      
+      // Cargar evidencias finales (tabla evidencias)
+      let evidenciasFinalesData: any[] = [];
+      try {
+        console.log('📋 [EVIDENCIAS FINALES] Cargando evidencias finales...');
+        const responseEvidenciasFinales = await fetch(`http://localhost:8080/api/evidencias/movil/ticket/${ticketId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (responseEvidenciasFinales.ok) {
+          const responseData = await responseEvidenciasFinales.json();
+          let data = responseData;
+          
+          // Si la respuesta tiene el formato {success, data, message}
+          if (responseData.success !== undefined && responseData.data !== undefined) {
+            data = responseData.data;
+          }
+          
+          if (Array.isArray(data) && data.length > 0) {
+            evidenciasFinalesData = data;
+            console.log('✅ [EVIDENCIAS FINALES] Evidencias finales encontradas:', evidenciasFinalesData.length);
+          }
+        }
+      } catch (err) {
+        console.log('⚠️ [EVIDENCIAS FINALES] No se pudieron cargar evidencias finales:', err);
+      }
+      
+      // Actualizar estados
+      setEvidenciasChat(evidenciasDelChat);
+      setEvidenciasFinales(evidenciasFinalesData);
+      
+      // Por compatibilidad, mantener el array combinado
+      const todasLasEvidencias = [...evidenciasDelChat, ...evidenciasFinalesData];
+      setEvidencias(todasLasEvidencias);
+      
+      console.log('📎 [EVIDENCIAS] Total evidencias de chat:', evidenciasDelChat.length);
+      console.log('📎 [EVIDENCIAS] Total evidencias finales:', evidenciasFinalesData.length);
+      console.log('📎 [EVIDENCIAS] Total combinadas:', todasLasEvidencias.length);
+      
     } catch (error) {
-      console.error('❌ [EVIDENCIAS] Error cargando evidencias:', error);
-      setEvidencias([]); // Inicializar con array vacío
+      console.error('❌ [EVIDENCIAS] Error general cargando evidencias:', error);
+      setEvidencias([]);
+      setEvidenciasChat([]);
+      setEvidenciasFinales([]);
     }
   };
 
@@ -555,6 +841,9 @@ export default function TicketTrackingScreen() {
   const sendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
 
+    // Guardar el mensaje antes de limpiar el campo
+    const messageText = newMessage.trim();
+
     try {
       setIsSending(true);
       const token = await AsyncStorage.getItem('authToken');
@@ -574,7 +863,7 @@ export default function TicketTrackingScreen() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          mensaje: newMessage.trim(),
+          mensaje: messageText,
           usuario_id: userData.id || userData.idUsuario
         })
       });
@@ -584,7 +873,6 @@ export default function TicketTrackingScreen() {
         console.log('✅ [CHAT] Mensaje enviado:', newComment);
         
         // Agregar el mensaje a la lista local inmediatamente
-        const messageText = newMessage.trim();
         const localMessage = {
           id: newComment.id || Date.now(),
           autor: userData.nombre || 'Tú',
@@ -633,9 +921,41 @@ export default function TicketTrackingScreen() {
     }
   };
 
+  const mostrarConfirmacion = (title: string, message: string, confirmText: string, onConfirm: () => void) => {
+    setConfirmModalConfig({ title, message, confirmText, onConfirm });
+    setShowConfirmModal(true);
+  };
+
+  const cerrarConfirmacion = () => {
+    setShowConfirmModal(false);
+    setConfirmModalConfig(null);
+  };
+
+  const confirmarAccion = () => {
+    if (confirmModalConfig?.onConfirm) {
+      confirmModalConfig.onConfirm();
+    }
+    cerrarConfirmacion();
+  };
+
   const cambiarEstadoTicket = async (nuevoEstado: string) => {
     try {
+      console.log('🔄 [CAMBIO ESTADO] ===== INICIANDO CAMBIO DE ESTADO =====');
+      console.log('🔄 [CAMBIO ESTADO] Ticket ID:', ticketId);
+      console.log('🔄 [CAMBIO ESTADO] Estado anterior:', ticketInfo?.estado);
+      console.log('🔄 [CAMBIO ESTADO] Estado nuevo:', nuevoEstado);
+      
       const token = await AsyncStorage.getItem('authToken');
+      console.log('🔄 [CAMBIO ESTADO] Token presente:', !!token);
+      
+      const requestBody = {
+        ticketId: ticketId,
+        nuevoEstado: nuevoEstado,
+        comentarios: `Estado cambiado a ${nuevoEstado}`
+      };
+      
+      console.log('🔄 [CAMBIO ESTADO] Request body:', JSON.stringify(requestBody, null, 2));
+      console.log('🔄 [CAMBIO ESTADO] URL:', 'http://localhost:8080/api/tecnico/tickets/cambiar-estado');
       
       const response = await fetch(`http://localhost:8080/api/tecnico/tickets/cambiar-estado`, {
         method: 'PUT',
@@ -643,23 +963,45 @@ export default function TicketTrackingScreen() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ticketId: ticketId,
-          nuevoEstado: nuevoEstado,
-          comentarios: `Estado cambiado a ${nuevoEstado}`
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('🔄 [CAMBIO ESTADO] Response status:', response.status);
+      console.log('🔄 [CAMBIO ESTADO] Response ok:', response.ok);
+
       if (response.ok) {
-        Alert.alert('Éxito', `Estado cambiado a ${nuevoEstado}`);
+        const data = await response.json();
+        console.log('✅ [CAMBIO ESTADO] Respuesta exitosa:', data);
+        console.log('✅ [CAMBIO ESTADO] Nuevo estado confirmado:', data.estado);
+        
+        Alert.alert('✅ Éxito', `El ticket ha sido marcado como ${nuevoEstado}`);
+        
         // Recargar datos
+        console.log('🔄 [CAMBIO ESTADO] Recargando datos del ticket...');
         await loadInitialData();
+        console.log('✅ [CAMBIO ESTADO] Datos recargados exitosamente');
       } else {
-        Alert.alert('Error', 'No se pudo cambiar el estado');
+        const errorText = await response.text();
+        console.error('❌ [CAMBIO ESTADO] Error response status:', response.status);
+        console.error('❌ [CAMBIO ESTADO] Error response text:', errorText);
+        
+        let errorMessage = 'No se pudo cambiar el estado del ticket.';
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch (e) {
+          if (errorText && errorText.length < 200) {
+            errorMessage = errorText;
+          }
+        }
+        
+        Alert.alert('❌ Error', errorMessage);
       }
-    } catch (error) {
-      console.error('Error cambiando estado:', error);
-      Alert.alert('Error', 'Error de conexión');
+    } catch (error: any) {
+      console.error('❌ [CAMBIO ESTADO] Error exception:', error);
+      console.error('❌ [CAMBIO ESTADO] Error message:', error?.message);
+      console.error('❌ [CAMBIO ESTADO] Error stack:', error?.stack);
+      Alert.alert('❌ Error', error?.message || 'Error de conexión al cambiar el estado');
     }
   };
 
@@ -668,7 +1010,7 @@ export default function TicketTrackingScreen() {
       case 'PENDIENTE': return '#ff9800';
       case 'ASIGNADO': return '#2196f3';
       case 'EN_PROCESO': return '#ff5722';
-      case 'TERMINADO': return '#4caf50';
+      case 'RESUELTO': return '#4caf50';
       case 'CERRADO': return '#9e9e9e';
       default: return '#666';
     }
@@ -693,136 +1035,242 @@ export default function TicketTrackingScreen() {
     });
   };
 
-  const renderTicketInfo = () => (
+  const renderTicketInfo = () => {
+    console.log('🖼️ [RENDER INFO] ===== RENDERIZANDO INFORMACIÓN DEL TICKET =====');
+    console.log('🖼️ [RENDER INFO] ticketInfo:', ticketInfo);
+    console.log('🖼️ [RENDER INFO] Estado del ticket:', ticketInfo?.estado);
+    console.log('🖼️ [RENDER INFO] ID del ticket:', ticketInfo?.id);
+    
+    return (
     <View style={styles.tabContent}>
       {ticketInfo && (
         <>
-          {/* Información básica */}
+          {/* Título e ID */}
+          <View style={styles.ticketHeader}>
+            <Text style={styles.ticketId}>#{ticketInfo.id}</Text>
+            <Text style={styles.ticketAsunto}>{ticketInfo.asunto}</Text>
+          </View>
+
+          {/* Información básica en cards */}
           <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Información del ticket</Text>
+            <Text style={styles.sectionTitle}>📋 Información del Ticket</Text>
             
-            <View style={styles.infoRow}>
+            <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>ID:</Text>
-              <Text style={styles.infoValue}>#{ticketInfo.id}</Text>
+              <Text style={styles.infoValueBold}>#{ticketInfo.id}</Text>
             </View>
             
-            <View style={styles.infoRow}>
+            <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>Asunto:</Text>
               <Text style={styles.infoValue}>{ticketInfo.asunto}</Text>
             </View>
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Descripción:</Text>
-              <Text style={styles.infoValue}>{ticketInfo.descripcion}</Text>
-            </View>
-            
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Categoría:</Text>
-              <Text style={styles.infoValue}>{ticketInfo.categoria}</Text>
-            </View>
-            
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Ubicación:</Text>
-              <Text style={styles.infoValue}>{ticketInfo.ubicacion || 'No especificada'}</Text>
-            </View>
-            
-            <View style={styles.infoRow}>
+            <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>Prioridad:</Text>
               <View style={[styles.priorityBadge, { backgroundColor: getPrioridadColor(ticketInfo.prioridad) }]}>
-                <Text style={styles.priorityText}>{ticketInfo.prioridad}</Text>
+                <Text style={styles.priorityText}>{ticketInfo.prioridad?.toUpperCase()}</Text>
               </View>
             </View>
             
-            <View style={styles.infoRow}>
+            <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>Estado:</Text>
               <View style={[styles.statusBadge, { backgroundColor: getEstadoColor(ticketInfo.estado) }]}>
                 <Text style={styles.statusText}>{ticketInfo.estado}</Text>
               </View>
             </View>
             
-            <View style={styles.infoRow}>
+            <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>Técnico:</Text>
               <Text style={styles.infoValue}>{ticketInfo.tecnicoAsignado || 'Sin asignar'}</Text>
             </View>
             
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Creado:</Text>
+            <View style={styles.infoCard}>
+              <Text style={styles.infoLabel}>Ubicación:</Text>
+              <Text style={styles.infoValue}>{ticketInfo.ubicacion || 'No especificada'}</Text>
+            </View>
+
+            <View style={styles.infoCard}>
+              <Text style={styles.infoLabel}>Categoría:</Text>
+              <Text style={styles.infoValue}>{ticketInfo.categoria}</Text>
+            </View>
+            
+            <View style={styles.infoCard}>
+              <Text style={styles.infoLabel}>Descripción:</Text>
+              <Text style={styles.infoValueMultiline}>{ticketInfo.descripcion}</Text>
+            </View>
+            
+            <View style={styles.infoCard}>
+              <Text style={styles.infoLabel}>Fecha de Creación:</Text>
               <Text style={styles.infoValue}>{formatDate(ticketInfo.fechaCreacion)}</Text>
             </View>
           </View>
 
           {/* Acciones del técnico */}
           <View style={styles.actionsSection}>
-            <Text style={styles.sectionTitle}>Acciones</Text>
+            <Text style={styles.sectionTitle}>⚡ Acciones Rápidas</Text>
             
+            {/* Debug: Mostrar estado actual */}
+            {(() => {
+              console.log('🎯 [RENDER ACCIONES] Estado actual para botones:', ticketInfo.estado);
+              console.log('🎯 [RENDER ACCIONES] ¿Es PENDIENTE?:', ticketInfo.estado === 'PENDIENTE');
+              console.log('🎯 [RENDER ACCIONES] ¿Es ASIGNADO?:', ticketInfo.estado === 'ASIGNADO');
+              console.log('🎯 [RENDER ACCIONES] ¿Es EN_PROCESO?:', ticketInfo.estado === 'EN_PROCESO');
+              console.log('🎯 [RENDER ACCIONES] ¿Es RESUELTO?:', ticketInfo.estado === 'RESUELTO');
+              console.log('🎯 [RENDER ACCIONES] ¿Es CERRADO?:', ticketInfo.estado === 'CERRADO');
+              return null;
+            })()}
+            
+            {/* Estado PENDIENTE - No debería llegar aquí normalmente */}
             {ticketInfo.estado === 'PENDIENTE' && (
+              <View style={styles.infoBadge}>
+                <Text style={styles.infoBadgeText}>⏳ Ticket Pendiente</Text>
+                <Text style={styles.infoMessage}>
+                  Este ticket está pendiente de asignación.
+                </Text>
+              </View>
+            )}
+            
+            {/* Estado ASIGNADO - Primer paso: Iniciar trabajo */}
+            {ticketInfo.estado === 'ASIGNADO' && (
               <TouchableOpacity 
-                style={[styles.actionButton, styles.acceptButton]}
-                onPress={() => cambiarEstadoTicket('EN_PROCESO')}
+                style={[styles.actionButton, styles.startButton]}
+                onPress={() => {
+                  console.log('🔘 [BOTÓN] Botón "Iniciar Trabajo" presionado');
+                  console.log('🔘 [BOTÓN] Estado actual del ticket:', ticketInfo.estado);
+                  console.log('🔘 [BOTÓN] Mostrando modal de confirmación...');
+                  
+                  mostrarConfirmacion(
+                    '🚀 Iniciar Trabajo',
+                    '¿Deseas comenzar a trabajar en este ticket? El estado cambiará a "EN PROCESO".',
+                    'Iniciar',
+                    () => {
+                      console.log('🔘 [BOTÓN] Usuario confirmó - Llamando a cambiarEstadoTicket("EN_PROCESO")');
+                      cambiarEstadoTicket('EN_PROCESO');
+                    }
+                  );
+                }}
               >
-                <Text style={styles.actionButtonText}>Aceptar Ticket</Text>
+                <Text style={styles.actionButtonText}>🚀 Iniciar Trabajo</Text>
               </TouchableOpacity>
             )}
             
+            {/* Estado EN_PROCESO - Segundo paso: Resolver ticket */}
             {ticketInfo.estado === 'EN_PROCESO' && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.completeButton]}
-                onPress={() => cambiarEstadoTicket('TERMINADO')}
+                onPress={() => {
+                  console.log('🔘 [BOTÓN] Botón "Resolver Ticket" presionado');
+                  console.log('🔘 [BOTÓN] Estado actual del ticket:', ticketInfo.estado);
+                  console.log('🔘 [BOTÓN] Mostrando modal de confirmación...');
+                  
+                  mostrarConfirmacion(
+                    '✅ Resolver Ticket',
+                    '¿Estás seguro de que quieres marcar este ticket como resuelto?\n\nAsegúrate de haber subido todas las evidencias finales necesarias.',
+                    'Resolver',
+                    () => {
+                      console.log('🔘 [BOTÓN] Usuario confirmó - Llamando a cambiarEstadoTicket("RESUELTO")');
+                      cambiarEstadoTicket('RESUELTO');
+                    }
+                  );
+                }}
               >
-                <Text style={styles.actionButtonText}>Finalizar Ticket</Text>
+                <Text style={styles.actionButtonText}>✅ Resolver Ticket</Text>
               </TouchableOpacity>
             )}
             
-            {ticketInfo.estado === 'TERMINADO' && (
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.closeButton]}
-                onPress={() => cambiarEstadoTicket('CERRADO')}
-              >
-                <Text style={styles.actionButtonText}>Cerrar Ticket</Text>
-              </TouchableOpacity>
+            {/* Estado RESUELTO - Mostrar badge de éxito */}
+            {ticketInfo.estado === 'RESUELTO' && (
+              <View>
+                <View style={styles.completedBadge}>
+                  <Text style={styles.completedBadgeText}>✓ Ticket Resuelto</Text>
+                </View>
+                <Text style={styles.completedMessage}>
+                  Este ticket ha sido marcado como resuelto y está esperando aprobación del administrador.
+                </Text>
+              </View>
+            )}
+            
+            {/* Estado CERRADO - Badge final */}
+            {ticketInfo.estado === 'CERRADO' && (
+              <View>
+                <View style={styles.closedBadge}>
+                  <Text style={styles.closedBadgeText}>✓ Ticket Cerrado</Text>
+                </View>
+                <Text style={styles.completedMessage}>
+                  Este ticket ha sido cerrado y completado.
+                </Text>
+              </View>
             )}
           </View>
         </>
       )}
     </View>
   );
+  };
 
-  const renderHistorial = () => (
+  const renderHistorial = () => {
+    console.log('🖼️ [RENDER] Renderizando historial, cantidad:', historial.length);
+    return (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Historial del Ticket</Text>
+        <Text style={styles.sectionTitle}>📜 Historial Completo del Ticket</Text>
       {historial.length > 0 ? (
+          <>
+            <Text style={styles.historialCount}>
+              Mostrando {historial.length} eventos del historial
+            </Text>
         <ScrollView style={styles.historialList}>
-          {historial.map((item, index) => (
+              {historial.map((item, index) => {
+                console.log('🖼️ [RENDER] Item historial:', item);
+                
+                // Determinar el tipo de evento
+                const esCreacion = item.esCreacion;
+                const esAsignacion = item.esAsignacion;
+                const esEstadoActual = item.esEstadoActual;
+                
+                // Determinar color del punto
+                let dotStyle = styles.historialDot;
+                if (esCreacion) {
+                  dotStyle = styles.historialDotCreacion;
+                } else if (esAsignacion && item.tipoOperacion === 'ESCALAMIENTO') {
+                  dotStyle = styles.historialDotEscalamiento;
+                } else if (esAsignacion) {
+                  dotStyle = styles.historialDotAsignacion;
+                } else if (esEstadoActual) {
+                  dotStyle = styles.historialDotEstadoActual;
+                }
+                
+                return (
             <View key={item.id || index} style={styles.historialItem}>
-              <View style={styles.historialDot} />
+                    <View style={dotStyle} />
               <View style={styles.historialContent}>
-                <Text style={styles.historialTitle}>{item.accion || item.estado}</Text>
+                      <Text style={styles.historialTitle}>
+                        {item.accion}
+                      </Text>
+                      
                 {item.descripcion && (
-                  <Text style={styles.historialComment}>{item.descripcion}</Text>
-                )}
-                {item.estadoAnterior && item.estadoNuevo && (
-                  <View style={styles.estadoChange}>
-                    <Text style={styles.estadoAnterior}>{item.estadoAnterior}</Text>
-                    <Text style={styles.estadoArrow}>→</Text>
-                    <Text style={styles.estadoNuevo}>{item.estadoNuevo}</Text>
+                        <Text style={styles.historialDescription}>
+                          {item.descripcion}
+                        </Text>
+                      )}
+                      
+                      <Text style={styles.historialDate}>
+                        {formatDate(item.fecha || item.fechaCambio || new Date().toISOString())}
+                      </Text>
                   </View>
-                )}
-                <Text style={styles.historialDate}>{formatDate(item.fecha || item.fechaCambio)}</Text>
-                <Text style={styles.historialAuthor}>Por: {item.usuario || item.cambiadoPor}</Text>
-                {item.tecnico && (
-                  <Text style={styles.historialTecnico}>Técnico: {item.tecnico}</Text>
-                )}
               </View>
-            </View>
-          ))}
+                );
+              })}
         </ScrollView>
+          </>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No hay historial disponible</Text>
+            <Text style={styles.emptyText}>📋 No hay historial disponible</Text>
+            <Text style={styles.emptySubtext}>Los eventos del ticket aparecerán aquí</Text>
         </View>
       )}
     </View>
   );
+  };
 
   const renderChat = () => (
     <View style={styles.tabContent}>
@@ -832,22 +1280,36 @@ export default function TicketTrackingScreen() {
         showsVerticalScrollIndicator={false}
       >
         {messages.map((message, index) => {
-          const isMyMessage = message.autor === userEmail || message.esTecnico;
+          const isTechnician = message.esTecnico || message.tipoAutor === 'TECNICO';
+          console.log('🔍 Mensaje:', { 
+            id: message.id, 
+            autor: message.autor, 
+            esTecnico: message.esTecnico,
+            tipoAutor: message.tipoAutor,
+            isTechnician 
+          });
+          
           return (
             <View key={message.id || index} style={[
               styles.messageContainer,
-              isMyMessage ? styles.myMessage : styles.otherMessage
+              isTechnician ? styles.technicianMessage : styles.userMessage
             ]}>
               <View style={styles.messageHeader}>
-                <Text style={styles.messageAuthor}>
-                  {isMyMessage ? 'Tú' : message.autor}
+                <Text style={[
+                  styles.messageAuthor,
+                  isTechnician ? styles.technicianAuthor : styles.userAuthor
+                ]}>
+                  {isTechnician ? '👨‍🔧 Técnico' : '👤 Usuario'}
                 </Text>
-                {message.esTecnico && (
-                  <Text style={styles.technicianBadge}>Técnico</Text>
-                )}
               </View>
-              <Text style={styles.messageText}>{message.mensaje}</Text>
-              <Text style={styles.messageTime}>{formatDate(message.fechaCreacion)}</Text>
+              <Text style={[
+                styles.messageText,
+                isTechnician ? styles.technicianText : styles.userText
+              ]}>{message.mensaje}</Text>
+              <Text style={[
+                styles.messageTime,
+                isTechnician ? styles.technicianTime : styles.userTime
+              ]}>{formatDate(message.fechaCreacion)}</Text>
             </View>
           );
         })}
@@ -880,38 +1342,290 @@ export default function TicketTrackingScreen() {
     </View>
   );
 
-  const renderEvidencias = () => (
+  const handlePreviewArchivo = async (evidencia: EvidenciaItem) => {
+    try {
+      console.log('👁️ [PREVIEW] Previsualizando archivo:', evidencia);
+      
+      const token = await AsyncStorage.getItem('authToken');
+      let url = '';
+      
+      // Determinar la URL de previsualización
+      if (evidencia.id || evidencia.idArchivo) {
+        // Es un archivo de la tabla archivos_ticket
+        const archivoId = evidencia.id || evidencia.idArchivo;
+        url = `http://localhost:8080/api/archivos-ticket/preview/${ticketId}/${archivoId}`;
+      } else if (evidencia.idEvidencia) {
+        // Es una evidencia de la tabla evidencias
+        url = `http://localhost:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/preview`;
+      }
+      
+      console.log('👁️ [PREVIEW] URL de previsualización:', url);
+      
+      if (url) {
+        const esImagen = evidencia.esImagen || evidencia.tipoMime?.startsWith('image/');
+        const esPDF = evidencia.esPDF || evidencia.tipoMime?.includes('pdf');
+        
+        if (esImagen) {
+          // Para imágenes, cargar como blob y mostrar en modal
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            console.log('✅ [PREVIEW] Blob URL creado para imagen:', blobUrl);
+            
+            setPreviewUrl(blobUrl);
+            setArchivoEnPreview(evidencia);
+            setShowPreviewModal(true);
+          }
+        } else if (esPDF) {
+          // Para PDFs, cargar como blob y abrir en nueva pestaña
+          console.log('📄 [PREVIEW] Cargando PDF como blob...');
+          const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const arrayBuffer = await response.arrayBuffer();
+            // Crear blob con tipo MIME explícito para que el navegador lo muestre inline
+            const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            console.log('✅ [PREVIEW] PDF Blob creado con tipo application/pdf');
+            console.log('✅ [PREVIEW] Abriendo PDF en nueva pestaña:', blobUrl);
+            
+            // Abrir el blob URL en nueva pestaña - esto muestra el PDF inline
+            const newWindow = window.open(blobUrl, '_blank');
+            
+            if (!newWindow) {
+              Alert.alert('Error', 'Por favor permite ventanas emergentes para ver el PDF');
+            }
+          } else {
+            console.error('❌ [PREVIEW] Error cargando PDF:', response.status);
+            Alert.alert('Error', 'No se pudo cargar el PDF');
+          }
+        } else {
+          // Otros tipos: descargar
+          handleDownloadEvidencia(evidencia);
+        }
+      } else {
+        Alert.alert('Error', 'No se pudo determinar la URL del archivo');
+      }
+      
+    } catch (error) {
+      console.error('❌ [PREVIEW] Error:', error);
+      Alert.alert('Error', 'No se pudo previsualizar el archivo');
+    }
+  };
+
+  const handleDownloadEvidencia = async (evidencia: EvidenciaItem) => {
+    try {
+      console.log('📥 [DOWNLOAD] Descargando archivo:', evidencia);
+      const token = await AsyncStorage.getItem('authToken');
+      
+      let url = '';
+      
+      // Determinar la URL correcta según el tipo de archivo
+      if (evidencia.id || evidencia.idArchivo) {
+        // Es un archivo de la tabla archivos_ticket
+        const archivoId = evidencia.id || evidencia.idArchivo;
+        url = `http://localhost:8080/api/archivos-ticket/descargar/${ticketId}/${archivoId}`;
+      } else if (evidencia.idEvidencia) {
+        // Es una evidencia de la tabla evidencias
+        url = `http://localhost:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/descargar`;
+      }
+      
+      console.log('📥 [DOWNLOAD] URL:', url);
+      
+      // Abrir en nueva pestaña para ver/descargar
+      if (url) {
+        window.open(url, '_blank');
+      } else {
+        Alert.alert('Error', 'No se pudo determinar la URL del archivo');
+      }
+      
+    } catch (error) {
+      console.error('❌ [DOWNLOAD] Error:', error);
+      Alert.alert('Error', 'No se pudo abrir el archivo');
+    }
+  };
+
+  const closePreview = () => {
+    // Liberar la URL del blob
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+      console.log('🗑️ [PREVIEW] Blob URL liberado');
+    }
+    
+    setShowPreviewModal(false);
+    setPreviewUrl(null);
+    setArchivoEnPreview(null);
+  };
+
+  const getFileIcon = (evidencia: EvidenciaItem) => {
+    // Verificar primero los flags booleanos (sistema archivos_ticket)
+    if (evidencia.esImagen) return '🖼️';
+    if (evidencia.esPDF) return '📄';
+    if (evidencia.esVideo) return '🎥';
+    
+    // Si no, verificar por tipoMime
+    const tipo = evidencia.tipoEvidencia || evidencia.tipoArchivo || evidencia.tipoMime || '';
+    const extension = evidencia.extension || evidencia.extensionArchivo || evidencia.nombreArchivo?.split('.').pop() || '';
+    
+    // Verificar por tipo de evidencia
+    if (tipo.toUpperCase() === 'IMAGEN' || tipo.startsWith('image/')) {
+      return '🖼️';
+    } else if (tipo.toUpperCase() === 'VIDEO' || tipo.startsWith('video/')) {
+      return '🎥';
+    } else if (tipo.toUpperCase() === 'DOCUMENTO' || tipo.includes('pdf') || extension.toLowerCase() === 'pdf') {
+      return '📄';
+    } else if (tipo.includes('word') || tipo.includes('doc') || extension.toLowerCase().includes('doc')) {
+      return '📝';
+    } else if (tipo.includes('excel') || tipo.includes('sheet') || extension.toLowerCase().includes('xls')) {
+      return '📊';
+    }
+    return '📁';
+  };
+  
+  const getNombreArchivo = (evidencia: EvidenciaItem) => {
+    return evidencia.nombreCompleto || evidencia.nombreArchivo || evidencia.nombreCompletoArchivo || 'Archivo';
+  };
+  
+  const getTamanoArchivo = (evidencia: EvidenciaItem) => {
+    const bytes = evidencia.tamano || evidencia.tamanioArchivo || evidencia.tamañoArchivo || 0;
+    return (bytes / 1024).toFixed(2) + ' KB';
+  };
+  
+  const getSubidoPor = (evidencia: EvidenciaItem) => {
+    return evidencia.subidoPorNombre || evidencia.subidoPor?.nombre || 'Usuario';
+  };
+
+  const renderEvidencias = () => {
+    const evidenciasActuales = activeEvidenceTab === 'chat' ? evidenciasChat : evidenciasFinales;
+    console.log('🖼️ [RENDER] Renderizando evidencias, tab activo:', activeEvidenceTab, 'cantidad:', evidenciasActuales.length);
+    
+    return (
     <View style={styles.tabContent}>
-      <Text style={styles.sectionTitle}>Evidencias</Text>
-      {evidencias.length > 0 ? (
+        {/* Header */}
+        <Text style={styles.sectionTitle}>📎 Evidencias del Ticket</Text>
+        
+        {/* Tabs de categorías de evidencias */}
+        <View style={styles.evidenceTabsContainer}>
+          <TouchableOpacity 
+            style={[styles.evidenceTab, activeEvidenceTab === 'chat' && styles.activeEvidenceTab]}
+            onPress={() => setActiveEvidenceTab('chat')}
+          >
+            <Text style={[styles.evidenceTabText, activeEvidenceTab === 'chat' && styles.activeEvidenceTabText]}>
+              💬 Evidencias de Chat ({evidenciasChat.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.evidenceTab, activeEvidenceTab === 'finales' && styles.activeEvidenceTab]}
+            onPress={() => setActiveEvidenceTab('finales')}
+          >
+            <Text style={[styles.evidenceTabText, activeEvidenceTab === 'finales' && styles.activeEvidenceTabText]}>
+              📋 Evidencias Finales ({evidenciasFinales.length})
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Botón de subir solo para evidencias finales */}
+        {activeEvidenceTab === 'finales' && (
+          <TouchableOpacity 
+            style={styles.uploadEvidenceButton}
+            onPress={() => setShowUploadEvidenceModal(true)}
+          >
+            <Text style={styles.uploadEvidenceButtonText}>+ Subir Evidencia Final</Text>
+          </TouchableOpacity>
+        )}
+
+      {evidenciasActuales.length > 0 ? (
         <ScrollView style={styles.evidenciasList}>
-          {evidencias.map((evidencia, index) => (
-            <View key={evidencia.idEvidencia || index} style={styles.evidenciaItem}>
-              <View style={styles.evidenciaIcon}>
-                <Text style={styles.evidenciaIconText}>
-                  {evidencia.tipoArchivo?.startsWith('image/') ? '🖼️' : 
-                   evidencia.tipoArchivo?.startsWith('video/') ? '🎥' : '📄'}
+            {evidenciasActuales.map((evidencia, index) => {
+              console.log('🖼️ [RENDER] Evidencia/Archivo:', evidencia);
+              return (
+                <View 
+                  key={evidencia.id || evidencia.idEvidencia || evidencia.idArchivo || index} 
+                  style={styles.evidenciaCard}
+                >
+                  {/* Icono y tipo */}
+                  <View style={styles.evidenciaIconLarge}>
+                    <Text style={styles.evidenciaIconLargeText}>
+                      {getFileIcon(evidencia)}
                 </Text>
               </View>
-              <View style={styles.evidenciaContent}>
-                <Text style={styles.evidenciaTitle}>{evidencia.nombreCompletoArchivo}</Text>
+                  
+                  {/* Información */}
+                  <View style={styles.evidenciaInfo}>
+                    <Text style={styles.evidenciaTitleLarge}>
+                      {getNombreArchivo(evidencia)}
+                    </Text>
+                    {(evidencia.descripcion || evidencia.comentario) && (
+                      <Text style={styles.evidenciaDescription}>
+                        {evidencia.descripcion || evidencia.comentario}
+                      </Text>
+                    )}
                 <Text style={styles.evidenciaSubtitle}>
-                  Subido por: {evidencia.subidoPor.nombre}
+                      👤 {getSubidoPor(evidencia)}
                 </Text>
                 <Text style={styles.evidenciaDate}>
-                  {formatDate(evidencia.fechaSubida)}
+                      📅 {formatDate(evidencia.fechaSubida || new Date().toISOString())}
+                    </Text>
+                    <Text style={styles.evidenciaSize}>
+                      💾 {getTamanoArchivo(evidencia)}
                 </Text>
               </View>
+                  
+                  {/* Acciones */}
+                  <View style={styles.evidenciaActions}>
+                    <TouchableOpacity 
+                      style={styles.evidenciaActionButton}
+                      onPress={() => handlePreviewArchivo(evidencia)}
+                    >
+                      <Text style={styles.evidenciaActionIcon}>👁️</Text>
+                      <Text style={styles.evidenciaActionLabel}>Ver</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.evidenciaActionButton}
+                      onPress={() => handleDownloadEvidencia(evidencia)}
+                    >
+                      <Text style={styles.evidenciaActionIcon}>📥</Text>
+                      <Text style={styles.evidenciaActionLabel}>Descargar</Text>
+                    </TouchableOpacity>
             </View>
-          ))}
+                </View>
+              );
+            })}
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No hay evidencias disponibles</Text>
+            <Text style={styles.emptyStateIcon}>
+              {activeEvidenceTab === 'chat' ? '💬' : '📋'}
+            </Text>
+            <Text style={styles.emptyText}>
+              {activeEvidenceTab === 'chat' 
+                ? 'No hay archivos del chat'
+                : 'No hay evidencias finales'}
+            </Text>
+            <Text style={styles.emptySubtext}>
+              {activeEvidenceTab === 'chat'
+                ? 'Los archivos compartidos en el chat aparecerán aquí'
+                : 'Sube evidencias finales para documentar la resolución del ticket'}
+            </Text>
+            {activeEvidenceTab === 'finales' && (
+              <TouchableOpacity 
+                style={styles.emptyStateButton}
+                onPress={() => setShowUploadEvidenceModal(true)}
+              >
+                <Text style={styles.emptyStateButtonText}>+ Subir Evidencia Final</Text>
+              </TouchableOpacity>
+            )}
         </View>
       )}
     </View>
   );
+  };
 
   if (isLoading) {
     return (
@@ -937,11 +1651,13 @@ export default function TicketTrackingScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>❌ No se pudo cargar el ticket</Text>
           <Text style={styles.errorMessage}>
-            No tienes permisos para ver este ticket o el ticket no existe.
+            {errorMessage || 'No tienes permisos para ver este ticket o el ticket no existe.'}
           </Text>
+          {!errorMessage && (
           <Text style={styles.errorSubMessage}>
             Solo puedes ver tickets que te han sido asignados.
           </Text>
+          )}
           <TouchableOpacity 
             style={styles.retryButton} 
             onPress={() => navigation.goBack()}
@@ -953,14 +1669,12 @@ export default function TicketTrackingScreen() {
     );
   }
 
+  // Si el ticket está RESUELTO o CERRADO, mostrar solo pantalla informativa simple
+  if (ticketInfo.estado === 'RESUELTO' || ticketInfo.estado === 'CERRADO') {
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Volver</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Ticket #{ticketId}</Text>
@@ -971,6 +1685,98 @@ export default function TicketTrackingScreen() {
           <Text style={styles.refreshButtonText}>🔄</Text>
         </TouchableOpacity>
       </View>
+
+        <ScrollView 
+          style={styles.content}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          <View style={styles.resolvedTicketContainer}>
+            {/* Badge de estado */}
+            <View style={ticketInfo.estado === 'RESUELTO' ? styles.resolvedBadgeLarge : styles.closedBadgeLarge}>
+              <Text style={styles.resolvedIconLarge}>
+                {ticketInfo.estado === 'RESUELTO' ? '✅' : '🔒'}
+              </Text>
+              <Text style={styles.resolvedTitleLarge}>
+                {ticketInfo.estado === 'RESUELTO' ? 'Ticket Resuelto' : 'Ticket Cerrado'}
+              </Text>
+              <Text style={styles.resolvedSubtitleLarge}>
+                {ticketInfo.estado === 'RESUELTO' 
+                  ? 'Este ticket ha sido marcado como resuelto y está esperando aprobación del administrador.'
+                  : 'Este ticket ha sido completado y cerrado.'}
+              </Text>
+            </View>
+
+            {/* Información básica del ticket */}
+            <View style={styles.resolvedInfoCard}>
+              <Text style={styles.resolvedInfoTitle}>📋 Información del Ticket</Text>
+              
+              <View style={styles.resolvedInfoRow}>
+                <Text style={styles.resolvedInfoLabel}>ID:</Text>
+                <Text style={styles.resolvedInfoValue}>#{ticketInfo.id}</Text>
+              </View>
+              
+              <View style={styles.resolvedInfoRow}>
+                <Text style={styles.resolvedInfoLabel}>Asunto:</Text>
+                <Text style={styles.resolvedInfoValue}>{ticketInfo.asunto}</Text>
+              </View>
+              
+              <View style={styles.resolvedInfoRow}>
+                <Text style={styles.resolvedInfoLabel}>Estado:</Text>
+                <View style={[styles.statusBadge, { backgroundColor: getEstadoColor(ticketInfo.estado) }]}>
+                  <Text style={styles.statusText}>{ticketInfo.estado}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.resolvedInfoRow}>
+                <Text style={styles.resolvedInfoLabel}>Técnico:</Text>
+                <Text style={styles.resolvedInfoValue}>{ticketInfo.tecnicoAsignado || 'Sin asignar'}</Text>
+              </View>
+              
+              <View style={styles.resolvedInfoRow}>
+                <Text style={styles.resolvedInfoLabel}>Fecha Creación:</Text>
+                <Text style={styles.resolvedInfoValue}>{formatDate(ticketInfo.fechaCreacion)}</Text>
+              </View>
+              
+              <View style={styles.resolvedInfoRow}>
+                <Text style={styles.resolvedInfoLabel}>Última Actualización:</Text>
+                <Text style={styles.resolvedInfoValue}>{formatDate(ticketInfo.fechaActualizacion)}</Text>
+              </View>
+            </View>
+
+            {/* Mensaje informativo */}
+            <View style={styles.resolvedMessageCard}>
+              <Text style={styles.resolvedMessageIcon}>ℹ️</Text>
+              <Text style={styles.resolvedMessageText}>
+                {ticketInfo.estado === 'RESUELTO'
+                  ? 'El ticket está completado y en espera de revisión. No se pueden realizar más cambios.'
+                  : 'El ticket ha sido cerrado. No se pueden realizar más cambios.'}
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Botón flotante para volver */}
+      <TouchableOpacity 
+        style={styles.backButtonFloat}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.backButtonFloatText}>←</Text>
+      </TouchableOpacity>
+
+      {/* Botón flotante para refrescar */}
+      <TouchableOpacity 
+        style={styles.refreshButtonFloat}
+        onPress={onRefresh}
+      >
+        <Text style={styles.refreshButtonFloatText}>🔄</Text>
+      </TouchableOpacity>
 
       {/* Tabs */}
       <View style={styles.tabsContainer}>
@@ -1020,6 +1826,117 @@ export default function TicketTrackingScreen() {
         {activeTab === 'chat' && renderChat()}
         {activeTab === 'evidencias' && renderEvidencias()}
       </ScrollView>
+
+      {/* Modal de subir evidencia */}
+      <EvidenceModal
+        visible={showUploadEvidenceModal}
+        onClose={() => setShowUploadEvidenceModal(false)}
+        ticketId={ticketId}
+        isFinalEvidence={activeEvidenceTab === 'finales'}
+        onEvidenceUploaded={() => {
+          setShowUploadEvidenceModal(false);
+          loadEvidencias();
+        }}
+      />
+
+      {/* Modal de confirmación personalizado */}
+      <Modal
+        visible={showConfirmModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={cerrarConfirmacion}
+      >
+        <View style={styles.confirmModalOverlay}>
+          <View style={styles.confirmModalContainer}>
+            {/* Título */}
+            <Text style={styles.confirmModalTitle}>{confirmModalConfig?.title}</Text>
+            
+            {/* Mensaje */}
+            <Text style={styles.confirmModalMessage}>{confirmModalConfig?.message}</Text>
+            
+            {/* Botones */}
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, styles.confirmModalButtonCancel]}
+                onPress={cerrarConfirmacion}
+              >
+                <Text style={styles.confirmModalButtonCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.confirmModalButton, styles.confirmModalButtonConfirm]}
+                onPress={confirmarAccion}
+              >
+                <Text style={styles.confirmModalButtonConfirmText}>
+                  {confirmModalConfig?.confirmText || 'Confirmar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de previsualización */}
+      <Modal
+        visible={showPreviewModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={closePreview}
+      >
+        <View style={styles.previewModalOverlay}>
+          <View style={styles.previewModalContainer}>
+            {/* Header del modal */}
+            <View style={styles.previewHeader}>
+              <View style={styles.previewHeaderInfo}>
+                <Text style={styles.previewHeaderIcon}>
+                  {archivoEnPreview ? getFileIcon(archivoEnPreview) : '📄'}
+                </Text>
+                <View style={styles.previewHeaderText}>
+                  <Text style={styles.previewTitle}>
+                    {archivoEnPreview ? getNombreArchivo(archivoEnPreview) : 'Archivo'}
+                  </Text>
+                  <Text style={styles.previewSubtitle}>
+                    {archivoEnPreview ? `${getTamanoArchivo(archivoEnPreview)} • ${(archivoEnPreview.extension || archivoEnPreview.extensionArchivo || 'FILE').toUpperCase()}` : 'Cargando...'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.previewHeaderActions}>
+                <TouchableOpacity 
+                  style={styles.previewActionButton}
+                  onPress={() => {
+                    if (archivoEnPreview) handleDownloadEvidencia(archivoEnPreview);
+                  }}
+                >
+                  <Text style={styles.previewActionText}>📥</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.previewCloseButton}
+                  onPress={closePreview}
+                >
+                  <Text style={styles.previewCloseText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Contenido de previsualización - Solo para imágenes */}
+            <View style={styles.previewContent}>
+              {archivoEnPreview && previewUrl && typeof previewUrl === 'string' ? (
+                <ScrollView contentContainerStyle={styles.previewScrollContent}>
+                  <Image 
+                    source={{ uri: previewUrl }} 
+                    style={styles.previewImage}
+                    resizeMode="contain"
+                  />
+                </ScrollView>
+              ) : (
+                <View style={styles.previewNotAvailable}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.loadingPreviewText}>Cargando...</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1027,7 +1944,7 @@ export default function TicketTrackingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#0a0a0a', // Fondo oscuro
   },
   header: {
     flexDirection: 'row',
@@ -1035,22 +1952,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a', // Fondo oscuro
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#333333',
   },
   backButton: {
     padding: 8,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#60a5fa', // Azul claro
     fontWeight: '500',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff', // Blanco
   },
   refreshButton: {
     padding: 8,
@@ -1060,9 +1977,9 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#333333',
   },
   tab: {
     flex: 1,
@@ -1072,15 +1989,15 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#007AFF',
+    borderBottomColor: '#60a5fa',
   },
   tabText: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#007AFF',
+    color: '#60a5fa',
     fontWeight: '600',
   },
   content: {
@@ -1089,28 +2006,56 @@ const styles = StyleSheet.create({
   tabContent: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#0a0a0a',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#0a0a0a',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: '#9ca3af',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 16,
   },
+  ticketHeader: {
+    backgroundColor: '#1e40af', // Azul oscuro
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#1e3a8a',
+  },
+  ticketId: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  ticketAsunto: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
   infoSection: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   infoRow: {
     flexDirection: 'row',
@@ -1118,17 +2063,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  infoCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#111111',
+    borderRadius: 8,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#60a5fa',
+  },
   infoLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
     fontWeight: '500',
     flex: 1,
   },
   infoValue: {
     fontSize: 14,
-    color: '#333',
+    color: '#e5e7eb',
     flex: 2,
     textAlign: 'right',
+  },
+  infoValueBold: {
+    fontSize: 14,
+    color: '#60a5fa',
+    fontWeight: 'bold',
+    flex: 2,
+    textAlign: 'right',
+  },
+  infoValueMultiline: {
+    fontSize: 14,
+    color: '#e5e7eb',
+    flex: 2,
+    textAlign: 'right',
+    lineHeight: 20,
   },
   priorityBadge: {
     paddingHorizontal: 8,
@@ -1151,9 +2122,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   actionsSection: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   actionButton: {
     paddingVertical: 12,
@@ -1162,11 +2135,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  startButton: {
+    backgroundColor: '#2196F3',
+  },
   acceptButton: {
     backgroundColor: '#4CAF50',
   },
   completeButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: '#4CAF50',
   },
   closeButton: {
     backgroundColor: '#9E9E9E',
@@ -1183,6 +2159,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 16,
   },
+  historialCount: {
+    fontSize: 13,
+    color: '#9ca3af',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
   historialDot: {
     width: 12,
     height: 12,
@@ -1191,22 +2173,71 @@ const styles = StyleSheet.create({
     marginRight: 12,
     marginTop: 6,
   },
+  historialDotCreacion: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#2196F3',
+    marginRight: 12,
+    marginTop: 6,
+  },
+  historialDotAsignacion: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#4CAF50',
+    marginRight: 12,
+    marginTop: 6,
+  },
+  historialDotEscalamiento: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF9800',
+    marginRight: 12,
+    marginTop: 6,
+  },
+  historialDotEstadoActual: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#9C27B0',
+    marginRight: 12,
+    marginTop: 6,
+  },
   historialContent: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderRadius: 8,
     padding: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
   },
   historialTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#ffffff',
     marginBottom: 4,
+  },
+  historialTitleAsignacion: {
+    color: '#4CAF50',
   },
   historialComment: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
     marginBottom: 8,
+  },
+  historialDescription: {
+    fontSize: 14,
+    color: '#d1d5db',
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+  historialInactive: {
+    fontSize: 12,
+    color: '#ff9800',
+    fontStyle: 'italic',
+    marginBottom: 4,
   },
   historialDate: {
     fontSize: 12,
@@ -1237,37 +2268,75 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
   },
+  // Estilos para mensajes del TÉCNICO (azul, derecha)
+  technicianMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#2196F3',
+    borderRadius: 16,
+    borderBottomRightRadius: 4,
+    padding: 12,
+  },
+  // Estilos para mensajes del USUARIO (verde, izquierda)
+  userMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#4CAF50',
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+    padding: 12,
+  },
   messageAuthor: {
     fontSize: 12,
     color: '#666',
     marginBottom: 4,
+  },
+  technicianAuthor: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  userAuthor: {
+    color: '#fff',
+    fontWeight: '600',
   },
   messageText: {
     fontSize: 14,
     color: '#333',
     marginBottom: 4,
   },
+  technicianText: {
+    color: '#fff',
+  },
+  userText: {
+    color: '#fff',
+  },
   messageTime: {
     fontSize: 10,
     color: '#999',
   },
+  technicianTime: {
+    color: '#E3F2FD',
+  },
+  userTime: {
+    color: '#E8F5E9',
+  },
   chatInputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#333333',
   },
   chatInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#374151',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 8,
     maxHeight: 100,
+    backgroundColor: '#111111',
+    color: '#ffffff',
   },
   sendButton: {
     backgroundColor: '#007AFF',
@@ -1324,29 +2393,155 @@ const styles = StyleSheet.create({
   },
   evidenciaSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: '#9ca3af',
     marginBottom: 2,
   },
   evidenciaDate: {
     fontSize: 12,
-    color: '#999',
+    color: '#6b7280',
+  },
+  evidenciaSize: {
+    fontSize: 11,
+    color: '#9ca3af',
+    marginTop: 2,
+  },
+  evidenciaAction: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  evidenciaActionText: {
+    fontSize: 20,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  evidenciasHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  uploadButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  uploadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  evidenciaCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  evidenciaIconLarge: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  evidenciaIconLargeText: {
+    fontSize: 32,
+  },
+  evidenciaInfo: {
+    marginBottom: 12,
+  },
+  evidenciaTitleLarge: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 8,
+  },
+  evidenciaDescription: {
+    fontSize: 13,
+    color: '#9ca3af',
+    fontStyle: 'italic',
+    marginBottom: 6,
+  },
+  evidenciaActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  evidenciaActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    gap: 6,
+  },
+  evidenciaActionIcon: {
+    fontSize: 16,
+  },
+  evidenciaActionLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#333',
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
+    backgroundColor: '#0a0a0a',
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 12,
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
+    color: '#9ca3af',
     textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  emptyStateButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
+  },
+  emptyStateButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#0a0a0a',
   },
   errorTitle: {
     fontSize: 24,
@@ -1357,14 +2552,14 @@ const styles = StyleSheet.create({
   },
   errorMessage: {
     fontSize: 16,
-    color: '#333',
+    color: '#e5e7eb',
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 22,
   },
   errorSubMessage: {
     fontSize: 14,
-    color: '#666',
+    color: '#9ca3af',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -1426,5 +2621,472 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 8,
     fontWeight: '600',
+  },
+  // Estilos del modal de previsualización
+  previewModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  previewModalContainer: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    maxWidth: 900,
+    width: '100%',
+    maxHeight: '90%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333333',
+    backgroundColor: '#111111',
+  },
+  previewHeaderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  previewHeaderIcon: {
+    fontSize: 32,
+  },
+  previewHeaderText: {
+    flex: 1,
+  },
+  previewTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  previewSubtitle: {
+    fontSize: 13,
+    color: '#9ca3af',
+  },
+  previewHeaderActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  previewActionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewActionText: {
+    fontSize: 20,
+  },
+  previewCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ff3b30',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewCloseText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  previewContent: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+  },
+  previewScrollContent: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexGrow: 1,
+  },
+  previewContentContainer: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  previewNotAvailable: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  previewNotAvailableIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  previewNotAvailableText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: 500,
+    borderRadius: 8,
+  },
+  downloadButtonInPreview: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  downloadButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  loadingPreviewText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#9ca3af',
+  },
+  // Estilos para tabs de evidencias
+  evidenceTabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#111111',
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  evidenceTab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  activeEvidenceTab: {
+    backgroundColor: '#1f2937',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  evidenceTabText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#9ca3af',
+  },
+  activeEvidenceTabText: {
+    color: '#60a5fa',
+    fontWeight: '600',
+  },
+  uploadEvidenceButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  uploadEvidenceButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Estilos para badges de estado
+  completedBadge: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  completedBadgeText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  completedMessage: {
+    fontSize: 14,
+    color: '#d1d5db',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  escaladoBadge: {
+    backgroundColor: '#FF9800',
+    padding: 16,
+    borderRadius: 8,
+  },
+  escaladoBadgeText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  escaladoMessage: {
+    fontSize: 13,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  infoBadge: {
+    backgroundColor: '#2196F3',
+    padding: 16,
+    borderRadius: 8,
+  },
+  infoBadgeText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  infoMessage: {
+    fontSize: 13,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  closedBadge: {
+    backgroundColor: '#757575',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  closedBadgeText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Estilos para modal de confirmación personalizado
+  confirmModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  confirmModalContainer: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  confirmModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  confirmModalMessage: {
+    fontSize: 15,
+    color: '#d1d5db',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  confirmModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  confirmModalButtonCancel: {
+    backgroundColor: '#374151',
+    borderWidth: 1,
+    borderColor: '#4b5563',
+  },
+  confirmModalButtonCancelText: {
+    color: '#d1d5db',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmModalButtonConfirm: {
+    backgroundColor: '#3b82f6',
+  },
+  confirmModalButtonConfirmText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Estilos para pantalla de ticket resuelto/cerrado
+  resolvedTicketContainer: {
+    padding: 20,
+    backgroundColor: '#0a0a0a',
+  },
+  resolvedBadgeLarge: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  closedBadgeLarge: {
+    backgroundColor: '#757575',
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  resolvedIconLarge: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  resolvedTitleLarge: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  resolvedSubtitleLarge: {
+    fontSize: 15,
+    color: '#fff',
+    textAlign: 'center',
+    lineHeight: 22,
+    opacity: 0.95,
+  },
+  resolvedInfoCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  resolvedInfoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 16,
+  },
+  resolvedInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#374151',
+  },
+  resolvedInfoLabel: {
+    fontSize: 14,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  resolvedInfoValue: {
+    fontSize: 14,
+    color: '#e5e7eb',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+  },
+  resolvedMessageCard: {
+    backgroundColor: '#1e3a8a',
+    borderRadius: 12,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 4,
+    borderLeftColor: '#60a5fa',
+  },
+  resolvedMessageIcon: {
+    fontSize: 32,
+    marginRight: 16,
+  },
+  resolvedMessageText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#dbeafe',
+    lineHeight: 20,
+  },
+  // Botones flotantes para navegación
+  backButtonFloat: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1f2937',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+    zIndex: 1000,
+  },
+  backButtonFloatText: {
+    fontSize: 24,
+    color: '#60a5fa',
+    fontWeight: 'bold',
+  },
+  refreshButtonFloat: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#1f2937',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#374151',
+    zIndex: 1000,
+  },
+  refreshButtonFloatText: {
+    fontSize: 18,
+    color: '#ffffff',
   },
 });

@@ -62,13 +62,18 @@ export default function VerifyScreen() {
         await AsyncStorage.setItem('userInfo', JSON.stringify({
           userId: data.userId,
           email: data.email,
-          nombre: data.nombre
+          nombre: data.nombre,
+          apellido: data.apellido,
+          telefono: data.telefono
         }));
         
         console.log('✅ Token guardado, navegando a Home...');
         
-        // Navegar directamente al dashboard
-        navigation.navigate('Home');
+        // Navegar directamente al dashboard sin poder volver atrás
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
         
         console.log('✅ Navegación completada');
         
