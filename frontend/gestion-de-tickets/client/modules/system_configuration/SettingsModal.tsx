@@ -238,7 +238,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </TabsTrigger>
               <TabsTrigger value="appearance" className="flex items-center gap-1 text-xs py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground hover:text-foreground hover:bg-muted">
                 <Globe className="w-3 h-3" />
-                Idioma
+                {t("settings.language")}
               </TabsTrigger>
               <TabsTrigger value="security" className="flex items-center gap-1 text-xs py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground hover:text-foreground hover:bg-muted">
                 <Shield className="w-3 h-3" />
@@ -347,13 +347,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <TabsContent value="notifications" className="space-y-3">
                 <Card className="bg-card border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-foreground text-sm">Preferencias de Notificación</CardTitle>
+                    <CardTitle className="text-foreground text-sm">{t("settings.notification_preferences")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between py-2">
                       <div>
-                        <Label className="text-foreground text-sm font-medium">Notificaciones por Correo</Label>
-                        <p className="text-xs text-muted-foreground mt-1">Recibir notificaciones importantes por correo electrónico</p>
+                        <Label className="text-foreground text-sm font-medium">{t("settings.email_notifications")}</Label>
+                        <p className="text-xs text-muted-foreground mt-1">{t("settings.email_notifications_desc")}</p>
                       </div>
                       <Switch
                         checked={notificationPrefs.emailActivo}
@@ -362,8 +362,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                     <div className="flex items-center justify-between py-2">
                       <div>
-                        <Label className="text-foreground text-sm font-medium">Notificaciones Push</Label>
-                        <p className="text-xs text-muted-foreground mt-1">Recibir notificaciones en tiempo real en la aplicación</p>
+                        <Label className="text-foreground text-sm font-medium">{t("settings.push_notifications")}</Label>
+                        <p className="text-xs text-muted-foreground mt-1">{t("settings.push_notifications_desc")}</p>
                       </div>
                       <Switch
                         checked={notificationPrefs.pushActivo}
@@ -378,7 +378,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         className="h-7"
                       >
                         <Save className="h-3 w-3 mr-1" />
-                        {saving ? 'Guardando...' : 'Guardar Preferencias'}
+                        {saving ? t("settings.saving") : t("settings.save_preferences")}
                       </Button>
                     </div>
                   </CardContent>
@@ -389,18 +389,18 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <TabsContent value="appearance" className="space-y-3">
                 <Card className="bg-card border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-foreground text-sm">Personalización</CardTitle>
+                    <CardTitle className="text-foreground text-sm">{t("settings.personalization")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
-                      <Label className="text-muted-foreground text-xs">Idioma</Label>
+                      <Label className="text-muted-foreground text-xs">{t("settings.language")}</Label>
                       <Select value={settings.language} onValueChange={(value) => updateSetting("language", value)}>
                         <SelectTrigger className="bg-background border-input text-foreground text-xs h-8">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-border">
-                          <SelectItem value="es" className="text-foreground hover:bg-muted">Español</SelectItem>
-                          <SelectItem value="en" className="text-foreground hover:bg-muted">English</SelectItem>
+                          <SelectItem value="es" className="text-foreground hover:bg-muted">{t("settings.language.spanish")}</SelectItem>
+                          <SelectItem value="en" className="text-foreground hover:bg-muted">{t("settings.language.english")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -413,43 +413,43 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 {/* Cambio de Contraseña */}
                 <Card className="bg-card border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-foreground text-sm">Cambio de Contraseña</CardTitle>
+                    <CardTitle className="text-foreground text-sm">{t("settings.password_change")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
-                      <Label htmlFor="currentPassword" className="text-muted-foreground text-xs">Contraseña Actual *</Label>
+                      <Label htmlFor="currentPassword" className="text-muted-foreground text-xs">{t("settings.current_password")} *</Label>
                       <Input
                         id="currentPassword"
                         type="password"
                         value={passwordData.currentPassword}
                         onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                         className="bg-background border-input text-foreground text-xs h-8"
-                        placeholder="Ingresa tu contraseña actual"
+                        placeholder={t("settings.current_password_placeholder")}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="newPassword" className="text-muted-foreground text-xs">Nueva Contraseña *</Label>
+                      <Label htmlFor="newPassword" className="text-muted-foreground text-xs">{t("settings.new_password")} *</Label>
                       <Input
                         id="newPassword"
                         type="password"
                         value={passwordData.newPassword}
                         onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                         className="bg-background border-input text-foreground text-xs h-8"
-                        placeholder="Ingresa tu nueva contraseña"
+                        placeholder={t("settings.new_password_placeholder")}
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número
+                        {t("settings.password_requirements")}
                       </p>
                     </div>
                     <div>
-                      <Label htmlFor="confirmPassword" className="text-muted-foreground text-xs">Confirmar Nueva Contraseña *</Label>
+                      <Label htmlFor="confirmPassword" className="text-muted-foreground text-xs">{t("settings.confirm_password")} *</Label>
                       <Input
                         id="confirmPassword"
                         type="password"
                         value={passwordData.confirmPassword}
                         onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                         className="bg-background border-input text-foreground text-xs h-8"
-                        placeholder="Confirma tu nueva contraseña"
+                        placeholder={t("settings.confirm_password_placeholder")}
                       />
                     </div>
                     <Button 
@@ -459,7 +459,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       className="h-7"
                     >
                       <Shield className="h-3 w-3 mr-1" />
-                      {saving ? 'Cambiando...' : 'Cambiar Contraseña'}
+                      {saving ? t("settings.changing_password") : t("settings.change_password")}
                     </Button>
                   </CardContent>
                 </Card>
@@ -471,7 +471,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {/* Footer simplificado */}
         <div className="p-3 border-t border-border bg-card flex justify-end">
           <Button variant="outline" onClick={onClose} className="text-xs h-8 bg-background border-input text-foreground hover:bg-muted">
-            Cerrar
+            {t("settings.close")}
           </Button>
         </div>
       </div>

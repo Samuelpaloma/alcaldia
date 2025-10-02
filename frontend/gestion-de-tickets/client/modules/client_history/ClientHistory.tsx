@@ -124,44 +124,44 @@ export default function ClientHistory(){
   return (
     <div className="section grid gap-6">
       <div>
-        <h1 className="page-title">{t("client.history")}</h1>
-        <p className="page-subtitle">{t("client.history")}</p>
+        <h1 className="page-title">{t("client.history.title")}</h1>
+        <p className="page-subtitle">{t("client.history.subtitle")}</p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base text-muted-foreground">{t("client.my_tickets")}</CardTitle>
+          <CardTitle className="text-base text-muted-foreground">{t("client.history.all_tickets")}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">{t("client.loading")}</p>
+                <p className="text-muted-foreground">{t("client.history.loading")}</p>
               </div>
             </div>
           ) : error ? (
             <div className="text-center py-8">
               <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={() => loadTickets()} variant="outline">
-                {t("client.retry")}
+              <Button onClick={() => window.location.reload()} variant="outline">
+                {t("client.history.retry")}
               </Button>
             </div>
           ) : tickets.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">{t("client.no_tickets")}</p>
+              <p className="text-muted-foreground">{t("client.history.no_tickets")}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
-                  <TableHead className="w-[200px]">Asunto</TableHead>
-                  <TableHead className="w-[120px]">{t("tickets.priority")}</TableHead>
-                  <TableHead className="w-[140px]">{t("tickets.status")}</TableHead>
-                  <TableHead className="w-[120px]">Técnico</TableHead>
-                  <TableHead className="w-[100px]">{t("client.table.created")}</TableHead>
-                  <TableHead className="w-[100px]">{t("tickets.status.closed")}</TableHead>
-                  <TableHead className="w-[120px] text-right">{t("tickets.actions")}</TableHead>
+                  <TableHead className="w-[200px]">{t("client.history.subject")}</TableHead>
+                  <TableHead className="w-[120px]">{t("client.history.priority")}</TableHead>
+                  <TableHead className="w-[140px]">{t("client.history.status")}</TableHead>
+                  <TableHead className="w-[120px]">{t("client.history.technician")}</TableHead>
+                  <TableHead className="w-[100px]">{t("client.history.created")}</TableHead>
+                  <TableHead className="w-[100px]">{t("client.history.closed")}</TableHead>
+                  <TableHead className="w-[120px] text-right">{t("client.history.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -183,7 +183,7 @@ export default function ClientHistory(){
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {ticket.technician || 'Sin asignar'}
+                      {ticket.technician || t("client.history.unassigned")}
                     </TableCell>
                     <TableCell className="text-sm">
                       {formatDate(ticket.createdAt)}
@@ -197,7 +197,7 @@ export default function ClientHistory(){
                           size="sm" 
                           variant="outline" 
                           className="flex items-center gap-1"
-                          title="Ver seguimiento del ticket"
+                          title={t("client.history.view_tracking")}
                           onClick={() => scrollToTracking(ticket.id.toString())}
                         >
                           <Eye className="w-3 h-3" />
@@ -208,9 +208,9 @@ export default function ClientHistory(){
                             variant="outline" 
                             onClick={()=>reopenTicket(ticket.id)}
                             className="text-xs"
-                            title="Reabrir ticket"
+                            title={t("client.history.reopen_ticket")}
                           >
-                            Reabrir
+                            {t("client.history.reopen")}
                           </Button>
                         )}
                       </div>
@@ -225,7 +225,7 @@ export default function ClientHistory(){
           {!isLoading && !error && tickets.length > ticketsPerPage && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
               <div className="text-sm text-muted-foreground">
-                Mostrando {startIndex + 1}-{Math.min(endIndex, tickets.length)} de {tickets.length} tickets
+                {t("client.history.showing")} {startIndex + 1}-{Math.min(endIndex, tickets.length)} {t("client.history.of")} {tickets.length} {t("client.history.tickets")}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -234,10 +234,10 @@ export default function ClientHistory(){
                   onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  {t("client.history.previous")}
                 </Button>
                 <span className="text-sm font-medium px-3">
-                  Página {currentPage} de {totalPages}
+                  {t("client.history.page")} {currentPage} {t("client.history.of")} {totalPages}
                 </span>
                 <Button
                   variant="outline"
@@ -245,7 +245,7 @@ export default function ClientHistory(){
                   onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Siguiente
+                  {t("client.history.next")}
                 </Button>
               </div>
             </div>

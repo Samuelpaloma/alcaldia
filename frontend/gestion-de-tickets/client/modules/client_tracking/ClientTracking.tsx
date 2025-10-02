@@ -428,13 +428,13 @@ export default function ClientTracking() {
   return (
     <div className="section grid gap-6" data-section="tracking">
       <div>
-        <h1 className="page-title">{t("client.tracking_title")}</h1>
-        <p className="page-subtitle">{t("client.tracking_desc")}</p>
+        <h1 className="page-title">{t("client.tracking.title")}</h1>
+        <p className="page-subtitle">{t("client.tracking.subtitle")}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base text-muted-foreground">{t("client.select_ticket")}</CardTitle>
+          <CardTitle className="text-base text-muted-foreground">{t("client.tracking.select_ticket")}</CardTitle>
         </CardHeader>
         <CardContent>
           <select className="generic-select" value={selected || ''} onChange={(e) => handleTicketSelection(e.target.value)}>
@@ -445,7 +445,7 @@ export default function ClientTracking() {
                 </option>
               ))
             ) : (
-              <option value="">No hay tickets disponibles</option>
+              <option value="">{t("client.tracking.no_tickets")}</option>
             )}
           </select>
           
@@ -453,7 +453,7 @@ export default function ClientTracking() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-muted-foreground">
-                Página {currentPage} de {totalPages} ({tickets.length} tickets total)
+                {t("client.tracking.page")} {currentPage} {t("client.tracking.of")} {totalPages} ({tickets.length} {t("client.tracking.total_tickets")})
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -462,10 +462,10 @@ export default function ClientTracking() {
                   onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  {t("client.tracking.previous")}
                 </Button>
                 <span className="text-sm font-medium">
-                  {startIndex + 1}-{Math.min(endIndex, tickets.length)} de {tickets.length}
+                  {startIndex + 1}-{Math.min(endIndex, tickets.length)} {t("client.tracking.of")} {tickets.length}
                 </span>
                 <Button
                   variant="outline"
@@ -473,7 +473,7 @@ export default function ClientTracking() {
                   onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Siguiente
+                  {t("client.tracking.next")}
                 </Button>
               </div>
             </div>
@@ -489,18 +489,18 @@ export default function ClientTracking() {
               <CardHeader>
                 <CardTitle className="text-2xl flex items-center gap-3 text-gray-900 dark:text-gray-100 justify-center">
                   <XCircle className="w-8 h-8" />
-                  Ticket Cerrado
+                  {t("client.tracking.ticket_closed")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Información básica del ticket */}
                 <div className="bg-white dark:bg-gray-900 p-4 rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Ticket:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.ticket_id")}:</span>
                     <span className="text-sm font-mono">#{ticket.id}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Asunto:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.subject")}:</span>
                     <span className="text-sm font-semibold">{ticket.message}</span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -537,11 +537,11 @@ export default function ClientTracking() {
                 {/* Información básica del ticket */}
                 <div className="bg-white dark:bg-gray-900 p-4 rounded-lg space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Ticket:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.ticket_id")}:</span>
                     <span className="text-sm font-mono">#{ticket.id}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Asunto:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.subject")}:</span>
                     <span className="text-sm font-semibold">{ticket.message}</span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -614,21 +614,21 @@ export default function ClientTracking() {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Asunto:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.subject")}:</span>
                     <span className="text-sm max-w-[200px] truncate" title={ticket.message}>
                       {ticket.message}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Prioridad:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.priority")}:</span>
                     <Badge className={getPriorityColor(ticket.priority)}>
                       {ticket.priority.toUpperCase()}
                     </Badge>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Estado:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.status")}:</span>
                     <Badge className={`${getStatusColor(trackingData?.estado || ticket.status)} flex items-center gap-1`}>
                       {getStatusIcon(trackingData?.estado || ticket.status)}
                       {(trackingData?.estado || ticket.status).toUpperCase()}
@@ -673,7 +673,7 @@ export default function ClientTracking() {
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-green-900">
-                        Asignado a {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
+                        {t("client.tracking.assigned_to")} {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
                       </div>
                       <div className="text-xs text-green-600">
                         {formatTimestamp(trackingData.fechaCreacion)}
@@ -692,7 +692,7 @@ export default function ClientTracking() {
                         <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                         <div className="flex-1">
                           <div className="text-sm font-medium text-orange-900">
-                            Escalado a {ultimaEscalacion.tecnicoNombre}
+                            {t("client.tracking.escalated_to")} {ultimaEscalacion.tecnicoNombre}
                           </div>
                           <div className="text-xs text-orange-600">
                             {formatTimestamp(ultimaEscalacion.fechaAsignacion)}
@@ -711,7 +711,7 @@ export default function ClientTracking() {
                       className="flex items-center gap-2"
                     >
                       <ChevronDown className="w-4 h-4" />
-                      Ver más historial
+                      {t("client.tracking.view_more_history")}
                     </Button>
                   </div>
                 </div>
@@ -800,7 +800,7 @@ export default function ClientTracking() {
                     <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-green-900 dark:text-green-100">
-                        Asignado a {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
+                        {t("client.tracking.assigned_to")} {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
                       </div>
                       <div className="text-xs text-green-600 dark:text-green-300">
                         {formatTimestamp(trackingData.fechaCreacion)}
@@ -818,7 +818,7 @@ export default function ClientTracking() {
                       <div className="w-3 h-3 bg-orange-500 rounded-full flex-shrink-0"></div>
                       <div className="flex-1">
                         <div className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                          Escalado a {escalacion.tecnicoNombre}
+                          {t("client.tracking.escalated_to")} {escalacion.tecnicoNombre}
                         </div>
                         <div className="text-xs text-orange-600 dark:text-orange-300">
                           {formatTimestamp(escalacion.fechaAsignacion)}
@@ -833,7 +833,7 @@ export default function ClientTracking() {
                     <div className="w-3 h-3 bg-purple-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                        Reasignado a {asignacion.tecnicoNombre}
+                        {t("client.tracking.reassigned_to")} {asignacion.tecnicoNombre}
                       </div>
                       <div className="text-xs text-purple-600 dark:text-purple-300">{formatTimestamp(asignacion.fechaAsignacion)}</div>
                     </div>
@@ -866,7 +866,7 @@ export default function ClientTracking() {
             {/* Footer del Modal */}
             <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                Mostrando {1 + (trackingData?.tecnicoEmail ? 1 : 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'ESCALAMIENTO').length || 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'REASIGNAR').length || 0) + (trackingData?.fechaActualizacion && trackingData.fechaActualizacion !== trackingData.fechaCreacion ? 1 : 0)} eventos del historial
+                {t("client.tracking.showing")} {1 + (trackingData?.tecnicoEmail ? 1 : 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'ESCALAMIENTO').length || 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'REASIGNAR').length || 0) + (trackingData?.fechaActualizacion && trackingData.fechaActualizacion !== trackingData.fechaCreacion ? 1 : 0)} {t("client.tracking.history_events")}
               </div>
               <div className="flex gap-2">
                 <Button 
