@@ -1,0 +1,121 @@
+### ========================================
+### 🧪 PRUEBAS COMPLETAS DE SLA Y AUTOMATIZACIÓN
+### ========================================
+
+### 1. VERIFICAR ESTADO DEL SISTEMA
+GET http://localhost:8080/api/sla/monitoring/stats
+Content-Type: application/json
+
+### 2. CREAR CONFIGURACIÓN SLA DE PRUEBA
+POST http://localhost:8080/api/sla/configurations
+Content-Type: application/json
+
+{
+  "nombre": "SLA Prueba - Hardware Alta Prioridad",
+  "descripcion": "Configuración de prueba para hardware con prioridad alta",
+  "categoriaId": 1,
+  "categoriaNombre": "Hardware",
+  "prioridad": "ALTA",
+  "tiempoRespuestaHoras": 2,
+  "tiempoResolucionHoras": 8,
+  "tiempoAlertaHoras": 1,
+  "activo": true
+}
+
+### 3. CREAR REGLA DE AUTOMATIZACIÓN DE PRUEBA
+POST http://localhost:8080/api/automation/rules
+Content-Type: application/json
+
+{
+  "nombre": "Auto-asignación Hardware Alta",
+  "descripcion": "Asigna automáticamente tickets de hardware con prioridad alta",
+  "condicion": "categoria == \"Hardware\" AND prioridad == \"ALTA\"",
+  "accion": "asignar_tecnico_por_minima_carga",
+  "prioridad": 5,
+  "activa": true
+}
+
+### 4. CREAR TICKET DE PRUEBA (esto debería activar SLA y automatización)
+POST http://localhost:8080/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "ubicacion": "Oficina Principal",
+  "consulta": "Problema con impresora - no imprime documentos",
+  "categoriaId": 1,
+  "prioridad": "ALTA"
+}
+
+### 5. VERIFICAR ESTADÍSTICAS DE SLA DESPUÉS DE CREAR TICKET
+GET http://localhost:8080/api/sla/monitoring/stats
+Content-Type: application/json
+
+### 6. EJECUTAR VERIFICACIÓN MANUAL DE SLA
+POST http://localhost:8080/api/sla/monitoring/execute
+Content-Type: application/json
+
+### 7. VERIFICAR TICKETS VENCIDOS
+GET http://localhost:8080/api/sla/monitoring/expired
+Content-Type: application/json
+
+### 8. VERIFICAR TICKETS PRÓXIMOS A VENCER
+GET http://localhost:8080/api/sla/monitoring/expiring
+Content-Type: application/json
+
+### 9. LISTAR REGLAS DE AUTOMATIZACIÓN
+GET http://localhost:8080/api/automation/rules?page=0&size=10
+Content-Type: application/json
+
+### 10. VERIFICAR NOTIFICACIONES (si hay sistema de notificaciones)
+GET http://localhost:8080/api/notificaciones-mejoradas/usuario/current
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+### ========================================
+### 🔍 PRUEBAS ESPECÍFICAS DE FUNCIONALIDAD
+### ========================================
+
+### 11. CREAR TICKET CON SLA VENCIDO (para probar alertas)
+POST http://localhost:8080/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "ubicacion": "Oficina Principal",
+  "consulta": "Ticket de prueba para SLA vencido",
+  "categoriaId": 1,
+  "prioridad": "ALTA"
+}
+
+### 12. ESPERAR 3 HORAS Y VERIFICAR QUE EL TICKET APARECE COMO VENCIDO
+GET http://localhost:8080/api/sla/monitoring/expired
+Content-Type: application/json
+
+### 13. CREAR MÚLTIPLES TICKETS PARA PROBAR ESTADÍSTICAS
+POST http://localhost:8080/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "ubicacion": "Oficina Principal",
+  "consulta": "Ticket de prueba 1",
+  "categoriaId": 1,
+  "prioridad": "MEDIA"
+}
+
+### 14. CREAR OTRO TICKET
+POST http://localhost:8080/api/tickets
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "ubicacion": "Oficina Principal",
+  "consulta": "Ticket de prueba 2",
+  "categoriaId": 1,
+  "prioridad": "BAJA"
+}
+
+### 15. VERIFICAR ESTADÍSTICAS FINALES
+GET http://localhost:8080/api/sla/monitoring/stats
+Content-Type: application/json

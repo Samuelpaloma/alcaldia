@@ -1108,7 +1108,7 @@ export default function TicketsManagement() {
 
   const filteredTickets = useMemo(() => {
     return tickets.filter(ticket => {
-      const matchesSearch = ticket.asunto.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      const matchesSearch = (ticket.asunto || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                            (ticket.descripcion || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                            (ticket.creadorNombre || ticket.nombre || '').toLowerCase().includes(searchQuery.toLowerCase());
       

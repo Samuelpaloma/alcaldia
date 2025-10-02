@@ -36,9 +36,6 @@ import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.UUID;
 
@@ -74,6 +71,9 @@ public class TicketServiceImpl implements TicketService {
     
     @Autowired
     private ArchivoTicketService archivoTicketService;
+    
+    @Autowired
+    private com.example.demo.sla.service.SLAAutomationService slaAutomationService;
     
 
     @Override
@@ -113,6 +113,16 @@ public class TicketServiceImpl implements TicketService {
         // Guardar ticket
         ticketRepository.save(ticket);
         
+        // Procesar ticket con SLA y automatización integrada
+        try {
+            System.out.println("🔧 [DEBUG] Llamando a SLA y automatización para ticket " + ticket.getId());
+            slaAutomationService.procesarTicketCreado(ticket);
+            System.out.println("✅ [DEBUG] SLA y automatización procesados correctamente para ticket " + ticket.getId());
+        } catch (Exception e) {
+            System.err.println("❌ [DEBUG] Error procesando SLA y automatización para ticket " + ticket.getId() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+
         // Manejar archivo adjunto si existe - usar el nuevo sistema de múltiples archivos
         System.out.println("🔍 [DEBUG] Verificando archivo adjunto...");
         System.out.println("🔍 [DEBUG] archivoAdjunto: " + (request.getArchivoAdjunto() != null ? "Presente" : "Ausente"));
@@ -453,39 +463,6 @@ public class TicketServiceImpl implements TicketService {
             .build();
     }
     
-    /**
-     * Guardar archivo en el sistema de archivos
-     */
-    private String guardarArchivoEnSistema(String contenidoBase64, String nombreOriginal) throws IOException {
-        // Configuración del directorio de uploads
-        String uploadDir = "uploads/tickets/";
-        File uploadDirectory = new File(uploadDir);
-        
-        // Crear directorio si no existe
-        if (!uploadDirectory.exists()) {
-            uploadDirectory.mkdirs();
-        }
-        
-        // Generar nombre único para el archivo
-        String extension = "";
-        if (nombreOriginal.contains(".")) {
-            extension = nombreOriginal.substring(nombreOriginal.lastIndexOf("."));
-        }
-        String nombreUnico = UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + extension;
-        
-        // Ruta completa del archivo
-        String rutaCompleta = uploadDir + nombreUnico;
-        
-        // Decodificar Base64 y guardar archivo
-        byte[] contenido = Base64.getDecoder().decode(contenidoBase64);
-        
-        try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
-            fos.write(contenido);
-        }
-        
-        System.out.println("📁 Archivo guardado: " + rutaCompleta);
-        return rutaCompleta;
-    }
     
     /**
      * Determinar el tipo MIME basado en la extensión

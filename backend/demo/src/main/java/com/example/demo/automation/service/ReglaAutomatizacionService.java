@@ -33,4 +33,7 @@ public interface ReglaAutomatizacionService {
     // Ejecución de reglas
     void ejecutarReglas();
     void ejecutarRegla(Long id);
+
+    // Ejecución de reglas con contexto de ticket
+    void ejecutarReglasParaTicket(com.example.demo.ticket.model.Ticket ticket);
 }

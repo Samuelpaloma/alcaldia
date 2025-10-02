@@ -19,7 +19,7 @@ export const useRoleNotifications = (userEmail: string, userRole?: string) => {
   const [notifications, setNotifications] = useState<RoleNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'ticket_creado' | 'ticket_asignado' | 'ticket_resuelto' | 'ticket_cerrado'>('all');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'ticket_creado' | 'ticket_asignado' | 'ticket_resuelto' | 'ticket_cerrado' | 'sla_vencido' | 'sla_proximo_vencer' | 'alerta_sla'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority'>('newest');
   
   // Conectar al contexto de notificaciones global para tiempo real
@@ -280,6 +280,12 @@ export const useRoleNotifications = (userEmail: string, userRole?: string) => {
         return '✅';
       case 'ticket_cerrado':
         return '🔒';
+      case 'sla_vencido':
+        return '🚨';
+      case 'sla_proximo_vencer':
+        return '⚠️';
+      case 'alerta_sla':
+        return '⏰';
       default:
         return '🔔';
     }
@@ -298,6 +304,12 @@ export const useRoleNotifications = (userEmail: string, userRole?: string) => {
         return 'text-green-600';
       case 'ticket_cerrado':
         return 'text-gray-600';
+      case 'sla_vencido':
+        return 'text-red-600';
+      case 'sla_proximo_vencer':
+        return 'text-orange-600';
+      case 'alerta_sla':
+        return 'text-yellow-600';
       default:
         return 'text-gray-600';
     }

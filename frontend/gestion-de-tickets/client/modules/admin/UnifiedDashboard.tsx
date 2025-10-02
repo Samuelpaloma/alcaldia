@@ -13,6 +13,7 @@ import {
   Clock, 
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Download,
   RefreshCw,
   BarChart3,
@@ -22,6 +23,7 @@ import {
   Settings,
   Zap
 } from 'lucide-react';
+import SLAMonitoringWidget from '../sla_monitoring/SLAMonitoringWidget';
 
 interface DashboardMetrics {
   totalTickets: number;
@@ -76,20 +78,37 @@ const UnifiedDashboard: React.FC = () => {
         console.log('⚠️ [DEBUG] Métricas del dashboard no disponibles, usando datos calculados');
       }
       
-      // Cargar tickets recientes (usando historial de tickets)
-      const ticketsResponse = await api.getTicketsHistory(0, 100);
-      const tickets = ticketsResponse.content;
-      console.log('🎫 [DEBUG] Tickets recibidos:', tickets.length);
+      // Cargar tickets recientes
+      let tickets = [];
+      try {
+        tickets = await api.getAdminTickets();
+        console.log('🎫 [DEBUG] Tickets recibidos:', tickets.length);
+      } catch (error) {
+        console.log('⚠️ [DEBUG] Error cargando tickets:', error);
+        tickets = [];
+      }
       
       // Cargar técnicos
-      const techniciansResponse = await api.getTechnicians(0, 100);
-      const technicians = techniciansResponse.content;
-      console.log('👥 [DEBUG] Técnicos recibidos:', technicians.length);
+      let technicians = [];
+      try {
+        const techniciansResponse = await api.getTechnicians(0, 100);
+        technicians = techniciansResponse.content || techniciansResponse;
+        console.log('👥 [DEBUG] Técnicos recibidos:', technicians.length);
+      } catch (error) {
+        console.log('⚠️ [DEBUG] Error cargando técnicos:', error);
+        technicians = [];
+      }
       
       // Procesar datos reales
       const totalTickets = tickets.length;
       const ticketsResueltos = tickets.filter(t => t.estado === 'RESUELTO' || t.estado === 'CERRADO').length;
       const ticketsPendientes = tickets.filter(t => t.estado === 'PENDIENTE' || t.estado === 'ASIGNADO' || t.estado === 'EN_PROGRESO').length;
+      
+      console.log('📊 [DEBUG] Estadísticas calculadas:');
+      console.log('  - Total tickets:', totalTickets);
+      console.log('  - Tickets resueltos:', ticketsResueltos);
+      console.log('  - Tickets pendientes:', ticketsPendientes);
+      console.log('  - Técnicos:', technicians.length);
       
       // Calcular estadísticas por categoría
       const categoriaStats = new Map<string, number>();
@@ -138,20 +157,30 @@ const UnifiedDashboard: React.FC = () => {
         }));
       
       // Preparar técnicos activos
+      console.log('🔧 [DEBUG] Procesando técnicos:', technicians);
       const activeTechniciansData = technicians
         .map(tech => {
-          const ticketsActivos = tickets.filter(t => t.tecnicoAsignado === tech.nombreCompleto).length;
-          return {
-            id: tech.idUsuario,
+          console.log('🔧 [DEBUG] Técnico individual:', tech);
+          const ticketsActivos = tickets.filter(t => t.tecnicoNombre === tech.nombreCompleto).length;
+          const techData = {
+            id: tech.id, // Corregido: usar 'id' en lugar de 'idUsuario'
             nombre: tech.nombreCompleto,
             email: tech.email,
             ticketsActivos,
-            estado: ticketsActivos > 0 ? 'En línea' : 'Disponible'
+            estado: ticketsActivos > 0 ? 'En línea' : 'Disponible',
+            activo: tech.activo // Agregar campo activo
           };
+          console.log('🔧 [DEBUG] Técnico procesado:', techData);
+          return techData;
         })
-        .filter(tech => tech.ticketsActivos > 0)
+        .filter(tech => {
+          console.log('🔧 [DEBUG] Filtrando técnico:', tech.nombre, 'activo:', tech.activo);
+          return tech.activo; // Mostrar todos los técnicos activos, no solo los que tienen tickets
+        })
         .sort((a, b) => b.ticketsActivos - a.ticketsActivos)
         .slice(0, 3);
+      
+      console.log('🔧 [DEBUG] Técnicos activos finales:', activeTechniciansData);
       
       const metricasData: DashboardMetrics = {
         totalTickets,
@@ -301,11 +330,12 @@ const UnifiedDashboard: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Resumen</TabsTrigger>
           <TabsTrigger value="analytics">Análisis</TabsTrigger>
           <TabsTrigger value="performance">Rendimiento</TabsTrigger>
           <TabsTrigger value="trends">Tendencias</TabsTrigger>
+          <TabsTrigger value="sla">Monitoreo SLA</TabsTrigger>
         </TabsList>
 
         {/* Pestaña Resumen */}
@@ -391,6 +421,9 @@ const UnifiedDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Widget de Monitoreo SLA */}
+          <SLAMonitoringWidget className="mb-6" />
 
           {/* Contenido adicional para el resumen */}
           <div className="grid gap-6 md:grid-cols-2">
@@ -645,6 +678,53 @@ const UnifiedDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
+
+        {/* Pestaña Monitoreo SLA */}
+        <TabsContent value="sla" className="space-y-6">
+          <div className="grid gap-6">
+            <SLAMonitoringWidget />
+            
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
+                    Tickets con SLA Vencido
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+                    <p className="text-gray-600 mb-4">Verificando tickets con SLA vencido...</p>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Verificar Ahora
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Clock className="w-5 h-5 mr-2 text-orange-500" />
+                    Tickets Próximos a Vencer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <Clock className="w-12 h-12 mx-auto mb-4 text-orange-500" />
+                    <p className="text-gray-600 mb-4">Verificando tickets próximos a vencer...</p>
+                    <Button variant="outline" size="sm">
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Verificar Ahora
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

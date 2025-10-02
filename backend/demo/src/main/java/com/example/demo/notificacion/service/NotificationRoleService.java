@@ -42,6 +42,11 @@ public class NotificationRoleService {
     public static final String TIPO_TICKET_CERRADO = "ticket_cerrado";
     public static final String TIPO_COMENTARIO_AGREGADO = "comentario_agregado";
     public static final String TIPO_TICKET_ESCALADO = "ticket_escalado";
+    
+    // Constantes para notificaciones de SLA
+    public static final String TIPO_SLA_VENCIDO = "sla_vencido";
+    public static final String TIPO_SLA_PROXIMO_VENCER = "sla_proximo_vencer";
+    public static final String TIPO_ALERTA_SLA = "alerta_sla";
 
     // Constantes para roles
     public static final String ROL_FUNCIONARIO = "funcionario";
@@ -490,6 +495,116 @@ public class NotificationRoleService {
 
         } catch (Exception e) {
             System.err.println("Error creando notificaciones de escalación de ticket: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Crea notificaciones de SLA vencido
+     */
+    public void notificarEventoSLA(Long ticketId, Long usuarioDestinatarioId, String tipoEvento, String mensaje) {
+        try {
+            Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+            
+            Usuario usuarioDestinatario = usuarioRepository.findById(usuarioDestinatarioId)
+                .orElseThrow(() -> new RuntimeException("Usuario destinatario no encontrado"));
+
+            // Determinar prioridad según el tipo de evento
+            String prioridad = "normal";
+            if (tipoEvento.equals(TIPO_SLA_VENCIDO)) {
+                prioridad = "critica";
+            } else if (tipoEvento.equals(TIPO_SLA_PROXIMO_VENCER)) {
+                prioridad = "alta";
+            }
+
+            // Crear notificación específica para el usuario
+            List<String> destinatarios = Arrays.asList(
+                usuarioDestinatario.getTipoUsuario().toString().toLowerCase() + ":" + usuarioDestinatario.getEmail()
+            );
+            
+            crearNotificacion(
+                tipoEvento,
+                mensaje,
+                destinatarios,
+                ticketId,
+                null, // No hay usuario actor para eventos automáticos
+                "sistema@alcaldia.com",
+                "Sistema SLA",
+                prioridad
+            );
+
+        } catch (Exception e) {
+            System.err.println("Error creando notificación de SLA: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Notifica a todos los administradores sobre eventos de SLA
+     */
+    public void notificarAdministradoresSLA(Long ticketId, String tipoEvento, String mensaje) {
+        try {
+            Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+
+            // Determinar prioridad según el tipo de evento
+            String prioridad = "normal";
+            if (tipoEvento.equals(TIPO_SLA_VENCIDO)) {
+                prioridad = "critica";
+            } else if (tipoEvento.equals(TIPO_SLA_PROXIMO_VENCER)) {
+                prioridad = "alta";
+            }
+
+            // Notificar a todos los administradores
+            List<String> destinatarios = Arrays.asList("rol:administrador");
+            
+            crearNotificacion(
+                tipoEvento,
+                mensaje,
+                destinatarios,
+                ticketId,
+                null, // No hay usuario actor para eventos automáticos
+                "sistema@alcaldia.com",
+                "Sistema SLA",
+                prioridad
+            );
+
+        } catch (Exception e) {
+            System.err.println("Error notificando administradores sobre SLA: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Notifica a todos los técnicos sobre eventos de SLA
+     */
+    public void notificarTecnicosSLA(Long ticketId, String tipoEvento, String mensaje) {
+        try {
+            Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+
+            // Determinar prioridad según el tipo de evento
+            String prioridad = "normal";
+            if (tipoEvento.equals(TIPO_SLA_VENCIDO)) {
+                prioridad = "critica";
+            } else if (tipoEvento.equals(TIPO_SLA_PROXIMO_VENCER)) {
+                prioridad = "alta";
+            }
+
+            // Notificar a todos los técnicos
+            List<String> destinatarios = Arrays.asList("rol:tecnico");
+            
+            crearNotificacion(
+                tipoEvento,
+                mensaje,
+                destinatarios,
+                ticketId,
+                null, // No hay usuario actor para eventos automáticos
+                "sistema@alcaldia.com",
+                "Sistema SLA",
+                prioridad
+            );
+
+        } catch (Exception e) {
+            System.err.println("Error notificando técnicos sobre SLA: " + e.getMessage());
         }
     }
 

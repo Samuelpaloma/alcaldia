@@ -1,0 +1,193 @@
+### ========================================
+### PRUEBAS COMPLETAS DE SLA - SISTEMA COMPLETO
+### ========================================
+
+### 1. Verificar que el backend esté funcionando
+GET http://localhost:8080/api/health
+
+### 2. Obtener estadísticas iniciales de SLA
+GET http://localhost:8080/api/sla/estadisticas
+
+### 3. Crear configuración SLA para Hardware - Alta Prioridad
+POST http://localhost:8080/api/sla
+Content-Type: application/json
+
+{
+  "nombre": "SLA Hardware Alta Prioridad",
+  "descripcion": "SLA para tickets de Hardware con prioridad alta",
+  "categoriaId": 1,
+  "categoriaNombre": "Hardware",
+  "prioridad": "ALTA",
+  "tiempoRespuestaHoras": 2,
+  "tiempoResolucionHoras": 8,
+  "tiempoAlertaHoras": 1,
+  "activo": true
+}
+
+### 4. Crear configuración SLA para Software - Alta Prioridad
+POST http://localhost:8080/api/sla
+Content-Type: application/json
+
+{
+  "nombre": "SLA Software Alta Prioridad",
+  "descripcion": "SLA para tickets de Software con prioridad alta",
+  "categoriaId": 2,
+  "categoriaNombre": "Software",
+  "prioridad": "ALTA",
+  "tiempoRespuestaHoras": 1,
+  "tiempoResolucionHoras": 4,
+  "tiempoAlertaHoras": 1,
+  "activo": true
+}
+
+### 5. Crear configuración SLA para Hardware - Media Prioridad
+POST http://localhost:8080/api/sla
+Content-Type: application/json
+
+{
+  "nombre": "SLA Hardware Media Prioridad",
+  "descripcion": "SLA para tickets de Hardware con prioridad media",
+  "categoriaId": 1,
+  "categoriaNombre": "Hardware",
+  "prioridad": "MEDIA",
+  "tiempoRespuestaHoras": 4,
+  "tiempoResolucionHoras": 24,
+  "tiempoAlertaHoras": 2,
+  "activo": true
+}
+
+### 6. Verificar configuraciones SLA creadas
+GET http://localhost:8080/api/sla
+
+### 7. Verificar configuraciones SLA activas
+GET http://localhost:8080/api/sla/activas
+
+### 8. Crear ticket de Hardware con prioridad ALTA para probar SLA
+POST http://localhost:8080/api/tickets
+Content-Type: application/json
+
+{
+  "categoriaId": 1,
+  "consulta": "Problema crítico con servidor principal - SLA de 2 horas",
+  "ubicacion": "Sala de servidores",
+  "prioridad": "ALTA"
+}
+
+### 9. Crear ticket de Software con prioridad ALTA para probar SLA
+POST http://localhost:8080/api/tickets
+Content-Type: application/json
+
+{
+  "categoriaId": 2,
+  "consulta": "Error crítico en sistema de facturación - SLA de 1 hora",
+  "ubicacion": "Oficina administrativa",
+  "prioridad": "ALTA"
+}
+
+### 10. Crear ticket de Hardware con prioridad MEDIA para probar SLA
+POST http://localhost:8080/api/tickets
+Content-Type: application/json
+
+{
+  "categoriaId": 1,
+  "consulta": "Problema menor con impresora - SLA de 4 horas",
+  "ubicacion": "Oficina 205",
+  "prioridad": "MEDIA"
+}
+
+### 11. Verificar estado SLA del primer ticket (reemplaza {{ticketId1}} con el ID del primer ticket)
+GET http://localhost:8080/api/sla/monitoring/ticket/{{ticketId1}}/status
+
+### 12. Verificar estado SLA del segundo ticket (reemplaza {{ticketId2}} con el ID del segundo ticket)
+GET http://localhost:8080/api/sla/monitoring/ticket/{{ticketId2}}/status
+
+### 13. Verificar estado SLA del tercer ticket (reemplaza {{ticketId3}} con el ID del tercer ticket)
+GET http://localhost:8080/api/sla/monitoring/ticket/{{ticketId3}}/status
+
+### 14. Verificar cumplimiento SLA para todos los tickets activos
+POST http://localhost:8080/api/sla/monitoring/check-all
+
+### 15. Obtener alertas SLA activas
+GET http://localhost:8080/api/sla/monitoring/alerts
+
+### 16. Obtener alertas SLA para un ticket específico (reemplaza {{ticketId1}} con el ID del primer ticket)
+GET http://localhost:8080/api/sla/monitoring/ticket/{{ticketId1}}/alerts
+
+### 17. Obtener estadísticas de monitoreo SLA
+GET http://localhost:8080/api/sla/monitoring/stats
+
+### 18. Buscar configuraciones SLA por nombre
+GET http://localhost:8080/api/sla/buscar?nombre=Hardware
+
+### 19. Obtener configuraciones SLA por prioridad
+GET http://localhost:8080/api/sla/prioridad/ALTA
+
+### 20. Obtener configuraciones SLA por categoría
+GET http://localhost:8080/api/sla/categoria/1
+
+### 21. Obtener configuración SLA específica por categoría y prioridad
+GET http://localhost:8080/api/sla/categoria/1/prioridad/ALTA
+
+### 22. Actualizar configuración SLA (reemplaza {{configId}} con el ID de una configuración)
+PATCH http://localhost:8080/api/sla/{{configId}}
+Content-Type: application/json
+
+{
+  "nombre": "SLA Hardware Alta Prioridad - Actualizado",
+  "descripcion": "SLA actualizado para tickets de Hardware con prioridad alta",
+  "tiempoRespuestaHoras": 1,
+  "tiempoResolucionHoras": 6,
+  "tiempoAlertaHoras": 1,
+  "activo": true
+}
+
+### 23. Verificar estadísticas finales de SLA
+GET http://localhost:8080/api/sla/estadisticas
+
+### 24. Verificar estadísticas finales de monitoreo SLA
+GET http://localhost:8080/api/sla/monitoring/stats
+
+### ========================================
+### PRUEBAS DE ESCENARIOS AVANZADOS
+### ========================================
+
+### 25. Simular cambio de estado de ticket a ASIGNADO (reemplaza {{ticketId1}} con el ID del primer ticket)
+### Nota: Esto debería actualizar el SLA automáticamente
+PUT http://localhost:8080/api/tickets/{{ticketId1}}/estado
+Content-Type: application/json
+
+{
+  "nuevoEstado": "ASIGNADO",
+  "comentario": "Ticket asignado a técnico especializado"
+}
+
+### 26. Verificar estado SLA después del cambio de estado
+GET http://localhost:8080/api/sla/monitoring/ticket/{{ticketId1}}/status
+
+### 27. Simular cambio de estado de ticket a TERMINADO (reemplaza {{ticketId1}} con el ID del primer ticket)
+PUT http://localhost:8080/api/tickets/{{ticketId1}}/estado
+Content-Type: application/json
+
+{
+  "nuevoEstado": "TERMINADO",
+  "comentario": "Problema resuelto exitosamente"
+}
+
+### 28. Verificar estado SLA final después de resolución
+GET http://localhost:8080/api/sla/monitoring/ticket/{{ticketId1}}/status
+
+### 29. Verificar alertas SLA después de resolución
+GET http://localhost:8080/api/sla/monitoring/ticket/{{ticketId1}}/alerts
+
+### 30. Verificación final de cumplimiento SLA
+POST http://localhost:8080/api/sla/monitoring/check-all
+
+### ========================================
+### PRUEBAS DE LIMPIEZA (OPCIONAL)
+### ========================================
+
+### 31. Eliminar configuración SLA (reemplaza {{configId}} con el ID de una configuración)
+DELETE http://localhost:8080/api/sla/{{configId}}
+
+### 32. Verificar configuraciones SLA después de eliminación
+GET http://localhost:8080/api/sla/activas
