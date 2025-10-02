@@ -365,6 +365,9 @@ export interface CategoriaRequestDTO {
   nombre: string;
   descripcion?: string;
   orden?: number;
+  colorHex?: string;
+  icono?: string;
+  activa?: boolean;
 }
 
 // ========== TIPOS PARA EVIDENCIAS ==========
@@ -1047,6 +1050,21 @@ class ApiClient {
     categoriasInactivas: number;
   }> {
     return this.request('/categorias/estadisticas');
+  }
+
+  // Alias para compatibilidad con CategoriesManagement
+  async getCategoriaStats(): Promise<{
+    totalCategorias: number;
+    categoriasActivas: number;
+    categoriasInactivas: number;
+    categoriasConTickets?: number;
+  }> {
+    return this.request('/categorias/estadisticas');
+  }
+
+  // Alias para compatibilidad con CategoriesManagement
+  async deleteCategoria(id: number): Promise<ApiResponse> {
+    return this.eliminarCategoria(id);
   }
 
   // ========== GESTIÓN DE EVIDENCIAS ==========
