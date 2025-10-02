@@ -182,7 +182,7 @@ public class AdminService {
         System.out.println("🔍 [ADMIN DEBUG] Ticket ID: " + ticket.getId());
         System.out.println("🔍 [ADMIN DEBUG] Asignaciones ticket: " + asignacionesTicket.size());
         for (com.example.demo.asignacion.model.AsignacionTicket at : asignacionesTicket) {
-            System.out.println("🔍 [ADMIN DEBUG] - Asignación: " + at.getTipoOperacion() + ", Técnico ID: " + at.getTecnicoId() + ", Fecha: " + at.getFechaAsignacion() + ", Es escalación: " + at.getEsEscalacion());
+            System.out.println("🔍 [ADMIN DEBUG] - Asignación: " + at.getTipoOperacion() + ", Técnico ID: " + at.getTecnicoId() + ", Fecha: " + at.getFechaAsignacion());
         }
         
         if (!asignacionesTicket.isEmpty()) {
