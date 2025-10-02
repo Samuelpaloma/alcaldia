@@ -1,7 +1,7 @@
 package com.example.demo.notificacion.service;
 
 import com.example.demo.auth.service.EmailService;
-import com.example.demo.notificacion.model.NotificacionMejorada;
+import com.example.demo.notificacion.model.Notification;
 import com.example.demo.notificacion.model.PreferenciasNotificacion;
 import com.example.demo.notificacion.repository.PreferenciasNotificacionRepository;
 import com.example.demo.ticket.model.Ticket;
@@ -37,33 +37,33 @@ public class NotificacionAutomaticaService {
         System.out.println("🚀 [DEBUG] ===== INICIANDO NOTIFICACIÓN TICKET CREADO =====");
         System.out.println("🚀 [DEBUG] Ticket ID: " + ticket.getId());
         System.out.println("🚀 [DEBUG] Creador: " + (creador != null ? creador.getEmail() : "NULL"));
-        System.out.println("🚀 [DEBUG] ¿Tiene técnico asignado? " + (ticket.getTecnicoAsignado() != null));
+        System.out.println("🚀 [DEBUG] ¿Tiene técnico asignado? " + (ticket.getAssignedTechnician() != null));
         
         try {
             // Notificar al técnico asignado si existe
-            if (ticket.getTecnicoAsignado() != null) {
-                Usuario tecnico = ticket.getTecnicoAsignado();
+            if (ticket.getAssignedTechnician() != null) {
+                Usuario tecnico = ticket.getAssignedTechnician();
                 System.out.println("🚀 [DEBUG] Técnico asignado: " + tecnico.getEmail());
-                System.out.println("🚀 [DEBUG] Técnico ID: " + tecnico.getIdUsuario());
+                System.out.println("🚀 [DEBUG] Técnico ID: " + tecnico.getId());
                 
                 // Verificar preferencias del técnico
-                if (!debeNotificar(tecnico.getIdUsuario(), "ticket_asignado")) {
+                if (!debeNotificar(tecnico.getId(), "ticket_asignado")) {
                     System.out.println("⚠️ [NOTIFICACION] Usuario " + tecnico.getEmail() + " tiene notificaciones desactivadas para este tipo");
                     return;
                 }
                 
-                System.out.println("🔔 [NOTIFICACION] Ticket #" + ticket.getId() + " creado y asignado a técnico " + tecnico.getNombre());
+                System.out.println("🔔 [NOTIFICACION] Ticket #" + ticket.getId() + " creado y asignado a técnico " + tecnico.getFullName());
                 
                 // Crear notificación en BD
                 String mensaje = "Nuevo ticket #" + ticket.getId() + " asignado: " + 
-                    (ticket.getConsulta() != null ? ticket.getConsulta() : "Sin descripción");
+                    (ticket.getQuery() != null ? ticket.getQuery() : "Sin descripción");
                 
                 notificacionService.crearNotificacionSiPushActivo(
                     "ticket_asignado", 
                     mensaje, 
-                    List.of(tecnico.getIdUsuario().intValue()), 
+                    List.of(tecnico.getId().intValue()), 
                     ticket.getId(), 
-                    creador.getIdUsuario().intValue(), 
+                    creador.getId().intValue(), 
                     "normal"
                 );
                 
@@ -83,20 +83,20 @@ public class NotificacionAutomaticaService {
     public void notificarTicketAsignado(Ticket ticket, Usuario tecnico) {
         try {
             // Verificar preferencias del técnico
-            if (!debeNotificar(tecnico.getIdUsuario(), "ticket_asignado")) {
+            if (!debeNotificar(tecnico.getId(), "ticket_asignado")) {
                 return;
             }
             
             // Crear notificación
             String mensaje = "Ticket #" + ticket.getId() + " asignado: " + 
-                (ticket.getConsulta() != null ? ticket.getConsulta() : "Sin descripción");
+                (ticket.getQuery() != null ? ticket.getQuery() : "Sin descripción");
             
             notificacionService.crearNotificacionSiPushActivo(
                 "ticket_asignado", 
                 mensaje, 
-                List.of(tecnico.getIdUsuario().intValue()), 
+                List.of(tecnico.getId().intValue()), 
                 ticket.getId(), 
-                tecnico.getIdUsuario().intValue(), 
+                tecnico.getId().intValue(), 
                 "normal"
             );
         } catch (Exception e) {
@@ -111,11 +111,11 @@ public class NotificacionAutomaticaService {
         System.out.println("🚀 [DEBUG] ===== INICIANDO NOTIFICACIÓN TICKET EN PROCESO =====");
         System.out.println("🚀 [DEBUG] Ticket ID: " + ticket.getId());
         System.out.println("🚀 [DEBUG] Técnico: " + (tecnico != null ? tecnico.getEmail() : "NULL"));
-        System.out.println("🚀 [DEBUG] Técnico ID: " + (tecnico != null ? tecnico.getIdUsuario() : "NULL"));
+        System.out.println("🚀 [DEBUG] Técnico ID: " + (tecnico != null ? tecnico.getId() : "NULL"));
         
         try {
             // Verificar preferencias del técnico
-            boolean debeNotif = debeNotificar(tecnico.getIdUsuario(), "ticket_en_proceso");
+            boolean debeNotif = debeNotificar(tecnico.getId(), "ticket_en_proceso");
             System.out.println("🚀 [DEBUG] ¿Debe notificar? " + debeNotif);
             
             if (!debeNotif) {
@@ -125,16 +125,16 @@ public class NotificacionAutomaticaService {
 
             // Crear notificación
             String mensaje = "Ticket #" + ticket.getId() + " en proceso: " +
-                (ticket.getConsulta() != null ? ticket.getConsulta() : "Sin descripción");
+                (ticket.getQuery() != null ? ticket.getQuery() : "Sin descripción");
             System.out.println("🚀 [DEBUG] Mensaje: " + mensaje);
 
             System.out.println("🚀 [DEBUG] Creando notificación en BD...");
-            NotificacionMejorada notificacionGuardada = notificacionService.crearNotificacionSiPushActivo(
+            Notification notificacionGuardada = notificacionService.crearNotificacionSiPushActivo(
                 "ticket_en_proceso",
                 mensaje,
-                List.of(tecnico.getIdUsuario().intValue()),
+                List.of(tecnico.getId().intValue()),
                 ticket.getId(),
-                tecnico.getIdUsuario().intValue(),
+                tecnico.getId().intValue(),
                 "normal"
             );
             
@@ -154,7 +154,7 @@ public class NotificacionAutomaticaService {
                     pushNotificationService.sendTicketAcceptedPushNotification(
                         deviceToken,
                         ticket.getId(),
-                        ticket.getConsulta() != null ? ticket.getConsulta() : "Ticket #" + ticket.getId()
+                        ticket.getQuery() != null ? ticket.getQuery() : "Ticket #" + ticket.getId()
                     );
                     System.out.println("✅ [DEBUG] Push notification enviada exitosamente");
                 } else {
@@ -178,20 +178,20 @@ public class NotificacionAutomaticaService {
     public void notificarTicketFinalizado(Ticket ticket, Usuario tecnico) {
         try {
             // Verificar preferencias del técnico
-            if (!debeNotificar(tecnico.getIdUsuario(), "ticket_finalizado")) {
+            if (!debeNotificar(tecnico.getId(), "ticket_finalizado")) {
                 return;
             }
             
             // Crear notificación
             String mensaje = "Ticket #" + ticket.getId() + " finalizado: " + 
-                (ticket.getConsulta() != null ? ticket.getConsulta() : "Sin descripción");
+                (ticket.getQuery() != null ? ticket.getQuery() : "Sin descripción");
             
             notificacionService.crearNotificacionSiPushActivo(
                 "ticket_finalizado", 
                 mensaje, 
-                List.of(tecnico.getIdUsuario().intValue()), 
+                List.of(tecnico.getId().intValue()), 
                 ticket.getId(), 
-                tecnico.getIdUsuario().intValue(), 
+                tecnico.getId().intValue(), 
                 "normal"
             );
         } catch (Exception e) {
@@ -205,20 +205,20 @@ public class NotificacionAutomaticaService {
     public void notificarEvidenciaAgregada(Ticket ticket, Usuario tecnico) {
         try {
             // Verificar preferencias del técnico
-            if (!debeNotificar(tecnico.getIdUsuario(), "evidencia_agregada")) {
+            if (!debeNotificar(tecnico.getId(), "evidencia_agregada")) {
                 return;
             }
             
             // Crear notificación
             String mensaje = "Evidencia agregada al ticket #" + ticket.getId() + ": " + 
-                (ticket.getConsulta() != null ? ticket.getConsulta() : "Sin descripción");
+                (ticket.getQuery() != null ? ticket.getQuery() : "Sin descripción");
             
             notificacionService.crearNotificacionSiPushActivo(
                 "evidencia_agregada", 
                 mensaje, 
-                List.of(tecnico.getIdUsuario().intValue()), 
+                List.of(tecnico.getId().intValue()), 
                 ticket.getId(), 
-                tecnico.getIdUsuario().intValue(), 
+                tecnico.getId().intValue(), 
                 "normal"
             );
         } catch (Exception e) {

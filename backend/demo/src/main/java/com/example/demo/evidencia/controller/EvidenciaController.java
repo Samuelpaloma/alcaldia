@@ -124,11 +124,28 @@ public class EvidenciaController {
             log.info("🔍 [EVIDENCIA] Archivo: {} ({} bytes)", archivo.getOriginalFilename(), archivo.getSize());
             log.info("🔍 [EVIDENCIA] Content Type: {}", archivo.getContentType());
             log.info("🔍 [EVIDENCIA] Authentication: {}", authentication != null ? "Presente" : "Null");
+            log.info("🔍 [EVIDENCIA] Archivo vacío: {}", archivo.isEmpty());
+            log.info("🔍 [EVIDENCIA] Nombre original: {}", archivo.getOriginalFilename());
             
             if (authentication == null || authentication.getPrincipal() == null) {
                 log.error("❌ [EVIDENCIA] No hay autenticación válida para subir evidencia");
                 return ResponseEntity.status(401).body(
                     ApiResponse.error("Token de autenticación requerido")
+                );
+            }
+            
+            // Validar archivo
+            if (archivo == null || archivo.isEmpty()) {
+                log.error("❌ [EVIDENCIA] Archivo vacío o nulo");
+                return ResponseEntity.status(400).body(
+                    ApiResponse.error("Archivo requerido")
+                );
+            }
+            
+            if (archivo.getOriginalFilename() == null || archivo.getOriginalFilename().trim().isEmpty()) {
+                log.error("❌ [EVIDENCIA] Nombre de archivo inválido");
+                return ResponseEntity.status(400).body(
+                    ApiResponse.error("Nombre de archivo requerido")
                 );
             }
             

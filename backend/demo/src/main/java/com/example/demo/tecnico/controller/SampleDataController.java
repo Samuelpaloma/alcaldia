@@ -36,30 +36,30 @@ public class SampleDataController {
             
             // 1. Crear categorías
             Categoria hardware = Categoria.builder()
-                .nombre("Hardware")
-                .descripcion("Problemas relacionados con equipos físicos")
-                .activa(true)
+                .name("Hardware")
+                .description("Problemas relacionados con equipos físicos")
+                .active(true)
                 .build();
             categoriaRepository.save(hardware);
             
             Categoria software = Categoria.builder()
-                .nombre("Software")
-                .descripcion("Problemas relacionados con aplicaciones y sistemas")
-                .activa(true)
+                .name("Software")
+                .description("Problemas relacionados con aplicaciones y sistemas")
+                .active(true)
                 .build();
             categoriaRepository.save(software);
             
             Categoria red = Categoria.builder()
-                .nombre("Red")
-                .descripcion("Problemas de conectividad y red")
-                .activa(true)
+                .name("Red")
+                .description("Problemas de conectividad y red")
+                .active(true)
                 .build();
             categoriaRepository.save(red);
             
             Categoria usuario = Categoria.builder()
-                .nombre("Usuario")
-                .descripcion("Solicitudes de soporte de usuario")
-                .activa(true)
+                .name("Usuario")
+                .description("Solicitudes de soporte de usuario")
+                .active(true)
                 .build();
             categoriaRepository.save(usuario);
             
@@ -69,68 +69,68 @@ public class SampleDataController {
             
             // 3. Crear tickets de muestra
             Ticket ticket1 = new Ticket();
-            ticket1.setConsulta("Problema con impresora en oficina 201");
-            ticket1.setDescripcion("La impresora HP LaserJet no está imprimiendo correctamente. Los documentos se quedan en cola.");
-            ticket1.setPrioridad("MEDIA");
-            ticket1.setEstado("PENDIENTE");
-            ticket1.setUbicacion("Oficina 201 - Piso 2");
-            ticket1.setTecnicoAsignado(tecnico);
-            ticket1.setCreador(tecnico);
-            ticket1.setCategoria(hardware);
-            ticket1.setFechaCreacion(LocalDateTime.now());
-            ticket1.setFechaActualizacion(LocalDateTime.now());
+            ticket1.setQuery("Problema con impresora en oficina 201");
+            ticket1.setDescription("La impresora HP LaserJet no está imprimiendo correctamente. Los documentos se quedan en cola.");
+            ticket1.setPriority("MEDIA");
+            ticket1.setStatus("PENDIENTE");
+            ticket1.setLocation("Oficina 201 - Piso 2");
+            ticket1.setAssignedTechnician(tecnico);
+            ticket1.setCreator(tecnico);
+            ticket1.setCategory(hardware);
+            ticket1.setCreatedAt(LocalDateTime.now());
+            ticket1.setUpdatedAt(LocalDateTime.now());
             ticketRepository.save(ticket1);
             
             Ticket ticket2 = new Ticket();
-            ticket2.setConsulta("Actualización de software requerida");
-            ticket2.setDescripcion("Necesito actualizar el sistema operativo en los equipos del área administrativa.");
-            ticket2.setPrioridad("ALTA");
-            ticket2.setEstado("EN_PROCESO");
-            ticket2.setUbicacion("Área Administrativa");
-            ticket2.setTecnicoAsignado(tecnico);
-            ticket2.setCreador(tecnico);
-            ticket2.setCategoria(software);
-            ticket2.setFechaCreacion(LocalDateTime.now());
-            ticket2.setFechaActualizacion(LocalDateTime.now());
+            ticket2.setQuery("Actualización de software requerida");
+            ticket2.setDescription("Necesito actualizar el sistema operativo en los equipos del área administrativa.");
+            ticket2.setPriority("ALTA");
+            ticket2.setStatus("EN_PROCESO");
+            ticket2.setLocation("Área Administrativa");
+            ticket2.setAssignedTechnician(tecnico);
+            ticket2.setCreator(tecnico);
+            ticket2.setCategory(software);
+            ticket2.setCreatedAt(LocalDateTime.now());
+            ticket2.setUpdatedAt(LocalDateTime.now());
             ticketRepository.save(ticket2);
             
             Ticket ticket3 = new Ticket();
-            ticket3.setConsulta("Configuración de red WiFi");
-            ticket3.setDescripcion("Configurar nueva red WiFi para el área de reuniones.");
-            ticket3.setPrioridad("BAJA");
-            ticket3.setEstado("COMPLETADO");
-            ticket3.setUbicacion("Sala de Reuniones");
-            ticket3.setTecnicoAsignado(tecnico);
-            ticket3.setCreador(tecnico);
-            ticket3.setCategoria(red);
-            ticket3.setFechaCreacion(LocalDateTime.now());
-            ticket3.setFechaActualizacion(LocalDateTime.now());
+            ticket3.setQuery("Configuración de red WiFi");
+            ticket3.setDescription("Configurar nueva red WiFi para el área de reuniones.");
+            ticket3.setPriority("BAJA");
+            ticket3.setStatus("COMPLETADO");
+            ticket3.setLocation("Sala de Reuniones");
+            ticket3.setAssignedTechnician(tecnico);
+            ticket3.setCreator(tecnico);
+            ticket3.setCategory(red);
+            ticket3.setCreatedAt(LocalDateTime.now());
+            ticket3.setUpdatedAt(LocalDateTime.now());
             ticketRepository.save(ticket3);
             
             Ticket ticket4 = new Ticket();
-            ticket4.setConsulta("Solicitud de capacitación");
-            ticket4.setDescripcion("El personal necesita capacitación en el nuevo sistema de gestión.");
-            ticket4.setPrioridad("MEDIA");
-            ticket4.setEstado("PENDIENTE");
-            ticket4.setUbicacion("Sala de Capacitación");
-            ticket4.setTecnicoAsignado(tecnico);
-            ticket4.setCreador(tecnico);
-            ticket4.setCategoria(usuario);
-            ticket4.setFechaCreacion(LocalDateTime.now());
-            ticket4.setFechaActualizacion(LocalDateTime.now());
+            ticket4.setQuery("Solicitud de capacitación");
+            ticket4.setDescription("El personal necesita capacitación en el nuevo sistema de gestión.");
+            ticket4.setPriority("MEDIA");
+            ticket4.setStatus("PENDIENTE");
+            ticket4.setLocation("Sala de Capacitación");
+            ticket4.setAssignedTechnician(tecnico);
+            ticket4.setCreator(tecnico);
+            ticket4.setCategory(usuario);
+            ticket4.setCreatedAt(LocalDateTime.now());
+            ticket4.setUpdatedAt(LocalDateTime.now());
             ticketRepository.save(ticket4);
             
             Ticket ticket5 = new Ticket();
-            ticket5.setConsulta("Mantenimiento preventivo");
-            ticket5.setDescripcion("Realizar mantenimiento preventivo a los servidores del sistema.");
-            ticket5.setPrioridad("ALTA");
-            ticket5.setEstado("EN_PROCESO");
-            ticket5.setUbicacion("Sala de Servidores");
-            ticket5.setTecnicoAsignado(tecnico);
-            ticket5.setCreador(tecnico);
-            ticket5.setCategoria(hardware);
-            ticket5.setFechaCreacion(LocalDateTime.now());
-            ticket5.setFechaActualizacion(LocalDateTime.now());
+            ticket5.setQuery("Mantenimiento preventivo");
+            ticket5.setDescription("Realizar mantenimiento preventivo a los servidores del sistema.");
+            ticket5.setPriority("ALTA");
+            ticket5.setStatus("EN_PROCESO");
+            ticket5.setLocation("Sala de Servidores");
+            ticket5.setAssignedTechnician(tecnico);
+            ticket5.setCreator(tecnico);
+            ticket5.setCategory(hardware);
+            ticket5.setCreatedAt(LocalDateTime.now());
+            ticket5.setUpdatedAt(LocalDateTime.now());
             ticketRepository.save(ticket5);
             
             log.info("Datos de muestra creados exitosamente");

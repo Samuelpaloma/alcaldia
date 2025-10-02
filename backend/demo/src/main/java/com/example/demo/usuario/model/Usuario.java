@@ -11,7 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "usuarios")
+@Table(name = "users")
 @Data
 @Builder
 @NoArgsConstructor
@@ -20,105 +20,105 @@ public class Usuario {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_usuario")
-        private Long idUsuario;
+    @Column(name = "id")
+        private Long id;
     
     @Column(unique = true, nullable = false)
     private String email;
     
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
+    @Column(name = "password", nullable = false)
+    private String password;
     
-    @Column(nullable = false, length = 100)
-    private String nombre;
+    @Column(name = "first_name", nullable = false, length = 100)
+    private String firstName;
     
-    @Column(nullable = false, length = 100)
-    private String apellido;
+    @Column(name = "last_name", nullable = false, length = 100)
+    private String lastName;
     
-    @Column(length = 200)
-    private String ubicacion;
+    @Column(name = "location", length = 200)
+    private String location;
     
-    @Column(length = 100)
-    private String departamento;
+    @Column(name = "department", length = 100)
+    private String department;
     
-    @Column(length = 100)
-    private String cargo;
+    @Column(name = "position", length = 100)
+    private String position;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_usuario", nullable = false)
-    private TipoUsuario tipoUsuario;
+    @Column(name = "user_type", nullable = false)
+    private TipoUsuario userType;
     
-    @Column(nullable = false)
+    @Column(name = "active", nullable = false)
     @Builder.Default
-    private Boolean activo = true;
+    private Boolean active = true;
     
     @Column(name = "require_2fa")
     @Builder.Default
     private Boolean require2fa = false;
     
-    @Column(name = "email_verificado", nullable = false)
+    @Column(name = "email_verified", nullable = false)
     @Builder.Default
-    private Boolean emailVerificado = false;
+    private Boolean emailVerified = false;
     
-    @Column(name = "password_temporal", nullable = false)
+    @Column(name = "temporary_password", nullable = false)
     @Builder.Default
-    private Boolean passwordTemporal = false;
+    private Boolean temporaryPassword = false;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "creado_por")
-    private Usuario creadoPor;
+    @JoinColumn(name = "created_by")
+    private Usuario createdBy;
     
-    @Column(name = "ultimo_acceso")
-    private LocalDateTime ultimoAcceso;
+    @Column(name = "last_access")
+    private LocalDateTime lastAccess;
     
     @CreationTimestamp
-    @Column(name = "fecha_creacion")
-    private LocalDateTime fechaCreacion;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
     
     @UpdateTimestamp
-    @Column(name = "fecha_actualizacion")
-    private LocalDateTime fechaActualizacion;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     @Column(name = "device_token")
-    private String deviceToken; // Token para notificaciones push
+    private String deviceToken; // Token for push notifications
     
-    @Column(name = "tema_preferido", length = 10, columnDefinition = "VARCHAR(10) DEFAULT 'light'")
-    private String temaPreferido = "light"; // Tema preferido: 'light' o 'dark'
+    @Column(name = "preferred_theme", length = 10, columnDefinition = "VARCHAR(10) DEFAULT 'light'")
+    private String preferredTheme = "light"; // Preferred theme: 'light' or 'dark'
     
-    // Tickets donde el usuario es el técnico asignado
-        @OneToMany(mappedBy = "tecnicoAsignado")
-        private java.util.List<com.example.demo.ticket.model.Ticket> ticketsAsignados;
+    // Tickets where the user is the assigned technician
+        @OneToMany(mappedBy = "assignedTechnician")
+        private java.util.List<com.example.demo.ticket.model.Ticket> assignedTickets;
 
-        // Tickets creados por el usuario
-        @OneToMany(mappedBy = "creador")
-        private java.util.List<com.example.demo.ticket.model.Ticket> ticketsCreados;
-    // Métodos de utilidad
-    public String getNombreCompleto() {
-        return nombre + " " + apellido;
+        // Tickets created by the user
+        @OneToMany(mappedBy = "creator")
+        private java.util.List<com.example.demo.ticket.model.Ticket> createdTickets;
+    // Utility methods
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
     
     public boolean isTecnico() {
-        return TipoUsuario.TECNICO.equals(tipoUsuario);
+        return TipoUsuario.TECNICO.equals(userType);
     }
     
     public boolean isAdmin() {
-        return TipoUsuario.ADMINISTRADOR.equals(tipoUsuario);
+        return TipoUsuario.ADMINISTRADOR.equals(userType);
     }
     
     public boolean isSuperAdmin() {
-        return TipoUsuario.SUPERADMIN.equals(tipoUsuario);
+        return TipoUsuario.SUPERADMIN.equals(userType);
     }
     
     public boolean isFuncionario() {
-        return TipoUsuario.FUNCIONARIO.equals(tipoUsuario);
+        return TipoUsuario.FUNCIONARIO.equals(userType);
     }
     
-    // Métodos getter para compatibilidad con los servicios
+    // Getter methods for service compatibility
     public boolean isActivo() {
-        return activo != null && activo;
+        return active != null && active;
     }
     
     public boolean isEmailVerificado() {
-        return emailVerificado != null && emailVerificado;
+        return emailVerified != null && emailVerified;
     }
 }

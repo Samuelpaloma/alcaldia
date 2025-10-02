@@ -1,7 +1,7 @@
 package com.example.demo.notificacion.service;
 
-import com.example.demo.notificacion.model.NotificacionMejorada;
-import com.example.demo.notificacion.repository.NotificacionMejoradaRepository;
+import com.example.demo.notificacion.model.Notification;
+import com.example.demo.notificacion.repository.NotificationRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
@@ -20,7 +20,7 @@ import java.util.*;
 public class NotificationRoleService {
 
     @Autowired
-    private NotificacionMejoradaRepository notificacionMejoradaRepository;
+    private NotificationRepository NotificationRepository;
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -35,7 +35,7 @@ public class NotificationRoleService {
     private ObjectMapper objectMapper;
 
     // Constantes para tipos de notificación
-    public static final String TIPO_TICKET_CREADO = "ticket_creado";
+    public static final String TYPE_TICKET_CREATED = "ticket_creado";
     public static final String TIPO_TICKET_ASIGNADO = "ticket_asignado";
     public static final String TIPO_TICKET_EN_PROCESO = "ticket_en_proceso";
     public static final String TIPO_TICKET_RESUELTO = "ticket_resuelto";
@@ -68,16 +68,16 @@ public class NotificationRoleService {
             // Notificación para administradores
             List<String> destinatariosAdmin = Arrays.asList("rol:administrador");
             String mensajeAdmin = String.format("Nuevo ticket creado por %s (#%d)", 
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(), ticketId);
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(), ticketId);
             
             crearNotificacion(
-                TIPO_TICKET_CREADO,
+                TYPE_TICKET_CREATED,
                 mensajeAdmin,
                 destinatariosAdmin,
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
@@ -102,10 +102,10 @@ public class NotificationRoleService {
 
             // Notificación para el funcionario (creador del ticket)
             String mensajeFuncionario = String.format("Tu ticket #%d fue asignado al técnico %s", 
-                ticketId, tecnico.getNombre() + " " + tecnico.getApellido());
+                ticketId, tecnico.getFullName() + " " + tecnico.getLastName());
             
             List<String> destinatariosFuncionario = Arrays.asList(
-                "funcionario:" + ticket.getCreadorEmail()
+                "funcionario:" + ticket.getCreatorEmail()
             );
             
             crearNotificacion(
@@ -115,13 +115,13 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
             // Notificación para el técnico asignado
             String mensajeTecnico = String.format("Se te asignó el ticket #%d del funcionario %s", 
-                ticketId, ticket.getCreadorNombre());
+                ticketId, ticket.getCreatorName());
             
             List<String> destinatariosTecnico = Arrays.asList(
                 "tecnico:" + tecnico.getEmail()
@@ -134,13 +134,13 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
             // Notificación para administradores
             String mensajeAdmin = String.format("Has asignado el ticket #%d del funcionario %s al técnico %s", 
-                ticketId, ticket.getCreadorNombre(), tecnico.getNombre() + " " + tecnico.getApellido());
+                ticketId, ticket.getCreatorName(), tecnico.getFullName() + " " + tecnico.getLastName());
             
             List<String> destinatariosAdmin = Arrays.asList("rol:administrador");
             
@@ -151,7 +151,7 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
@@ -173,10 +173,10 @@ public class NotificationRoleService {
 
             // Notificación para el funcionario (creador del ticket)
             String mensajeFuncionario = String.format("Tu ticket #%d ha sido resuelto por %s", 
-                ticketId, usuarioActor.getNombre() + " " + usuarioActor.getApellido());
+                ticketId, usuarioActor.getFullName() + " " + usuarioActor.getLastName());
             
             List<String> destinatariosFuncionario = Arrays.asList(
-                "funcionario:" + ticket.getCreadorEmail()
+                "funcionario:" + ticket.getCreatorEmail()
             );
             
             crearNotificacion(
@@ -186,13 +186,13 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
             // Notificación para administradores
             String mensajeAdmin = String.format("El ticket #%d del funcionario %s fue resuelto por %s", 
-                ticketId, ticket.getCreadorNombre(), usuarioActor.getNombre() + " " + usuarioActor.getApellido());
+                ticketId, ticket.getCreatorName(), usuarioActor.getFullName() + " " + usuarioActor.getLastName());
             
             List<String> destinatariosAdmin = Arrays.asList("rol:administrador");
             
@@ -203,7 +203,7 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
@@ -225,10 +225,10 @@ public class NotificationRoleService {
 
             // Notificación para el funcionario (creador del ticket)
             String mensajeFuncionario = String.format("Tu ticket #%d ha sido cerrado por %s", 
-                ticketId, usuarioActor.getNombre() + " " + usuarioActor.getApellido());
+                ticketId, usuarioActor.getFullName() + " " + usuarioActor.getLastName());
             
             List<String> destinatariosFuncionario = Arrays.asList(
-                "funcionario:" + ticket.getCreadorEmail()
+                "funcionario:" + ticket.getCreatorEmail()
             );
             
             crearNotificacion(
@@ -238,13 +238,13 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
             // Notificación para administradores
             String mensajeAdmin = String.format("El ticket #%d del funcionario %s fue cerrado por %s", 
-                ticketId, ticket.getCreadorNombre(), usuarioActor.getNombre() + " " + usuarioActor.getApellido());
+                ticketId, ticket.getCreatorName(), usuarioActor.getFullName() + " " + usuarioActor.getLastName());
             
             List<String> destinatariosAdmin = Arrays.asList("rol:administrador");
             
@@ -255,7 +255,7 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
@@ -277,10 +277,10 @@ public class NotificationRoleService {
 
             // Notificación para el funcionario (creador del ticket)
             String mensajeFuncionario = String.format("Tu ticket #%d está siendo procesado por %s", 
-                ticketId, usuarioActor.getNombre() + " " + usuarioActor.getApellido());
+                ticketId, usuarioActor.getFullName() + " " + usuarioActor.getLastName());
             
             List<String> destinatariosFuncionario = Arrays.asList(
-                "funcionario:" + ticket.getCreadorEmail()
+                "funcionario:" + ticket.getCreatorEmail()
             );
             
             crearNotificacion(
@@ -290,13 +290,13 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
             // Notificación para administradores
             String mensajeAdmin = String.format("El ticket #%d del funcionario %s está siendo procesado por %s", 
-                ticketId, ticket.getCreadorNombre(), usuarioActor.getNombre() + " " + usuarioActor.getApellido());
+                ticketId, ticket.getCreatorName(), usuarioActor.getFullName() + " " + usuarioActor.getLastName());
             
             List<String> destinatariosAdmin = Arrays.asList("rol:administrador");
             
@@ -307,7 +307,7 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "normal"
             );
 
@@ -335,7 +335,7 @@ public class NotificationRoleService {
                 return new ArrayList<>();
         }
         
-        List<Usuario> usuarios = usuarioRepository.findByTipoUsuarioAndActivo(tipoUsuario, true);
+        List<Usuario> usuarios = usuarioRepository.findByUserTypeAndActive(tipoUsuario, true);
         List<String> destinatarios = new ArrayList<>();
         
         for (Usuario usuario : usuarios) {
@@ -363,35 +363,35 @@ public class NotificationRoleService {
             String mensajeTecnico = "";
             String mensajeAdmin = "";
 
-            if (usuarioActor.getTipoUsuario() == TipoUsuario.TECNICO) {
+            if (usuarioActor.getUserType() == TipoUsuario.TECNICO) {
                 // Si es técnico, notificar al funcionario y admin
                 destinatarios.add("rol:funcionario");
                 destinatarios.add("rol:administrador");
                 
                 mensajeFuncionario = String.format("El técnico %s agregó un comentario al ticket #%d", 
-                    usuarioActor.getNombre() + " " + usuarioActor.getApellido(), ticketId);
+                    usuarioActor.getFullName() + " " + usuarioActor.getLastName(), ticketId);
                 mensajeAdmin = String.format("El técnico %s agregó un comentario al ticket #%d", 
-                    usuarioActor.getNombre() + " " + usuarioActor.getApellido(), ticketId);
+                    usuarioActor.getFullName() + " " + usuarioActor.getLastName(), ticketId);
                 
-            } else if (usuarioActor.getTipoUsuario() == TipoUsuario.FUNCIONARIO) {
+            } else if (usuarioActor.getUserType() == TipoUsuario.FUNCIONARIO) {
                 // Si es funcionario, notificar al técnico y admin
                 destinatarios.add("rol:tecnico");
                 destinatarios.add("rol:administrador");
                 
                 mensajeTecnico = String.format("El funcionario %s agregó un comentario al ticket #%d", 
-                    usuarioActor.getNombre() + " " + usuarioActor.getApellido(), ticketId);
+                    usuarioActor.getFullName() + " " + usuarioActor.getLastName(), ticketId);
                 mensajeAdmin = String.format("El funcionario %s agregó un comentario al ticket #%d", 
-                    usuarioActor.getNombre() + " " + usuarioActor.getApellido(), ticketId);
+                    usuarioActor.getFullName() + " " + usuarioActor.getLastName(), ticketId);
                 
-            } else if (usuarioActor.getTipoUsuario() == TipoUsuario.ADMINISTRADOR) {
+            } else if (usuarioActor.getUserType() == TipoUsuario.ADMINISTRADOR) {
                 // Si es admin, notificar al funcionario y técnico
                 destinatarios.add("rol:funcionario");
                 destinatarios.add("rol:tecnico");
                 
                 mensajeFuncionario = String.format("El administrador %s agregó un comentario al ticket #%d", 
-                    usuarioActor.getNombre() + " " + usuarioActor.getApellido(), ticketId);
+                    usuarioActor.getFullName() + " " + usuarioActor.getLastName(), ticketId);
                 mensajeTecnico = String.format("El administrador %s agregó un comentario al ticket #%d", 
-                    usuarioActor.getNombre() + " " + usuarioActor.getApellido(), ticketId);
+                    usuarioActor.getFullName() + " " + usuarioActor.getLastName(), ticketId);
             }
 
             // Crear notificaciones para cada destinatario
@@ -413,7 +413,7 @@ public class NotificationRoleService {
                         ticketId,
                         usuarioActorId,
                         usuarioActor.getEmail(),
-                        usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                        usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                         "normal"
                     );
                 }
@@ -440,10 +440,10 @@ public class NotificationRoleService {
 
             // Notificación para el funcionario (creador del ticket)
             String mensajeFuncionario = String.format("Tu ticket #%d fue escalado al técnico %s", 
-                ticketId, tecnico.getNombre() + " " + tecnico.getApellido());
+                ticketId, tecnico.getFullName() + " " + tecnico.getLastName());
             
             List<String> destinatariosFuncionario = Arrays.asList(
-                "funcionario:" + ticket.getCreadorEmail()
+                "funcionario:" + ticket.getCreatorEmail()
             );
             
             crearNotificacion(
@@ -453,13 +453,13 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "alta" // Prioridad alta para escalaciones
             );
 
             // Notificación para el técnico asignado
             String mensajeTecnico = String.format("Se te escaló el ticket #%d del funcionario %s", 
-                ticketId, ticket.getCreadorNombre());
+                ticketId, ticket.getCreatorName());
             
             List<String> destinatariosTecnico = Arrays.asList(
                 "tecnico:" + tecnico.getEmail()
@@ -472,13 +472,13 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "alta" // Prioridad alta para escalaciones
             );
 
             // Notificación para administradores
             String mensajeAdmin = String.format("El ticket #%d del funcionario %s fue escalado al técnico %s", 
-                ticketId, ticket.getCreadorNombre(), tecnico.getNombre() + " " + tecnico.getApellido());
+                ticketId, ticket.getCreatorName(), tecnico.getFullName() + " " + tecnico.getLastName());
             
             List<String> destinatariosAdmin = Arrays.asList("rol:administrador");
             
@@ -489,7 +489,7 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 "alta" // Prioridad alta para escalaciones
             );
 
@@ -519,7 +519,7 @@ public class NotificationRoleService {
 
             // Crear notificación específica para el usuario
             List<String> destinatarios = Arrays.asList(
-                usuarioDestinatario.getTipoUsuario().toString().toLowerCase() + ":" + usuarioDestinatario.getEmail()
+                usuarioDestinatario.getUserType().toString().toLowerCase() + ":" + usuarioDestinatario.getEmail()
             );
             
             crearNotificacion(
@@ -625,7 +625,7 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 prioridad
             );
         } catch (Exception e) {
@@ -646,9 +646,9 @@ public class NotificationRoleService {
             String prefijoDestinatario = "funcionario:"; // Por defecto
             
             if (destinatario != null) {
-                if ("TECNICO".equals(destinatario.getTipoUsuario())) {
+                if ("TECNICO".equals(destinatario.getUserType())) {
                     prefijoDestinatario = "tecnico:";
-                } else if ("ADMINISTRADOR".equals(destinatario.getTipoUsuario()) || "SUPERADMIN".equals(destinatario.getTipoUsuario())) {
+                } else if ("ADMINISTRADOR".equals(destinatario.getUserType()) || "SUPERADMIN".equals(destinatario.getUserType())) {
                     prefijoDestinatario = "administrador:";
                 }
             }
@@ -662,7 +662,7 @@ public class NotificationRoleService {
                 ticketId,
                 usuarioActorId,
                 usuarioActor.getEmail(),
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
                 prioridad
             );
         } catch (Exception e) {
@@ -677,20 +677,20 @@ public class NotificationRoleService {
                                  Long ticketId, Long usuarioActorId, String usuarioActorEmail, 
                                  String usuarioActorNombre, String prioridad) {
         try {
-            NotificacionMejorada notificacion = new NotificacionMejorada();
-            notificacion.setTipo(tipo);
-            notificacion.setMensaje(mensaje);
-            notificacion.setDestinatarios(objectMapper.writeValueAsString(destinatarios));
+            Notification notificacion = new Notification();
+            notificacion.setType(tipo);
+            notificacion.setMessage(mensaje);
+            notificacion.setRecipients(objectMapper.writeValueAsString(destinatarios));
             notificacion.setTicketId(ticketId);
-            notificacion.setUsuarioActorId(usuarioActorId);
-            notificacion.setUsuarioActorEmail(usuarioActorEmail);
-            notificacion.setUsuarioActorNombre(usuarioActorNombre);
-            notificacion.setPrioridad(prioridad);
-            notificacion.setLeida(false);
-            notificacion.setFechaCreacion(LocalDateTime.now());
+            notificacion.setActorUserId(usuarioActorId);
+            notificacion.setActorUserEmail(usuarioActorEmail);
+            notificacion.setActorUserName(usuarioActorNombre);
+            notificacion.setPriority(prioridad);
+            notificacion.setRead(false);
+            notificacion.setCreatedAt(LocalDateTime.now());
 
             // Guardar en base de datos
-            NotificacionMejorada savedNotificacion = notificacionMejoradaRepository.save(notificacion);
+            Notification savedNotificacion = NotificationRepository.save(notificacion);
 
             // Enviar por WebSocket a cada destinatario
             for (String destinatario : destinatarios) {
@@ -707,7 +707,7 @@ public class NotificationRoleService {
                 notificacionWebSocket.put("usuarioActorNombre", usuarioActorNombre);
                 notificacionWebSocket.put("prioridad", prioridad);
                 notificacionWebSocket.put("leida", false);
-                notificacionWebSocket.put("fechaCreacion", savedNotificacion.getFechaCreacion());
+                notificacionWebSocket.put("fechaCreacion", savedNotificacion.getCreatedAt());
 
                 // Enviar por WebSocket global (el frontend filtrará por usuario/rol)
                 System.out.println("🔔 [DEBUG] Enviando notificación por WebSocket:");

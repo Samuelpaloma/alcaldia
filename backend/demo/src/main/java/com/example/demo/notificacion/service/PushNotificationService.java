@@ -1,7 +1,7 @@
 package com.example.demo.notificacion.service;
 
-import com.example.demo.notificacion.model.NotificacionMejorada;
-import com.example.demo.notificacion.repository.NotificacionMejoradaRepository;
+import com.example.demo.notificacion.model.Notification;
+import com.example.demo.notificacion.repository.NotificationRepository;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import java.util.List;
 @Slf4j
 public class PushNotificationService {
     
-    private final NotificacionMejoradaRepository notificacionMejoradaRepository;
+    private final NotificationRepository NotificationRepository;
     private final UsuarioRepository usuarioRepository;
     
     /**

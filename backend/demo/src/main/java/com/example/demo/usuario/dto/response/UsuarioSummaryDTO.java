@@ -24,13 +24,13 @@ public class UsuarioSummaryDTO {
     private String label;    // nombre + email
     private String value;    // id como string
         // Constructor requerido por JPQL
-        public UsuarioSummaryDTO(Long id, String nombreCompleto, String email, com.example.demo.usuario.model.TipoUsuario tipoUsuario, Boolean activo, LocalDateTime ultimoAcceso, String label, String value) {
+        public UsuarioSummaryDTO(Long id, String nombreCompleto, String email, com.example.demo.usuario.model.TipoUsuario userType, Boolean active, LocalDateTime lastAccess, String label, String value) {
             this.id = id;
             this.nombreCompleto = nombreCompleto;
             this.email = email;
-            this.tipoUsuario = tipoUsuario != null ? tipoUsuario.name() : null;
-            this.activo = activo;
-            this.ultimoAcceso = ultimoAcceso;
+            this.tipoUsuario = userType != null ? userType.name() : null;
+            this.activo = active;
+            this.ultimoAcceso = lastAccess;
             this.label = label;
             this.value = value;
         }

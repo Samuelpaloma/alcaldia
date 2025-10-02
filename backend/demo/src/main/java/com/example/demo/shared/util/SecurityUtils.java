@@ -25,7 +25,7 @@ public class SecurityUtils {
      */
     public static Long getCurrentUserId() {
         Usuario user = getCurrentUser();
-        return user != null ? user.getIdUsuario() : null;
+        return user != null ? user.getId() : null;
     }
     
     /**

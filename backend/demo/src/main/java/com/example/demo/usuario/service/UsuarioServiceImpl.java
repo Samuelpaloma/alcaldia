@@ -50,12 +50,12 @@ public class UsuarioServiceImpl implements UsuarioService {
         // 3. Crear técnico
         Usuario tecnico = Usuario.builder()
             .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .nombre(request.getNombre())
-            .apellido(request.getApellido())
-            .tipoUsuario(TipoUsuario.TECNICO)
-            .creadoPor(admin)
-            .passwordTemporal(true) // Marcar como contraseña temporal
+            .password(passwordEncoder.encode(request.getPassword()))
+            .firstName(request.getNombre())
+            .lastName(request.getApellido())
+            .userType(TipoUsuario.TECNICO)
+            .createdBy(admin)
+            .temporaryPassword(true) // Marcar como contraseña temporal
             .require2fa(request.getRequire2fa())
             .build();
         
@@ -85,12 +85,12 @@ public class UsuarioServiceImpl implements UsuarioService {
         // 3. Crear admin
         Usuario admin = Usuario.builder()
             .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .nombre(request.getNombre())
-            .apellido(request.getApellido())
-            .tipoUsuario(TipoUsuario.ADMINISTRADOR)
-            .creadoPor(superAdmin)
-            .passwordTemporal(true) // Marcar como contraseña temporal
+            .password(passwordEncoder.encode(request.getPassword()))
+            .firstName(request.getNombre())
+            .lastName(request.getApellido())
+            .userType(TipoUsuario.ADMINISTRADOR)
+            .createdBy(superAdmin)
+            .temporaryPassword(true) // Marcar como contraseña temporal
             .require2fa(request.getRequire2fa())
             .build();
         
@@ -159,18 +159,18 @@ public class UsuarioServiceImpl implements UsuarioService {
         // Crear funcionario
         Usuario funcionario = Usuario.builder()
             .email(request.getEmail())
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
-            .nombre(request.getNombre())
-            .apellido(request.getApellido())
-            .ubicacion(request.getUbicacion())
-            .departamento(request.getDepartamento())
-            .cargo(request.getCargo())
-            .tipoUsuario(TipoUsuario.FUNCIONARIO)
-            .activo(true)
-            .emailVerificado(true) // Creados por admin ya verificados
-            .passwordTemporal(true) // Debe cambiar contraseña en primer acceso
+            .password(passwordEncoder.encode(request.getPassword()))
+            .firstName(request.getNombre())
+            .lastName(request.getApellido())
+            .location(request.getUbicacion())
+            .department(request.getDepartamento())
+            .position(request.getCargo())
+            .userType(TipoUsuario.FUNCIONARIO)
+            .active(true)
+            .emailVerified(true) // Creados por admin ya verificados
+            .temporaryPassword(true) // Debe cambiar contraseña en primer acceso
             .require2fa(request.getRequire2fa())
-            .creadoPor(admin)
+            .createdBy(admin)
             .build();
         
         Usuario savedFuncionario = usuarioRepository.save(funcionario);
@@ -208,21 +208,21 @@ public class UsuarioServiceImpl implements UsuarioService {
         
         // Aplicar cambios solo si los campos vienen en la petición
         if (request.getNombre() != null) {
-            usuario.setNombre(request.getNombre());
+            usuario.setFirstName(request.getNombre());
         }
         if (request.getApellido() != null) {
-            usuario.setApellido(request.getApellido());
+            usuario.setLastName(request.getApellido());
         }
         
         // Actualizar campos de perfil personal
         if (request.getUbicacion() != null) {
-            usuario.setUbicacion(request.getUbicacion());
+            usuario.setLocation(request.getUbicacion());
         }
         if (request.getDepartamento() != null) {
-            usuario.setDepartamento(request.getDepartamento());
+            usuario.setDepartment(request.getDepartamento());
         }
         if (request.getCargo() != null) {
-            usuario.setCargo(request.getCargo());
+            usuario.setPosition(request.getCargo());
         }
         
         if (request.getRequire2fa() != null) {
@@ -231,7 +231,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         
         // Solo admin/superadmin pueden cambiar estado activo
         if (request.getActivo() != null && canManageUserStatus(currentUser, usuario)) {
-            usuario.setActivo(request.getActivo());
+            usuario.setActive(request.getActivo());
         }
         
         Usuario updatedUser = usuarioRepository.save(usuario);
@@ -254,10 +254,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         validateStatusToggle(usuario, currentUser);
         
         // Cambiar estado
-        usuario.setActivo(!usuario.getActivo());
+        usuario.setActive(!usuario.getActive());
         usuarioRepository.save(usuario);
         
-        log.info("Estado de usuario {} cambiado a: {}", usuario.getEmail(), usuario.getActivo());
+        log.info("Estado de usuario {} cambiado a: {}", usuario.getEmail(), usuario.getActive());
     }
     
     @Override
@@ -268,12 +268,12 @@ public class UsuarioServiceImpl implements UsuarioService {
             .orElseThrow(() -> new UserNotFoundException("Usuario no encontrado"));
         
         // Validar contraseña actual
-        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPassword())) {
             throw new BusinessRuleException("La contraseña actual es incorrecta");
         }
         
         // Actualizar contraseña
-        usuario.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
         usuarioRepository.save(usuario);
         
         // Enviar confirmación por email
@@ -313,13 +313,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public long getTotalUsersByType(TipoUsuario tipo) {
-        return usuarioRepository.countByTipoUsuario(tipo);
+        return usuarioRepository.countByUserType(tipo);
     }
     
     @Override
     @Transactional(readOnly = true)
     public long getActiveUsersByType(TipoUsuario tipo) {
-        return usuarioRepository.countByTipoUsuarioAndActivo(tipo, true);
+        return usuarioRepository.countByUserTypeAndActive(tipo, true);
     }
     
     @Override
@@ -343,7 +343,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new InsufficientPermissionException("Solo administradores pueden crear técnicos");
         }
         
-        if (!admin.getActivo()) {
+        if (!admin.getActive()) {
             throw new BusinessRuleException("Administrador desactivado no puede crear usuarios");
         }
         
@@ -358,7 +358,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new InsufficientPermissionException("Solo super administradores pueden crear administradores");
         }
         
-        if (!superAdmin.getActivo()) {
+        if (!superAdmin.getActive()) {
             throw new BusinessRuleException("Super Administrador desactivado no puede crear usuarios");
         }
         
@@ -372,7 +372,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         
         // Validar límite de técnicos
-        long totalTechnicians = usuarioRepository.countByTipoUsuario(TipoUsuario.TECNICO);
+        long totalTechnicians = usuarioRepository.countByUserType(TipoUsuario.TECNICO);
         if (totalTechnicians >= MAX_TECHNICIANS) {
             throw new BusinessRuleException("Se ha alcanzado el límite máximo de técnicos (" + MAX_TECHNICIANS + ")");
         }
@@ -385,7 +385,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         
         // Validar límite de admins
-        long totalAdmins = usuarioRepository.countByTipoUsuario(TipoUsuario.ADMINISTRADOR);
+        long totalAdmins = usuarioRepository.countByUserType(TipoUsuario.ADMINISTRADOR);
         if (totalAdmins >= MAX_ADMINS) {
             throw new BusinessRuleException("Se ha alcanzado el límite máximo de administradores (" + MAX_ADMINS + ")");
         }
@@ -393,21 +393,21 @@ public class UsuarioServiceImpl implements UsuarioService {
     
     private void validateUpdatePermissions(Usuario targetUser, Usuario currentUser) {
         // Un usuario puede editar su propio perfil
-        if (targetUser.getIdUsuario().equals(currentUser.getIdUsuario())) {
+        if (targetUser.getId().equals(currentUser.getId())) {
             return;
         }
         
         // Admin puede editar técnicos que él creó
         if (currentUser.isAdmin() && targetUser.isTecnico() && 
-            targetUser.getCreadoPor() != null && 
-            targetUser.getCreadoPor().getIdUsuario().equals(currentUser.getIdUsuario())) {
+            targetUser.getCreatedBy() != null && 
+            targetUser.getCreatedBy().getId().equals(currentUser.getId())) {
             return;
         }
         
         // SuperAdmin puede editar admins que él creó
         if (currentUser.isSuperAdmin() && targetUser.isAdmin() && 
-            targetUser.getCreadoPor() != null && 
-            targetUser.getCreadoPor().getIdUsuario().equals(currentUser.getIdUsuario())) {
+            targetUser.getCreatedBy() != null && 
+            targetUser.getCreatedBy().getId().equals(currentUser.getId())) {
             return;
         }
         
@@ -416,12 +416,12 @@ public class UsuarioServiceImpl implements UsuarioService {
     
     private void validateStatusToggle(Usuario targetUser, Usuario currentUser) {
         // No puede desactivarse a sí mismo
-        if (targetUser.getIdUsuario().equals(currentUser.getIdUsuario())) {
+        if (targetUser.getId().equals(currentUser.getId())) {
             throw new BusinessRuleException("No puedes desactivar tu propia cuenta");
         }
         
         // No se puede desactivar al último admin activo
-        if (targetUser.isAdmin() && targetUser.getActivo()) {
+        if (targetUser.isAdmin() && targetUser.getActive()) {
             long activeAdmins = usuarioRepository.countActiveAdmins();
             if (activeAdmins <= 1) {
                 throw new BusinessRuleException("No se puede desactivar al último administrador activo");

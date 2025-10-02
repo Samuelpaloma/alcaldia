@@ -11,7 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "historial_estados_tickets")
+@Table(name = "ticket_status_history")
 @Data
 @Builder
 @NoArgsConstructor

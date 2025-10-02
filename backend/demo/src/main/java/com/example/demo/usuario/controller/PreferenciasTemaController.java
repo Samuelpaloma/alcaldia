@@ -36,7 +36,7 @@ public class PreferenciasTemaController {
             }
 
             Usuario usuario = usuarioOpt.get();
-            String tema = usuario.getTemaPreferido() != null ? usuario.getTemaPreferido() : "light";
+            String tema = usuario.getPreferredTheme() != null ? usuario.getPreferredTheme() : "light";
 
             Map<String, Object> response = new HashMap<>();
             response.put("tema", tema);
@@ -74,7 +74,7 @@ public class PreferenciasTemaController {
             }
 
             Usuario usuario = usuarioOpt.get();
-            usuario.setTemaPreferido(tema);
+            usuario.setPreferredTheme(tema);
             usuarioRepository.save(usuario);
 
             Map<String, Object> response = new HashMap<>();

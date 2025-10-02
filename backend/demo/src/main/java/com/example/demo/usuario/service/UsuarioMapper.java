@@ -17,32 +17,32 @@ public class UsuarioMapper {
         }
         
         return UsuarioDTO.builder()
-            .id(usuario.getIdUsuario())
+            .id(usuario.getId())
             .email(usuario.getEmail())
-            .nombre(usuario.getNombre())
-            .apellido(usuario.getApellido())
-            .nombreCompleto(usuario.getNombreCompleto())
-            .ubicacion(usuario.getUbicacion())
-            .departamento(usuario.getDepartamento())
-            .cargo(usuario.getCargo())
-            .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
-            .activo(usuario.getActivo())
+            .nombre(usuario.getFirstName())
+            .apellido(usuario.getLastName())
+            .nombreCompleto(usuario.getFullName())
+            .ubicacion(usuario.getLocation())
+            .departamento(usuario.getDepartment())
+            .cargo(usuario.getPosition())
+            .tipoUsuario(usuario.getUserType().getDescripcion())
+            .activo(usuario.getActive())
             .require2fa(usuario.getRequire2fa())
             .creadoPorNombre(getCreadoPorNombre(usuario))
-            .ultimoAcceso(usuario.getUltimoAcceso())
-            .fechaCreacion(usuario.getFechaCreacion())
-            .estadoTexto(usuario.getActivo() ? "Activo" : "Inactivo")
-            .tiempoSinAcceso(formatTiempoSinAcceso(usuario.getUltimoAcceso()))
+            .ultimoAcceso(usuario.getLastAccess())
+            .fechaCreacion(usuario.getCreatedAt())
+            .estadoTexto(usuario.getActive() ? "Activo" : "Inactivo")
+            .tiempoSinAcceso(formatTiempoSinAcceso(usuario.getLastAccess()))
             .puedeEditar(true) // Se calculará en el servicio según permisos
             .puedeEliminar(true) // Se calculará en el servicio según permisos
             .build();
     }
     
     private String getCreadoPorNombre(Usuario usuario) {
-        if (usuario.getCreadoPor() == null) {
+        if (usuario.getCreatedBy() == null) {
             return "Auto-registro";
         }
-        return usuario.getCreadoPor().getNombreCompleto();
+        return usuario.getCreatedBy().getFullName();
     }
     
     private String formatTiempoSinAcceso(LocalDateTime ultimoAcceso) {

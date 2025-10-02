@@ -1,6 +1,7 @@
 package com.example.demo.ticket.service;
 
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,11 +34,6 @@ import com.example.demo.asignacion.model.HistorialAsignacion;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
 import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Base64;
-import java.util.UUID;
 
 @Service
 public class TicketServiceImpl implements TicketService {
@@ -91,24 +87,24 @@ public class TicketServiceImpl implements TicketService {
         CategoriaResponseDTO categoriaResponse = categoriaService.obtenerCategoriaPorId(request.getCategoriaId());
         Categoria categoria = new Categoria();
         categoria.setId(categoriaResponse.getId());
-        categoria.setNombre(categoriaResponse.getNombre());
+        categoria.setName(categoriaResponse.getNombre());
         
         // Crear ticket con todos los campos del formulario
         Ticket ticket = new Ticket();
         // El nombre se obtiene automáticamente del usuario logueado
-        ticket.setUbicacion(request.getUbicacion());
+        ticket.setLocation(request.getUbicacion());
         // Establecer tanto consulta como descripción
-        ticket.setConsulta(request.getConsulta());
+        ticket.setQuery(request.getConsulta());
         // La descripción debe contener el mensaje completo (consulta + categoría)
-        ticket.setDescripcion(request.getConsulta() != null && !request.getConsulta().trim().isEmpty() 
+        ticket.setDescription(request.getConsulta() != null && !request.getConsulta().trim().isEmpty() 
             ? request.getConsulta() 
-            : categoria.getNombre());
-        ticket.setCategoria(categoria);
-        ticket.setCategoriaString(categoria.getNombre()); // Para compatibilidad
-        ticket.setCategoriaNombre(categoria.getNombre()); // Campo requerido por la tabla
-        ticket.setPrioridad(request.getPrioridad() != null ? request.getPrioridad() : "MEDIA");
-        ticket.setEstado("PENDIENTE");
-        ticket.setCreador(creador);
+            : categoria.getName());
+        ticket.setCategory(categoria);
+        ticket.setCategoryString(categoria.getName()); // Para compatibilidad
+        ticket.setCategoryName(categoria.getName()); // Campo requerido por la tabla
+        ticket.setPriority(request.getPrioridad() != null ? request.getPrioridad() : "MEDIA");
+        ticket.setStatus("PENDIENTE");
+        ticket.setCreator(creador);
         
         // Guardar ticket
         ticketRepository.save(ticket);
@@ -164,9 +160,9 @@ public class TicketServiceImpl implements TicketService {
         // NOTIFICACIONES: Solo usar el sistema de roles unificado
         try {
             // Solo notificar si el creador NO es SuperAdmin (evitar auto-notificaciones)
-            if (creador != null && !"Super Administrador".equals(creador.getNombre() + " " + creador.getApellido())) {
+            if (creador != null && !"Super Administrador".equals(creador.getFullName() + " " + creador.getLastName())) {
                 System.out.println("🔔 [DEBUG] Enviando notificación de creación de ticket para: " + creador.getEmail());
-                notificationRoleService.notificarCreacionTicket(ticket.getId(), creador.getIdUsuario());
+                notificationRoleService.notificarCreacionTicket(ticket.getId(), creador.getId());
             } else {
                 System.out.println("🔔 [DEBUG] Saltando notificación - creador es SuperAdmin");
             }
@@ -184,18 +180,18 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
         // Verificar que el usuario tenga acceso al ticket
-        String creadorEmail = ticket.getCreadorEmail();
+        String creadorEmail = ticket.getCreatorEmail();
         if (creadorEmail == null || !creadorEmail.equals(emailUsuario)) {
             throw new RuntimeException("No tienes permisos para ver este ticket");
         }
 
         // Debug logs
         System.out.println("🔍 [SEGUIMIENTO DEBUG] Ticket ID: " + ticket.getId());
-        System.out.println("🔍 [SEGUIMIENTO DEBUG] Estado: " + ticket.getEstado());
-        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico asignado: " + (ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : "null"));
-        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico nombre: " + (ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getNombre() + " " + ticket.getTecnicoAsignado().getApellido() : "null"));
-        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico ID: " + (ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getIdUsuario() : "null"));
-        System.out.println("🔍 [SEGUIMIENTO DEBUG] Fecha actualización: " + ticket.getFechaActualizacion());
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Estado: " + ticket.getStatus());
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico asignado: " + (ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null"));
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico nombre: " + (ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getFullName() : "null"));
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Técnico ID: " + (ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getId() : "null"));
+        System.out.println("🔍 [SEGUIMIENTO DEBUG] Fecha actualización: " + ticket.getUpdatedAt());
 
         return convertirTicketAResponseDTO(ticket);
     }
@@ -205,7 +201,7 @@ public class TicketServiceImpl implements TicketService {
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
-        Page<Ticket> tickets = ticketRepository.findByCreadorOrderByFechaCreacionDesc(usuario, pageable);
+        Page<Ticket> tickets = ticketRepository.findByCreatorOrderByCreatedAtDesc(usuario, pageable);
         
         return tickets.map(this::convertirTicketAHistorialDTO);
     }
@@ -215,7 +211,7 @@ public class TicketServiceImpl implements TicketService {
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
-        List<Ticket> tickets = ticketRepository.findByCreadorAndCategoriaAndEstadoAndPrioridad(
+        List<Ticket> tickets = ticketRepository.findByCreatorAndCategoriaAndEstadoAndPrioridad(
                 usuario, categoria, estado, prioridad);
         
         return tickets.stream()
@@ -225,14 +221,49 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponseDTO obtenerTicketPorId(Long id, String emailUsuario) {
-        Ticket ticket = ticketRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        System.out.println("🔍 [DEBUG] Buscando ticket ID: " + id + " para usuario: " + emailUsuario);
         
-        // Verificar que el usuario tenga acceso al ticket
-        if (!ticket.getCreador().getEmail().equals(emailUsuario)) {
-            throw new RuntimeException("No tienes permisos para ver este ticket");
+        List<Ticket> tickets = ticketRepository.findAllById(Collections.singletonList(id));
+        System.out.println("🔍 [DEBUG] Tickets encontrados: " + tickets.size());
+        
+        if (tickets.isEmpty()) {
+            System.out.println("❌ [DEBUG] No se encontró el ticket con ID: " + id);
+            throw new RuntimeException("Ticket no encontrado");
+        }
+        
+        if (tickets.size() > 1) {
+            System.out.println("⚠️ [WARNING] Múltiples tickets encontrados con ID: " + id + ". Usando el primero.");
+        }
+        
+        Ticket ticket = tickets.get(0);
+        System.out.println("🔍 [DEBUG] Ticket encontrado - ID: " + ticket.getId());
+        System.out.println("🔍 [DEBUG] Estado del ticket: " + ticket.getStatus());
+        System.out.println("🔍 [DEBUG] Creador: " + (ticket.getCreator() != null ? ticket.getCreator().getEmail() : "null"));
+        System.out.println("🔍 [DEBUG] Técnico asignado: " + (ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null"));
+        
+        // Verificar que el usuario tenga acceso al ticket (creador o técnico asignado)
+        boolean tieneAcceso = false;
+        
+        // Verificar si es el creador
+        if (ticket.getCreator() != null && ticket.getCreator().getEmail().equals(emailUsuario)) {
+            System.out.println("✅ [DEBUG] Usuario es el creador del ticket");
+            tieneAcceso = true;
+        }
+        
+        // Verificar si es el técnico asignado
+        if (ticket.getAssignedTechnician() != null && ticket.getAssignedTechnician().getEmail().equals(emailUsuario)) {
+            System.out.println("✅ [DEBUG] Usuario es el técnico asignado del ticket");
+            tieneAcceso = true;
+        }
+        
+        System.out.println("🔍 [DEBUG] ¿Tiene acceso? " + tieneAcceso);
+        
+        if (!tieneAcceso) {
+            System.out.println("❌ [DEBUG] Usuario no tiene acceso al ticket");
+            throw new RuntimeException("Este ticket no está asignado actualmente o ha sido completado.");
         }
 
+        System.out.println("✅ [DEBUG] Acceso concedido, convirtiendo ticket a DTO");
         return convertirTicketAResponseDTO(ticket);
     }
 
@@ -249,40 +280,40 @@ public class TicketServiceImpl implements TicketService {
     public String obtenerNombreUsuario(String emailUsuario) {
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + emailUsuario));
-        return usuario.getNombre();
+        return usuario.getFirstName();
     }
 
     // Métodos auxiliares
     private TicketResponseDTO convertirTicketAResponseDTOBasico(Ticket ticket) {
         // Usar el técnico actualmente asignado (no el original)
-        Usuario tecnicoActual = ticket.getTecnicoAsignado();
+        Usuario tecnicoActual = ticket.getAssignedTechnician();
         
         // Debug logs
         System.out.println("🔍 [TICKET DEBUG] Ticket ID: " + ticket.getId());
-        System.out.println("🔍 [TICKET DEBUG] Estado: " + ticket.getEstado());
+        System.out.println("🔍 [TICKET DEBUG] Estado: " + ticket.getStatus());
         System.out.println("🔍 [TICKET DEBUG] Técnico asignado: " + (tecnicoActual != null ? tecnicoActual.getEmail() : "null"));
-        System.out.println("🔍 [TICKET DEBUG] Técnico nombre: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
-        System.out.println("🔍 [TICKET DEBUG] Técnico ID: " + (tecnicoActual != null ? tecnicoActual.getIdUsuario() : "null"));
-        System.out.println("🔍 [TICKET DEBUG] Fecha actualización: " + ticket.getFechaActualizacion());
+        System.out.println("🔍 [TICKET DEBUG] Técnico nombre: " + (tecnicoActual != null ? tecnicoActual.getFullName() : "null"));
+        System.out.println("🔍 [TICKET DEBUG] Técnico ID: " + (tecnicoActual != null ? tecnicoActual.getId() : "null"));
+        System.out.println("🔍 [TICKET DEBUG] Fecha actualización: " + ticket.getUpdatedAt());
         
         return new TicketResponseDTO(
                 ticket.getId(),
-                ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
-                ticket.getDescripcion(),
-                ticket.getPrioridad(),
-                ticket.getEstado(),
-                ticket.getCreadorEmail(), // Usar método seguro
-                ticket.getCreadorNombre(), // Usar método seguro
+                ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(), // asunto = solo categoría
+                ticket.getDescription(),
+                ticket.getPriority(),
+                ticket.getStatus(),
+                ticket.getCreatorEmail(), // Usar método seguro
+                ticket.getCreatorName(), // Usar método seguro
                 tecnicoActual != null ? tecnicoActual.getEmail() : null,
-                tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : null,
-                ticket.getFechaCreacion(),
-                ticket.getFechaActualizacion(),
-                ticket.getCreadorNombre(), // Usar método seguro
-                ticket.getUbicacion(),
-                ticket.getConsulta(), // consulta completa para descripción
-                ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
-                ticket.getArchivoAdjunto(),
-                ticket.getNombreArchivo(),
+                tecnicoActual != null ? tecnicoActual.getFullName() : null,
+                ticket.getCreatedAt(),
+                ticket.getUpdatedAt(),
+                ticket.getCreatorName(), // Usar método seguro
+                ticket.getLocation(),
+                ticket.getQuery(), // consulta completa para descripción
+                ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(),
+                ticket.getAttachedFile(),
+                ticket.getFileName(),
                 null, // evidencias
                 null, // historialEstados
                 null, // historialAsignaciones
@@ -297,14 +328,14 @@ public class TicketServiceImpl implements TicketService {
         
         return new HistorialTicketResponseDTO(
                 ticket.getId(),
-                ticket.getCreador() != null ? ticket.getCreador().getNombre() : "Usuario Desconocido", // Usar método seguro
-                ticket.getUbicacion(),
-                ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
-                ticket.getEstado(),
-                ticket.getPrioridad(),
-                ticket.getFechaCreacion(),
-                ticket.getFechaActualizacion(),
-                tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : "Sin asignar"
+                ticket.getCreator() != null ? ticket.getCreator().getFullName() : "Usuario Desconocido", // Usar método seguro
+                ticket.getLocation(),
+                ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(),
+                ticket.getStatus(),
+                ticket.getPriority(),
+                ticket.getCreatedAt(),
+                ticket.getUpdatedAt(),
+                tecnicoOriginal != null ? tecnicoOriginal.getFullName() : "Sin asignar"
         );
     }
     
@@ -350,34 +381,34 @@ public class TicketServiceImpl implements TicketService {
             
             if (ultimaAsignacion != null) {
                 tecnicoActual = usuarioRepository.findById(ultimaAsignacion.getTecnicoId()).orElse(null);
-                System.out.println("🔍 [TICKET DEBUG] Técnico actual encontrado: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+                System.out.println("🔍 [TICKET DEBUG] Técnico actual encontrado: " + (tecnicoActual != null ? tecnicoActual.getFullName() : "null"));
             }
         }
         
         // Si no hay asignación, usar el técnico del ticket
         if (tecnicoActual == null) {
-            tecnicoActual = ticket.getTecnicoAsignado();
-            System.out.println("🔍 [TICKET DEBUG] Usando técnico del ticket: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+            tecnicoActual = ticket.getAssignedTechnician();
+            System.out.println("🔍 [TICKET DEBUG] Usando técnico del ticket: " + (tecnicoActual != null ? tecnicoActual.getFullName() : "null"));
         }
         
         return new TicketResponseDTO(
             ticket.getId(),
-            ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
-            ticket.getDescripcion(),
-            ticket.getPrioridad(),
-            ticket.getEstado(),
-            ticket.getCreadorEmail(), // Usar método seguro
-            ticket.getCreadorNombre(), // Usar método seguro
+            ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(), // asunto = solo categoría
+            ticket.getDescription(),
+            ticket.getPriority(),
+            ticket.getStatus(),
+            ticket.getCreatorEmail(), // Usar método seguro
+            ticket.getCreatorName(), // Usar método seguro
             tecnicoActual != null ? tecnicoActual.getEmail() : null,
-            tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : null,
-            ticket.getFechaCreacion(),
-            ticket.getFechaActualizacion(),
-            ticket.getCreadorNombre(), // Usar método seguro
-            ticket.getUbicacion(),
-            ticket.getConsulta(), // consulta completa para descripción
-            ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
-            ticket.getArchivoAdjunto(),
-            ticket.getNombreArchivo(),
+            tecnicoActual != null ? tecnicoActual.getFullName() : null,
+            ticket.getCreatedAt(),
+            ticket.getUpdatedAt(),
+            ticket.getCreatorName(), // Usar método seguro
+            ticket.getLocation(),
+            ticket.getQuery(), // consulta completa para descripción
+            ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(),
+            ticket.getAttachedFile(),
+            ticket.getFileName(),
             evidenciasDTO,
             historialDTO,
             historialAsignacionesDTO,
@@ -397,7 +428,7 @@ public class TicketServiceImpl implements TicketService {
             .tamanioArchivo(evidencia.getTamanioArchivo())
             .urlArchivo(evidencia.getUrlArchivo())
             .fechaSubida(evidencia.getFechaSubida())
-            .subidoPor(evidencia.getSubidoPor().getNombreCompleto())
+            .subidoPor(evidencia.getSubidoPor().getFullName())
             .subidoPorEmail(evidencia.getSubidoPor().getEmail())
             .build();
     }
@@ -410,7 +441,7 @@ public class TicketServiceImpl implements TicketService {
             Optional<Usuario> tecnicoOpt = usuarioRepository.findById(historial.getTecnicoId());
             if (tecnicoOpt.isPresent()) {
                 Usuario tecnico = tecnicoOpt.get();
-                tecnicoNombre = tecnico.getNombre() + " " + tecnico.getApellido();
+                tecnicoNombre = tecnico.getFullName() + " " + tecnico.getLastName();
                 tecnicoEmail = tecnico.getEmail();
             }
         }
@@ -457,7 +488,7 @@ public class TicketServiceImpl implements TicketService {
             .comentario(historial.getComentario())
             .observaciones(historial.getObservaciones())
             .fechaCambio(historial.getFechaCambio())
-            .cambiadoPor(historial.getCambiadoPor().getNombreCompleto())
+            .cambiadoPor(historial.getCambiadoPor().getFullName())
             .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
             .tipoUsuario(historial.getTipoUsuario())
             .build();

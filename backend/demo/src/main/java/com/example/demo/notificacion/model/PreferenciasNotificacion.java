@@ -10,7 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "preferencias_notificacion")
+@Table(name = "notification_preferences")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

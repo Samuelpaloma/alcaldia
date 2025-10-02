@@ -16,76 +16,76 @@ import java.util.List;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
     
     // Buscar tickets por creador ordenados por fecha de creación descendente
-    Page<Ticket> findByCreadorOrderByFechaCreacionDesc(Usuario creador, Pageable pageable);
+    Page<Ticket> findByCreatorOrderByCreatedAtDesc(Usuario creator, Pageable pageable);
     
     // Buscar tickets por múltiples criterios
-    @Query("SELECT t FROM Ticket t WHERE t.creador = :creador " +
-           "AND (:categoria IS NULL OR t.categoriaObjeto.nombre = :categoria) " +
-           "AND (:estado IS NULL OR t.estado = :estado) " +
-           "AND (:prioridad IS NULL OR t.prioridad = :prioridad)")
-    List<Ticket> findByCreadorAndCategoriaAndEstadoAndPrioridad(
-            @Param("creador") Usuario creador,
+    @Query("SELECT t FROM Ticket t WHERE t.creator = :creator " +
+           "AND (:categoria IS NULL OR t.category.name = :categoria) " +
+           "AND (:estado IS NULL OR t.status = :estado) " +
+           "AND (:prioridad IS NULL OR t.priority = :prioridad)")
+    List<Ticket> findByCreatorAndCategoriaAndEstadoAndPrioridad(
+            @Param("creator") Usuario creator,
             @Param("categoria") String categoria,
             @Param("estado") String estado,
             @Param("prioridad") String prioridad);
     
     // Buscar tickets por estado
-    List<Ticket> findByEstado(String estado);
+    List<Ticket> findByStatus(String status);
     
     // Buscar tickets por categoría (por nombre de categoría)
-    @Query("SELECT t FROM Ticket t WHERE t.categoriaObjeto.nombre = :categoria")
+    @Query("SELECT t FROM Ticket t WHERE t.category.name = :categoria")
     List<Ticket> findByCategoriaNombre(@Param("categoria") String categoria);
     
     // Buscar tickets por categoría (usando la entidad Categoria)
-    List<Ticket> findByCategoriaObjeto(Categoria categoria);
+    List<Ticket> findByCategory(Categoria category);
     
     // Buscar tickets por prioridad
-    List<Ticket> findByPrioridad(String prioridad);
+    List<Ticket> findByPriority(String priority);
     
     // Contar tickets por estado
-    long countByEstado(String estado);
+    long countByStatus(String status);
     
     // Contar tickets por creador
-    long countByCreador(Usuario creador);
+    long countByCreator(Usuario creator);
     
     // Buscar tickets por técnico asignado
-    List<Ticket> findByTecnicoAsignado(Usuario tecnico);
+    List<Ticket> findByAssignedTechnician(Usuario assignedTechnician);
     
     // Buscar tickets sin asignar
-    List<Ticket> findByTecnicoAsignadoIsNull();
+    List<Ticket> findByAssignedTechnicianIsNull();
     
     // Buscar tickets asignados ordenados por fecha
-    List<Ticket> findByTecnicoAsignadoOrderByFechaCreacionDesc(Usuario tecnico);
+    List<Ticket> findByAssignedTechnicianOrderByCreatedAtDesc(Usuario assignedTechnician);
     
     // Contar tickets por técnico asignado
-    long countByTecnicoAsignado(Usuario tecnico);
+    long countByAssignedTechnician(Usuario assignedTechnician);
     
     // ===== MÉTODOS ADICIONALES DE ALCALDIA =====
     
     // 📊 Consultas para estadísticas del técnico (adaptadas para Usuario)
-    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = 'PENDIENTE'")
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId AND t.status = 'PENDIENTE'")
     long countTicketsPendientesByTecnico(@Param("tecnicoId") Integer tecnicoId);
     
-    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = 'EN_PROCESO'")
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId AND t.status = 'EN_PROCESO'")
     long countTicketsEnProcesoByTecnico(@Param("tecnicoId") Integer tecnicoId);
     
-    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = 'FINALIZADA'")
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId AND t.status = 'FINALIZADA'")
     long countTicketsCompletadosByTecnico(@Param("tecnicoId") Integer tecnicoId);
     
-    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId")
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId")
     long countTicketsAsignadosByTecnico(@Param("tecnicoId") Integer tecnicoId);
     
     // 📋 Consultas para obtener tickets del técnico
-    @Query("SELECT t FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId ORDER BY t.fechaCreacion DESC")
+    @Query("SELECT t FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId ORDER BY t.createdAt DESC")
     List<Ticket> findTicketsByTecnico(@Param("tecnicoId") Integer tecnicoId);
     
-    @Query("SELECT t FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado = :estado ORDER BY t.fechaCreacion DESC")
+    @Query("SELECT t FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId AND t.status = :estado ORDER BY t.createdAt DESC")
     List<Ticket> findTicketsByTecnicoAndEstado(@Param("tecnicoId") Integer tecnicoId, @Param("estado") String estado);
     
     // 🔍 Consultas adicionales útiles
-    @Query("SELECT t FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado IN ('PENDIENTE', 'EN_PROCESO') ORDER BY t.prioridad DESC, t.fechaCreacion ASC")
+    @Query("SELECT t FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId AND t.status IN ('PENDIENTE', 'EN_PROCESO') ORDER BY t.priority DESC, t.createdAt ASC")
     List<Ticket> findTicketsActivosByTecnico(@Param("tecnicoId") Integer tecnicoId);
     
-    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado.id = :tecnicoId AND t.estado IN ('PENDIENTE', 'EN_PROCESO')")
+    @Query("SELECT COUNT(t) FROM Ticket t WHERE t.assignedTechnician.id = :tecnicoId AND t.status IN ('PENDIENTE', 'EN_PROCESO')")
     long countTicketsActivosByTecnico(@Param("tecnicoId") Integer tecnicoId);
 }

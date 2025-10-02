@@ -84,8 +84,8 @@ public class NotificacionWebSocketController {
         try {
             Notificacion notificacion = new Notificacion();
             notificacion.setTitulo("Actualización de Ticket");
-            notificacion.setMensaje(mensaje);
-            notificacion.setTipo(tipo);
+        notificacion.setMensaje(mensaje);
+        notificacion.setTipo(tipo);
             notificacion.setTicketId(ticketId);
             notificacion.setUsuarioId(1L); // Valor por defecto para testing
             notificacion.setUsuarioEmail("admin@test.com"); // Valor por defecto para testing

@@ -11,7 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "configuraciones_sistema")
+@Table(name = "system_configurations")
 @Data
 @Builder
 @NoArgsConstructor

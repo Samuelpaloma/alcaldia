@@ -51,13 +51,13 @@ public class DataInitializerService implements CommandLineRunner {
         // Crear superadmin por defecto
         Usuario superAdmin = Usuario.builder()
             .email(emailSuperAdmin)
-            .passwordHash(passwordEncoder.encode("SuperAdmin123")) // Contraseña por defecto
-            .nombre("Super")
-            .apellido("Administrador")
-            .tipoUsuario(TipoUsuario.SUPERADMIN)
-            .activo(true)
-            .emailVerificado(true) // Ya verificado por defecto
-            .passwordTemporal(false) // No es temporal
+            .password(passwordEncoder.encode("SuperAdmin123")) // Contraseña por defecto
+            .firstName("Super")
+            .lastName("Administrador")
+            .userType(TipoUsuario.SUPERADMIN)
+            .active(true)
+            .emailVerified(true) // Ya verificado por defecto
+            .temporaryPassword(false) // No es temporal
             .require2fa(false)
             .build();
         
@@ -80,20 +80,20 @@ public class DataInitializerService implements CommandLineRunner {
             log.info("✅ Técnico de prueba ya existe: {}", emailTecnico);
             // Crear preferencias de notificación si no existen
             Usuario tecnicoExistente = usuarioRepository.findByEmail(emailTecnico).get();
-            crearPreferenciasNotificacion(tecnicoExistente.getIdUsuario());
+            crearPreferenciasNotificacion(tecnicoExistente.getId());
             return;
         }
         
         // Crear técnico de prueba
         Usuario tecnico = Usuario.builder()
             .email(emailTecnico)
-            .passwordHash(passwordEncoder.encode("Julio066")) // Contraseña que mencionaste
-            .nombre("Técnico")
-            .apellido("Prueba")
-            .tipoUsuario(TipoUsuario.TECNICO)
-            .activo(true)
-            .emailVerificado(true) // Ya verificado por defecto
-            .passwordTemporal(false) // No es temporal
+            .password(passwordEncoder.encode("Julio066")) // Contraseña que mencionaste
+            .firstName("Técnico")
+            .lastName("Prueba")
+            .userType(TipoUsuario.TECNICO)
+            .active(true)
+            .emailVerified(true) // Ya verificado por defecto
+            .temporaryPassword(false) // No es temporal
             .require2fa(false)
             .deviceToken("test-device-token-12345") // Token de prueba para notificaciones
             .build();
@@ -106,7 +106,7 @@ public class DataInitializerService implements CommandLineRunner {
         log.info("   👤 Tipo: TÉCNICO");
         
         // Crear preferencias de notificación para el técnico
-        crearPreferenciasNotificacion(savedTecnico.getIdUsuario());
+        crearPreferenciasNotificacion(savedTecnico.getId());
     }
     
     private void crearPreferenciasNotificacion(Long usuarioId) {

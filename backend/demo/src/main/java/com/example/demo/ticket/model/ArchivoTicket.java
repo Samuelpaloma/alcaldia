@@ -11,7 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "archivos_ticket")
+@Table(name = "ticket_files")
 @Data
 @Builder
 @NoArgsConstructor

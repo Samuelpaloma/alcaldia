@@ -10,7 +10,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "notificaciones")
+@Table(name = "notifications_old")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -56,7 +56,7 @@ public class Notificacion {
     private LocalDateTime fechaActualizacion;
     
     // Constantes para tipos de notificación
-    public static final String TIPO_TICKET_CREADO = "TICKET_CREADO";
+    public static final String TYPE_TICKET_CREATED = "TICKET_CREADO";
     public static final String TIPO_TICKET_ASIGNADO = "TICKET_ASIGNADO";
     public static final String TIPO_TICKET_ACTUALIZADO = "TICKET_ACTUALIZADO";
     public static final String TIPO_TICKET_RESUELTO = "TICKET_RESUELTO";

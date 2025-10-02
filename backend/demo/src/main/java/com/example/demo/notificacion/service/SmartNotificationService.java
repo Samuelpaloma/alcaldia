@@ -28,23 +28,23 @@ public class SmartNotificationService {
     public void notificarTicketCreado(Ticket ticket) {
         System.out.println("🔔 [DEBUG] SmartNotificationService.notificarTicketCreado()");
         System.out.println("   - Ticket ID: " + ticket.getId());
-        System.out.println("   - Ticket Asunto: " + ticket.getAsunto());
-        System.out.println("   - Creador: " + ticket.getCreadorNombre());
+        System.out.println("   - Ticket Asunto: " + ticket.getSubject());
+        System.out.println("   - Creador: " + ticket.getCreatorName());
         
         // Notificar a todos los administradores
-        List<Usuario> admins = usuarioRepository.findByTipoUsuario(TipoUsuario.ADMINISTRADOR);
+        List<Usuario> admins = usuarioRepository.findByUserType(TipoUsuario.ADMINISTRADOR);
         System.out.println("   - Administradores encontrados: " + admins.size());
         
         for (Usuario admin : admins) {
             System.out.println("   - Notificando a admin: " + admin.getEmail());
             Notificacion notificacion = new Notificacion();
             notificacion.setTitulo("📝 Nuevo Ticket Creado");
-            notificacion.setMensaje("El cliente " + ticket.getCreadorNombre() + " ha creado el ticket #" + ticket.getId() + 
-                                  "\n📋 Asunto: " + ticket.getAsunto() + 
-                                  "\n🏷️ Prioridad: " + (ticket.getPrioridad() != null ? ticket.getPrioridad() : "Normal"));
+            notificacion.setMensaje("El cliente " + ticket.getCreatorName() + " ha creado el ticket #" + ticket.getId() + 
+                                  "\n📋 Asunto: " + ticket.getSubject() + 
+                                  "\n🏷️ Prioridad: " + (ticket.getPriority() != null ? ticket.getPriority() : "Normal"));
             notificacion.setTipo("info");
             notificacion.setTicketId(ticket.getId());
-            notificacion.setUsuarioId(admin.getIdUsuario());
+            notificacion.setUsuarioId(admin.getId());
             notificacion.setUsuarioEmail(admin.getEmail());
             notificacion.setFechaCreacion(LocalDateTime.now());
             notificacion.setLeida(false);
@@ -63,12 +63,12 @@ public class SmartNotificationService {
         Notificacion notifTecnico = new Notificacion();
         notifTecnico.setTitulo("🎯 Ticket Asignado");
         notifTecnico.setMensaje("Se te ha asignado el ticket #" + ticket.getId() + 
-                              "\n📋 Asunto: " + ticket.getAsunto() + 
-                              "\n👤 Cliente: " + ticket.getCreadorNombre() +
-                              "\n👨‍💼 Asignado por: " + admin.getNombreCompleto());
+                              "\n📋 Asunto: " + ticket.getSubject() + 
+                              "\n👤 Cliente: " + ticket.getCreatorName() +
+                              "\n👨‍💼 Asignado por: " + admin.getFullName());
         notifTecnico.setTipo("success");
         notifTecnico.setTicketId(ticket.getId());
-        notifTecnico.setUsuarioId(tecnico.getIdUsuario());
+        notifTecnico.setUsuarioId(tecnico.getId());
         notifTecnico.setUsuarioEmail(tecnico.getEmail());
         notifTecnico.setFechaCreacion(LocalDateTime.now());
         notifTecnico.setLeida(false);
@@ -80,17 +80,17 @@ public class SmartNotificationService {
         messagingTemplate.convertAndSend("/topic/notifications", savedNotifTecnico);
         
         // Notificar al cliente
-        if (ticket.getCreadorEmail() != null) {
-            Usuario cliente = usuarioRepository.findByEmail(ticket.getCreadorEmail()).orElse(null);
+        if (ticket.getCreatorEmail() != null) {
+            Usuario cliente = usuarioRepository.findByEmail(ticket.getCreatorEmail()).orElse(null);
             if (cliente != null) {
                 Notificacion notifCliente = new Notificacion();
                 notifCliente.setTitulo("✅ Ticket Asignado");
                 notifCliente.setMensaje("Tu ticket #" + ticket.getId() + " ha sido asignado" +
-                                      "\n👨‍🔧 Técnico: " + tecnico.getNombre() + " " + tecnico.getApellido() +
-                                      "\n📋 Asunto: " + ticket.getAsunto());
+                                      "\n👨‍🔧 Técnico: " + tecnico.getFullName() + " " + tecnico.getLastName() +
+                                      "\n📋 Asunto: " + ticket.getSubject());
                 notifCliente.setTipo("success");
                 notifCliente.setTicketId(ticket.getId());
-                notifCliente.setUsuarioId(cliente.getIdUsuario());
+                notifCliente.setUsuarioId(cliente.getId());
                 notifCliente.setUsuarioEmail(cliente.getEmail());
                 notifCliente.setFechaCreacion(LocalDateTime.now());
                 notifCliente.setLeida(false);
@@ -107,17 +107,17 @@ public class SmartNotificationService {
     // Notificar cuando un técnico responde
     public void notificarRespuestaTecnico(Ticket ticket, Usuario tecnico) {
         // Notificar al cliente
-        if (ticket.getCreadorEmail() != null) {
-            Usuario cliente = usuarioRepository.findByEmail(ticket.getCreadorEmail()).orElse(null);
+        if (ticket.getCreatorEmail() != null) {
+            Usuario cliente = usuarioRepository.findByEmail(ticket.getCreatorEmail()).orElse(null);
             if (cliente != null) {
                 Notificacion notifCliente = new Notificacion();
                 notifCliente.setTitulo("💬 Respuesta del Técnico");
-                notifCliente.setMensaje("El técnico " + tecnico.getNombre() + " " + tecnico.getApellido() + 
+                notifCliente.setMensaje("El técnico " + tecnico.getFullName() + " " + tecnico.getLastName() + 
                                       " ha respondido en tu ticket #" + ticket.getId() +
-                                      "\n📋 Asunto: " + ticket.getAsunto());
+                                      "\n📋 Asunto: " + ticket.getSubject());
                 notifCliente.setTipo("info");
                 notifCliente.setTicketId(ticket.getId());
-                notifCliente.setUsuarioId(cliente.getIdUsuario());
+                notifCliente.setUsuarioId(cliente.getId());
                 notifCliente.setUsuarioEmail(cliente.getEmail());
                 notifCliente.setFechaCreacion(LocalDateTime.now());
                 notifCliente.setLeida(false);
@@ -131,16 +131,16 @@ public class SmartNotificationService {
         }
         
         // Notificar a los administradores
-        List<Usuario> admins = usuarioRepository.findByTipoUsuario(TipoUsuario.ADMINISTRADOR);
+        List<Usuario> admins = usuarioRepository.findByUserType(TipoUsuario.ADMINISTRADOR);
         for (Usuario admin : admins) {
             Notificacion notifAdmin = new Notificacion();
             notifAdmin.setTitulo("💬 Respuesta del Técnico");
-            notifAdmin.setMensaje("El técnico " + tecnico.getNombre() + " " + tecnico.getApellido() + 
+            notifAdmin.setMensaje("El técnico " + tecnico.getFullName() + " " + tecnico.getLastName() + 
                                 " ha respondido en el ticket #" + ticket.getId() +
-                                "\n👤 Cliente: " + ticket.getCreadorNombre());
+                                "\n👤 Cliente: " + ticket.getCreatorName());
             notifAdmin.setTipo("info");
             notifAdmin.setTicketId(ticket.getId());
-            notifAdmin.setUsuarioId(admin.getIdUsuario());
+            notifAdmin.setUsuarioId(admin.getId());
             notifAdmin.setUsuarioEmail(admin.getEmail());
             notifAdmin.setFechaCreacion(LocalDateTime.now());
             notifAdmin.setLeida(false);
@@ -156,15 +156,15 @@ public class SmartNotificationService {
     // Notificar cuando un cliente responde
     public void notificarRespuestaCliente(Ticket ticket, Usuario cliente) {
         // Notificar al técnico asignado
-        if (ticket.getTecnicoEmail() != null) {
-            Usuario tecnico = usuarioRepository.findByEmail(ticket.getTecnicoEmail()).orElse(null);
+        if (ticket.getAssignedTechnicianEmail() != null) {
+            Usuario tecnico = usuarioRepository.findByEmail(ticket.getAssignedTechnicianEmail()).orElse(null);
             if (tecnico != null) {
                 Notificacion notifTecnico = new Notificacion();
                 notifTecnico.setTitulo("Respuesta del Cliente");
-                notifTecnico.setMensaje("El cliente " + cliente.getNombre() + " ha respondido en el ticket #" + ticket.getId());
+                notifTecnico.setMensaje("El cliente " + cliente.getFullName() + " ha respondido en el ticket #" + ticket.getId());
                 notifTecnico.setTipo("info");
                 notifTecnico.setTicketId(ticket.getId());
-                notifTecnico.setUsuarioId(tecnico.getIdUsuario());
+                notifTecnico.setUsuarioId(tecnico.getId());
                 notifTecnico.setUsuarioEmail(tecnico.getEmail());
                 notifTecnico.setFechaCreacion(LocalDateTime.now());
                 notifTecnico.setLeida(false);
@@ -178,14 +178,14 @@ public class SmartNotificationService {
         }
         
         // Notificar a los administradores
-        List<Usuario> admins = usuarioRepository.findByTipoUsuario(TipoUsuario.ADMINISTRADOR);
+        List<Usuario> admins = usuarioRepository.findByUserType(TipoUsuario.ADMINISTRADOR);
         for (Usuario admin : admins) {
             Notificacion notifAdmin = new Notificacion();
             notifAdmin.setTitulo("Respuesta del Cliente");
-            notifAdmin.setMensaje("El cliente " + cliente.getNombre() + " ha respondido en el ticket #" + ticket.getId());
+            notifAdmin.setMensaje("El cliente " + cliente.getFullName() + " ha respondido en el ticket #" + ticket.getId());
             notifAdmin.setTipo("info");
             notifAdmin.setTicketId(ticket.getId());
-            notifAdmin.setUsuarioId(admin.getIdUsuario());
+            notifAdmin.setUsuarioId(admin.getId());
             notifAdmin.setUsuarioEmail(admin.getEmail());
             notifAdmin.setFechaCreacion(LocalDateTime.now());
             notifAdmin.setLeida(false);
@@ -201,18 +201,18 @@ public class SmartNotificationService {
     // Notificar cuando un ticket es escalado
     public void notificarTicketEscalado(Ticket ticket, Usuario admin) {
         // Notificar al técnico
-        if (ticket.getTecnicoEmail() != null) {
-            Usuario tecnico = usuarioRepository.findByEmail(ticket.getTecnicoEmail()).orElse(null);
+        if (ticket.getAssignedTechnicianEmail() != null) {
+            Usuario tecnico = usuarioRepository.findByEmail(ticket.getAssignedTechnicianEmail()).orElse(null);
             if (tecnico != null) {
                 Notificacion notifTecnico = new Notificacion();
                 notifTecnico.setTitulo("⚠️ Ticket Escalado");
                 notifTecnico.setMensaje("El ticket #" + ticket.getId() + " ha sido escalado" +
-                                     "\n📋 Asunto: " + ticket.getAsunto() +
-                                     "\n👤 Cliente: " + ticket.getCreadorNombre() +
-                                     "\n👨‍💼 Escalado por: " + admin.getNombreCompleto());
+                                     "\n📋 Asunto: " + ticket.getSubject() +
+                                     "\n👤 Cliente: " + ticket.getCreatorName() +
+                                     "\n👨‍💼 Escalado por: " + admin.getFullName());
                 notifTecnico.setTipo("warning");
                 notifTecnico.setTicketId(ticket.getId());
-                notifTecnico.setUsuarioId(tecnico.getIdUsuario());
+                notifTecnico.setUsuarioId(tecnico.getId());
                 notifTecnico.setUsuarioEmail(tecnico.getEmail());
                 notifTecnico.setFechaCreacion(LocalDateTime.now());
                 notifTecnico.setLeida(false);
@@ -226,18 +226,18 @@ public class SmartNotificationService {
         }
         
         // Notificar al cliente
-        if (ticket.getCreadorEmail() != null) {
-            Usuario cliente = usuarioRepository.findByEmail(ticket.getCreadorEmail()).orElse(null);
+        if (ticket.getCreatorEmail() != null) {
+            Usuario cliente = usuarioRepository.findByEmail(ticket.getCreatorEmail()).orElse(null);
             if (cliente != null) {
                 Notificacion notifCliente = new Notificacion();
                 notifCliente.setTitulo("⚠️ Ticket Escalado");
                 notifCliente.setMensaje("Tu ticket #" + ticket.getId() + " ha sido escalado" +
-                                      "\n📋 Asunto: " + ticket.getAsunto() +
-                                      "\n👨‍💼 Escalado por: " + admin.getNombreCompleto() +
+                                      "\n📋 Asunto: " + ticket.getSubject() +
+                                      "\n👨‍💼 Escalado por: " + admin.getFullName() +
                                       "\n🔄 Será atendido por un supervisor");
                 notifCliente.setTipo("warning");
                 notifCliente.setTicketId(ticket.getId());
-                notifCliente.setUsuarioId(cliente.getIdUsuario());
+                notifCliente.setUsuarioId(cliente.getId());
                 notifCliente.setUsuarioEmail(cliente.getEmail());
                 notifCliente.setFechaCreacion(LocalDateTime.now());
                 notifCliente.setLeida(false);

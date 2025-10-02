@@ -35,7 +35,7 @@ public class SLAMonitoringService {
         try {
             // Obtener todos los tickets activos
             List<Ticket> ticketsActivos = ticketRepository.findAll().stream()
-                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getEstado()))
+                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getStatus()))
                 .collect(java.util.stream.Collectors.toList());
 
             System.out.println("🔍 [SLA Monitoring] Encontrados " + ticketsActivos.size() + " tickets activos");
@@ -86,17 +86,17 @@ public class SLAMonitoringService {
     private String verificarEstadoSLA(Ticket ticket) {
         try {
             // Si no tiene configuración SLA, está en tiempo
-            if (ticket.getSlaConfiguracionId() == null) {
+            if (ticket.getSlaConfigurationId() == null) {
                 return "EN_TIEMPO";
             }
             
             // Verificar si tiene fecha límite de respuesta
-            if (ticket.getSlaFechaLimiteRespuesta() == null) {
+            if (ticket.getSlaResponseDeadline() == null) {
                 return "EN_TIEMPO";
             }
             
             LocalDateTime ahora = LocalDateTime.now();
-            LocalDateTime fechaLimite = ticket.getSlaFechaLimiteRespuesta();
+            LocalDateTime fechaLimite = ticket.getSlaResponseDeadline();
             
             // Si ya pasó la fecha límite
             if (ahora.isAfter(fechaLimite)) {
@@ -130,7 +130,7 @@ public class SLAMonitoringService {
             String mensajeAdmin = String.format(
                 "🚨 SLA VENCIDO: El ticket #%d del funcionario %s ha excedido el tiempo límite de respuesta.",
                 ticket.getId(),
-                ticket.getCreador() != null ? ticket.getCreador().getNombre() : "Usuario"
+                ticket.getCreator() != null ? ticket.getCreator().getFullName() : "Usuario"
             );
             
             notificationRoleService.notificarAdministradoresSLA(
@@ -175,7 +175,7 @@ public class SLAMonitoringService {
             String mensajeAdmin = String.format(
                 "⚠️ SLA PRÓXIMO A VENCER: El ticket #%d del funcionario %s está próximo a vencer.",
                 ticket.getId(),
-                ticket.getCreador() != null ? ticket.getCreador().getNombre() : "Usuario"
+                ticket.getCreator() != null ? ticket.getCreator().getFullName() : "Usuario"
             );
             
             notificationRoleService.notificarAdministradoresSLA(
@@ -238,7 +238,7 @@ public class SLAMonitoringService {
         
         try {
             List<Ticket> ticketsActivos = ticketRepository.findAll().stream()
-                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getEstado()))
+                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getStatus()))
                 .collect(java.util.stream.Collectors.toList());
 
             int ticketsVencidos = 0;
@@ -321,7 +321,7 @@ public class SLAMonitoringService {
         
         try {
             List<Ticket> ticketsActivos = ticketRepository.findAll().stream()
-                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getEstado()))
+                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getStatus()))
                 .collect(java.util.stream.Collectors.toList());
 
             for (Ticket ticket : ticketsActivos) {
@@ -331,10 +331,10 @@ public class SLAMonitoringService {
                     if ("VENCIDO".equals(estadoSLA)) {
                         Map<String, Object> ticketInfo = new HashMap<>();
                         ticketInfo.put("id", ticket.getId());
-                        ticketInfo.put("titulo", ticket.getConsulta() != null ? ticket.getConsulta() : "Sin título");
-                        ticketInfo.put("creadorNombre", ticket.getCreador() != null ? ticket.getCreador().getNombre() : "Usuario");
-                        ticketInfo.put("estado", ticket.getEstado());
-                        ticketInfo.put("fechaCreacion", ticket.getFechaCreacion());
+                        ticketInfo.put("titulo", ticket.getQuery() != null ? ticket.getQuery() : "Sin título");
+                        ticketInfo.put("creadorNombre", ticket.getCreator() != null ? ticket.getCreator().getFullName() : "Usuario");
+                        ticketInfo.put("estado", ticket.getStatus());
+                        ticketInfo.put("fechaCreacion", ticket.getCreatedAt());
                         ticketInfo.put("slaStatus", estadoSLA);
                         ticketsVencidos.add(ticketInfo);
                     }
@@ -357,7 +357,7 @@ public class SLAMonitoringService {
         
         try {
             List<Ticket> ticketsActivos = ticketRepository.findAll().stream()
-                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getEstado()))
+                .filter(ticket -> Arrays.asList("ABIERTO", "EN_PROCESO", "ASIGNADO", "PENDIENTE").contains(ticket.getStatus()))
                 .collect(java.util.stream.Collectors.toList());
 
             for (Ticket ticket : ticketsActivos) {
@@ -367,10 +367,10 @@ public class SLAMonitoringService {
                     if ("PROXIMO_VENCER".equals(estadoSLA)) {
                         Map<String, Object> ticketInfo = new HashMap<>();
                         ticketInfo.put("id", ticket.getId());
-                        ticketInfo.put("titulo", ticket.getConsulta() != null ? ticket.getConsulta() : "Sin título");
-                        ticketInfo.put("creadorNombre", ticket.getCreador() != null ? ticket.getCreador().getNombre() : "Usuario");
-                        ticketInfo.put("estado", ticket.getEstado());
-                        ticketInfo.put("fechaCreacion", ticket.getFechaCreacion());
+                        ticketInfo.put("titulo", ticket.getQuery() != null ? ticket.getQuery() : "Sin título");
+                        ticketInfo.put("creadorNombre", ticket.getCreator() != null ? ticket.getCreator().getFullName() : "Usuario");
+                        ticketInfo.put("estado", ticket.getStatus());
+                        ticketInfo.put("fechaCreacion", ticket.getCreatedAt());
                         ticketInfo.put("slaStatus", estadoSLA);
                         ticketsProximos.add(ticketInfo);
                     }

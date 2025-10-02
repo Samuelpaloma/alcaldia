@@ -2,7 +2,6 @@ package com.example.demo.ticket.service;
 
 import com.example.demo.ticket.model.Ticket;
 import com.example.demo.ticket.repository.TicketRepository;
-import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,8 +61,8 @@ public class ArchivoConversacionSimpleService {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
-        // Buscar usuario
-        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+        // Verificar que el usuario existe (sin almacenar la variable)
+        usuarioRepository.findByEmail(emailUsuario)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
         // Generar nombre único para el archivo
@@ -73,9 +72,9 @@ public class ArchivoConversacionSimpleService {
         String rutaArchivo = guardarArchivoFisico(contenidoBase64, nombreArchivoUnico);
         
         // Actualizar ticket con el nuevo archivo (esto sobrescribe el anterior)
-        ticket.setArchivoAdjunto(rutaArchivo);
-        ticket.setNombreArchivo(nombreArchivoUnico);
-        ticket.setFechaActualizacion(LocalDateTime.now());
+        ticket.setAttachedFile(rutaArchivo);
+        ticket.setFileName(nombreArchivoUnico);
+        ticket.setUpdatedAt(LocalDateTime.now());
         
         ticketRepository.save(ticket);
         
@@ -92,12 +91,12 @@ public class ArchivoConversacionSimpleService {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
-        if (ticket.getArchivoAdjunto() == null || ticket.getNombreArchivo() == null) {
+        if (ticket.getAttachedFile() == null || ticket.getFileName() == null) {
             throw new RuntimeException("No hay archivo adjunto en este ticket");
         }
         
         try {
-            Path path = Paths.get(ticket.getArchivoAdjunto());
+            Path path = Paths.get(ticket.getAttachedFile());
             return Files.readAllBytes(path);
         } catch (IOException e) {
             log.error("Error descargando archivo: {}", e.getMessage());
@@ -113,11 +112,11 @@ public class ArchivoConversacionSimpleService {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
-        if (ticket.getArchivoAdjunto() == null || ticket.getNombreArchivo() == null) {
+        if (ticket.getAttachedFile() == null || ticket.getFileName() == null) {
             return null;
         }
         
-        return ticket.getNombreArchivo();
+        return ticket.getFileName();
     }
     
     /**
@@ -128,18 +127,18 @@ public class ArchivoConversacionSimpleService {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
-        if (ticket.getArchivoAdjunto() == null || ticket.getNombreArchivo() == null) {
+        if (ticket.getAttachedFile() == null || ticket.getFileName() == null) {
             return null;
         }
         
         // Determinar el tipo MIME basado en la extensión
-        String extension = ticket.getNombreArchivo().substring(ticket.getNombreArchivo().lastIndexOf('.') + 1).toLowerCase();
+        String extension = ticket.getFileName().substring(ticket.getFileName().lastIndexOf('.') + 1).toLowerCase();
         String tipoMime = determinarTipoMime(extension);
         
         // Obtener el tamaño del archivo
         long tamañoArchivo = 0;
         try {
-            Path path = Paths.get(ticket.getArchivoAdjunto());
+            Path path = Paths.get(ticket.getAttachedFile());
             if (Files.exists(path)) {
                 tamañoArchivo = Files.size(path);
             }
@@ -148,8 +147,8 @@ public class ArchivoConversacionSimpleService {
         }
         
         Map<String, Object> infoArchivo = new HashMap<>();
-        infoArchivo.put("nombreArchivo", ticket.getNombreArchivo());
-        infoArchivo.put("rutaArchivo", ticket.getArchivoAdjunto());
+        infoArchivo.put("nombreArchivo", ticket.getFileName());
+        infoArchivo.put("rutaArchivo", ticket.getAttachedFile());
         infoArchivo.put("extension", extension);
         infoArchivo.put("tipoMime", tipoMime);
         infoArchivo.put("tamañoArchivo", tamañoArchivo);

@@ -54,20 +54,20 @@ public class AuthServiceImpl implements AuthService {
             });
         
         System.out.println("✅ Usuario encontrado:");
-        System.out.println("  - ID: " + usuario.getIdUsuario());
+        System.out.println("  - ID: " + usuario.getId());
         System.out.println("  - Email: " + usuario.getEmail());
-        System.out.println("  - Activo: " + usuario.getActivo());
-        System.out.println("  - Email verificado: " + usuario.getEmailVerificado());
-        System.out.println("  - Tipo Usuario: " + usuario.getTipoUsuario());
+        System.out.println("  - Activo: " + usuario.getActive());
+        System.out.println("  - Email verificado: " + usuario.getEmailVerified());
+        System.out.println("  - Tipo Usuario: " + usuario.getUserType());
         System.out.println("  - Require 2FA: " + usuario.getRequire2fa());
-        System.out.println("  - Password hash: " + usuario.getPasswordHash().substring(0, 20) + "...");
+        System.out.println("  - Password hash: " + usuario.getPassword().substring(0, 20) + "...");
         
         // 2. Verificar contraseña
         System.out.println("🔐 Verificando password...");
         System.out.println("Password enviado: '" + request.getPassword() + "'");
-        System.out.println("Password hash en BD: '" + usuario.getPasswordHash() + "'");
+        System.out.println("Password hash en BD: '" + usuario.getPassword() + "'");
         
-        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash());
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), usuario.getPassword());
         System.out.println("Password coincide: " + passwordMatches);
         
         if (!passwordMatches) {
@@ -79,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
         System.out.println("✅ Password VÁLIDO");
         
         // 3. Verificar que esté activo
-        if (!usuario.getActivo()) {
+        if (!usuario.getActive()) {
             System.out.println("❌ Usuario INACTIVO");
             throw new RuntimeException("Usuario desactivado. Contacte al administrador");
         }
@@ -87,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
         System.out.println("✅ Usuario ACTIVO");
         
         // 4. Verificar que el email esté verificado
-        if (!usuario.getEmailVerificado()) {
+        if (!usuario.getEmailVerified()) {
             System.out.println("❌ Email NO VERIFICADO - Requiere verificación");
             log.info("Usuario {} requiere verificación de email", usuario.getEmail());
             
@@ -96,11 +96,11 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(null)  // Sin token todavía
                 .tokenType("Bearer")
                 .expiresIn(null)
-                .userId(usuario.getIdUsuario())
-                .nombre(usuario.getNombre())
-                .apellido(usuario.getApellido())
+                .userId(usuario.getId())
+                .nombre(usuario.getFirstName())
+                .apellido(usuario.getLastName())
                 .email(usuario.getEmail())
-                .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
+                .tipoUsuario(usuario.getUserType().getDescripcion())
                 .requireEmailVerification(true)  // Indica que requiere verificación de email
                 .require2fa(false)  // No requiere 2FA todavía
                 .redirectUrl(null)  // Sin redirección todavía
@@ -128,11 +128,11 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(null)  // Sin token todavía
                 .tokenType("Bearer")
                 .expiresIn(null)
-                .userId(usuario.getIdUsuario())
-                .nombre(usuario.getNombre())
-                .apellido(usuario.getApellido())
+                .userId(usuario.getId())
+                .nombre(usuario.getFirstName())
+                .apellido(usuario.getLastName())
                 .email(usuario.getEmail())
-                .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
+                .tipoUsuario(usuario.getUserType().getDescripcion())
                 .require2fa(true)  // Indica que requiere código 2FA
                 .redirectUrl(null)  // Sin redirección todavía
                 .build();
@@ -149,7 +149,7 @@ public class AuthServiceImpl implements AuthService {
         System.out.println("🏁 Completando autenticación...");
         
         // Actualizar último acceso
-        usuario.setUltimoAcceso(LocalDateTime.now());
+        usuario.setLastAccess(LocalDateTime.now());
         usuarioRepository.save(usuario);
         
         // Generar token JWT
@@ -157,21 +157,21 @@ public class AuthServiceImpl implements AuthService {
         System.out.println("✅ Token generado: " + accessToken.substring(0, 20) + "...");
         
         // Determinar URL de redirección según tipo de usuario
-        String redirectUrl = getRedirectUrlByUserType(usuario.getTipoUsuario());
+        String redirectUrl = getRedirectUrlByUserType(usuario.getUserType());
         System.out.println("✅ Redirect URL: " + redirectUrl);
         
         log.info("Login completado exitosamente para usuario: {} - Tipo: {}", 
-                usuario.getEmail(), usuario.getTipoUsuario());
+                usuario.getEmail(), usuario.getUserType());
         
         LoginResponse response = LoginResponse.builder()
             .accessToken(accessToken)
             .tokenType("Bearer")
             .expiresIn(jwtTokenProvider.getTokenValidityInSeconds())
-            .userId(usuario.getIdUsuario())
-            .nombre(usuario.getNombre())
-            .apellido(usuario.getApellido())
+            .userId(usuario.getId())
+            .nombre(usuario.getFirstName())
+            .apellido(usuario.getLastName())
             .email(usuario.getEmail())
-            .tipoUsuario(usuario.getTipoUsuario().getDescripcion())
+                .tipoUsuario(usuario.getUserType().getDescripcion())
             .require2fa(false)  // Ya no requiere más 2FA
             .redirectUrl(redirectUrl)
             .build();
@@ -251,7 +251,7 @@ public class AuthServiceImpl implements AuthService {
     private PendingUser createSecurePendingUser(RegisterRequest request, String verificationCode) {
         return PendingUser.builder()
             .email(request.getEmail().toLowerCase().trim()) // Normalizar email
-            .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
             .nombre(request.getNombre().trim())
             .apellido(request.getApellido().trim())
             .verificationCode(verificationCode)
@@ -327,13 +327,13 @@ public class AuthServiceImpl implements AuthService {
     private Usuario createSecureUser(PendingUser pendingUser) {
         return Usuario.builder()
             .email(pendingUser.getEmail())
-            .passwordHash(pendingUser.getPasswordHash())
-            .nombre(pendingUser.getNombre())
-            .apellido(pendingUser.getApellido())
-            .tipoUsuario(TipoUsuario.FUNCIONARIO)
-            .activo(true)
-            .emailVerificado(true) // Marcar como verificado
-            .fechaCreacion(LocalDateTime.now())
+            .password(pendingUser.getPasswordHash())
+            .firstName(pendingUser.getNombre())
+            .lastName(pendingUser.getApellido())
+            .userType(TipoUsuario.FUNCIONARIO)
+            .active(true)
+            .emailVerified(true) // Marcar como verificado
+            .createdAt(LocalDateTime.now())
             .build();
     }
     
@@ -345,11 +345,11 @@ public class AuthServiceImpl implements AuthService {
             .accessToken(accessToken)
             .tokenType("Bearer")
             .expiresIn(jwtTokenProvider.getTokenValidityInSeconds())
-            .userId(usuario.getIdUsuario())
-            .nombre(usuario.getNombre())
-            .apellido(usuario.getApellido())
+            .userId(usuario.getId())
+            .nombre(usuario.getFirstName())
+            .apellido(usuario.getLastName())
             .email(usuario.getEmail())
-            .tipoUsuario(usuario.getTipoUsuario().name())
+            .tipoUsuario(usuario.getUserType().name())
             .require2fa(false)
             .build();
     }
@@ -394,11 +394,11 @@ public class AuthServiceImpl implements AuthService {
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new AuthException("El correo electrónico no está registrado"));
         
-        if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getPassword(), usuario.getPassword())) {
             throw new AuthException("La contraseña es incorrecta");
         }
         
-        if (!usuario.getActivo()) {
+        if (!usuario.getActive()) {
             throw new AuthException("Tu cuenta ha sido desactivada. Contacta al administrador");
         }
     }
@@ -412,9 +412,9 @@ public class AuthServiceImpl implements AuthService {
         Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
             .orElseThrow(() -> new AuthException("El correo electrónico no está registrado"));
         
-        log.info("Usuario encontrado: {} - Activo: {}", usuario.getEmail(), usuario.getActivo());
+        log.info("Usuario encontrado: {} - Activo: {}", usuario.getEmail(), usuario.getActive());
         
-        if (!usuario.getActivo()) {
+        if (!usuario.getActive()) {
             throw new AuthException("Tu cuenta ha sido desactivada. Contacta al administrador");
         }
         
@@ -434,9 +434,9 @@ public class AuthServiceImpl implements AuthService {
         
         PendingUser pendingUser = PendingUser.builder()
             .email(request.getEmail())
-            .passwordHash(usuario.getPasswordHash()) // No necesario, pero para consistencia
-            .nombre(usuario.getNombre())
-            .apellido(usuario.getApellido())
+            .passwordHash(usuario.getPassword()) // No necesario, pero para consistencia
+            .nombre(usuario.getFirstName())
+            .apellido(usuario.getLastName())
             .verificationCode(verificationCode)
             .codeExpiration(LocalDateTime.now().plusMinutes(15))
             .createdAt(LocalDateTime.now())
@@ -497,11 +497,11 @@ public class AuthServiceImpl implements AuthService {
             .accessToken(accessToken)
             .tokenType("Bearer")
             .expiresIn(jwtTokenProvider.getTokenValidityInSeconds())
-            .userId(usuario.getIdUsuario())
-            .nombre(usuario.getNombre())
-            .apellido(usuario.getApellido())
+            .userId(usuario.getId())
+            .nombre(usuario.getFirstName())
+            .apellido(usuario.getLastName())
             .email(usuario.getEmail())
-            .tipoUsuario(usuario.getTipoUsuario().name())
+            .tipoUsuario(usuario.getUserType().name())
             .require2fa(false)
             .build();
     }
@@ -519,7 +519,7 @@ public class AuthServiceImpl implements AuthService {
         
         // Validar que solo usuarios web (SUPERADMIN, ADMINISTRADOR, FUNCIONARIO) puedan recuperar contraseña
         // Los TECNICOS deben usar la aplicación móvil
-        if (usuario.getTipoUsuario() == TipoUsuario.TECNICO) {
+        if (usuario.getUserType() == TipoUsuario.TECNICO) {
             log.warn("Intento de recuperación de contraseña desde web para usuario TECNICO: {}", email);
             throw new AuthException("Los técnicos deben usar la aplicación móvil para recuperar su contraseña");
         }
@@ -539,9 +539,9 @@ public class AuthServiceImpl implements AuthService {
         
         PendingUser pendingUser = PendingUser.builder()
             .email(email)
-            .passwordHash(usuario.getPasswordHash())
-            .nombre(usuario.getNombre())
-            .apellido(usuario.getApellido())
+            .passwordHash(usuario.getPassword())
+            .nombre(usuario.getFirstName())
+            .apellido(usuario.getLastName())
             .verificationCode(verificationCode)
             .codeExpiration(LocalDateTime.now().plusMinutes(15))
             .createdAt(LocalDateTime.now())
@@ -586,10 +586,10 @@ public class AuthServiceImpl implements AuthService {
             Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new AuthException("Usuario no encontrado"));
             
-            log.info("Usuario encontrado: {} - ID: {}", usuario.getEmail(), usuario.getIdUsuario());
+            log.info("Usuario encontrado: {} - ID: {}", usuario.getEmail(), usuario.getId());
             
             // Actualizar contraseña
-            usuario.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+            usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
             usuarioRepository.save(usuario);
             log.info("Contraseña actualizada para usuario: {}", usuario.getEmail());
             
@@ -612,11 +612,11 @@ public class AuthServiceImpl implements AuthService {
                 .accessToken(accessToken)
                 .tokenType("Bearer")
                 .expiresIn(expiresIn)
-                .userId(usuario.getIdUsuario())
-                .nombre(usuario.getNombre())
-                .apellido(usuario.getApellido())
+                .userId(usuario.getId())
+                .nombre(usuario.getFirstName())
+                .apellido(usuario.getLastName())
                 .email(usuario.getEmail())
-                .tipoUsuario(usuario.getTipoUsuario().name())
+                .tipoUsuario(usuario.getUserType().name())
                 .require2fa(false)
                 .build();
                 
@@ -646,18 +646,18 @@ public class AuthServiceImpl implements AuthService {
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
         // 3. Verificar que la contraseña actual sea correcta
-        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPassword())) {
             throw new RuntimeException("La contraseña actual es incorrecta");
         }
         
         // 4. Verificar que la contraseña sea temporal
-        if (usuario.getPasswordTemporal() == null || !usuario.getPasswordTemporal()) {
+        if (usuario.getTemporaryPassword() == null || !usuario.getTemporaryPassword()) {
             throw new RuntimeException("Este usuario no tiene una contraseña temporal");
         }
         
         // 5. Actualizar contraseña
-        usuario.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-        usuario.setPasswordTemporal(false); // Ya no es temporal
+        usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        usuario.setTemporaryPassword(false); // Ya no es temporal
         usuarioRepository.save(usuario);
         
         log.info("Contraseña temporal cambiada exitosamente para usuario: {}", usuario.getEmail());
@@ -678,12 +678,12 @@ public class AuthServiceImpl implements AuthService {
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
         // 3. Verificar que la contraseña actual sea correcta
-        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), usuario.getPassword())) {
             throw new RuntimeException("La contraseña actual es incorrecta");
         }
         
         // 4. Actualizar contraseña
-        usuario.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        usuario.setPassword(passwordEncoder.encode(request.getNewPassword()));
         usuarioRepository.save(usuario);
         
         log.info("Contraseña cambiada exitosamente para usuario: {}", usuario.getEmail());
@@ -804,7 +804,7 @@ public class AuthServiceImpl implements AuthService {
             System.out.println("✅ Código de verificación válido");
             
             // 3. Actualizar estado de verificación de email
-            usuario.setEmailVerificado(true);
+            usuario.setEmailVerified(true);
             usuarioRepository.save(usuario);
             
             System.out.println("✅ Email verificado exitosamente para: " + email);

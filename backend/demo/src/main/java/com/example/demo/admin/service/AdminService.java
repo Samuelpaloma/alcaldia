@@ -69,7 +69,7 @@ public class AdminService {
     public List<TicketResponseDTO> obtenerTicketsPorEstado(String estado) {
         log.info("Obteniendo tickets por estado: {}", estado);
         
-        List<Ticket> tickets = ticketRepository.findByEstado(estado);
+        List<Ticket> tickets = ticketRepository.findByStatus(estado);
         
         return tickets.stream()
             .map(this::convertirTicketAResponseDTO)
@@ -82,7 +82,7 @@ public class AdminService {
     public List<TicketResponseDTO> obtenerTicketsSinAsignar() {
         log.info("Obteniendo tickets sin asignar");
         
-        List<Ticket> tickets = ticketRepository.findByTecnicoAsignadoIsNull();
+        List<Ticket> tickets = ticketRepository.findByAssignedTechnicianIsNull();
         
         return tickets.stream()
             .map(this::convertirTicketAResponseDTO)
@@ -98,7 +98,7 @@ public class AdminService {
         Usuario tecnico = usuarioRepository.findById(tecnicoId)
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
         
-        List<Ticket> tickets = ticketRepository.findByTecnicoAsignado(tecnico);
+        List<Ticket> tickets = ticketRepository.findByAssignedTechnician(tecnico);
         
         return tickets.stream()
             .map(this::convertirTicketAResponseDTO)
@@ -112,11 +112,11 @@ public class AdminService {
         log.info("Obteniendo estadísticas generales");
         
         long totalTickets = ticketRepository.count();
-        long ticketsPendientes = ticketRepository.countByEstado("PENDIENTE");
-        long ticketsAsignados = ticketRepository.countByEstado("ASIGNADO");
-        long ticketsEnEjecucion = ticketRepository.countByEstado("EN_EJECUCION");
-        long ticketsTerminados = ticketRepository.countByEstado("TERMINADO");
-        long ticketsSinAsignar = ticketRepository.findByTecnicoAsignadoIsNull().size();
+        long ticketsPendientes = ticketRepository.countByStatus("PENDIENTE");
+        long ticketsAsignados = ticketRepository.countByStatus("ASIGNADO");
+        long ticketsEnEjecucion = ticketRepository.countByStatus("EN_EJECUCION");
+        long ticketsTerminados = ticketRepository.countByStatus("TERMINADO");
+        long ticketsSinAsignar = ticketRepository.findByAssignedTechnicianIsNull().size();
         
         return EstadisticasAdminResponseDTO.builder()
             .totalTickets(totalTickets)
@@ -195,36 +195,36 @@ public class AdminService {
             
             if (ultimaAsignacion != null) {
                 tecnicoActual = usuarioRepository.findById(ultimaAsignacion.getTecnicoId()).orElse(null);
-                System.out.println("🔍 [ADMIN DEBUG] Técnico actual encontrado: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+                System.out.println("🔍 [ADMIN DEBUG] Técnico actual encontrado: " + (tecnicoActual != null ? tecnicoActual.getFullName() : "null"));
             }
         }
         
         // Si no hay asignación, usar el técnico del ticket
         if (tecnicoActual == null) {
-            tecnicoActual = ticket.getTecnicoAsignado();
-            System.out.println("🔍 [ADMIN DEBUG] Usando técnico del ticket: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+            tecnicoActual = ticket.getAssignedTechnician();
+            System.out.println("🔍 [ADMIN DEBUG] Usando técnico del ticket: " + (tecnicoActual != null ? tecnicoActual.getFullName() : "null"));
         }
         
-        System.out.println("🔍 [ADMIN DEBUG] Técnico final seleccionado: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+        System.out.println("🔍 [ADMIN DEBUG] Técnico final seleccionado: " + (tecnicoActual != null ? tecnicoActual.getFullName() : "null"));
         
         return new TicketResponseDTO(
             ticket.getId(),
-            ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(), // asunto = solo categoría
-            ticket.getDescripcion(),
-            ticket.getPrioridad(),
-            ticket.getEstado(),
-            ticket.getCreadorEmail(), // Usar método seguro
-            ticket.getCreadorNombre(), // Usar método seguro
+            ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(), // asunto = solo categoría
+            ticket.getDescription(),
+            ticket.getPriority(),
+            ticket.getStatus(),
+            ticket.getCreatorEmail(), // Usar método seguro
+            ticket.getCreatorName(), // Usar método seguro
             tecnicoActual != null ? tecnicoActual.getEmail() : null,
-            tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : null,
-            ticket.getFechaCreacion(),
-            ticket.getFechaActualizacion(),
-            ticket.getCreadorNombre(), // Usar método seguro
-            ticket.getUbicacion(),
-            ticket.getConsulta(), // consulta completa para descripción
-            ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString(),
-            ticket.getArchivoAdjunto(),
-            ticket.getNombreArchivo(),
+            tecnicoActual != null ? tecnicoActual.getFullName() : null,
+            ticket.getCreatedAt(),
+            ticket.getUpdatedAt(),
+            ticket.getCreatorName(), // Usar método seguro
+            ticket.getLocation(),
+            ticket.getQuery(), // consulta completa para descripción
+            ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(),
+            ticket.getAttachedFile(),
+            ticket.getFileName(),
             evidenciasDTO,
             historialDTO,
             historialAsignacionesDTO,
@@ -244,7 +244,7 @@ public class AdminService {
             .tamanioArchivo(evidencia.getTamanioArchivo())
             .urlArchivo(evidencia.getUrlArchivo())
             .fechaSubida(evidencia.getFechaSubida())
-            .subidoPor(evidencia.getSubidoPor().getNombreCompleto())
+            .subidoPor(evidencia.getSubidoPor().getFullName())
             .subidoPorEmail(evidencia.getSubidoPor().getEmail())
             .build();
     }
@@ -258,7 +258,7 @@ public class AdminService {
             .comentario(historial.getComentario())
             .observaciones(historial.getObservaciones())
             .fechaCambio(historial.getFechaCambio())
-            .cambiadoPor(historial.getCambiadoPor().getNombreCompleto())
+            .cambiadoPor(historial.getCambiadoPor().getFullName())
             .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
             .tipoUsuario(historial.getTipoUsuario())
             .build();
@@ -272,7 +272,7 @@ public class AdminService {
             Optional<Usuario> tecnicoOpt = usuarioRepository.findById(historial.getTecnicoId());
             if (tecnicoOpt.isPresent()) {
                 Usuario tecnico = tecnicoOpt.get();
-                tecnicoNombre = tecnico.getNombre() + " " + tecnico.getApellido();
+                tecnicoNombre = tecnico.getFullName() + " " + tecnico.getLastName();
                 tecnicoEmail = tecnico.getEmail();
             }
         }
@@ -318,7 +318,7 @@ public class AdminService {
             Optional<Usuario> tecnicoOpt = usuarioRepository.findById(asignacion.getTecnicoId());
             if (tecnicoOpt.isPresent()) {
                 Usuario tecnico = tecnicoOpt.get();
-                tecnicoNombre = tecnico.getNombre() + " " + tecnico.getApellido();
+                tecnicoNombre = tecnico.getFullName() + " " + tecnico.getLastName();
                 tecnicoEmail = tecnico.getEmail();
             }
         }

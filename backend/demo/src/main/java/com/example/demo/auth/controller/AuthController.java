@@ -527,10 +527,10 @@ public class AuthController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             
             Map<String, Object> response = new HashMap<>();
-            response.put("id", usuario.getIdUsuario());
+            response.put("id", usuario.getId());
             response.put("email", usuario.getEmail());
-            response.put("emailVerificado", usuario.getEmailVerificado());
-            response.put("activo", usuario.getActivo());
+            response.put("emailVerificado", usuario.getEmailVerified());
+            response.put("activo", usuario.getActive());
             response.put("require2fa", usuario.getRequire2fa());
             
             return ResponseEntity.ok(response);
@@ -545,7 +545,7 @@ public class AuthController {
             Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             
-            usuario.setEmailVerificado(verified);
+            usuario.setEmailVerified(verified);
             usuarioRepository.save(usuario);
             
             return ResponseEntity.ok(Map.of(

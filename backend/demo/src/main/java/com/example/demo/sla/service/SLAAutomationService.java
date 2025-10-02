@@ -58,15 +58,15 @@ public class SLAAutomationService {
      * Aplica configuración SLA al ticket si existe una para su categoría y prioridad
      */
     private void aplicarConfiguracionSLA(Ticket ticket) {
-        if (ticket.getCategoria() == null || ticket.getPrioridad() == null) {
+        if (ticket.getCategory() == null || ticket.getPriority() == null) {
             return;
         }
         
         try {
             Optional<SLAConfigurationDTO> configSLA = slaConfigurationService
                 .obtenerConfiguracionPorCategoriaYPrioridad(
-                    ticket.getCategoria().getId(), 
-                    ticket.getPrioridad()
+                    ticket.getCategory().getId(), 
+                    ticket.getPriority()
                 );
             
             if (configSLA.isPresent()) {
@@ -74,24 +74,24 @@ public class SLAAutomationService {
                 log.info("Aplicando configuración SLA '{}' al ticket {}", config.getNombre(), ticket.getId());
                 
                 // Configurar campos SLA en el ticket
-                ticket.setSlaConfiguracionId(config.getId());
-                ticket.setSlaTiempoRespuestaHoras(config.getTiempoRespuestaHoras());
-                ticket.setSlaTiempoResolucionHoras(config.getTiempoResolucionHoras());
+                ticket.setSlaConfigurationId(config.getId());
+                ticket.setSlaResponseTimeHours(config.getTiempoRespuestaHoras());
+                ticket.setSlaResolutionTimeHours(config.getTiempoResolucionHoras());
                 
                 // Calcular fechas límite
-                LocalDateTime fechaCreacion = ticket.getFechaCreacion();
+                LocalDateTime fechaCreacion = ticket.getCreatedAt();
                 if (fechaCreacion != null) {
-                    ticket.setSlaFechaLimiteRespuesta(fechaCreacion.plusHours(config.getTiempoRespuestaHoras()));
-                    ticket.setSlaFechaLimiteResolucion(fechaCreacion.plusHours(config.getTiempoResolucionHoras()));
+                    ticket.setSlaResponseDeadline(fechaCreacion.plusHours(config.getTiempoRespuestaHoras()));
+                    ticket.setSlaResolutionDeadline(fechaCreacion.plusHours(config.getTiempoResolucionHoras()));
                 }
                 
                 // Guardar ticket con configuración SLA
                 ticketRepository.save(ticket);
                 
                 // Notificar a administradores sobre SLA aplicado
-                if (ticket.getCreador() != null) {
+                if (ticket.getCreator() != null) {
                     // Crear notificación para administradores
-                    notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                    notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreator().getId());
                 }
             }
         } catch (Exception e) {
@@ -137,15 +137,15 @@ public class SLAAutomationService {
      * Crea reglas automáticas basadas en configuraciones SLA
      */
     private void crearReglasAutomaticasSLA(Ticket ticket) {
-        if (ticket.getCategoria() == null || ticket.getPrioridad() == null) {
+        if (ticket.getCategory() == null || ticket.getPriority() == null) {
             return;
         }
         
         try {
             Optional<SLAConfigurationDTO> configSLA = slaConfigurationService
                 .obtenerConfiguracionPorCategoriaYPrioridad(
-                    ticket.getCategoria().getId(), 
-                    ticket.getPrioridad()
+                    ticket.getCategory().getId(), 
+                    ticket.getPriority()
                 );
             
             if (configSLA.isPresent()) {
@@ -234,7 +234,7 @@ public class SLAAutomationService {
         
         if (condicion.startsWith("categoria ==")) {
             String valor = extraerValorLiteral(condicion);
-            String categoria = ticket.getCategoriaNombre();
+            String categoria = ticket.getCategoryName();
             System.out.println("🔧 [SLA Automation] Comparando categoría: '" + categoria + "' == '" + valor + "'");
             boolean resultado = categoria != null && categoria.equalsIgnoreCase(valor);
             System.out.println("🔧 [SLA Automation] Resultado categoría: " + resultado);
@@ -243,7 +243,7 @@ public class SLAAutomationService {
         
         if (condicion.startsWith("prioridad ==")) {
             String valor = extraerValorLiteral(condicion);
-            String prioridad = ticket.getPrioridad();
+            String prioridad = ticket.getPriority();
             System.out.println("🔧 [SLA Automation] Comparando prioridad: '" + prioridad + "' == '" + valor + "'");
             
             // Mapear prioridades en español a inglés
@@ -257,7 +257,7 @@ public class SLAAutomationService {
         
         if (condicion.startsWith("estado ==")) {
             String valor = extraerValorLiteral(condicion);
-            String estado = ticket.getEstado();
+            String estado = ticket.getStatus();
             System.out.println("🔧 [SLA Automation] Comparando estado: '" + estado + "' == '" + valor + "'");
             boolean resultado = estado != null && estado.equalsIgnoreCase(valor);
             System.out.println("🔧 [SLA Automation] Resultado estado: " + resultado);
@@ -266,7 +266,7 @@ public class SLAAutomationService {
         
         if (condicion.startsWith("consulta contains")) {
             String valor = extraerValorLiteral(condicion);
-            String consulta = ticket.getConsulta();
+            String consulta = ticket.getQuery();
             return consulta != null && consulta.toLowerCase().contains(valor.toLowerCase());
         }
         
@@ -284,7 +284,7 @@ public class SLAAutomationService {
         try {
             if (a.startsWith("set_prioridad")) {
                 String valor = extraerValorLiteral(a);
-                ticket.setPrioridad(valor.toUpperCase());
+                ticket.setPriority(valor.toUpperCase());
                 ticketRepository.save(ticket);
                 log.info("Prioridad del ticket {} cambiada a {}", ticket.getId(), valor);
                 return;
@@ -298,18 +298,18 @@ public class SLAAutomationService {
                     
                     usuarioRepository.findById(tecnicoId).ifPresentOrElse(
                         tecnico -> {
-                            if (tecnico.isTecnico() && tecnico.getActivo()) {
-                                System.out.println("✅ [SLA Automation] Técnico encontrado: " + tecnico.getEmail() + " (ID: " + tecnico.getIdUsuario() + ")");
-                                ticket.setTecnicoAsignado(tecnico);
-                                ticket.setEstado("ASIGNADO");
+                            if (tecnico.isTecnico() && tecnico.getActive()) {
+                                System.out.println("✅ [SLA Automation] Técnico encontrado: " + tecnico.getEmail() + " (ID: " + tecnico.getId() + ")");
+                                ticket.setAssignedTechnician(tecnico);
+                                ticket.setStatus("ASIGNADO");
                                 ticketRepository.save(ticket);
                                 
                                 try {
-                                    if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
+                                    if (ticket.getCreator() != null && tecnico.getId() != null) {
                                         notificationRoleService.notificarAsignacionTicket(
                                             ticket.getId(), 
-                                            ticket.getCreador().getIdUsuario(), 
-                                            tecnico.getIdUsuario()
+                                            ticket.getCreator().getId(), 
+                                            tecnico.getId()
                                         );
                                     }
                                 } catch (Exception ex) {
@@ -349,18 +349,18 @@ public class SLAAutomationService {
                 if (!tecnicosConMenorCarga.isEmpty()) {
                     // Si hay múltiples técnicos con la misma carga mínima, seleccionar el primero
                     com.example.demo.usuario.model.Usuario tecnico = tecnicosConMenorCarga.get(0);
-                    System.out.println("✅ [SLA Automation] Técnico seleccionado: " + tecnico.getEmail() + " (ID: " + tecnico.getIdUsuario() + ")");
+                    System.out.println("✅ [SLA Automation] Técnico seleccionado: " + tecnico.getEmail() + " (ID: " + tecnico.getId() + ")");
                     
-                    ticket.setTecnicoAsignado(tecnico);
-                    ticket.setEstado("ASIGNADO");
+                    ticket.setAssignedTechnician(tecnico);
+                    ticket.setStatus("ASIGNADO");
                     ticketRepository.save(ticket);
                     
                     try {
-                        if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
+                        if (ticket.getCreator() != null && tecnico.getId() != null) {
                             notificationRoleService.notificarAsignacionTicket(
                                 ticket.getId(), 
-                                ticket.getCreador().getIdUsuario(), 
-                                tecnico.getIdUsuario()
+                                ticket.getCreator().getId(), 
+                                tecnico.getId()
                             );
                         }
                     } catch (Exception ex) {
@@ -379,9 +379,9 @@ public class SLAAutomationService {
                 String horasStr = extraerValorLiteral(a);
                 try {
                     int horasSLA = Integer.parseInt(horasStr);
-                    LocalDateTime fechaLimite = ticket.getFechaCreacion().plusHours(horasSLA);
+                    LocalDateTime fechaLimite = ticket.getCreatedAt().plusHours(horasSLA);
                     
-                    if (LocalDateTime.now().isAfter(fechaLimite) && "PENDIENTE".equals(ticket.getEstado())) {
+                    if (LocalDateTime.now().isAfter(fechaLimite) && "PENDIENTE".equals(ticket.getStatus())) {
                         // Escalar a técnico senior o administrador
                         escalarTicket(ticket);
                     }
@@ -393,8 +393,8 @@ public class SLAAutomationService {
             
             if (a.startsWith("notificar")) {
                 // Reutilizar sistema de notificaciones existente
-                if (ticket.getCreador() != null) {
-                    notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                if (ticket.getCreator() != null) {
+                    notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreator().getId());
                 }
                 return;
             }
@@ -411,22 +411,22 @@ public class SLAAutomationService {
         try {
             // Buscar técnico senior o administrador disponible
             List<com.example.demo.usuario.model.Usuario> tecnicosSenior = usuarioRepository
-                .findByTipoUsuarioAndActivo(com.example.demo.usuario.model.TipoUsuario.TECNICO, true);
+                .findByUserTypeAndActive(com.example.demo.usuario.model.TipoUsuario.TECNICO, true);
             
             if (!tecnicosSenior.isEmpty()) {
                 // Asignar al primer técnico disponible
                 com.example.demo.usuario.model.Usuario tecnicoSenior = tecnicosSenior.get(0);
-                ticket.setTecnicoAsignado(tecnicoSenior);
-                ticket.setEstado("ESCALADO");
-                ticket.setPrioridad("ALTA"); // Aumentar prioridad al escalar
+                ticket.setAssignedTechnician(tecnicoSenior);
+                ticket.setStatus("ESCALADO");
+                ticket.setPriority("ALTA"); // Aumentar prioridad al escalar
                 ticketRepository.save(ticket);
                 
                 // Notificar escalamiento
-                if (ticket.getCreador() != null && tecnicoSenior.getIdUsuario() != null) {
+                if (ticket.getCreator() != null && tecnicoSenior.getId() != null) {
                     notificationRoleService.notificarEscalacionTicket(
                         ticket.getId(), 
-                        ticket.getCreador().getIdUsuario(), 
-                        tecnicoSenior.getIdUsuario()
+                        ticket.getCreator().getId(), 
+                        tecnicoSenior.getId()
                     );
                 }
                 

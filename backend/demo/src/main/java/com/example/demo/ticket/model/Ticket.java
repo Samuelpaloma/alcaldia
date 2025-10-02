@@ -12,169 +12,169 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Usuario que crea el ticket (puede ser usuario normal o admin)
+    // User who creates the ticket (can be normal user or admin)
     @ManyToOne
-    @JoinColumn(name = "creador_id")
-    private Usuario creador;
+    @JoinColumn(name = "creator_id")
+    private Usuario creator;
 
-    // Técnico asignado al ticket
+    // Technician assigned to the ticket
     @ManyToOne
-    @JoinColumn(name = "tecnico_id")
-    private Usuario tecnicoAsignado;
+    @JoinColumn(name = "assigned_technician_id")
+    private Usuario assignedTechnician;
     
-    // Email del técnico asignado (para compatibilidad)
-    @Column(name = "tecnico_email")
-    private String tecnicoEmail;
+    // Assigned technician email (for compatibility)
+    @Column(name = "assigned_technician_email")
+    private String assignedTechnicianEmail;
 
-    // Categoría del ticket
+    // Ticket category
     @ManyToOne
-    @JoinColumn(name = "categoria_id")
-    private Categoria categoriaObjeto;
+    @JoinColumn(name = "category_id")
+    private Categoria category;
 
-    // Estado del ticket
-    private String estado;
+    // Ticket status
+    private String status;
 
-    // Campos del formulario de funcionarios
-    @Column(name = "ubicacion", nullable = false)
-    private String ubicacion;
+    // Employee form fields
+    @Column(name = "location", nullable = false)
+    private String location;
 
-    @Column(name = "consulta", columnDefinition = "TEXT")
-    private String consulta;
+    @Column(name = "query", columnDefinition = "TEXT")
+    private String query;
 
-    // Campo de categoría como string (para compatibilidad temporal)
-    @Column(name = "categoria_string")
-    private String categoriaString;
+    // Category as string (for temporary compatibility)
+    @Column(name = "category_string")
+    private String categoryString;
 
-    // Campo de categoría (requerido por la tabla)
-    @Column(name = "categoria")
-    private String categoriaNombre;
+    // Category field (required by table)
+    @Column(name = "category_name")
+    private String categoryName;
 
-    @Column(name = "archivo_adjunto")
-    private String archivoAdjunto;
+    @Column(name = "attached_file")
+    private String attachedFile;
 
-    @Column(name = "nombre_archivo")
-    private String nombreArchivo;
+    @Column(name = "file_name")
+    private String fileName;
 
-    @Column(name = "fecha_creacion")
-    private LocalDateTime fechaCreacion;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-    @Column(name = "fecha_actualizacion")
-    private LocalDateTime fechaActualizacion;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    // Campos SLA
-    @Column(name = "sla_configuracion_id")
-    private Long slaConfiguracionId;
+    // SLA fields
+    @Column(name = "sla_configuration_id")
+    private Long slaConfigurationId;
     
-    @Column(name = "sla_fecha_limite_respuesta")
-    private LocalDateTime slaFechaLimiteRespuesta;
+    @Column(name = "sla_response_deadline")
+    private LocalDateTime slaResponseDeadline;
     
-    @Column(name = "sla_fecha_limite_resolucion")
-    private LocalDateTime slaFechaLimiteResolucion;
+    @Column(name = "sla_resolution_deadline")
+    private LocalDateTime slaResolutionDeadline;
     
-    @Column(name = "sla_tiempo_respuesta_horas")
-    private Integer slaTiempoRespuestaHoras;
+    @Column(name = "sla_response_time_hours")
+    private Integer slaResponseTimeHours;
     
-    @Column(name = "sla_tiempo_resolucion_horas")
-    private Integer slaTiempoResolucionHoras;
+    @Column(name = "sla_resolution_time_hours")
+    private Integer slaResolutionTimeHours;
     
-    @Column(name = "sla_violado")
-    private Boolean slaViolado = false;
+    @Column(name = "sla_violated")
+    private Boolean slaViolated = false;
 
-    // Campos existentes
-    private String asunto;
-    private String descripcion;
-    private String prioridad;
+    // Existing fields
+    private String subject;
+    private String description;
+    private String priority;
 
     // Getters y setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public Usuario getCreador() { return creador; }
-    public void setCreador(Usuario creador) { this.creador = creador; }
+    public Usuario getCreator() { return creator; }
+    public void setCreator(Usuario creator) { this.creator = creator; }
     
-    // Métodos de conveniencia para obtener datos del creador
-    public String getCreadorNombre() {
-        return creador != null ? creador.getNombreCompleto() : "Usuario Desconocido";
+    // Convenience methods to get creator data
+    public String getCreatorName() {
+        return creator != null ? creator.getFullName() : "Unknown User";
     }
     
-    public String getCreadorEmail() {
-        return creador != null ? creador.getEmail() : null;
+    public String getCreatorEmail() {
+        return creator != null ? creator.getEmail() : null;
     }
 
-    public Usuario getTecnicoAsignado() { return tecnicoAsignado; }
-    public void setTecnicoAsignado(Usuario tecnicoAsignado) { this.tecnicoAsignado = tecnicoAsignado; }
+    public Usuario getAssignedTechnician() { return assignedTechnician; }
+    public void setAssignedTechnician(Usuario assignedTechnician) { this.assignedTechnician = assignedTechnician; }
     
-    public String getTecnicoEmail() { return tecnicoEmail; }
-    public void setTecnicoEmail(String tecnicoEmail) { this.tecnicoEmail = tecnicoEmail; }
+    public String getAssignedTechnicianEmail() { return assignedTechnicianEmail; }
+    public void setAssignedTechnicianEmail(String assignedTechnicianEmail) { this.assignedTechnicianEmail = assignedTechnicianEmail; }
 
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public String getAsunto() { return asunto; }
-    public void setAsunto(String asunto) { this.asunto = asunto; }
+    public String getSubject() { return subject; }
+    public void setSubject(String subject) { this.subject = subject; }
 
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
-    public String getPrioridad() { return prioridad; }
-    public void setPrioridad(String prioridad) { this.prioridad = prioridad; }
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
 
-    // Getters y setters para campos del formulario
-    public String getUbicacion() { return ubicacion; }
-    public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+    // Getters and setters for form fields
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
-    public String getConsulta() { return consulta; }
-    public void setConsulta(String consulta) { this.consulta = consulta; }
+    public String getQuery() { return query; }
+    public void setQuery(String query) { this.query = query; }
 
-    public Categoria getCategoria() { return categoriaObjeto; }
-    public void setCategoria(Categoria categoria) { this.categoriaObjeto = categoria; }
+    public Categoria getCategory() { return category; }
+    public void setCategory(Categoria category) { this.category = category; }
 
-    public String getCategoriaString() { return categoriaString; }
-    public void setCategoriaString(String categoriaString) { this.categoriaString = categoriaString; }
+    public String getCategoryString() { return categoryString; }
+    public void setCategoryString(String categoryString) { this.categoryString = categoryString; }
 
-    public String getCategoriaNombre() { return categoriaNombre; }
-    public void setCategoriaNombre(String categoriaNombre) { this.categoriaNombre = categoriaNombre; }
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 
-    public String getArchivoAdjunto() { return archivoAdjunto; }
-    public void setArchivoAdjunto(String archivoAdjunto) { this.archivoAdjunto = archivoAdjunto; }
+    public String getAttachedFile() { return attachedFile; }
+    public void setAttachedFile(String attachedFile) { this.attachedFile = attachedFile; }
 
-    public String getNombreArchivo() { return nombreArchivo; }
-    public void setNombreArchivo(String nombreArchivo) { this.nombreArchivo = nombreArchivo; }
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
 
-    public LocalDateTime getFechaCreacion() { return fechaCreacion; }
-    public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public LocalDateTime getFechaActualizacion() { return fechaActualizacion; }
-    public void setFechaActualizacion(LocalDateTime fechaActualizacion) { this.fechaActualizacion = fechaActualizacion; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // Getters y setters para campos SLA
-    public Long getSlaConfiguracionId() { return slaConfiguracionId; }
-    public void setSlaConfiguracionId(Long slaConfiguracionId) { this.slaConfiguracionId = slaConfiguracionId; }
+    // Getters and setters for SLA fields
+    public Long getSlaConfigurationId() { return slaConfigurationId; }
+    public void setSlaConfigurationId(Long slaConfigurationId) { this.slaConfigurationId = slaConfigurationId; }
     
-    public LocalDateTime getSlaFechaLimiteRespuesta() { return slaFechaLimiteRespuesta; }
-    public void setSlaFechaLimiteRespuesta(LocalDateTime slaFechaLimiteRespuesta) { this.slaFechaLimiteRespuesta = slaFechaLimiteRespuesta; }
+    public LocalDateTime getSlaResponseDeadline() { return slaResponseDeadline; }
+    public void setSlaResponseDeadline(LocalDateTime slaResponseDeadline) { this.slaResponseDeadline = slaResponseDeadline; }
     
-    public LocalDateTime getSlaFechaLimiteResolucion() { return slaFechaLimiteResolucion; }
-    public void setSlaFechaLimiteResolucion(LocalDateTime slaFechaLimiteResolucion) { this.slaFechaLimiteResolucion = slaFechaLimiteResolucion; }
+    public LocalDateTime getSlaResolutionDeadline() { return slaResolutionDeadline; }
+    public void setSlaResolutionDeadline(LocalDateTime slaResolutionDeadline) { this.slaResolutionDeadline = slaResolutionDeadline; }
     
-    public Integer getSlaTiempoRespuestaHoras() { return slaTiempoRespuestaHoras; }
-    public void setSlaTiempoRespuestaHoras(Integer slaTiempoRespuestaHoras) { this.slaTiempoRespuestaHoras = slaTiempoRespuestaHoras; }
+    public Integer getSlaResponseTimeHours() { return slaResponseTimeHours; }
+    public void setSlaResponseTimeHours(Integer slaResponseTimeHours) { this.slaResponseTimeHours = slaResponseTimeHours; }
     
-    public Integer getSlaTiempoResolucionHoras() { return slaTiempoResolucionHoras; }
-    public void setSlaTiempoResolucionHoras(Integer slaTiempoResolucionHoras) { this.slaTiempoResolucionHoras = slaTiempoResolucionHoras; }
+    public Integer getSlaResolutionTimeHours() { return slaResolutionTimeHours; }
+    public void setSlaResolutionTimeHours(Integer slaResolutionTimeHours) { this.slaResolutionTimeHours = slaResolutionTimeHours; }
     
-    public Boolean getSlaViolado() { return slaViolado; }
-    public void setSlaViolado(Boolean slaViolado) { this.slaViolado = slaViolado; }
+    public Boolean getSlaViolated() { return slaViolated; }
+    public void setSlaViolated(Boolean slaViolated) { this.slaViolated = slaViolated; }
 
-    // Método para inicializar fechas
+    // Method to initialize dates
     @PrePersist
     protected void onCreate() {
-        fechaCreacion = LocalDateTime.now();
-        fechaActualizacion = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        fechaActualizacion = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 }

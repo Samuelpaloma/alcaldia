@@ -24,70 +24,70 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     
     boolean existsByEmail(String email);
     
-    boolean existsByTipoUsuario(TipoUsuario tipoUsuario);
+    boolean existsByUserType(TipoUsuario userType);
     
-    List<Usuario> findByTipoUsuario(TipoUsuario tipoUsuario);
+    List<Usuario> findByUserType(TipoUsuario userType);
     
-    List<Usuario> findByTipoUsuarioAndActivo(TipoUsuario tipoUsuario, Boolean activo);
+    List<Usuario> findByUserTypeAndActive(TipoUsuario userType, Boolean active);
     
     // 📊 Consultas para conteos
-    long countByTipoUsuario(TipoUsuario tipoUsuario);
+    long countByUserType(TipoUsuario userType);
     
-    long countByTipoUsuarioAndActivo(TipoUsuario tipoUsuario, Boolean activo);
+    long countByUserTypeAndActive(TipoUsuario userType, Boolean active);
     
     // 👥 Consultas de auditoría (quién creó a quién)
-    @Query("SELECT u FROM Usuario u WHERE u.creadoPor.idUsuario = :creadorId")
+    @Query("SELECT u FROM Usuario u WHERE u.createdBy.id = :creadorId")
     List<Usuario> findUsuariosCreatedBy(@Param("creadorId") Long creadorId);
     
-    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = :tipo AND u.creadoPor.idUsuario = :creadorId")
+    @Query("SELECT u FROM Usuario u WHERE u.userType = :tipo AND u.createdBy.id = :creadorId")
     List<Usuario> findByTipoAndCreador(@Param("tipo") TipoUsuario tipo, @Param("creadorId") Long creadorId);
     
     // 🔧 Consultas específicas para técnicos
-    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = 'TECNICO' AND u.activo = true " +
-           "ORDER BY (SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado = u " +
-           "AND t.estado NOT IN ('RESUELTO', 'CERRADO')) ASC")
+    @Query("SELECT u FROM Usuario u WHERE u.userType = 'TECNICO' AND u.active = true " +
+           "ORDER BY (SELECT COUNT(t) FROM Ticket t WHERE t.assignedTechnician = u " +
+           "AND t.status NOT IN ('RESUELTO', 'CERRADO')) ASC")
     Optional<Usuario> findTechnicianWithLeastActiveTickets();
     
-    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = 'TECNICO' AND u.activo = true " +
-           "AND (SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado = u " +
-           "AND t.estado NOT IN ('RESUELTO', 'CERRADO')) = " +
-           "(SELECT MIN((SELECT COUNT(t2) FROM Ticket t2 WHERE t2.tecnicoAsignado = u2 " +
-           "AND t2.estado NOT IN ('RESUELTO', 'CERRADO'))) FROM Usuario u2 WHERE u2.tipoUsuario = 'TECNICO' AND u2.activo = true)")
+    @Query("SELECT u FROM Usuario u WHERE u.userType = 'TECNICO' AND u.active = true " +
+           "AND (SELECT COUNT(t) FROM Ticket t WHERE t.assignedTechnician = u " +
+           "AND t.status NOT IN ('RESUELTO', 'CERRADO')) = " +
+           "(SELECT MIN((SELECT COUNT(t2) FROM Ticket t2 WHERE t2.assignedTechnician = u2 " +
+           "AND t2.status NOT IN ('RESUELTO', 'CERRADO'))) FROM Usuario u2 WHERE u2.userType = 'TECNICO' AND u2.active = true)")
     List<Usuario> findTechniciansWithLeastActiveTickets();
     
-    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = 'TECNICO' AND u.activo = true")
+    @Query("SELECT u FROM Usuario u WHERE u.userType = 'TECNICO' AND u.active = true")
     List<Usuario> findActiveTechnicians();
     
     // 📋 Consultas paginadas
-    Page<Usuario> findByTipoUsuario(TipoUsuario tipoUsuario, Pageable pageable);
+    Page<Usuario> findByUserType(TipoUsuario userType, Pageable pageable);
     
-    Page<Usuario> findByTipoUsuarioAndActivo(TipoUsuario tipoUsuario, Boolean activo, Pageable pageable);
+    Page<Usuario> findByUserTypeAndActive(TipoUsuario userType, Boolean active, Pageable pageable);
     
-    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = :tipo " +
-           "AND (:search IS NULL OR u.nombre LIKE %:search% OR u.apellido LIKE %:search% OR u.email LIKE %:search%)")
+    @Query("SELECT u FROM Usuario u WHERE u.userType = :tipo " +
+           "AND (:search IS NULL OR u.firstName LIKE %:search% OR u.lastName LIKE %:search% OR u.email LIKE %:search%)")
     Page<Usuario> findByTipoUsuarioWithSearch(@Param("tipo") TipoUsuario tipo, 
                                             @Param("search") String search, 
                                             Pageable pageable);
     
     // 📈 Consultas para métricas
-    @Query("SELECT COUNT(u) FROM Usuario u WHERE u.ultimoAcceso >= :since")
+    @Query("SELECT COUNT(u) FROM Usuario u WHERE u.lastAccess >= :since")
     long countActiveUsersSince(@Param("since") LocalDateTime since);
     
-    @Query("SELECT u FROM Usuario u WHERE u.ultimoAcceso IS NULL OR u.ultimoAcceso < :before")
+    @Query("SELECT u FROM Usuario u WHERE u.lastAccess IS NULL OR u.lastAccess < :before")
     List<Usuario> findInactiveUsersSince(@Param("before") LocalDateTime before);
     
     // 🔐 Consultas de seguridad
-    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = 'ADMINISTRADOR' AND u.activo = true")
+    @Query("SELECT u FROM Usuario u WHERE u.userType = 'ADMINISTRADOR' AND u.active = true")
     List<Usuario> findActiveAdmins();
     
-    @Query("SELECT COUNT(u) FROM Usuario u WHERE u.tipoUsuario = 'ADMINISTRADOR' AND u.activo = true")
+    @Query("SELECT COUNT(u) FROM Usuario u WHERE u.userType = 'ADMINISTRADOR' AND u.active = true")
     long countActiveAdmins();
     
     // 🎯 Consultas para selects/combos
     @Query("SELECT new com.example.demo.usuario.dto.response.UsuarioSummaryDTO(" +
-           "u.idUsuario, CONCAT(u.nombre, ' ', u.apellido), u.email, u.tipoUsuario, u.activo, u.ultimoAcceso, " +
-           "CONCAT(u.nombre, ' ', u.apellido, ' (', u.email, ')'), CAST(u.idUsuario AS string)) " +
-           "FROM Usuario u WHERE u.tipoUsuario = :tipo AND u.activo = true " +
-           "ORDER BY u.nombre, u.apellido")
+           "u.id, CONCAT(u.firstName, ' ', u.lastName), u.email, u.userType, u.active, u.lastAccess, " +
+           "CONCAT(u.firstName, ' ', u.lastName, ' (', u.email, ')'), CAST(u.id AS string)) " +
+           "FROM Usuario u WHERE u.userType = :tipo AND u.active = true " +
+           "ORDER BY u.firstName, u.lastName")
     List<UsuarioSummaryDTO> findSummaryByTipo(@Param("tipo") TipoUsuario tipo);
 }

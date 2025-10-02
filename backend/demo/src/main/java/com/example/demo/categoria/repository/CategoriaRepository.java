@@ -15,36 +15,36 @@ import java.util.Optional;
 public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
     
     // Buscar por nombre (case insensitive)
-    Optional<Categoria> findByNombreIgnoreCase(String nombre);
+    Optional<Categoria> findByNameIgnoreCase(String name);
     
     // Verificar si existe por nombre (excluyendo un ID específico)
-    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
+    boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
     
     // Buscar categorías activas
-    List<Categoria> findByActivaTrueOrderByOrdenAsc();
+    List<Categoria> findByActiveTrueOrderByOrderAsc();
     
     // Buscar categorías activas con paginación
-    Page<Categoria> findByActivaTrueOrderByOrdenAsc(Pageable pageable);
+    Page<Categoria> findByActiveTrueOrderByOrderAsc(Pageable pageable);
     
     // Buscar por nombre (activas)
-    @Query("SELECT c FROM Categoria c WHERE c.activa = true AND LOWER(c.nombre) LIKE LOWER(CONCAT('%', :nombre, '%')) ORDER BY c.orden ASC")
+    @Query("SELECT c FROM Categoria c WHERE c.active = true AND LOWER(c.name) LIKE LOWER(CONCAT('%', :nombre, '%')) ORDER BY c.order ASC")
     List<Categoria> findActivasByNombreContainingIgnoreCase(@Param("nombre") String nombre);
     
     // Contar categorías activas
-    long countByActivaTrue();
+    long countByActiveTrue();
     
     // Obtener siguiente orden disponible
-    @Query("SELECT COALESCE(MAX(c.orden), 0) + 1 FROM Categoria c")
+    @Query("SELECT COALESCE(MAX(c.order), 0) + 1 FROM Categoria c")
     Integer getNextOrden();
     
     // Buscar por estado (activa/inactiva)
-    List<Categoria> findByActivaOrderByOrdenAsc(Boolean activa);
+    List<Categoria> findByActiveOrderByOrderAsc(Boolean active);
     
     // Buscar todas con paginación y filtros
     @Query("SELECT c FROM Categoria c WHERE " +
-           "(:activa IS NULL OR c.activa = :activa) AND " +
-           "(:nombre IS NULL OR LOWER(c.nombre) LIKE LOWER(CONCAT('%', :nombre, '%'))) " +
-           "ORDER BY c.orden ASC, c.nombre ASC")
+           "(:activa IS NULL OR c.active = :activa) AND " +
+           "(:nombre IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :nombre, '%'))) " +
+           "ORDER BY c.order ASC, c.name ASC")
     Page<Categoria> findWithFilters(@Param("activa") Boolean activa, 
                                    @Param("nombre") String nombre, 
                                    Pageable pageable);

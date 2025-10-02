@@ -72,8 +72,8 @@ public class EmailVerificationService {
         
         // 3. Activar cuenta del usuario
         Usuario usuario = verificationToken.getUsuario();
-        usuario.setEmailVerificado(true);
-        usuario.setActivo(true);
+        usuario.setEmailVerified(true);
+        usuario.setActive(true);
         usuarioRepository.save(usuario);
         
         log.info("Email verificado exitosamente para usuario: {}", usuario.getEmail());
@@ -89,7 +89,7 @@ public class EmailVerificationService {
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
         // Solo reenviar si el email no está verificado
-        if (usuario.getEmailVerificado()) {
+        if (usuario.getEmailVerified()) {
             throw new RuntimeException("El email ya está verificado");
         }
         

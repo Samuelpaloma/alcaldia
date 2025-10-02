@@ -4,10 +4,10 @@ import com.example.demo.notificacion.dto.NotificacionDTO;
 import com.example.demo.notificacion.dto.PreferenciasNotificacionDTO;
 import com.example.demo.notificacion.dto.request.CreateNotificacionRequest;
 import com.example.demo.notificacion.model.Notificacion;
-import com.example.demo.notificacion.model.NotificacionMejorada;
+import com.example.demo.notificacion.model.Notification;
 import com.example.demo.notificacion.model.PreferenciasNotificacion;
 import com.example.demo.notificacion.repository.NotificacionRepository;
-import com.example.demo.notificacion.repository.NotificacionMejoradaRepository;
+import com.example.demo.notificacion.repository.NotificationRepository;
 import com.example.demo.notificacion.repository.PreferenciasNotificacionRepository;
 import com.example.demo.shared.dto.PageResponse;
 import com.example.demo.usuario.model.Usuario;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class NotificacionServiceImpl implements NotificacionService {
     
     private final NotificacionRepository notificacionRepository;
-    private final NotificacionMejoradaRepository notificacionMejoradaRepository;
+    private final NotificationRepository NotificationRepository;
     private final PreferenciasNotificacionRepository preferenciasNotificacionRepository;
     
     @Autowired
@@ -288,7 +288,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     
     @Override
     @Transactional
-    public NotificacionMejorada crearNotificacion(String tipo, String mensaje, List<Integer> destinatariosIds, 
+    public Notification crearNotificacion(String tipo, String mensaje, List<Integer> destinatariosIds, 
                                                   Long ticketId, Integer usuarioActorId, String prioridad) {
         try {
             // Convertir lista de IDs a JSON
@@ -297,28 +297,28 @@ public class NotificacionServiceImpl implements NotificacionService {
             // Obtener información del usuario actor
             Usuario usuarioActor = usuarioRepository.findById(usuarioActorId.longValue()).orElse(null);
             String usuarioActorEmail = usuarioActor != null ? usuarioActor.getEmail() : null;
-            String usuarioActorNombre = usuarioActor != null ? usuarioActor.getNombre() : null;
+            String usuarioActorNombre = usuarioActor != null ? usuarioActor.getFullName() : null;
             
-            NotificacionMejorada notificacion = new NotificacionMejorada();
-            notificacion.setTipo(tipo);
-            notificacion.setMensaje(mensaje);
-            notificacion.setDestinatarios(destinatariosJson);
+            Notification notificacion = new Notification();
+            notificacion.setType(tipo);
+            notificacion.setMessage(mensaje);
+            notificacion.setRecipients(destinatariosJson);
             notificacion.setTicketId(ticketId);
-            notificacion.setUsuarioActorId(usuarioActorId.longValue());
-            notificacion.setUsuarioActorEmail(usuarioActorEmail);
-            notificacion.setUsuarioActorNombre(usuarioActorNombre);
-            notificacion.setPrioridad(prioridad != null ? prioridad : NotificacionMejorada.PRIORIDAD_NORMAL);
-            notificacion.setLeida(false);
-            notificacion.setFechaCreacion(LocalDateTime.now());
+            notificacion.setActorUserId(usuarioActorId.longValue());
+            notificacion.setActorUserEmail(usuarioActorEmail);
+            notificacion.setActorUserName(usuarioActorNombre);
+            notificacion.setPriority(prioridad != null ? prioridad : Notification.PRIORITY_NORMAL);
+            notificacion.setRead(false);
+            notificacion.setCreatedAt(LocalDateTime.now());
             
-            return notificacionMejoradaRepository.save(notificacion);
+            return NotificationRepository.save(notificacion);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error al crear notificación", e);
         }
     }
 
     @Override
-    public NotificacionMejorada crearNotificacionSiPushActivo(String tipo, String mensaje, List<Integer> destinatariosIds, 
+    public Notification crearNotificacionSiPushActivo(String tipo, String mensaje, List<Integer> destinatariosIds, 
                                                               Long ticketId, Integer usuarioActorId, String prioridad) {
         // Verificar si al menos un destinatario tiene push activo
         boolean algunPushActivo = false;

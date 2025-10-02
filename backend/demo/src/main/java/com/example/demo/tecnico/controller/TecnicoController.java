@@ -5,6 +5,10 @@ import com.example.demo.tecnico.dto.request.SubirEvidenciaRequestDTO;
 import com.example.demo.tecnico.dto.response.TicketTecnicoResponseDTO;
 import com.example.demo.tecnico.dto.response.EstadisticasTecnicoResponseDTO;
 import com.example.demo.ticket.dto.response.EvidenciaResponseDTO;
+import com.example.demo.ticket.dto.response.HistorialEstadoResponseDTO;
+import com.example.demo.ticket.model.Ticket;
+import com.example.demo.ticket.model.HistorialEstadoTicket;
+import com.example.demo.asignacion.model.HistorialAsignacion;
 import com.example.demo.tecnico.service.TecnicoService;
 import com.example.demo.evidencia.service.EvidenciaService;
 import com.example.demo.evidencia.dto.EvidenciaMovilDTO;
@@ -17,7 +21,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api/tecnico")
@@ -28,6 +37,9 @@ public class TecnicoController {
     
     private final TecnicoService tecnicoService;
     private final EvidenciaService evidenciaService;
+    private final com.example.demo.ticket.repository.HistorialEstadoTicketRepository historialEstadoTicketRepository;
+    private final com.example.demo.asignacion.repository.HistorialAsignacionRepository historialAsignacionRepository;
+    private final com.example.demo.ticket.service.TicketService ticketService;
     
     /**
      * Obtener tickets asignados al técnico
@@ -149,6 +161,52 @@ public class TecnicoController {
      * Obtener historial de tickets del técnico
      * GET /api/tecnico/historial
      */
+    @GetMapping("/tickets/{ticketId}/historial")
+    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
+    public ResponseEntity<?> obtenerHistorialTicket(@PathVariable Long ticketId, Authentication authentication) {
+        try {
+            log.info("Obteniendo historial del ticket: {}", ticketId);
+            System.out.println("🔍 [HISTORIAL DEBUG] Ticket ID: " + ticketId);
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailTecnico = userDetails.getEmail();
+            System.out.println("🔍 [HISTORIAL DEBUG] Email técnico: " + emailTecnico);
+            
+            // Obtener el ticket
+            com.example.demo.ticket.dto.response.TicketResponseDTO ticketResponse = ticketService.obtenerTicketPorId(ticketId, emailTecnico);
+            if (ticketResponse == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // Obtener el ticket completo para el historial
+            Ticket ticket = new Ticket();
+            ticket.setId(ticketResponse.getId());
+            
+            // Obtener historial de estados
+            List<HistorialEstadoTicket> historialEstados = historialEstadoTicketRepository.findByTicketOrderByFechaCambioDesc(ticket);
+            List<HistorialEstadoResponseDTO> historialEstadosDTO = historialEstados.stream()
+                .map(this::convertirHistorialEstadoADTO)
+                .collect(Collectors.toList());
+            
+            // Obtener historial de asignaciones
+            List<HistorialAsignacion> historialAsignaciones = historialAsignacionRepository.findByTicketIdOrderByFechaOperacionAsc(ticket.getId());
+            List<Map<String, Object>> historialAsignacionesDTO = historialAsignaciones.stream()
+                .map(this::convertirHistorialAsignacionAMap)
+                .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("historialEstados", historialEstadosDTO);
+            response.put("historialAsignaciones", historialAsignacionesDTO);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error obteniendo historial del ticket {}: {}", ticketId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Error interno del servidor"));
+        }
+    }
+
     @GetMapping("/historial")
     // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerHistorialTickets(Authentication authentication) {
@@ -369,7 +427,9 @@ public class TecnicoController {
         try {
             log.info("Descargando archivo adjunto del ticket {} para técnico", ticketId);
             
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal()
+            ;
+            
             String emailTecnico = userDetails.getEmail();
             
             // TODO: Implementar lógica de descarga en TecnicoService
@@ -381,5 +441,47 @@ public class TecnicoController {
                 ApiResponse.error("Error al descargar archivo: " + e.getMessage())
             );
         }
+    }
+    
+    /**
+     * Convertir HistorialEstadoTicket a DTO
+     */
+    private HistorialEstadoResponseDTO convertirHistorialEstadoADTO(HistorialEstadoTicket historial) {
+        HistorialEstadoResponseDTO dto = new HistorialEstadoResponseDTO();
+        dto.setIdHistorial(historial.getIdHistorial());
+        dto.setTicketId(historial.getTicket().getId());
+        dto.setEstadoAnterior(historial.getEstadoAnterior());
+        dto.setEstadoNuevo(historial.getEstadoNuevo());
+        dto.setFechaCambio(historial.getFechaCambio());
+        dto.setComentario(historial.getComentario());
+        dto.setObservaciones(historial.getObservaciones());
+        dto.setCambiadoPor(historial.getCambiadoPor() != null ? 
+            historial.getCambiadoPor().getFullName() : 
+            "Sistema");
+        dto.setCambiadoPorEmail(historial.getCambiadoPor() != null ? 
+            historial.getCambiadoPor().getEmail() : 
+            "sistema@alcaldia.com");
+        dto.setTipoUsuario(historial.getCambiadoPor() != null ? 
+            historial.getCambiadoPor().getUserType().toString() : 
+            "SISTEMA");
+        return dto;
+    }
+    
+    /**
+     * Convertir HistorialAsignacion a Map
+     */
+    private Map<String, Object> convertirHistorialAsignacionAMap(HistorialAsignacion historial) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", historial.getId());
+        map.put("fechaAsignacion", historial.getFechaOperacion());
+        map.put("ticketId", historial.getTicketId());
+        map.put("tecnicoId", historial.getTecnicoId());
+        map.put("tipoOperacion", historial.getTipoOperacion());
+        map.put("tipoAccion", historial.getTipoAccion());
+        map.put("estadoAnterior", historial.getEstadoAnterior());
+        map.put("estadoNuevo", historial.getEstadoNuevo());
+        map.put("comentario", historial.getComentario());
+        map.put("emailUsuario", historial.getEmailUsuario());
+        return map;
     }
 }

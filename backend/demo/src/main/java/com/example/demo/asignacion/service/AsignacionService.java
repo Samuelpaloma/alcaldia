@@ -77,9 +77,9 @@ public class AsignacionService {
         
         AsignacionTicket asignacionGuardada = asignacionTicketRepository.save(asignacion);
         
-        ticket.setEstado("ASIGNADO");
-        ticket.setTecnicoAsignado(tecnico);
-        ticket.setTecnicoEmail(tecnico.getEmail());
+        ticket.setStatus("ASIGNADO");
+        ticket.setAssignedTechnician(tecnico);
+        ticket.setAssignedTechnicianEmail(tecnico.getEmail());
         ticketRepository.save(ticket);
         
         guardarHistorialAsignacion(request.getTicketId(), request.getTecnicoId(), 
@@ -88,7 +88,7 @@ public class AsignacionService {
         // Enviar notificaciones por roles
         Usuario admin = usuarioRepository.findByEmail(emailAsignador).orElse(null);
         if (admin != null) {
-            notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getIdUsuario(), tecnico.getIdUsuario());
+            notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
         }
         
         return convertirADTO(asignacionGuardada, ticket, tecnico);
@@ -125,8 +125,8 @@ public class AsignacionService {
         
         Ticket ticket = ticketOpt.get();
         Usuario tecnico = tecnicoOpt.get();
-        ticket.setTecnicoAsignado(tecnico);
-        ticket.setTecnicoEmail(tecnico.getEmail());
+        ticket.setAssignedTechnician(tecnico);
+        ticket.setAssignedTechnicianEmail(tecnico.getEmail());
         ticketRepository.save(ticket);
         
         guardarHistorialAsignacion(ticketId, nuevoTecnicoId, emailReasignador, "REASIGNACION", null);
@@ -134,7 +134,7 @@ public class AsignacionService {
         // Enviar notificaciones por roles
         Usuario admin = usuarioRepository.findByEmail(emailReasignador).orElse(null);
         if (admin != null) {
-            notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getIdUsuario(), tecnico.getIdUsuario());
+            notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
         }
         
         return convertirADTO(asignacionGuardada, ticket, tecnico);
@@ -160,8 +160,8 @@ public class AsignacionService {
         Ticket ticket = ticketOpt.get();
         
         // Verificar que no se esté escalando al mismo técnico ya asignado
-        if (ticket.getTecnicoAsignado() != null && ticket.getTecnicoAsignado().getIdUsuario().equals(tecnicoId)) {
-            throw new RuntimeException("No se puede escalar un ticket al mismo técnico que ya está asignado: " + ticket.getTecnicoAsignado().getEmail());
+        if (ticket.getAssignedTechnician() != null && ticket.getAssignedTechnician().getId().equals(tecnicoId)) {
+            throw new RuntimeException("No se puede escalar un ticket al mismo técnico que ya está asignado: " + ticket.getAssignedTechnician().getEmail());
         }
         
         // NO desactivar la asignación anterior - mantenerla como historial
@@ -189,34 +189,34 @@ public class AsignacionService {
         Usuario tecnico = tecnicoOpt.get();
         
         // Obtener estado anterior antes de cambiarlo
-        String estadoAnterior = ticket.getEstado();
+        String estadoAnterior = ticket.getStatus();
         
         // NO cambiar el técnico asignado del ticket - solo crear registro de escalación
         log.info("🔄 [ESCALACION] Manteniendo técnico asignado original: {} (NO cambiar)", 
-            ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : "null");
+            ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null");
         
         // NO cambiar el técnico asignado - mantener el original
-        // ticket.setTecnicoAsignado(tecnico);
-        // ticket.setTecnicoEmail(tecnico.getEmail());
+        // ticket.setAssignedTechnician(tecnico);
+        // ticket.setAssignedTechnicianEmail(tecnico.getEmail());
         
         // Cambiar estado a ESCALADO cuando se hace una escalación
         String nuevoEstado = "ESCALADO";
         
         log.info("🔄 [ESCALACION] Cambiando estado: {} → {} (escalación)", estadoAnterior, nuevoEstado);
-        ticket.setEstado(nuevoEstado);
+        ticket.setStatus(nuevoEstado);
         
         ticketRepository.save(ticket);
         
         log.info("✅ [ESCALACION] Ticket {} escalado correctamente. Técnico escalado: {} ({}). Estado: {} → {}", 
-            ticketId, tecnico.getNombreCompleto(), tecnico.getEmail(), estadoAnterior, nuevoEstado);
+            ticketId, tecnico.getFullName(), tecnico.getEmail(), estadoAnterior, nuevoEstado);
         
         // Verificar que se guardó correctamente
         Ticket ticketVerificado = ticketRepository.findById(ticketId).orElse(null);
         if (ticketVerificado != null) {
             log.info("✅ [ESCALACION] Verificación - Ticket {} guardado con técnico original: {} y estado: {}", 
                 ticketId, 
-                ticketVerificado.getTecnicoEmail(), 
-                ticketVerificado.getEstado());
+                ticketVerificado.getAssignedTechnicianEmail(), 
+                ticketVerificado.getStatus());
         } else {
             log.error("❌ [ESCALACION] Error - No se pudo verificar el ticket {} después de guardar", ticketId);
         }
@@ -234,7 +234,7 @@ public class AsignacionService {
         // Enviar notificaciones por roles específicas para escalación
         Usuario admin = usuarioRepository.findByEmail(emailEscalador).orElse(null);
         if (admin != null) {
-            notificationRoleService.notificarEscalacionTicket(ticket.getId(), admin.getIdUsuario(), tecnico.getIdUsuario());
+            notificationRoleService.notificarEscalacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
         }
         
         return convertirADTO(escalacionGuardada, ticket, tecnico);
@@ -253,8 +253,8 @@ public class AsignacionService {
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
         if (ticketOpt.isPresent()) {
             Ticket ticket = ticketOpt.get();
-            ticket.setEstado("PENDIENTE");
-            ticket.setTecnicoEmail(null);
+            ticket.setStatus("PENDIENTE");
+            ticket.setAssignedTechnicianEmail(null);
             ticketRepository.save(ticket);
         }
         
@@ -265,7 +265,7 @@ public class AsignacionService {
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
         if (ticketOpt.isPresent()) {
             Ticket ticket = ticketOpt.get();
-            ticket.setEstado("REABIERTO");
+            ticket.setStatus("REABIERTO");
             ticketRepository.save(ticket);
             
             guardarHistorialAsignacion(ticketId, null, emailReabridor, "REAPERTURA", null);
@@ -290,11 +290,11 @@ public class AsignacionService {
                                           String tipoAccion, String comentario) {
         // Obtener el ID del usuario que asigna
         Optional<Usuario> usuarioAsignador = usuarioRepository.findByEmail(emailUsuario);
-        Long usuarioQueAsignaId = usuarioAsignador.map(usuario -> usuario.getIdUsuario()).orElse(1L); // Fallback a ID 1
+        Long usuarioQueAsignaId = usuarioAsignador.map(usuario -> usuario.getId()).orElse(1L); // Fallback a ID 1
         
         // Obtener el estado anterior del ticket
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        String estadoAnterior = ticketOpt.map(Ticket::getEstado).orElse("PENDIENTE");
+        String estadoAnterior = ticketOpt.map(Ticket::getStatus).orElse("PENDIENTE");
         
         // Determinar el estado nuevo basado en el tipo de acción
         String estadoNuevo = determinarEstadoNuevo(tipoAccion);
@@ -328,7 +328,7 @@ public class AsignacionService {
         
         // Fallback: usar el técnico asignado actual del ticket
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        return ticketOpt.map(Ticket::getTecnicoAsignado).orElse(null);
+        return ticketOpt.map(Ticket::getAssignedTechnician).orElse(null);
     }
     
     /**
@@ -350,7 +350,7 @@ public class AsignacionService {
         
         // Fallback: usar el técnico asignado actual del ticket
         Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
-        return ticketOpt.map(Ticket::getTecnicoAsignado).orElse(null);
+        return ticketOpt.map(Ticket::getAssignedTechnician).orElse(null);
     }
     
     private String determinarEstadoNuevo(String tipoAccion) {
@@ -375,13 +375,13 @@ public class AsignacionService {
         dto.setId(asignacion.getId());
         dto.setTicketId(asignacion.getTicketId());
         dto.setTecnicoId(asignacion.getTecnicoId());
-        dto.setTecnicoNombre(tecnico.getNombre() + " " + tecnico.getApellido());
+        dto.setTecnicoNombre(tecnico.getFullName() + " " + tecnico.getLastName());
         dto.setTecnicoEmail(tecnico.getEmail());
         dto.setFechaAsignacion(asignacion.getFechaAsignacion());
         dto.setActiva(asignacion.getActiva());
         dto.setComentario(asignacion.getComentario());
-        dto.setTicketAsunto(ticket.getAsunto());
-        dto.setTicketEstado(ticket.getEstado());
+        dto.setTicketAsunto(ticket.getSubject());
+        dto.setTicketEstado(ticket.getStatus());
         return dto;
     }
     
@@ -395,7 +395,7 @@ public class AsignacionService {
         Optional<Usuario> tecnicoOpt = usuarioRepository.findById(asignacion.getTecnicoId());
         if (tecnicoOpt.isPresent()) {
             Usuario tecnico = tecnicoOpt.get();
-            dto.setTecnicoNombre(tecnico.getNombre() + " " + tecnico.getApellido());
+            dto.setTecnicoNombre(tecnico.getFullName() + " " + tecnico.getLastName());
             dto.setTecnicoEmail(tecnico.getEmail());
         }
         

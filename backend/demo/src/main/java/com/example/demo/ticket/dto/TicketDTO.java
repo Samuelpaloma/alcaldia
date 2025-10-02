@@ -20,17 +20,17 @@ public class TicketDTO {
 
     public TicketDTO(Ticket ticket) {
         this.id = ticket.getId();
-        this.estado = ticket.getEstado();
-        this.descripcion = ticket.getDescripcion();
-        this.prioridad = ticket.getPrioridad();
-        this.ubicacion = ticket.getUbicacion();
-        this.categoria = ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : null;
-        this.consulta = ticket.getConsulta();
-        this.nombreArchivo = ticket.getNombreArchivo();
-        this.fechaCreacion = ticket.getFechaCreacion();
-        this.fechaActualizacion = ticket.getFechaActualizacion();
-        this.tecnicoNombre = ticket.getTecnicoAsignado() != null
-            ? ticket.getTecnicoAsignado().getNombreCompleto()
+        this.estado = ticket.getStatus();
+        this.descripcion = ticket.getDescription();
+        this.prioridad = ticket.getPriority();
+        this.ubicacion = ticket.getLocation();
+        this.categoria = ticket.getCategory() != null ? ticket.getCategory().getName() : null;
+        this.consulta = ticket.getQuery();
+        this.nombreArchivo = ticket.getFileName();
+        this.fechaCreacion = ticket.getCreatedAt();
+        this.fechaActualizacion = ticket.getUpdatedAt();
+        this.tecnicoNombre = ticket.getAssignedTechnician() != null
+            ? ticket.getAssignedTechnician().getFullName()
             : null;
     }
 }

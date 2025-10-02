@@ -1,8 +1,8 @@
 package com.example.demo.notificacion.service;
 
-import com.example.demo.notificacion.model.NotificacionMejorada;
+import com.example.demo.notificacion.model.Notification;
 import com.example.demo.notificacion.model.PreferenciasNotificacion;
-import com.example.demo.notificacion.repository.NotificacionMejoradaRepository;
+import com.example.demo.notificacion.repository.NotificationRepository;
 import com.example.demo.notificacion.repository.PreferenciasNotificacionRepository;
 import com.example.demo.ticket.model.Ticket;
 import com.example.demo.ticket.repository.TicketRepository;
@@ -24,7 +24,7 @@ import java.util.*;
 public class ComentarioNotificationService {
 
     @Autowired
-    private NotificacionMejoradaRepository notificacionMejoradaRepository;
+    private NotificationRepository NotificationRepository;
 
     @Autowired
     private PreferenciasNotificacionRepository preferenciasNotificacionRepository;
@@ -60,56 +60,56 @@ public class ComentarioNotificationService {
                 .orElseThrow(() -> new RuntimeException("Usuario actor no encontrado"));
 
             log.info("🔔 [COMENTARIO NOTIFICATION] Usuario actor: {} ({})", 
-                usuarioActor.getNombre() + " " + usuarioActor.getApellido(), 
-                usuarioActor.getTipoUsuario());
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(), 
+                usuarioActor.getUserType());
 
             // Determinar destinatarios según el rol del actor
             List<Usuario> destinatarios = new ArrayList<>();
 
-            if (usuarioActor.getTipoUsuario() == TipoUsuario.TECNICO) {
+            if (usuarioActor.getUserType() == TipoUsuario.TECNICO) {
                 // Si es técnico, notificar al funcionario (creador del ticket) y admin
-                if (ticket.getCreador() != null) {
-                    destinatarios.add(ticket.getCreador());
+                if (ticket.getCreator() != null) {
+                    destinatarios.add(ticket.getCreator());
                 }
                 // Agregar administradores
-                destinatarios.addAll(usuarioRepository.findByTipoUsuario(TipoUsuario.ADMINISTRADOR));
-                destinatarios.addAll(usuarioRepository.findByTipoUsuario(TipoUsuario.SUPERADMIN));
+                destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.ADMINISTRADOR));
+                destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.SUPERADMIN));
                 
-            } else if (usuarioActor.getTipoUsuario() == TipoUsuario.FUNCIONARIO) {
+            } else if (usuarioActor.getUserType() == TipoUsuario.FUNCIONARIO) {
                 // Si es funcionario, notificar al técnico asignado y admin
-                if (ticket.getTecnicoAsignado() != null) {
-                    destinatarios.add(ticket.getTecnicoAsignado());
+                if (ticket.getAssignedTechnician() != null) {
+                    destinatarios.add(ticket.getAssignedTechnician());
                 }
                 // Agregar administradores
-                destinatarios.addAll(usuarioRepository.findByTipoUsuario(TipoUsuario.ADMINISTRADOR));
-                destinatarios.addAll(usuarioRepository.findByTipoUsuario(TipoUsuario.SUPERADMIN));
+                destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.ADMINISTRADOR));
+                destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.SUPERADMIN));
                 
-            } else if (usuarioActor.getTipoUsuario() == TipoUsuario.ADMINISTRADOR || 
-                      usuarioActor.getTipoUsuario() == TipoUsuario.SUPERADMIN) {
+            } else if (usuarioActor.getUserType() == TipoUsuario.ADMINISTRADOR || 
+                      usuarioActor.getUserType() == TipoUsuario.SUPERADMIN) {
                 // Si es admin, notificar al funcionario y técnico
-                if (ticket.getCreador() != null) {
-                    destinatarios.add(ticket.getCreador());
+                if (ticket.getCreator() != null) {
+                    destinatarios.add(ticket.getCreator());
                 }
-                if (ticket.getTecnicoAsignado() != null) {
-                    destinatarios.add(ticket.getTecnicoAsignado());
+                if (ticket.getAssignedTechnician() != null) {
+                    destinatarios.add(ticket.getAssignedTechnician());
                 }
             }
 
             log.info("🔔 [COMENTARIO NOTIFICATION] Destinatarios encontrados: {}", destinatarios.size());
             for (Usuario dest : destinatarios) {
-                log.info("🔔 [COMENTARIO NOTIFICATION] - {} ({})", dest.getEmail(), dest.getTipoUsuario());
+                log.info("🔔 [COMENTARIO NOTIFICATION] - {} ({})", dest.getEmail(), dest.getUserType());
             }
 
             // Crear notificaciones para cada destinatario (respetando preferencias)
             for (Usuario destinatario : destinatarios) {
                 // No notificar al mismo usuario que envió el comentario
-                if (destinatario.getIdUsuario().equals(usuarioActorId)) {
+                if (destinatario.getId().equals(usuarioActorId)) {
                     continue;
                 }
 
                 // Verificar preferencias de notificación
-                if (debeNotificarComentario(destinatario.getIdUsuario())) {
-                    String mensaje = crearMensajeComentario(usuarioActor, ticketId, destinatario.getTipoUsuario());
+                if (debeNotificarComentario(destinatario.getId())) {
+                    String mensaje = crearMensajeComentario(usuarioActor, ticketId, destinatario.getUserType());
                     
                     crearNotificacionPersonalizada(
                         TIPO_COMENTARIO_AGREGADO,
@@ -120,7 +120,7 @@ public class ComentarioNotificationService {
                     );
                     
                     log.info("🔔 [COMENTARIO NOTIFICATION] Notificación enviada a: {} ({})", 
-                        destinatario.getEmail(), destinatario.getTipoUsuario());
+                        destinatario.getEmail(), destinatario.getUserType());
                 } else {
                     log.info("🔔 [COMENTARIO NOTIFICATION] Notificación omitida para: {} (preferencias desactivadas)", 
                         destinatario.getEmail());
@@ -160,19 +160,19 @@ public class ComentarioNotificationService {
      * Crea el mensaje personalizado según el rol del destinatario
      */
     private String crearMensajeComentario(Usuario usuarioActor, Long ticketId, TipoUsuario tipoDestinatario) {
-        String nombreActor = usuarioActor.getNombre() + " " + usuarioActor.getApellido();
+        String nombreActor = usuarioActor.getFullName() + " " + usuarioActor.getLastName();
         
         switch (tipoDestinatario) {
             case FUNCIONARIO:
                 return String.format("El %s %s agregó un comentario a tu ticket #%d", 
-                    usuarioActor.getTipoUsuario().name().toLowerCase(), nombreActor, ticketId);
+                    usuarioActor.getUserType().name().toLowerCase(), nombreActor, ticketId);
             case TECNICO:
                 return String.format("El %s %s agregó un comentario al ticket #%d que tienes asignado", 
-                    usuarioActor.getTipoUsuario().name().toLowerCase(), nombreActor, ticketId);
+                    usuarioActor.getUserType().name().toLowerCase(), nombreActor, ticketId);
             case ADMINISTRADOR:
             case SUPERADMIN:
                 return String.format("El %s %s agregó un comentario al ticket #%d", 
-                    usuarioActor.getTipoUsuario().name().toLowerCase(), nombreActor, ticketId);
+                    usuarioActor.getUserType().name().toLowerCase(), nombreActor, ticketId);
             default:
                 return String.format("Nuevo comentario en el ticket #%d por %s", ticketId, nombreActor);
         }
@@ -185,20 +185,20 @@ public class ComentarioNotificationService {
                                                Long ticketId, Usuario usuarioActor) {
         try {
             // Crear notificación en base de datos
-            NotificacionMejorada notificacion = new NotificacionMejorada();
-            notificacion.setTipo(tipo);
-            notificacion.setMensaje(mensaje);
-            notificacion.setDestinatarios(destinatario.getEmail());
+            Notification notificacion = new Notification();
+            notificacion.setType(tipo);
+            notificacion.setMessage(mensaje);
+            notificacion.setRecipients(destinatario.getEmail());
             notificacion.setTicketId(ticketId);
-            notificacion.setUsuarioActorId(usuarioActor.getIdUsuario());
-            notificacion.setUsuarioActorEmail(usuarioActor.getEmail());
-            notificacion.setUsuarioActorNombre(usuarioActor.getNombre() + " " + usuarioActor.getApellido());
-            notificacion.setPrioridad("normal");
-            notificacion.setLeida(false);
-            notificacion.setFechaCreacion(LocalDateTime.now());
+            notificacion.setActorUserId(usuarioActor.getId());
+            notificacion.setActorUserEmail(usuarioActor.getEmail());
+            notificacion.setActorUserName(usuarioActor.getFullName() + " " + usuarioActor.getLastName());
+            notificacion.setPriority("normal");
+            notificacion.setRead(false);
+            notificacion.setCreatedAt(LocalDateTime.now());
 
             // Guardar en base de datos
-            NotificacionMejorada savedNotificacion = notificacionMejoradaRepository.save(notificacion);
+            Notification savedNotificacion = NotificationRepository.save(notificacion);
 
             // Enviar por WebSocket
             enviarNotificacionWebSocket(savedNotificacion, destinatario);
@@ -213,18 +213,18 @@ public class ComentarioNotificationService {
     /**
      * Envía la notificación por WebSocket
      */
-    private void enviarNotificacionWebSocket(NotificacionMejorada notificacion, Usuario destinatario) {
+    private void enviarNotificacionWebSocket(Notification notificacion, Usuario destinatario) {
         try {
             Map<String, Object> notificacionWebSocket = new HashMap<>();
             notificacionWebSocket.put("id", notificacion.getId());
-            notificacionWebSocket.put("tipo", notificacion.getTipo());
-            notificacionWebSocket.put("mensaje", notificacion.getMensaje());
+            notificacionWebSocket.put("tipo", notificacion.getType());
+            notificacionWebSocket.put("mensaje", notificacion.getMessage());
             notificacionWebSocket.put("destinatarios", destinatario.getEmail());
             notificacionWebSocket.put("ticketId", notificacion.getTicketId());
-            notificacionWebSocket.put("usuarioActorNombre", notificacion.getUsuarioActorNombre());
-            notificacionWebSocket.put("prioridad", notificacion.getPrioridad());
+            notificacionWebSocket.put("usuarioActorNombre", notificacion.getActorUserName());
+            notificacionWebSocket.put("prioridad", notificacion.getPriority());
             notificacionWebSocket.put("leida", false);
-            notificacionWebSocket.put("fechaCreacion", notificacion.getFechaCreacion());
+            notificacionWebSocket.put("fechaCreacion", notificacion.getCreatedAt());
 
             // Enviar por WebSocket global
             messagingTemplate.convertAndSend("/topic/notifications", notificacionWebSocket);

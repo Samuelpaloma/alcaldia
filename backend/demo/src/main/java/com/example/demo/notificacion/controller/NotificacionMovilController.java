@@ -1,7 +1,7 @@
 package com.example.demo.notificacion.controller;
 
-import com.example.demo.notificacion.model.NotificacionMejorada;
-import com.example.demo.notificacion.service.NotificacionMejoradaService;
+import com.example.demo.notificacion.model.Notification;
+import com.example.demo.notificacion.service.NotificationService;
 import com.example.demo.security.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +18,7 @@ import java.util.Map;
 public class NotificacionMovilController {
     
     @Autowired
-    private NotificacionMejoradaService notificacionMejoradaService;
+    private NotificationService NotificationService;
     
     /**
      * Obtener todas las notificaciones del usuario para móvil
@@ -46,7 +46,7 @@ public class NotificacionMovilController {
             
             System.out.println("🔔 [CONTROLLER] Email a usar: " + emailUsuario);
             
-            List<NotificacionMejorada> notificaciones = notificacionMejoradaService
+            List<Notification> notificaciones = NotificationService
                 .obtenerNotificacionesPorUsuario(emailUsuario);
             
             System.out.println("🔔 [CONTROLLER] Notificaciones encontradas: " + notificaciones.size());
@@ -79,12 +79,12 @@ public class NotificacionMovilController {
             // Usar email por defecto si no se proporciona
             String emailUsuario = email != null ? email : "admin@test.com";
             
-            List<NotificacionMejorada> notificaciones = notificacionMejoradaService
+            List<Notification> notificaciones = NotificationService
                 .obtenerNotificacionesPorUsuario(emailUsuario);
             
             // Filtrar solo las no leídas
-            List<NotificacionMejorada> notificacionesNoLeidas = notificaciones.stream()
-                .filter(n -> !n.getLeida())
+            List<Notification> notificacionesNoLeidas = notificaciones.stream()
+                .filter(n -> !n.getRead())
                 .toList();
             
             Map<String, Object> response = new HashMap<>();
@@ -106,7 +106,7 @@ public class NotificacionMovilController {
     @PutMapping("/{id}/leer")
     public ResponseEntity<Map<String, Object>> marcarComoLeidaMovil(@PathVariable Long id) {
         try {
-            NotificacionMejorada notificacion = notificacionMejoradaService.marcarComoLeida(id);
+            Notification notificacion = NotificationService.marcarComoLeida(id);
             
             Map<String, Object> response = new HashMap<>();
             if (notificacion != null) {
@@ -142,7 +142,7 @@ public class NotificacionMovilController {
             String emailUsuario = email != null ? email : "admin@test.com";
             System.out.println("🔔 [CONTROLLER] Email a usar: " + emailUsuario);
             
-            Long count = notificacionMejoradaService.contarNotificacionesNoLeidas(emailUsuario);
+            Long count = NotificationService.contarNotificacionesNoLeidas(emailUsuario);
             System.out.println("🔔 [CONTROLLER] Contador obtenido del servicio: " + count);
             
             Map<String, Object> response = new HashMap<>();

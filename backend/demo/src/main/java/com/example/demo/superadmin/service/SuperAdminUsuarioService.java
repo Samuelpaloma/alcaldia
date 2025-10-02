@@ -35,7 +35,7 @@ public class SuperAdminUsuarioService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            return userDetails.getUsuario().getIdUsuario();
+            return userDetails.getUsuario().getId();
         }
         throw new RuntimeException("Super Administrador no encontrado");
     }
@@ -55,7 +55,7 @@ public class SuperAdminUsuarioService {
     @Transactional(readOnly = true)
     public List<UsuarioDTO> obtenerTodosLosAdministradores() {
         log.info("Obteniendo todos los administradores");
-        List<Usuario> administradores = usuarioRepository.findByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR);
+        List<Usuario> administradores = usuarioRepository.findByUserType(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR);
         return administradores.stream()
                 .map(this::convertirUsuarioADTO)
                 .collect(Collectors.toList());
@@ -109,14 +109,14 @@ public class SuperAdminUsuarioService {
             .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
         
         // 2. Verificar que sea administrador
-        if (!admin.getTipoUsuario().equals(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR)) {
+        if (!admin.getUserType().equals(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR)) {
             throw new RuntimeException("El usuario no es un administrador");
         }
         
         // 3. Actualizar contraseña y verificar email
-        admin.setPasswordHash(passwordEncoder.encode(nuevaPassword));
-        admin.setPasswordTemporal(false); // Ya no es temporal
-        admin.setEmailVerificado(true); // Verificar email automáticamente
+        admin.setPassword(passwordEncoder.encode(nuevaPassword));
+        admin.setTemporaryPassword(false); // Ya no es temporal
+        admin.setEmailVerified(true); // Verificar email automáticamente
         usuarioRepository.save(admin);
         
         log.info("Contraseña del administrador {} cambiada exitosamente", admin.getEmail());
@@ -127,16 +127,16 @@ public class SuperAdminUsuarioService {
     
     private UsuarioDTO convertirUsuarioADTO(Usuario usuario) {
         return UsuarioDTO.builder()
-            .id(usuario.getIdUsuario())
+            .id(usuario.getId())
             .email(usuario.getEmail())
-            .nombre(usuario.getNombre())
-            .apellido(usuario.getApellido())
-            .nombreCompleto(usuario.getNombreCompleto())
-            .tipoUsuario(usuario.getTipoUsuario().toString())
+            .nombre(usuario.getFirstName())
+            .apellido(usuario.getLastName())
+            .nombreCompleto(usuario.getFullName())
+            .tipoUsuario(usuario.getUserType().toString())
             .activo(usuario.isActivo())
             .require2fa(usuario.getRequire2fa() != null ? usuario.getRequire2fa() : false)
-            .ultimoAcceso(usuario.getUltimoAcceso())
-            .fechaCreacion(usuario.getFechaCreacion())
+            .ultimoAcceso(usuario.getLastAccess())
+            .fechaCreacion(usuario.getCreatedAt())
             .build();
     }
 }

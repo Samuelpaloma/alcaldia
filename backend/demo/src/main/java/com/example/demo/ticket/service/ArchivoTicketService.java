@@ -151,7 +151,7 @@ public class ArchivoTicketService {
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
-        if (!archivo.getUsuario().getIdUsuario().equals(usuario.getIdUsuario())) {
+        if (!archivo.getUsuario().getId().equals(usuario.getId())) {
             throw new RuntimeException("No tienes permisos para eliminar este archivo");
         }
         
@@ -222,8 +222,8 @@ public class ArchivoTicketService {
         // Debug logs
         log.info("🔍 [ARCHIVO DEBUG] Convirtiendo archivo ID: {}", archivo.getId());
         log.info("🔍 [ARCHIVO DEBUG] Usuario: {}", archivo.getUsuario());
-        log.info("🔍 [ARCHIVO DEBUG] Usuario ID: {}", archivo.getUsuario() != null ? archivo.getUsuario().getIdUsuario() : "NULL");
-        log.info("🔍 [ARCHIVO DEBUG] Usuario Nombre Completo: {}", archivo.getUsuario() != null ? archivo.getUsuario().getNombreCompleto() : "NULL");
+        log.info("🔍 [ARCHIVO DEBUG] Usuario ID: {}", archivo.getUsuario() != null ? archivo.getUsuario().getId() : "NULL");
+        log.info("🔍 [ARCHIVO DEBUG] Usuario Nombre Completo: {}", archivo.getUsuario() != null ? archivo.getUsuario().getFullName() : "NULL");
         log.info("🔍 [ARCHIVO DEBUG] Usuario Email: {}", archivo.getUsuario() != null ? archivo.getUsuario().getEmail() : "NULL");
         
         return ArchivoTicketResponseDTO.builder()
@@ -238,7 +238,7 @@ public class ArchivoTicketService {
             .tamañoFormateado(archivo.getTamañoFormateado())
             .rutaArchivo(archivo.getRutaArchivo())
             .fechaSubida(archivo.getFechaSubida())
-            .subidoPor(archivo.getUsuario() != null ? archivo.getUsuario().getNombreCompleto() : "Usuario Desconocido")
+            .subidoPor(archivo.getUsuario() != null ? archivo.getUsuario().getFullName() : "Usuario Desconocido")
             .subidoPorEmail(archivo.getUsuario() != null ? archivo.getUsuario().getEmail() : null)
             .comentario(archivo.getComentario())
             .esImagen(archivo.esImagen())

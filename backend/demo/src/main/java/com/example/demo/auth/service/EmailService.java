@@ -50,7 +50,7 @@ public class EmailService {
                 "Si tienes alguna pregunta, no dudes en contactarnos.\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                usuario.getNombre(),
+                usuario.getFirstName(),
                 appName,
                 usuario.getEmail(),
                 appUrl,
@@ -94,7 +94,7 @@ public class EmailService {
                 "¡Bienvenido al equipo!\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                tecnico.getNombre(),
+                tecnico.getFullName(),
                 appName,
                 tecnico.getEmail(),
                 temporalPassword,
@@ -141,7 +141,7 @@ public class EmailService {
                 "¡Bienvenido al equipo de administración!\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                admin.getNombre(),
+                admin.getFullName(),
                 appName,
                 admin.getEmail(),
                 temporalPassword,
@@ -181,7 +181,7 @@ public class EmailService {
                 "Una vez verificado tu email, podrás acceder al sistema en: %s\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                usuario.getNombre(),
+                usuario.getFirstName(),
                 appName,
                 code,
                 appUrl,
@@ -218,7 +218,7 @@ public class EmailService {
                 "Si no solicitaste este cambio, puedes ignorar este email.\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                usuario.getNombre(),
+                usuario.getFirstName(),
                 appName,
                 token,
                 appName
@@ -250,7 +250,7 @@ public class EmailService {
                 "Si no realizaste este cambio, contacta inmediatamente al administrador.\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                usuario.getNombre(),
+                usuario.getFirstName(),
                 appName,
                 appName
             );
@@ -284,7 +284,7 @@ public class EmailService {
                 "por favor contacta al administrador del sistema.\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                usuario.getNombre(),
+                usuario.getFirstName(),
                 appName,
                 appName
             );
@@ -317,7 +317,7 @@ public class EmailService {
                 "Si tienes alguna pregunta, no dudes en contactarnos.\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                usuario.getNombre(),
+                usuario.getFirstName(),
                 appName,
                 appUrl,
                 appName
@@ -356,7 +356,7 @@ public class EmailService {
                 "Si no solicitaste este código, puedes ignorar este email.\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                pendingUser.getNombre(),
+                pendingUser.getNombre() + " " + pendingUser.getApellido(),
                 pendingUser.getVerificationCode(),
                 appName
             );
@@ -402,7 +402,7 @@ public class EmailService {
                 "IMPORTANTE: Nunca compartas este código con nadie.\n\n" +
                 "Saludos,\n" +
                 "Equipo de %s",
-                usuario.getNombreCompleto(),
+                usuario.getFullName(),
                 appName,
                 code,
                 appName

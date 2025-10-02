@@ -72,31 +72,31 @@ public class EvidenciaService {
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
         log.info("📎 [BACKEND] Verificando archivo adjunto del ticket...");
-        log.info("📎 [BACKEND] ArchivoAdjunto: {}", ticket.getArchivoAdjunto());
-        log.info("📎 [BACKEND] NombreArchivo: {}", ticket.getNombreArchivo());
+        log.info("📎 [BACKEND] ArchivoAdjunto: {}", ticket.getAttachedFile());
+        log.info("📎 [BACKEND] NombreArchivo: {}", ticket.getFileName());
         
-        if (ticket.getArchivoAdjunto() != null && !ticket.getArchivoAdjunto().trim().isEmpty()) {
-            log.info("📎 [BACKEND] Ticket {} tiene archivo adjunto: {}", ticketId, ticket.getArchivoAdjunto());
+        if (ticket.getAttachedFile() != null && !ticket.getAttachedFile().trim().isEmpty()) {
+            log.info("📎 [BACKEND] Ticket {} tiene archivo adjunto: {}", ticketId, ticket.getAttachedFile());
             
             EvidenciaMovilDTO archivoAdjuntoDTO = EvidenciaMovilDTO.builder()
                 .idEvidencia(-1L) // ID especial para archivo adjunto
                 .ticketId(ticketId)
-                .tipoEvidencia(determinarTipoEvidencia(ticket.getArchivoAdjunto()))
+                .tipoEvidencia(determinarTipoEvidencia(ticket.getAttachedFile()))
                 .descripcion("Archivo adjunto del ticket")
-                .nombreArchivo(ticket.getArchivoAdjunto())
-                .extensionArchivo(obtenerExtensionArchivo(ticket.getArchivoAdjunto()))
+                .nombreArchivo(ticket.getAttachedFile())
+                .extensionArchivo(obtenerExtensionArchivo(ticket.getAttachedFile()))
                 .tamanioArchivo(0L) // No tenemos el tamaño real
                 .tamanioFormateado("N/A")
                 .urlArchivo(null)
-                .fechaSubida(ticket.getFechaActualizacion()) // Usar fecha de actualización
-                .subidoPorNombre(ticket.getTecnicoAsignado() != null ? 
-                    ticket.getTecnicoAsignado().getNombre() + " " + ticket.getTecnicoAsignado().getApellido() : null)
-                .subidoPorEmail(ticket.getTecnicoAsignado() != null ? 
-                    ticket.getTecnicoAsignado().getEmail() : null)
+                .fechaSubida(ticket.getUpdatedAt()) // Usar fecha de actualización
+                .subidoPorNombre(ticket.getAssignedTechnician() != null ? 
+                    ticket.getAssignedTechnician().getFullName() : null)
+                .subidoPorEmail(ticket.getAssignedTechnician() != null ? 
+                    ticket.getAssignedTechnician().getEmail() : null)
                 .build();
             
             evidenciasDTO.add(archivoAdjuntoDTO);
-            log.info("Archivo adjunto agregado como evidencia: {}", ticket.getArchivoAdjunto());
+            log.info("Archivo adjunto agregado como evidencia: {}", ticket.getAttachedFile());
         }
         
         log.info("Total evidencias encontradas para ticket {}: {}", ticketId, evidenciasDTO.size());
@@ -119,7 +119,7 @@ public class EvidenciaService {
             .urlArchivo(evidencia.getUrlArchivo())
             .fechaSubida(evidencia.getFechaSubida())
             .subidoPorNombre(evidencia.getSubidoPor() != null ? 
-                evidencia.getSubidoPor().getNombre() + " " + evidencia.getSubidoPor().getApellido() : null)
+                evidencia.getSubidoPor().getFullName() : null)
             .subidoPorEmail(evidencia.getSubidoPor() != null ? evidencia.getSubidoPor().getEmail() : null)
             .build();
     }
@@ -252,8 +252,8 @@ public class EvidenciaService {
             Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
             
-            return ticket.getArchivoAdjunto() != null && 
-                   ticket.getArchivoAdjunto().equals(nombreArchivo);
+            return ticket.getAttachedFile() != null && 
+                   ticket.getAttachedFile().equals(nombreArchivo);
         } catch (Exception e) {
             log.error("Error verificando archivo adjunto", e);
             return false;

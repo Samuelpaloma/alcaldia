@@ -29,23 +29,23 @@ public class CategoriaServiceImpl implements CategoriaService {
         log.info("Creando nueva categoría: {}", request.getNombre());
         
         // 1. Validar que no exista otra categoría con el mismo nombre
-        if (categoriaRepository.existsByNombreIgnoreCaseAndIdNot(request.getNombre(), 0L)) {
+        if (categoriaRepository.existsByNameIgnoreCaseAndIdNot(request.getNombre(), 0L)) {
             throw new RuntimeException("Ya existe una categoría con el nombre: " + request.getNombre());
         }
         
         // 2. Crear categoría
         Categoria categoria = Categoria.builder()
-            .nombre(request.getNombre().trim())
-            .descripcion(request.getDescripcion() != null ? request.getDescripcion().trim() : null)
+            .name(request.getNombre().trim())
+            .description(request.getDescripcion() != null ? request.getDescripcion().trim() : null)
             .colorHex(request.getColorHex())
-            .icono(request.getIcono())
-            .orden(request.getOrden() != null ? request.getOrden() : 999)
-            .activa(request.getActiva() != null ? request.getActiva() : true)
+            .icon(request.getIcono())
+            .order(request.getOrden() != null ? request.getOrden() : 999)
+            .active(request.getActiva() != null ? request.getActiva() : true)
             .build();
         
         Categoria savedCategoria = categoriaRepository.save(categoria);
         
-        log.info("Categoría creada exitosamente: {} (ID: {})", savedCategoria.getNombre(), savedCategoria.getId());
+        log.info("Categoría creada exitosamente: {} (ID: {})", savedCategoria.getName(), savedCategoria.getId());
         
         return convertirACategoriaResponseDTO(savedCategoria);
     }
@@ -70,21 +70,21 @@ public class CategoriaServiceImpl implements CategoriaService {
             .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
         
         // 2. Validar que no exista otra categoría con el mismo nombre
-        if (categoriaRepository.existsByNombreIgnoreCaseAndIdNot(request.getNombre(), id)) {
+        if (categoriaRepository.existsByNameIgnoreCaseAndIdNot(request.getNombre(), id)) {
             throw new RuntimeException("Ya existe otra categoría con el nombre: " + request.getNombre());
         }
         
         // 3. Actualizar campos
-        categoria.setNombre(request.getNombre().trim());
-        categoria.setDescripcion(request.getDescripcion() != null ? request.getDescripcion().trim() : null);
+        categoria.setName(request.getNombre().trim());
+        categoria.setDescription(request.getDescripcion() != null ? request.getDescripcion().trim() : null);
         categoria.setColorHex(request.getColorHex());
-        categoria.setIcono(request.getIcono());
-        categoria.setOrden(request.getOrden() != null ? request.getOrden() : categoria.getOrden());
-        categoria.setActiva(request.getActiva() != null ? request.getActiva() : categoria.getActiva());
+        categoria.setIcon(request.getIcono());
+        categoria.setOrder(request.getOrden() != null ? request.getOrden() : categoria.getOrder());
+        categoria.setActive(request.getActiva() != null ? request.getActiva() : categoria.getActive());
         
         Categoria updatedCategoria = categoriaRepository.save(categoria);
         
-        log.info("Categoría actualizada exitosamente: {} (ID: {})", updatedCategoria.getNombre(), updatedCategoria.getId());
+        log.info("Categoría actualizada exitosamente: {} (ID: {})", updatedCategoria.getName(), updatedCategoria.getId());
         
         return convertirACategoriaResponseDTO(updatedCategoria);
     }
@@ -97,10 +97,10 @@ public class CategoriaServiceImpl implements CategoriaService {
             .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
         
         // Soft delete - desactivar en lugar de eliminar
-        categoria.setActiva(false);
+        categoria.setActive(false);
         categoriaRepository.save(categoria);
         
-        log.info("Categoría desactivada exitosamente: {} (ID: {})", categoria.getNombre(), categoria.getId());
+        log.info("Categoría desactivada exitosamente: {} (ID: {})", categoria.getName(), categoria.getId());
     }
     
     @Override
@@ -110,10 +110,10 @@ public class CategoriaServiceImpl implements CategoriaService {
         Categoria categoria = categoriaRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Categoría no encontrada con ID: " + id));
         
-        categoria.setActiva(!categoria.getActiva());
+        categoria.setActive(!categoria.getActive());
         Categoria updatedCategoria = categoriaRepository.save(categoria);
         
-        log.info("Estado de categoría {} cambiado a: {}", updatedCategoria.getNombre(), updatedCategoria.getActiva() ? "ACTIVA" : "INACTIVA");
+        log.info("Estado de categoría {} cambiado a: {}", updatedCategoria.getName(), updatedCategoria.getActive() ? "ACTIVA" : "INACTIVA");
         
         return convertirACategoriaResponseDTO(updatedCategoria);
     }
@@ -123,7 +123,7 @@ public class CategoriaServiceImpl implements CategoriaService {
     public List<CategoriaSimpleDTO> obtenerCategoriasActivas() {
         log.info("Obteniendo categorías activas");
         
-        List<Categoria> categorias = categoriaRepository.findByActivaTrueOrderByOrdenAsc();
+        List<Categoria> categorias = categoriaRepository.findByActiveTrueOrderByOrderAsc();
         
         return categorias.stream()
             .map(this::convertirACategoriaSimpleDTO)
@@ -167,19 +167,19 @@ public class CategoriaServiceImpl implements CategoriaService {
     @Override
     @Transactional(readOnly = true)
     public boolean existeCategoriaPorNombre(String nombre) {
-        return categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, 0L);
+        return categoriaRepository.existsByNameIgnoreCaseAndIdNot(nombre, 0L);
     }
     
     @Override
     @Transactional(readOnly = true)
     public boolean existeCategoriaPorNombreExcluyendoId(String nombre, Long id) {
-        return categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id);
+        return categoriaRepository.existsByNameIgnoreCaseAndIdNot(nombre, id);
     }
     
     @Override
     @Transactional(readOnly = true)
     public long contarCategoriasActivas() {
-        return categoriaRepository.countByActivaTrue();
+        return categoriaRepository.countByActiveTrue();
     }
     
     @Override
@@ -193,14 +193,14 @@ public class CategoriaServiceImpl implements CategoriaService {
     private CategoriaResponseDTO convertirACategoriaResponseDTO(Categoria categoria) {
         return CategoriaResponseDTO.builder()
             .id(categoria.getId())
-            .nombre(categoria.getNombre())
-            .descripcion(categoria.getDescripcion())
-            .activa(categoria.getActiva())
+            .nombre(categoria.getName())
+            .descripcion(categoria.getDescription())
+            .activa(categoria.getActive())
             .colorHex(categoria.getColorHex())
-            .icono(categoria.getIcono())
-            .orden(categoria.getOrden())
-            .fechaCreacion(categoria.getFechaCreacion())
-            .fechaActualizacion(categoria.getFechaActualizacion())
+            .icono(categoria.getIcon())
+            .orden(categoria.getOrder())
+            .fechaCreacion(categoria.getCreatedAt())
+            .fechaActualizacion(categoria.getUpdatedAt())
             .totalTickets(categoria.getTickets() != null ? (long) categoria.getTickets().size() : 0L)
             .build();
     }
@@ -208,11 +208,11 @@ public class CategoriaServiceImpl implements CategoriaService {
     private CategoriaSimpleDTO convertirACategoriaSimpleDTO(Categoria categoria) {
         return CategoriaSimpleDTO.builder()
             .id(categoria.getId())
-            .nombre(categoria.getNombre())
+            .nombre(categoria.getName())
             .colorHex(categoria.getColorHex())
-            .icono(categoria.getIcono())
-            .orden(categoria.getOrden())
-            .activa(categoria.getActiva())
+            .icono(categoria.getIcon())
+            .orden(categoria.getOrder())
+            .activa(categoria.getActive())
             .build();
     }
 }

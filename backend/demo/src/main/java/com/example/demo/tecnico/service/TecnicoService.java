@@ -56,9 +56,9 @@ public class TecnicoService {
         Usuario tecnico = usuarioRepository.findByEmail(emailTecnico)
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
         
-        log.info("🔍 [TECNICO] Técnico encontrado: {} (ID: {})", tecnico.getEmail(), tecnico.getIdUsuario());
+        log.info("🔍 [TECNICO] Técnico encontrado: {} (ID: {})", tecnico.getEmail(), tecnico.getId());
         
-        List<Ticket> tickets = ticketRepository.findByTecnicoAsignadoOrderByFechaCreacionDesc(tecnico);
+        List<Ticket> tickets = ticketRepository.findByAssignedTechnicianOrderByCreatedAtDesc(tecnico);
         
         log.info("🔍 [TECNICO] Tickets encontrados: {} tickets asignados a {}", tickets.size(), emailTecnico);
         
@@ -66,8 +66,8 @@ public class TecnicoService {
         for (Ticket ticket : tickets) {
             log.info("🔍 [TECNICO] Ticket {} - Estado: {}, Técnico: {}", 
                 ticket.getId(), 
-                ticket.getEstado(), 
-                ticket.getTecnicoEmail());
+                ticket.getStatus(), 
+                ticket.getAssignedTechnicianEmail());
         }
         
         return tickets.stream()
@@ -88,20 +88,35 @@ public class TecnicoService {
         Ticket ticket = ticketRepository.findById(ticketId)
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
-        // Verificar que el ticket esté actualmente asignado al técnico mediante asignación activa
-        Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository.findByTicketIdAndActivaTrue(ticketId);
+        // Verificar que el ticket esté actualmente asignado al técnico
+        boolean tieneAcceso = false;
         
-        if (asignacionActiva.isEmpty()) {
-            // No hay asignación activa - ticket sin asignar o cerrado
-            log.warn("Técnico {} intentó acceder al ticket {} pero no hay asignación activa", 
-                tecnico.getIdUsuario(), ticketId);
+        // Verificar asignación directa en la tabla tickets
+        if (ticket.getAssignedTechnician() != null && ticket.getAssignedTechnician().getId().equals(tecnico.getId())) {
+            log.info("Técnico {} tiene acceso directo al ticket {} (asignado en tabla tickets)", 
+                tecnico.getId(), ticketId);
+            tieneAcceso = true;
+        }
+        
+        // Verificar asignación activa en tabla asignaciones_tickets
+        Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository.findByTicketIdAndActivaTrue(ticketId);
+        if (asignacionActiva.isPresent() && asignacionActiva.get().getTecnicoId().equals(tecnico.getId())) {
+            log.info("Técnico {} tiene acceso al ticket {} (asignación activa)", 
+                tecnico.getId(), ticketId);
+            tieneAcceso = true;
+        }
+        
+        if (!tieneAcceso) {
+            log.warn("Técnico {} intentó acceder al ticket {} pero no tiene asignación activa", 
+                tecnico.getId(), ticketId);
             throw new RuntimeException("Este ticket no está asignado actualmente o ha sido completado.");
         }
         
-        if (!asignacionActiva.get().getTecnicoId().equals(tecnico.getIdUsuario())) {
+        // Verificar si el ticket está asignado a otro técnico (solo si hay asignación activa)
+        if (asignacionActiva.isPresent() && !asignacionActiva.get().getTecnicoId().equals(tecnico.getId())) {
             // El ticket está asignado a otro técnico
             log.warn("Técnico {} no tiene acceso al ticket {}. Asignado actualmente al técnico {}", 
-                tecnico.getIdUsuario(), ticketId, asignacionActiva.get().getTecnicoId());
+                tecnico.getId(), ticketId, asignacionActiva.get().getTecnicoId());
             
             // Verificar si fue escalado o reasignado
             String tipoOperacion = asignacionActiva.get().getTipoOperacion();
@@ -135,13 +150,13 @@ public class TecnicoService {
         log.info("🔍 [CAMBIO ESTADO] Paso 1: Buscando ticket...");
         Ticket ticket = ticketRepository.findById(request.getTicketId())
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
-        log.info("✅ [CAMBIO ESTADO] Ticket encontrado - Estado actual: {}", ticket.getEstado());
+        log.info("✅ [CAMBIO ESTADO] Ticket encontrado - Estado actual: {}", ticket.getStatus());
         
         // 2. Buscar técnico
         log.info("🔍 [CAMBIO ESTADO] Paso 2: Buscando técnico...");
         Usuario tecnico = usuarioRepository.findByEmail(emailTecnico)
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
-        log.info("✅ [CAMBIO ESTADO] Técnico encontrado - ID: {}, Nombre: {}", tecnico.getIdUsuario(), tecnico.getNombreCompleto());
+        log.info("✅ [CAMBIO ESTADO] Técnico encontrado - ID: {}, Nombre: {}", tecnico.getId(), tecnico.getFullName());
         
         // 3. Verificar que el ticket esté actualmente asignado al técnico mediante asignación activa
         log.info("🔍 [CAMBIO ESTADO] Paso 3: Verificando asignación activa...");
@@ -154,9 +169,9 @@ public class TecnicoService {
         
         log.info("✅ [CAMBIO ESTADO] Asignación activa encontrada - Técnico asignado ID: {}", asignacionActiva.get().getTecnicoId());
         
-        if (!asignacionActiva.get().getTecnicoId().equals(tecnico.getIdUsuario())) {
+        if (!asignacionActiva.get().getTecnicoId().equals(tecnico.getId())) {
             log.error("❌ [CAMBIO ESTADO] El técnico {} no coincide con el asignado {}", 
-                tecnico.getIdUsuario(), asignacionActiva.get().getTecnicoId());
+                tecnico.getId(), asignacionActiva.get().getTecnicoId());
             
             String tipoOperacion = asignacionActiva.get().getTipoOperacion();
             String mensaje = "Este ticket fue ";
@@ -175,7 +190,7 @@ public class TecnicoService {
         log.info("✅ [CAMBIO ESTADO] Verificación de permisos exitosa");
         
         // 4. Validar transición de estado
-        String estadoAnterior = ticket.getEstado();
+        String estadoAnterior = ticket.getStatus();
         String estadoNuevo = request.getNuevoEstado();
         
         log.info("🔍 [CAMBIO ESTADO] Paso 4: Validando transición de estado...");
@@ -194,10 +209,10 @@ public class TecnicoService {
         
         // 5. Actualizar estado
         log.info("🔄 [CAMBIO ESTADO] Paso 5: Actualizando estado en la base de datos...");
-        ticket.setEstado(estadoNuevo);
-        ticket.setFechaActualizacion(LocalDateTime.now());
+        ticket.setStatus(estadoNuevo);
+        ticket.setUpdatedAt(LocalDateTime.now());
         ticketRepository.save(ticket);
-        log.info("✅ [CAMBIO ESTADO] Estado actualizado en BD - Nuevo estado: {}", ticket.getEstado());
+        log.info("✅ [CAMBIO ESTADO] Estado actualizado en BD - Nuevo estado: {}", ticket.getStatus());
         
         // 6. Crear historial
         log.info("🔄 [CAMBIO ESTADO] Paso 6: Creando entrada en el historial...");
@@ -250,13 +265,13 @@ public class TecnicoService {
         
         if (asignacionActiva.isEmpty()) {
             log.warn("Técnico {} intentó subir evidencia al ticket {} pero no hay asignación activa", 
-                tecnico.getIdUsuario(), request.getTicketId());
+                tecnico.getId(), request.getTicketId());
             throw new RuntimeException("Este ticket no está asignado actualmente o ha sido completado.");
         }
         
-        if (!asignacionActiva.get().getTecnicoId().equals(tecnico.getIdUsuario())) {
+        if (!asignacionActiva.get().getTecnicoId().equals(tecnico.getId())) {
             log.warn("Técnico {} no tiene acceso para subir evidencias al ticket {}", 
-                tecnico.getIdUsuario(), request.getTicketId());
+                tecnico.getId(), request.getTicketId());
             
             String tipoOperacion = asignacionActiva.get().getTipoOperacion();
             String mensaje = "Este ticket fue ";
@@ -305,7 +320,7 @@ public class TecnicoService {
             .tamanioArchivo(evidencia.getTamanioArchivo())
             .urlArchivo(evidencia.getUrlArchivo())
             .fechaSubida(evidencia.getFechaSubida())
-            .subidoPor(tecnico.getNombreCompleto())
+            .subidoPor(tecnico.getFullName())
             .build();
     }
     
@@ -320,7 +335,7 @@ public class TecnicoService {
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
         
         // Buscar todos los tickets que ha manejado el técnico (incluyendo terminados)
-        List<Ticket> tickets = ticketRepository.findByTecnicoAsignado(tecnico);
+        List<Ticket> tickets = ticketRepository.findByAssignedTechnician(tecnico);
         
         return tickets.stream()
             .map(this::convertirTicketAResponseDTO)
@@ -337,15 +352,15 @@ public class TecnicoService {
         Usuario tecnico = usuarioRepository.findByEmail(emailTecnico)
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
         
-        long totalTickets = ticketRepository.countByTecnicoAsignado(tecnico);
-        long ticketsPendientes = ticketRepository.findByTecnicoAsignado(tecnico).stream()
-            .filter(t -> "PENDIENTE".equals(t.getEstado()))
+        long totalTickets = ticketRepository.countByAssignedTechnician(tecnico);
+        long ticketsPendientes = ticketRepository.findByAssignedTechnician(tecnico).stream()
+            .filter(t -> "PENDIENTE".equals(t.getStatus()))
             .count();
-        long ticketsEnEjecucion = ticketRepository.findByTecnicoAsignado(tecnico).stream()
-            .filter(t -> "EN_PROCESO".equals(t.getEstado()))
+        long ticketsEnEjecucion = ticketRepository.findByAssignedTechnician(tecnico).stream()
+            .filter(t -> "EN_PROCESO".equals(t.getStatus()))
             .count();
-        long ticketsTerminados = ticketRepository.findByTecnicoAsignado(tecnico).stream()
-            .filter(t -> "COMPLETADO".equals(t.getEstado()))
+        long ticketsTerminados = ticketRepository.findByAssignedTechnician(tecnico).stream()
+            .filter(t -> "COMPLETADO".equals(t.getStatus()))
             .count();
         
         // Calcular total de evidencias (evidencias + archivos adjuntos)
@@ -361,7 +376,7 @@ public class TecnicoService {
         estadisticas.setTicketsTerminados(ticketsTerminados);
         estadisticas.setTotalEvidencias(totalEvidencias);
         estadisticas.setTotalNotificaciones(totalNotificaciones);
-        estadisticas.setTecnicoNombre(tecnico.getNombreCompleto());
+        estadisticas.setTecnicoNombre(tecnico.getFullName());
         estadisticas.setTecnicoEmail(tecnico.getEmail());
         return estadisticas;
     }
@@ -380,19 +395,19 @@ public class TecnicoService {
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
         // Verificar que el ticket esté asignado al técnico
-        if (!ticket.getTecnicoAsignado().getIdUsuario().equals(tecnico.getIdUsuario())) {
+        if (!ticket.getAssignedTechnician().getId().equals(tecnico.getId())) {
             throw new RuntimeException("El ticket no está asignado a este técnico");
         }
         
         // Verificar que el ticket esté en estado PENDIENTE
-        if (!"PENDIENTE".equals(ticket.getEstado())) {
+        if (!"PENDIENTE".equals(ticket.getStatus())) {
             throw new RuntimeException("Solo se pueden aceptar tickets en estado PENDIENTE");
         }
         
         // Cambiar estado a EN_PROCESO
-        String estadoAnterior = ticket.getEstado();
-        ticket.setEstado("EN_PROCESO");
-        ticket.setFechaActualizacion(LocalDateTime.now());
+        String estadoAnterior = ticket.getStatus();
+        ticket.setStatus("EN_PROCESO");
+        ticket.setUpdatedAt(LocalDateTime.now());
         ticketRepository.save(ticket);
         
         // Crear registro en historial
@@ -432,21 +447,21 @@ public class TecnicoService {
             .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
         // Verificar que el ticket esté asignado al técnico
-        if (!ticket.getTecnicoAsignado().getIdUsuario().equals(tecnico.getIdUsuario())) {
+        if (!ticket.getAssignedTechnician().getId().equals(tecnico.getId())) {
             throw new RuntimeException("El ticket no está asignado a este técnico");
         }
         
         // Verificar que el ticket esté en estado EN_PROCESO
-        if (!"EN_PROCESO".equals(ticket.getEstado())) {
+        if (!"EN_PROCESO".equals(ticket.getStatus())) {
             throw new RuntimeException("Solo se pueden finalizar tickets en estado EN_PROCESO");
         }
         
         // Cambiar estado a COMPLETADO
-        String estadoAnterior = ticket.getEstado();
-        ticket.setEstado("COMPLETADO");
-        ticket.setFechaActualizacion(LocalDateTime.now());
+        String estadoAnterior = ticket.getStatus();
+        ticket.setStatus("COMPLETADO");
+        ticket.setUpdatedAt(LocalDateTime.now());
         if (descripcion != null && !descripcion.trim().isEmpty()) {
-            ticket.setDescripcion(ticket.getDescripcion() + "\n\nFinalización: " + descripcion);
+            ticket.setDescription(ticket.getDescription() + "\n\nFinalización: " + descripcion);
         }
         
         // Manejar archivo adjunto si se proporciona
@@ -466,7 +481,7 @@ public class TecnicoService {
                 
                 // Guardar el nombre del archivo en el ticket
                 String nombreArchivo = archivoAdjunto.getOriginalFilename();
-                ticket.setArchivoAdjunto(nombreArchivo);
+                ticket.setAttachedFile(nombreArchivo);
                 
                 log.info("Archivo adjunto guardado: {}", nombreArchivo);
             } catch (Exception e) {
@@ -518,22 +533,22 @@ public class TecnicoService {
         
         TicketTecnicoResponseDTO response = new TicketTecnicoResponseDTO();
         response.setId(ticket.getId());
-        response.setTitulo(ticket.getAsunto() != null ? ticket.getAsunto() : "Ticket");
-        response.setDescripcion(ticket.getDescripcion());
-        response.setEstado(ticket.getEstado());
-        response.setPrioridad(ticket.getPrioridad());
-        response.setUbicacion(ticket.getUbicacion());
-        response.setConsulta(ticket.getConsulta());
-        response.setCategoria(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString());
-        response.setCreadorNombre(ticket.getCreador().getNombreCompleto());
-        response.setCreadorEmail(ticket.getCreador().getEmail());
-        response.setFechaCreacion(ticket.getFechaCreacion());
-        response.setFechaActualizacion(ticket.getFechaActualizacion());
-        response.setArchivoAdjunto(ticket.getArchivoAdjunto());
-        response.setNombreArchivo(ticket.getNombreArchivo());
-        response.setTecnicoId(ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getIdUsuario() : null);
-        response.setTecnicoNombre(ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getNombreCompleto() : null);
-        response.setTecnicoEmail(ticket.getTecnicoAsignado() != null ? ticket.getTecnicoAsignado().getEmail() : null);
+        response.setTitulo(ticket.getSubject() != null ? ticket.getSubject() : "Ticket");
+        response.setDescripcion(ticket.getDescription());
+        response.setEstado(ticket.getStatus());
+        response.setPrioridad(ticket.getPriority());
+        response.setUbicacion(ticket.getLocation());
+        response.setConsulta(ticket.getQuery());
+        response.setCategoria(ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString());
+        response.setCreadorNombre(ticket.getCreator().getFullName());
+        response.setCreadorEmail(ticket.getCreator().getEmail());
+        response.setFechaCreacion(ticket.getCreatedAt());
+        response.setFechaActualizacion(ticket.getUpdatedAt());
+        response.setArchivoAdjunto(ticket.getAttachedFile());
+        response.setNombreArchivo(ticket.getFileName());
+        response.setTecnicoId(ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getId() : null);
+        response.setTecnicoNombre(ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getFullName() : null);
+        response.setTecnicoEmail(ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : null);
         response.setEvidencias(evidenciasDTO);
         response.setHistorialEstados(historialDTO);
         
@@ -555,7 +570,7 @@ public class TecnicoService {
             .tamanioArchivo(evidencia.getTamanioArchivo())
             .urlArchivo(evidencia.getUrlArchivo())
             .fechaSubida(evidencia.getFechaSubida())
-            .subidoPor(evidencia.getSubidoPor().getNombreCompleto())
+            .subidoPor(evidencia.getSubidoPor().getFullName())
             .subidoPorEmail(evidencia.getSubidoPor().getEmail())
             .build();
     }
@@ -569,7 +584,7 @@ public class TecnicoService {
             .comentario(historial.getComentario())
             .observaciones(historial.getObservaciones())
             .fechaCambio(historial.getFechaCambio())
-            .cambiadoPor(historial.getCambiadoPor().getNombreCompleto())
+            .cambiadoPor(historial.getCambiadoPor().getFullName())
             .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
             .tipoUsuario(historial.getTipoUsuario())
             .build();
@@ -585,6 +600,8 @@ public class TecnicoService {
             case "EN_PROCESO":
             case "EN_EJECUCION":
                 return "RESUELTO".equals(estadoNuevo) || "TERMINADO".equals(estadoNuevo) || "PENDIENTE".equals(estadoNuevo);
+            case "ESCALADO":
+                return "EN_PROCESO".equals(estadoNuevo) || "EN_EJECUCION".equals(estadoNuevo) || "RESUELTO".equals(estadoNuevo) || "TERMINADO".equals(estadoNuevo);
             case "RESUELTO":
             case "TERMINADO":
                 return "EN_PROCESO".equals(estadoNuevo) || "EN_EJECUCION".equals(estadoNuevo) || "CERRADO".equals(estadoNuevo); // Permitir reabrir o cerrar
@@ -605,7 +622,7 @@ public class TecnicoService {
     private long calcularTotalEvidencias(Usuario tecnico) {
         try {
             // Obtener todos los tickets del técnico
-            List<Ticket> tickets = ticketRepository.findByTecnicoAsignado(tecnico);
+            List<Ticket> tickets = ticketRepository.findByAssignedTechnician(tecnico);
             long totalEvidencias = 0;
             
             for (Ticket ticket : tickets) {
@@ -614,7 +631,7 @@ public class TecnicoService {
                 totalEvidencias += evidenciasTabla;
                 
                 // Contar archivo adjunto si existe
-                if (ticket.getArchivoAdjunto() != null && !ticket.getArchivoAdjunto().trim().isEmpty()) {
+                if (ticket.getAttachedFile() != null && !ticket.getAttachedFile().trim().isEmpty()) {
                     totalEvidencias += 1;
                 }
             }
@@ -633,7 +650,7 @@ public class TecnicoService {
     private long calcularTotalNotificaciones(Usuario tecnico) {
         try {
             // Usar el servicio de notificaciones para obtener el contador
-            return notificacionServiceSimple.contarNotificacionesNoLeidas(tecnico.getIdUsuario());
+            return notificacionServiceSimple.contarNotificacionesNoLeidas(tecnico.getId());
         } catch (Exception e) {
             log.error("Error calculando total de notificaciones", e);
             return 0;

@@ -4,7 +4,7 @@ import com.example.demo.notificacion.dto.NotificacionDTO;
 import com.example.demo.notificacion.dto.PreferenciasNotificacionDTO;
 import com.example.demo.notificacion.dto.request.CreateNotificacionRequest;
 import com.example.demo.notificacion.model.Notificacion;
-import com.example.demo.notificacion.model.NotificacionMejorada;
+import com.example.demo.notificacion.model.Notification;
 import com.example.demo.shared.dto.PageResponse;
 import org.springframework.data.domain.Pageable;
 
@@ -87,13 +87,13 @@ public interface NotificacionService {
     /**
      * Crear una notificación (método de alcaldia)
      */
-    NotificacionMejorada crearNotificacion(String tipo, String mensaje, List<Integer> destinatariosIds, 
+    Notification crearNotificacion(String tipo, String mensaje, List<Integer> destinatariosIds, 
                                           Long ticketId, Integer usuarioActorId, String prioridad);
     
     /**
      * Crear notificación solo si el usuario tiene push activo
      */
-    NotificacionMejorada crearNotificacionSiPushActivo(String tipo, String mensaje, List<Integer> destinatariosIds, 
+    Notification crearNotificacionSiPushActivo(String tipo, String mensaje, List<Integer> destinatariosIds, 
                                                       Long ticketId, Integer usuarioActorId, String prioridad);
     
     // Clase interna para estadísticas

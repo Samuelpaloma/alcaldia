@@ -36,7 +36,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
         
         // 2. Verificar que esté activo
-        if (!usuario.getActivo()) {
+        if (!usuario.getActive()) {
             throw new InvalidTokenException("Usuario desactivado. Contacte al administrador");
         }
         
@@ -81,7 +81,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         
         // 3. Actualizar contraseña del usuario
         Usuario usuario = resetToken.getUsuario();
-        usuario.setPasswordHash(passwordEncoder.encode(newPassword));
+        usuario.setPassword(passwordEncoder.encode(newPassword));
         usuarioRepository.save(usuario);
         
         // 4. Enviar email de confirmación

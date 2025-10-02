@@ -1,7 +1,7 @@
 package com.example.demo.notificacion.controller;
 
-import com.example.demo.notificacion.model.NotificacionMejorada;
-import com.example.demo.notificacion.repository.NotificacionMejoradaRepository;
+import com.example.demo.notificacion.model.Notification;
+import com.example.demo.notificacion.repository.NotificationRepository;
 import com.example.demo.notificacion.service.NotificationRoleService;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
@@ -26,7 +26,7 @@ public class NotificationRoleController {
     private NotificationRoleService notificationRoleService;
 
     @Autowired
-    private NotificacionMejoradaRepository notificacionMejoradaRepository;
+    private NotificationRepository NotificationRepository;
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -53,15 +53,15 @@ public class NotificationRoleController {
             final String userRole = getUsuarioRole(email);
             
             // Buscar TODAS las notificaciones (sin filtro por email)
-            Page<NotificacionMejorada> todasLasNotificaciones = notificacionMejoradaRepository
+            Page<Notification> todasLasNotificaciones = NotificationRepository
                 .findAllOrderByFechaCreacionDesc(pageable);
             
             List<Map<String, Object>> notificacionesResponse = new ArrayList<>();
             
-            for (NotificacionMejorada notif : todasLasNotificaciones.getContent()) {
+            for (Notification notif : todasLasNotificaciones.getContent()) {
                 try {
                     List<String> destinatarios = objectMapper.readValue(
-                        notif.getDestinatarios(), 
+                        notif.getRecipients(), 
                         new TypeReference<List<String>>() {}
                     );
                     
@@ -82,15 +82,15 @@ public class NotificationRoleController {
                     if (esDestinatario) {
                         Map<String, Object> notificacionResponse = new HashMap<>();
                         notificacionResponse.put("id", notif.getId());
-                        notificacionResponse.put("tipo", notif.getTipo());
-                        notificacionResponse.put("mensaje", notif.getMensaje());
+                        notificacionResponse.put("tipo", notif.getType());
+                        notificacionResponse.put("mensaje", notif.getMessage());
                         notificacionResponse.put("destinatarios", destinatarios);
                         notificacionResponse.put("ticketId", notif.getTicketId());
-                        notificacionResponse.put("usuarioActorNombre", notif.getUsuarioActorNombre());
-                        notificacionResponse.put("prioridad", notif.getPrioridad());
-                        notificacionResponse.put("leida", notif.getLeida());
-                        notificacionResponse.put("fechaCreacion", notif.getFechaCreacion());
-                        notificacionResponse.put("fechaLectura", notif.getFechaLectura());
+                        notificacionResponse.put("usuarioActorNombre", notif.getActorUserName());
+                        notificacionResponse.put("prioridad", notif.getPriority());
+                        notificacionResponse.put("leida", notif.getRead());
+                        notificacionResponse.put("fechaCreacion", notif.getCreatedAt());
+                        notificacionResponse.put("fechaLectura", notif.getReadAt());
                         
                         notificacionesResponse.add(notificacionResponse);
                     }
@@ -125,19 +125,19 @@ public class NotificationRoleController {
             final String userRole = getUsuarioRole(email);
             
             // Buscar TODAS las notificaciones no leídas
-            List<NotificacionMejorada> todasLasNotificaciones = notificacionMejoradaRepository.findAll();
+            List<Notification> todasLasNotificaciones = NotificationRepository.findAll();
             
             List<Map<String, Object>> notificacionesResponse = new ArrayList<>();
             
-            for (NotificacionMejorada notif : todasLasNotificaciones) {
+            for (Notification notif : todasLasNotificaciones) {
                 // Solo procesar notificaciones no leídas
-                if (notif.getLeida()) {
+                if (notif.getRead()) {
                     continue;
                 }
                 
                 try {
                     List<String> destinatarios = objectMapper.readValue(
-                        notif.getDestinatarios(), 
+                        notif.getRecipients(), 
                         new TypeReference<List<String>>() {}
                     );
                     
@@ -158,15 +158,15 @@ public class NotificationRoleController {
                     if (esDestinatario) {
                         Map<String, Object> notificacionResponse = new HashMap<>();
                         notificacionResponse.put("id", notif.getId());
-                        notificacionResponse.put("tipo", notif.getTipo());
-                        notificacionResponse.put("mensaje", notif.getMensaje());
+                        notificacionResponse.put("tipo", notif.getType());
+                        notificacionResponse.put("mensaje", notif.getMessage());
                         notificacionResponse.put("destinatarios", destinatarios);
                         notificacionResponse.put("ticketId", notif.getTicketId());
-                        notificacionResponse.put("usuarioActorNombre", notif.getUsuarioActorNombre());
-                        notificacionResponse.put("prioridad", notif.getPrioridad());
-                        notificacionResponse.put("leida", notif.getLeida());
-                        notificacionResponse.put("fechaCreacion", notif.getFechaCreacion());
-                        notificacionResponse.put("fechaLectura", notif.getFechaLectura());
+                        notificacionResponse.put("usuarioActorNombre", notif.getActorUserName());
+                        notificacionResponse.put("prioridad", notif.getPriority());
+                        notificacionResponse.put("leida", notif.getRead());
+                        notificacionResponse.put("fechaCreacion", notif.getCreatedAt());
+                        notificacionResponse.put("fechaLectura", notif.getReadAt());
                         
                         notificacionesResponse.add(notificacionResponse);
                     }
@@ -201,14 +201,14 @@ public class NotificationRoleController {
     @PutMapping("/{id}/mark-read")
     public ResponseEntity<Map<String, Object>> markAsRead(@PathVariable Long id, @RequestParam String email) {
         try {
-            Optional<NotificacionMejorada> notificacionOpt = notificacionMejoradaRepository.findById(id);
+            Optional<Notification> notificacionOpt = NotificationRepository.findById(id);
             
             if (notificacionOpt.isPresent()) {
-                NotificacionMejorada notificacion = notificacionOpt.get();
+                Notification notificacion = notificacionOpt.get();
                 
                 // Verificar si el usuario es destinatario
                 List<String> destinatarios = objectMapper.readValue(
-                    notificacion.getDestinatarios(), 
+                    notificacion.getRecipients(), 
                     new TypeReference<List<String>>() {}
                 );
                 final String userRole = getUsuarioRole(email);
@@ -226,9 +226,9 @@ public class NotificationRoleController {
                     });
                 
                 if (esDestinatario) {
-                    notificacion.setLeida(true);
-                    notificacion.setFechaLectura(java.time.LocalDateTime.now());
-                    notificacionMejoradaRepository.save(notificacion);
+                    notificacion.setRead(true);
+                    notificacion.setReadAt(java.time.LocalDateTime.now());
+                    NotificationRepository.save(notificacion);
                     
                     Map<String, Object> response = new HashMap<>();
                     response.put("success", true);
@@ -366,7 +366,7 @@ public class NotificationRoleController {
             
             // Verificar si el creador es SuperAdmin antes de notificar
             Usuario creador = usuarioRepository.findById(creatorId).orElse(null);
-            if (creador != null && "Super Administrador".equals(creador.getNombre() + " " + creador.getApellido())) {
+            if (creador != null && "Super Administrador".equals(creador.getFullName() + " " + creador.getLastName())) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("message", "Notificación saltada - creador es SuperAdmin");
                 response.put("status", "skipped");
@@ -425,25 +425,25 @@ public class NotificationRoleController {
             debugInfo.put("usuarioExiste", usuario != null);
             if (usuario != null) {
                 debugInfo.put("usuarioInfo", Map.of(
-                    "id", usuario.getIdUsuario(),
-                    "nombre", usuario.getNombre() + " " + usuario.getApellido(),
+                    "id", usuario.getId(),
+                    "nombre", usuario.getFirstName() + " " + usuario.getLastName(),
                     "email", usuario.getEmail(),
-                    "tipoUsuario", usuario.getTipoUsuario().toString(),
-                    "activo", usuario.getActivo()
+                    "tipoUsuario", usuario.getUserType().toString(),
+                    "activo", usuario.getActive()
                 ));
             }
             
             // 2. Buscar todas las notificaciones que contengan este email
-            List<NotificacionMejorada> todasLasNotificaciones = notificacionMejoradaRepository
+            List<Notification> todasLasNotificaciones = NotificationRepository
                 .findByDestinatariosContaining(email);
             debugInfo.put("totalNotificacionesConteniendoEmail", todasLasNotificaciones.size());
             
             // 3. Buscar notificaciones específicas para este email
-            List<NotificacionMejorada> notificacionesEspecificas = new ArrayList<>();
-            for (NotificacionMejorada notif : todasLasNotificaciones) {
+            List<Notification> notificacionesEspecificas = new ArrayList<>();
+            for (Notification notif : todasLasNotificaciones) {
                 try {
                     List<String> destinatarios = objectMapper.readValue(
-                        notif.getDestinatarios(), 
+                        notif.getRecipients(), 
                         new TypeReference<List<String>>() {}
                     );
                     boolean esDestinatario = destinatarios.stream()
@@ -461,11 +461,11 @@ public class NotificationRoleController {
             String userRole = getUsuarioRole(email);
             debugInfo.put("userRole", userRole);
             
-            List<NotificacionMejorada> notificacionesPorRol = new ArrayList<>();
-            for (NotificacionMejorada notif : todasLasNotificaciones) {
+            List<Notification> notificacionesPorRol = new ArrayList<>();
+            for (Notification notif : todasLasNotificaciones) {
                 try {
                     List<String> destinatarios = objectMapper.readValue(
-                        notif.getDestinatarios(), 
+                        notif.getRecipients(), 
                         new TypeReference<List<String>>() {}
                     );
                     boolean esDestinatarioPorRol = destinatarios.stream()
@@ -484,14 +484,14 @@ public class NotificationRoleController {
                 .limit(3)
                 .map(notif -> Map.of(
                     "id", notif.getId(),
-                    "tipo", notif.getTipo(),
-                    "mensaje", notif.getMensaje(),
-                    "destinatarios", notif.getDestinatarios()
+                    "tipo", notif.getType(),
+                    "mensaje", notif.getMessage(),
+                    "destinatarios", notif.getRecipients()
                 ))
                 .toList());
             
             // 6. Contar total de notificaciones en la base de datos
-            long totalNotificaciones = notificacionMejoradaRepository.count();
+            long totalNotificaciones = NotificationRepository.count();
             debugInfo.put("totalNotificacionesEnBD", totalNotificaciones);
             
             return ResponseEntity.ok(debugInfo);
@@ -505,8 +505,8 @@ public class NotificationRoleController {
     private String getUsuarioRole(String email) {
         try {
             Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
-            if (usuario != null && usuario.getTipoUsuario() != null) {
-                return usuario.getTipoUsuario().toString().toLowerCase();
+            if (usuario != null && usuario.getUserType() != null) {
+                return usuario.getUserType().toString().toLowerCase();
             }
         } catch (Exception e) {
             System.err.println("Error obteniendo rol del usuario: " + e.getMessage());
@@ -564,7 +564,7 @@ public class NotificationRoleController {
             System.out.println("🔔 [DEBUG] Eliminando notificación ID: " + id);
             
             // Verificar si la notificación existe
-            Optional<NotificacionMejorada> notificacionOpt = notificacionMejoradaRepository.findById(id);
+            Optional<Notification> notificacionOpt = NotificationRepository.findById(id);
             if (!notificacionOpt.isPresent()) {
                 Map<String, Object> errorResponse = new HashMap<>();
                 errorResponse.put("error", "Notificación no encontrada");
@@ -572,7 +572,7 @@ public class NotificationRoleController {
             }
             
             // Eliminar la notificación
-            notificacionMejoradaRepository.deleteById(id);
+            NotificationRepository.deleteById(id);
             System.out.println("🔔 [DEBUG] ✅ Notificación eliminada exitosamente");
             
             Map<String, Object> response = new HashMap<>();

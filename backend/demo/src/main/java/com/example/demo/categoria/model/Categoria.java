@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "categorias")
+@Table(name = "categories")
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,48 +21,48 @@ public class Categoria {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id_categoria")
+    @Column(name = "id")
     private Long id;
     
-    @Column(nullable = false, length = 100, unique = true)
-    private String nombre;
+    @Column(name = "name", nullable = false, length = 100, unique = true)
+    private String name;
     
-    @Column(length = 500)
-    private String descripcion;
+    @Column(name = "description", length = 500)
+    private String description;
     
-    @Column(nullable = false)
+    @Column(name = "active", nullable = false)
     @Builder.Default
-    private Boolean activa = true;
+    private Boolean active = true;
     
     @Column(name = "color_hex", length = 7)
-    private String colorHex; // Para UI: #FF5733
+    private String colorHex; // For UI: #FF5733
     
-    @Column(name = "icono", length = 50)
-    private String icono; // Para UI: "fa-tools", "fa-user", etc.
+    @Column(name = "icon", length = 50)
+    private String icon; // For UI: "fa-tools", "fa-user", etc.
     
-    @Column(name = "orden")
+    @Column(name = "sort_order")
     @Builder.Default
-    private Integer orden = 0; // Para ordenar en listas
+    private Integer order = 0; // For ordering in lists
     
     @CreationTimestamp
-    @Column(name = "fecha_creacion")
-    private LocalDateTime fechaCreacion;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
     
     @UpdateTimestamp
-    @Column(name = "fecha_actualizacion")
-    private LocalDateTime fechaActualizacion;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
-    // Relación con tickets (opcional, para estadísticas)
-    @OneToMany(mappedBy = "categoriaObjeto", fetch = FetchType.LAZY)
+    // Relationship with tickets (optional, for statistics)
+    @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
     private List<com.example.demo.ticket.model.Ticket> tickets;
     
-    // Métodos de utilidad
+    // Utility methods
     public boolean isActiva() {
-        return Boolean.TRUE.equals(activa);
+        return Boolean.TRUE.equals(active);
     }
     
-    public String getNombreCompleto() {
-        return nombre + (descripcion != null ? " - " + descripcion : "");
+    public String getFullName() {
+        return name + (description != null ? " - " + description : "");
     }
     
     // Getter para compatibilidad con código existente

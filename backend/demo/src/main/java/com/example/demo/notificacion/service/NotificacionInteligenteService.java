@@ -1,6 +1,6 @@
 package com.example.demo.notificacion.service;
 
-import com.example.demo.notificacion.model.NotificacionMejorada;
+import com.example.demo.notificacion.model.Notification;
 import com.example.demo.ticket.model.Ticket;
 import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.model.TipoUsuario;
@@ -20,7 +20,7 @@ public class NotificacionInteligenteService {
     private SimpMessagingTemplate messagingTemplate;
     
     @Autowired
-    private NotificacionMejoradaService notificacionMejoradaService;
+    private NotificationService NotificationService;
     
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -32,7 +32,7 @@ public class NotificacionInteligenteService {
         System.out.println("🔔 [DEBUG] Creando notificación personalizada:");
         System.out.println("   - Tipo: " + tipo);
         System.out.println("   - Ticket ID: " + ticket.getId());
-        System.out.println("   - Actor: " + actor.getNombreCompleto());
+        System.out.println("   - Actor: " + actor.getFullName());
         System.out.println("   - Destinatarios: " + destinatarios);
         
         for (String destinatario : destinatarios) {
@@ -51,25 +51,25 @@ public class NotificacionInteligenteService {
             String mensajePersonalizado = crearMensajePersonalizado(tipo, ticket, actor, usuarioDestinatario);
             
             // Crear notificación
-            NotificacionMejorada notificacion = new NotificacionMejorada();
-            notificacion.setTipo(tipo);
-            notificacion.setMensaje(mensajePersonalizado);
-            notificacion.setDestinatarios("[\"" + destinatario + "\"]");
+            Notification notificacion = new Notification();
+            notificacion.setType(tipo);
+            notificacion.setMessage(mensajePersonalizado);
+            notificacion.setRecipients("[\"" + destinatario + "\"]");
             notificacion.setTicketId(ticket.getId());
-            notificacion.setUsuarioActorId(actor.getIdUsuario());
-            notificacion.setUsuarioActorEmail(actor.getEmail());
-            notificacion.setUsuarioActorNombre(actor.getNombreCompleto());
-            notificacion.setPrioridad(determinarPrioridad(tipo));
-            notificacion.setLeida(false);
-            notificacion.setFechaCreacion(LocalDateTime.now());
+            notificacion.setActorUserId(actor.getId());
+            notificacion.setActorUserEmail(actor.getEmail());
+            notificacion.setActorUserName(actor.getFullName());
+            notificacion.setPriority(determinarPrioridad(tipo));
+            notificacion.setRead(false);
+            notificacion.setCreatedAt(LocalDateTime.now());
             
             // Guardar en base de datos
-            NotificacionMejorada notificacionGuardada = notificacionMejoradaService.crearNotificacion(notificacion);
+            Notification notificacionGuardada = NotificationService.crearNotificacion(notificacion);
             
             // Enviar via WebSocket
             messagingTemplate.convertAndSend("/topic/notifications", notificacionGuardada);
             
-            System.out.println("   - ✅ Notificación enviada a: " + usuarioDestinatario.getNombreCompleto());
+            System.out.println("   - ✅ Notificación enviada a: " + usuarioDestinatario.getFullName());
         }
     }
     
@@ -80,7 +80,7 @@ public class NotificacionInteligenteService {
         if (tipoDestinatario.equals("rol")) {
             // Buscar por rol
             TipoUsuario tipoUsuario = TipoUsuario.valueOf(identificador.toUpperCase());
-            List<Usuario> usuarios = usuarioRepository.findByTipoUsuario(tipoUsuario);
+            List<Usuario> usuarios = usuarioRepository.findByUserType(tipoUsuario);
             return usuarios.isEmpty() ? null : usuarios.get(0); // Tomar el primero
         } else {
             // Buscar por email
@@ -92,86 +92,86 @@ public class NotificacionInteligenteService {
      * Crear mensaje personalizado según el rol del destinatario
      */
     private String crearMensajePersonalizado(String tipo, Ticket ticket, Usuario actor, Usuario destinatario) {
-        String rolDestinatario = destinatario.getTipoUsuario().name().toLowerCase();
+        String rolDestinatario = destinatario.getUserType().name().toLowerCase();
         
         switch (tipo) {
-            case NotificacionMejorada.TIPO_TICKET_CREADO:
+            case Notification.TYPE_TICKET_CREATED:
                 if (rolDestinatario.equals("administrador")) {
-                    return "Nuevo ticket creado por " + actor.getNombreCompleto() + " (#" + ticket.getId() + ")";
+                    return "Nuevo ticket creado por " + actor.getFullName() + " (#" + ticket.getId() + ")";
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_TICKET_ASIGNADO:
+            case Notification.TYPE_TICKET_ASSIGNED:
                 if (rolDestinatario.equals("funcionario") || rolDestinatario.equals("cliente")) {
-                    return "Tu ticket #" + ticket.getId() + " fue asignado al técnico " + actor.getNombreCompleto();
+                    return "Tu ticket #" + ticket.getId() + " fue asignado al técnico " + actor.getFullName();
                 } else if (rolDestinatario.equals("tecnico")) {
-                    return "Se te asignó el ticket #" + ticket.getId() + " del cliente " + ticket.getCreadorNombre();
+                    return "Se te asignó el ticket #" + ticket.getId() + " del cliente " + ticket.getCreatorName();
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "Has asignado el ticket #" + ticket.getId() + " al técnico " + actor.getNombreCompleto();
+                    return "Has asignado el ticket #" + ticket.getId() + " al técnico " + actor.getFullName();
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_TICKET_EN_PROCESO:
+            case Notification.TYPE_TICKET_IN_PROGRESS:
                 if (rolDestinatario.equals("funcionario") || rolDestinatario.equals("cliente")) {
-                    return "Tu ticket #" + ticket.getId() + " está siendo procesado por " + actor.getNombreCompleto();
+                    return "Tu ticket #" + ticket.getId() + " está siendo procesado por " + actor.getFullName();
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreadorNombre() + " está siendo procesado por " + actor.getNombreCompleto();
+                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreatorName() + " está siendo procesado por " + actor.getFullName();
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_TICKET_RESUELTO:
+            case Notification.TYPE_TICKET_RESOLVED:
                 if (rolDestinatario.equals("funcionario") || rolDestinatario.equals("cliente")) {
-                    return "Tu ticket #" + ticket.getId() + " ha sido resuelto por " + actor.getNombreCompleto();
+                    return "Tu ticket #" + ticket.getId() + " ha sido resuelto por " + actor.getFullName();
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreadorNombre() + " fue resuelto por " + actor.getNombreCompleto();
+                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreatorName() + " fue resuelto por " + actor.getFullName();
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_TICKET_CERRADO:
+            case Notification.TYPE_TICKET_CLOSED:
                 if (rolDestinatario.equals("funcionario") || rolDestinatario.equals("cliente")) {
                     return "Tu ticket #" + ticket.getId() + " ha sido cerrado";
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreadorNombre() + " ha sido cerrado";
+                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreatorName() + " ha sido cerrado";
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_TICKET_ESCALADO:
+            case Notification.TYPE_TICKET_ESCALATED:
                 if (rolDestinatario.equals("funcionario") || rolDestinatario.equals("cliente")) {
                     return "Tu ticket #" + ticket.getId() + " ha sido escalado a un supervisor";
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreadorNombre() + " ha sido escalado";
+                    return "El ticket #" + ticket.getId() + " del cliente " + ticket.getCreatorName() + " ha sido escalado";
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_COMENTARIO_AGREGADO:
+            case Notification.TYPE_COMMENT_ADDED:
                 if (rolDestinatario.equals("funcionario") || rolDestinatario.equals("cliente")) {
-                    return "Nuevo comentario en tu ticket #" + ticket.getId() + " por " + actor.getNombreCompleto();
+                    return "Nuevo comentario en tu ticket #" + ticket.getId() + " por " + actor.getFullName();
                 } else if (rolDestinatario.equals("tecnico")) {
-                    return "Nuevo comentario en el ticket #" + ticket.getId() + " por " + actor.getNombreCompleto();
+                    return "Nuevo comentario en el ticket #" + ticket.getId() + " por " + actor.getFullName();
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "Nuevo comentario en el ticket #" + ticket.getId() + " por " + actor.getNombreCompleto();
+                    return "Nuevo comentario en el ticket #" + ticket.getId() + " por " + actor.getFullName();
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_EVIDENCIA_AGREGADA:
+            case Notification.TYPE_EVIDENCE_ADDED:
                 if (rolDestinatario.equals("tecnico")) {
-                    return "Nueva evidencia agregada al ticket #" + ticket.getId() + " por " + actor.getNombreCompleto();
+                    return "Nueva evidencia agregada al ticket #" + ticket.getId() + " por " + actor.getFullName();
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "Nueva evidencia agregada al ticket #" + ticket.getId() + " por " + actor.getNombreCompleto();
+                    return "Nueva evidencia agregada al ticket #" + ticket.getId() + " por " + actor.getFullName();
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_SLA_VENCIDO:
+            case Notification.TYPE_SLA_EXPIRED:
                 if (rolDestinatario.equals("tecnico")) {
                     return "⚠️ SLA vencido para el ticket #" + ticket.getId();
                 } else if (rolDestinatario.equals("administrador")) {
-                    return "⚠️ SLA vencido para el ticket #" + ticket.getId() + " del cliente " + ticket.getCreadorNombre();
+                    return "⚠️ SLA vencido para el ticket #" + ticket.getId() + " del cliente " + ticket.getCreatorName();
                 }
                 break;
                 
-            case NotificacionMejorada.TIPO_ALERTA_SISTEMA:
+            case Notification.TYPE_SYSTEM_ALERT:
                 if (rolDestinatario.equals("administrador")) {
-                    return "🚨 Alerta del sistema: " + ticket.getAsunto();
+                    return "🚨 Alerta del sistema: " + ticket.getSubject();
                 }
                 break;
         }
@@ -184,13 +184,13 @@ public class NotificacionInteligenteService {
      */
     private String determinarPrioridad(String tipo) {
         switch (tipo) {
-            case NotificacionMejorada.TIPO_SLA_VENCIDO:
-            case NotificacionMejorada.TIPO_ALERTA_SISTEMA:
-                return NotificacionMejorada.PRIORIDAD_CRITICA;
-            case NotificacionMejorada.TIPO_TICKET_ESCALADO:
-                return NotificacionMejorada.PRIORIDAD_ALTA;
+            case Notification.TYPE_SLA_EXPIRED:
+            case Notification.TYPE_SYSTEM_ALERT:
+                return Notification.PRIORITY_CRITICAL;
+            case Notification.TYPE_TICKET_ESCALATED:
+                return Notification.PRIORITY_HIGH;
             default:
-                return NotificacionMejorada.PRIORIDAD_NORMAL;
+                return Notification.PRIORITY_NORMAL;
         }
     }
     
@@ -203,7 +203,7 @@ public class NotificacionInteligenteService {
         destinatarios.add("rol:administrador");
         
         crearNotificacionPersonalizada(
-            NotificacionMejorada.TIPO_TICKET_CREADO,
+            Notification.TYPE_TICKET_CREATED,
             ticket,
             funcionario,
             destinatarios
@@ -217,7 +217,7 @@ public class NotificacionInteligenteService {
         destinatarios.add("administrador:" + admin.getEmail());
         
         crearNotificacionPersonalizada(
-            NotificacionMejorada.TIPO_TICKET_ASIGNADO,
+            Notification.TYPE_TICKET_ASSIGNED,
             ticket,
             admin,
             destinatarios
@@ -230,7 +230,7 @@ public class NotificacionInteligenteService {
         destinatarios.add("rol:administrador");
         
         crearNotificacionPersonalizada(
-            NotificacionMejorada.TIPO_TICKET_RESUELTO,
+            Notification.TYPE_TICKET_RESOLVED,
             ticket,
             tecnico,
             destinatarios
@@ -243,7 +243,7 @@ public class NotificacionInteligenteService {
         destinatarios.add("rol:administrador");
         
         crearNotificacionPersonalizada(
-            NotificacionMejorada.TIPO_TICKET_CERRADO,
+            Notification.TYPE_TICKET_CLOSED,
             ticket,
             actor,
             destinatarios
@@ -254,19 +254,19 @@ public class NotificacionInteligenteService {
         List<String> destinatarios = new ArrayList<>();
         
         // Determinar destinatarios según el rol del actor
-        if (actor.getTipoUsuario() == TipoUsuario.TECNICO) {
+        if (actor.getUserType() == TipoUsuario.TECNICO) {
             destinatarios.add("rol:funcionario"); // Cliente
             destinatarios.add("rol:administrador");
-        } else if (actor.getTipoUsuario() == TipoUsuario.FUNCIONARIO) {
+        } else if (actor.getUserType() == TipoUsuario.FUNCIONARIO) {
             destinatarios.add("rol:tecnico"); // Técnico asignado
             destinatarios.add("rol:administrador");
-        } else if (actor.getTipoUsuario() == TipoUsuario.ADMINISTRADOR) {
+        } else if (actor.getUserType() == TipoUsuario.ADMINISTRADOR) {
             destinatarios.add("rol:funcionario"); // Cliente
             destinatarios.add("rol:tecnico"); // Técnico asignado
         }
         
         crearNotificacionPersonalizada(
-            NotificacionMejorada.TIPO_COMENTARIO_AGREGADO,
+            Notification.TYPE_COMMENT_ADDED,
             ticket,
             actor,
             destinatarios
@@ -279,16 +279,16 @@ public class NotificacionInteligenteService {
         destinatarios.add("rol:administrador");
         
         // Crear notificación sin actor específico
-        NotificacionMejorada notificacion = new NotificacionMejorada();
-        notificacion.setTipo(NotificacionMejorada.TIPO_SLA_VENCIDO);
-        notificacion.setMensaje("⚠️ SLA vencido para el ticket #" + ticket.getId());
-        notificacion.setDestinatarios("[\"rol:tecnico\", \"rol:administrador\"]");
+        Notification notificacion = new Notification();
+        notificacion.setType(Notification.TYPE_SLA_EXPIRED);
+        notificacion.setMessage("⚠️ SLA vencido para el ticket #" + ticket.getId());
+        notificacion.setRecipients("[\"rol:tecnico\", \"rol:administrador\"]");
         notificacion.setTicketId(ticket.getId());
-        notificacion.setPrioridad(NotificacionMejorada.PRIORIDAD_CRITICA);
-        notificacion.setLeida(false);
-        notificacion.setFechaCreacion(LocalDateTime.now());
+        notificacion.setPriority(Notification.PRIORITY_CRITICAL);
+        notificacion.setRead(false);
+        notificacion.setCreatedAt(LocalDateTime.now());
         
-        NotificacionMejorada notificacionGuardada = notificacionMejoradaService.crearNotificacion(notificacion);
+        Notification notificacionGuardada = NotificationService.crearNotificacion(notificacion);
         messagingTemplate.convertAndSend("/topic/notifications", notificacionGuardada);
     }
 }

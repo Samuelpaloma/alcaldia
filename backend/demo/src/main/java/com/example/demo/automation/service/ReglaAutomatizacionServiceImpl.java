@@ -248,22 +248,22 @@ public class ReglaAutomatizacionServiceImpl implements ReglaAutomatizacionServic
         try {
             if (c.startsWith("categoria ==")) {
                 String valor = extraerValorLiteral(c);
-                String categoria = ticket.getCategoriaNombre();
+                String categoria = ticket.getCategoryName();
                 return categoria != null && categoria.equalsIgnoreCase(valor);
             }
             if (c.startsWith("prioridad ==")) {
                 String valor = extraerValorLiteral(c);
-                String prioridad = ticket.getPrioridad();
+                String prioridad = ticket.getPriority();
                 return prioridad != null && prioridad.equalsIgnoreCase(valor);
             }
             if (c.startsWith("estado ==")) {
                 String valor = extraerValorLiteral(c);
-                String estado = ticket.getEstado();
+                String estado = ticket.getStatus();
                 return estado != null && estado.equalsIgnoreCase(valor);
             }
             if (c.startsWith("consulta contains")) {
                 String valor = extraerValorLiteral(c);
-                String consulta = ticket.getConsulta();
+                String consulta = ticket.getQuery();
                 return consulta != null && consulta.toLowerCase().contains(valor.toLowerCase());
             }
         } catch (Exception e) {
@@ -292,18 +292,18 @@ public class ReglaAutomatizacionServiceImpl implements ReglaAutomatizacionServic
             // notificar("rol:administrador","Mensaje ...")
             if (a.startsWith("set_prioridad")) {
                 String valor = extraerValorLiteral(a);
-                ticket.setPrioridad(valor.toUpperCase());
+                ticket.setPriority(valor.toUpperCase());
                 ticketRepository.save(ticket);
                 return;
             }
             if (a.startsWith("asignar_tecnico_por_minima_carga")) {
                 usuarioRepository.findTechnicianWithLeastActiveTickets().ifPresent(tecnico -> {
-                    ticket.setTecnicoAsignado(tecnico);
-                    ticket.setEstado("ASIGNADO");
+                    ticket.setAssignedTechnician(tecnico);
+                    ticket.setStatus("ASIGNADO");
                     ticketRepository.save(ticket);
                     try {
-                        if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
-                            notificationRoleService.notificarAsignacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario(), tecnico.getIdUsuario());
+                        if (ticket.getCreator() != null && tecnico.getId() != null) {
+                            notificationRoleService.notificarAsignacionTicket(ticket.getId(), ticket.getCreator().getId(), tecnico.getId());
                         }
                     } catch (Exception ex) {
                         log.warn("Fallo al notificar asignación automática: {}", ex.getMessage());
@@ -324,7 +324,7 @@ public class ReglaAutomatizacionServiceImpl implements ReglaAutomatizacionServic
                         // Reusar NotificationRoleService con tipos predefinidos
                         try {
                             if ("rol:administrador".equalsIgnoreCase(destino)) {
-                                notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                                notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreator().getId());
                             }
                         } catch (Exception ex) {
                             log.warn("Fallo al notificar acción: {}", ex.getMessage());

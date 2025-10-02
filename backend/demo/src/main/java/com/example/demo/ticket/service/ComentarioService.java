@@ -5,7 +5,6 @@ import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 import com.example.demo.ticket.model.Comentario;
 import com.example.demo.ticket.repository.ComentarioRepository;
 import com.example.demo.usuario.model.Usuario;
-import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.notificacion.service.ComentarioNotificationService;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,11 +35,11 @@ public class ComentarioService {
         comentario.setMensaje(request.getMensaje());
         
         if (usuario != null) {
-            comentario.setAutor(usuario.getNombre() + " " + usuario.getApellido());
+            comentario.setAutor(usuario.getFirstName() + " " + usuario.getLastName());
             comentario.setAutorEmail(emailUsuario);
             
             // Determinar tipo de autor basado en el tipo de usuario
-            switch (usuario.getTipoUsuario()) {
+            switch (usuario.getUserType()) {
                 case TECNICO:
                     comentario.setTipoAutor(Comentario.TipoAutor.TECNICO);
                     break;
@@ -54,7 +53,7 @@ public class ComentarioService {
                     comentario.setTipoAutor(Comentario.TipoAutor.CLIENTE);
                     break;
             }
-            comentario.setUsuarioId(usuario.getIdUsuario());
+            comentario.setUsuarioId(usuario.getId());
         } else {
             // Fallback si no se encuentra el usuario
             comentario.setAutor("Usuario");
@@ -70,8 +69,8 @@ public class ComentarioService {
         // Enviar notificaciones por roles (respetando preferencias)
         try {
             if (usuario != null) {
-                System.out.println("🔔 [COMENTARIO SERVICE] Enviando notificación para ticket " + request.getTicketId() + " por usuario " + usuario.getIdUsuario());
-                comentarioNotificationService.notificarComentarioAgregado(request.getTicketId(), usuario.getIdUsuario());
+                System.out.println("🔔 [COMENTARIO SERVICE] Enviando notificación para ticket " + request.getTicketId() + " por usuario " + usuario.getId());
+                comentarioNotificationService.notificarComentarioAgregado(request.getTicketId(), usuario.getId());
                 System.out.println("🔔 [COMENTARIO SERVICE] Notificación enviada exitosamente");
             } else {
                 System.out.println("🔔 [COMENTARIO SERVICE] No se envió notificación - usuario es null");

@@ -37,16 +37,16 @@ public class JwtTokenProvider {
         Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
         
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", usuario.getIdUsuario());
+        claims.put("userId", usuario.getId());
         claims.put("email", usuario.getEmail());
-        claims.put("nombre", usuario.getNombre());
-        claims.put("apellido", usuario.getApellido());
-        claims.put("tipoUsuario", usuario.getTipoUsuario().name());
-        claims.put("activo", usuario.getActivo());
+        claims.put("nombre", usuario.getFirstName());
+        claims.put("apellido", usuario.getLastName());
+        claims.put("tipoUsuario", usuario.getUserType().name());
+        claims.put("activo", usuario.getActive());
         
         return Jwts.builder()
             .setClaims(claims)
-            .setSubject(usuario.getIdUsuario().toString()) // Subject = ID del usuario
+            .setSubject(usuario.getId().toString()) // Subject = ID del usuario
             .setIssuedAt(now)
             .setExpiration(expiryDate)
             .signWith(getSigningKey(), SignatureAlgorithm.HS512)

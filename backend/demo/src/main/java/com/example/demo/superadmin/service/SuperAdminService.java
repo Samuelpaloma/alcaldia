@@ -22,7 +22,7 @@ public class SuperAdminService {
      * Verifica si existe al menos un SUPERADMIN activo
      */
     public boolean existeSuperAdminActivo() {
-        return usuarioRepository.existsByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.SUPERADMIN);
+        return usuarioRepository.existsByUserType(com.example.demo.usuario.model.TipoUsuario.SUPERADMIN);
     }
     
     /**
@@ -44,7 +44,7 @@ public class SuperAdminService {
      * Obtiene todos los SUPERADMINs
      */
     public List<Usuario> obtenerTodosLosSuperAdmins() {
-        return usuarioRepository.findByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.SUPERADMIN);
+        return usuarioRepository.findByUserType(com.example.demo.usuario.model.TipoUsuario.SUPERADMIN);
     }
     
     /**
@@ -52,10 +52,10 @@ public class SuperAdminService {
      */
     public EstadisticasSistemaDTO obtenerEstadisticasSistema() {
         long totalUsuarios = usuarioRepository.count();
-        long totalSuperAdmins = usuarioRepository.countByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.SUPERADMIN);
-        long totalAdmins = usuarioRepository.countByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR);
-        long totalTecnicos = usuarioRepository.countByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.TECNICO);
-        long totalFuncionarios = usuarioRepository.countByTipoUsuario(com.example.demo.usuario.model.TipoUsuario.FUNCIONARIO);
+        long totalSuperAdmins = usuarioRepository.countByUserType(com.example.demo.usuario.model.TipoUsuario.SUPERADMIN);
+        long totalAdmins = usuarioRepository.countByUserType(com.example.demo.usuario.model.TipoUsuario.ADMINISTRADOR);
+        long totalTecnicos = usuarioRepository.countByUserType(com.example.demo.usuario.model.TipoUsuario.TECNICO);
+        long totalFuncionarios = usuarioRepository.countByUserType(com.example.demo.usuario.model.TipoUsuario.FUNCIONARIO);
         
         return new EstadisticasSistemaDTO(
             totalUsuarios,
