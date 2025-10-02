@@ -617,8 +617,8 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-      console.log(`🌐 Realizando petición a: ${url}`);
-      console.log(`📤 Datos enviados:`, options.body);
+    console.log(`🌐 Realizando petición a: ${url}`);
+    console.log(`📤 Datos enviados:`, options.body);
       console.log(`🔧 Método:`, options.method || 'GET');
     
     try {
@@ -1213,9 +1213,9 @@ class ApiClient {
     
     try {
       const response = await this.request(`/tickets/${ticketId}/comentarios`, {
-        method: 'POST',
-        body: JSON.stringify({ mensaje })
-      });
+      method: 'POST',
+      body: JSON.stringify({ mensaje })
+    });
       
       console.log('✅ [API] Comentario enviado exitosamente:', response);
       return response;

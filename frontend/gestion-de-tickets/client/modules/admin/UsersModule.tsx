@@ -14,7 +14,6 @@ import {
   Calendar,
   Shield,
   Wrench,
-  Eye,
   Edit,
   Trash2,
   UserPlus
@@ -381,22 +380,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                     >
                       {user.activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       {user.activo ? 'Desactivar' : 'Activar'}
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="action-btn"
-                      onClick={() => {
-                        console.log('Seleccionando usuario para ver:', user);
-                        console.log('ID del usuario:', user.idUsuario);
-                        setSelectedUser(user);
-                        setViewEditMode('view');
-                        setShowViewEditModal(true);
-                      }}
-                    >
-                      <Eye className="w-4 h-4" />
-                      Ver
                     </Button>
                     
                     <Button

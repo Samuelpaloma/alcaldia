@@ -767,7 +767,6 @@ const createStyles = (theme: any) => StyleSheet.create({
   messageTimeTechnician: {
     color: '#fff',
   },
-  },
   inputContainer: {
     backgroundColor: '#fff',
     paddingHorizontal: 16,

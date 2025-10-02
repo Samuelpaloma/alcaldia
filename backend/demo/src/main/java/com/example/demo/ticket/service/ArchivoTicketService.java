@@ -219,6 +219,13 @@ public class ArchivoTicketService {
      * Convertir a DTO
      */
     private ArchivoTicketResponseDTO convertirADTO(ArchivoTicket archivo) {
+        // Debug logs
+        log.info("🔍 [ARCHIVO DEBUG] Convirtiendo archivo ID: {}", archivo.getId());
+        log.info("🔍 [ARCHIVO DEBUG] Usuario: {}", archivo.getUsuario());
+        log.info("🔍 [ARCHIVO DEBUG] Usuario ID: {}", archivo.getUsuario() != null ? archivo.getUsuario().getIdUsuario() : "NULL");
+        log.info("🔍 [ARCHIVO DEBUG] Usuario Nombre Completo: {}", archivo.getUsuario() != null ? archivo.getUsuario().getNombreCompleto() : "NULL");
+        log.info("🔍 [ARCHIVO DEBUG] Usuario Email: {}", archivo.getUsuario() != null ? archivo.getUsuario().getEmail() : "NULL");
+        
         return ArchivoTicketResponseDTO.builder()
             .id(archivo.getId())
             .ticketId(archivo.getTicket().getId())
@@ -231,8 +238,8 @@ public class ArchivoTicketService {
             .tamañoFormateado(archivo.getTamañoFormateado())
             .rutaArchivo(archivo.getRutaArchivo())
             .fechaSubida(archivo.getFechaSubida())
-            .subidoPor(archivo.getUsuario().getNombreCompleto())
-            .subidoPorEmail(archivo.getUsuario().getEmail())
+            .subidoPor(archivo.getUsuario() != null ? archivo.getUsuario().getNombreCompleto() : "Usuario Desconocido")
+            .subidoPorEmail(archivo.getUsuario() != null ? archivo.getUsuario().getEmail() : null)
             .comentario(archivo.getComentario())
             .esImagen(archivo.esImagen())
             .esPDF(archivo.esPDF())

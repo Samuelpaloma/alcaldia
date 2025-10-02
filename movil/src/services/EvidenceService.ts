@@ -27,6 +27,17 @@ export interface EvidenceResponse {
 
 class EvidenceService {
   private baseUrl = 'http://localhost:8080/api';
+  
+  // Detectar la IP correcta para React Native
+  private getBaseUrl(): string {
+    // En desarrollo, usar la IP de la máquina en lugar de localhost
+    const isDevelopment = __DEV__;
+    if (isDevelopment) {
+      // Usar la IP de la máquina (192.168.1.87)
+      return 'http://192.168.1.87:8080/api';
+    }
+    return this.baseUrl;
+  }
 
   private async getAuthHeaders() {
     const token = await AsyncStorage.getItem('authToken');
@@ -42,13 +53,14 @@ class EvidenceService {
   async testEndpoint(evidenceData: EvidenceRequest): Promise<any> {
     try {
       console.log('🧪 Probando endpoint de evidencias...');
-      console.log('🧪 Base URL:', this.baseUrl);
+      const baseUrl = this.getBaseUrl();
+      console.log('🧪 Base URL:', baseUrl);
       console.log('🧪 Token:', await AsyncStorage.getItem('authToken') ? 'Presente' : 'Ausente');
       
       // Primero probar conectividad básica
       console.log('🧪 Probando conectividad básica...');
       try {
-        const healthResponse = await fetch(`${this.baseUrl.replace('/api', '')}/actuator/health`);
+        const healthResponse = await fetch(`${baseUrl.replace('/api', '')}/actuator/health`);
         console.log('🧪 Health check status:', healthResponse.status);
       } catch (healthError) {
         console.log('🧪 Health check falló:', healthError.message);
@@ -62,7 +74,7 @@ class EvidenceService {
       simpleFormData.append('ticketId', evidenceData.ticketId.toString());
       simpleFormData.append('descripcion', evidenceData.descripcion);
 
-      const simpleResponse = await fetch(`${this.baseUrl}/evidencias/test`, {
+      const simpleResponse = await fetch(`${baseUrl}/evidencias/test`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -95,7 +107,7 @@ class EvidenceService {
           } as any);
         }
 
-        const response = await fetch(`${this.baseUrl}/evidencias/test`, {
+        const response = await fetch(`${baseUrl}/evidencias/test`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -129,9 +141,10 @@ class EvidenceService {
       const token = await AsyncStorage.getItem('authToken');
       
       // Usar endpoint específico según el tipo de evidencia
+      const baseUrl = this.getBaseUrl();
       const endpoint = isFinalEvidence 
-        ? `${this.baseUrl}/evidencias/subir`        // Tabla evidencias - evidencias finales (FormData)
-        : `${this.baseUrl}/archivos-ticket/subir`;  // Tabla archivos_ticket - archivos del chat (JSON + Base64)
+        ? `${baseUrl}/evidencias/subir`        // Tabla evidencias - evidencias finales (FormData)
+        : `${baseUrl}/archivos-ticket/subir`;  // Tabla archivos_ticket - archivos del chat (JSON + Base64)
 
       console.log('📎 Endpoint:', endpoint);
 
@@ -143,26 +156,27 @@ class EvidenceService {
         formData.append('ticketId', evidenceData.ticketId.toString());
         formData.append('descripcion', evidenceData.descripcion);
         
-        // Para web, necesitamos convertir el blob URL a File
-        if (evidenceData.archivo.uri.startsWith('blob:')) {
-          const blobResponse = await fetch(evidenceData.archivo.uri);
-          const blob = await blobResponse.blob();
-          const file = new File([blob], evidenceData.archivo.name, { type: evidenceData.archivo.type });
-          formData.append('archivo', file);
-        } else {
-          formData.append('archivo', {
-            uri: evidenceData.archivo.uri,
-            type: evidenceData.archivo.type,
-            name: evidenceData.archivo.name,
-          } as any);
-        }
+        // Para React Native, usar el formato correcto
+        formData.append('archivo', {
+          uri: evidenceData.archivo.uri,
+          type: evidenceData.archivo.type,
+          name: evidenceData.archivo.name,
+        } as any);
 
         console.log('📎 Enviando FormData para evidencia final');
+        console.log('📎 FormData ticketId:', evidenceData.ticketId);
+        console.log('📎 FormData descripcion:', evidenceData.descripcion);
+        console.log('📎 FormData archivo:', {
+          uri: evidenceData.archivo.uri,
+          type: evidenceData.archivo.type,
+          name: evidenceData.archivo.name,
+        });
 
         response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
+            // No especificar Content-Type para FormData - el navegador lo establece automáticamente
           },
           body: formData,
         });
@@ -254,7 +268,8 @@ class EvidenceService {
   async obtenerEvidencias(ticketId: number): Promise<EvidenceResponse[]> {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.baseUrl}/evidencias/movil/ticket/${ticketId}`, {
+      const baseUrl = this.getBaseUrl();
+      const response = await fetch(`${baseUrl}/evidencias/movil/ticket/${ticketId}`, {
         method: 'GET',
         headers: {
           'Authorization': headers.Authorization,

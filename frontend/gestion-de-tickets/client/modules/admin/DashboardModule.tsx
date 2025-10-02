@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api, TicketResponseDTO, UsuarioDTO, SystemStatsResponse } from '../../../shared/api';
+import { useI18n } from '../../i18n';
 import { 
   BarChart3, 
   Users, 
@@ -21,6 +22,7 @@ interface DashboardModuleProps {
 }
 
 const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
+  const { t } = useI18n();
   const [tickets, setTickets] = useState<TicketResponseDTO[]>([]);
   const [tecnicos, setTecnicos] = useState<UsuarioDTO[]>([]);
   const [administradores, setAdministradores] = useState<UsuarioDTO[]>([]);
@@ -54,7 +56,7 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
       setAdministradores(administradoresData.content || []);
       setStats(statsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar datos');
+      setError(err instanceof Error ? err.message : t('admin.error'));
       console.error('❌ DashboardModule: Error cargando datos:', err);
     } finally {
       setLoading(false);
@@ -83,7 +85,7 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Cargando dashboard...</p>
+            <p className="text-muted-foreground">{t('admin.loading')}</p>
           </div>
         </div>
       </div>
@@ -94,8 +96,8 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
     <div className="dashboard-module">
       <div className="dashboard-header" style={{ marginTop: '-1rem' }}>
         <div className="header-content">
-          <h1 className="page-title">Dashboard de Administración</h1>
-          <p className="page-subtitle">Vista general del sistema de gestión de tickets</p>
+          <h1 className="page-title">{t('admin.title')}</h1>
+          <p className="page-subtitle">{t('admin.subtitle')}</p>
         </div>
       </div>
 
@@ -116,16 +118,16 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="metric-label">Total Tickets</p>
+                <p className="metric-label">{t('tickets.title')}</p>
                 <p className="metric-value">{tickets.length}</p>
                 <div className="metric-details">
                   <span className="detail-item">
                     <Clock className="w-4 h-4" />
-                    {getTicketsByStatus('PENDIENTE')} Abiertos
+                    {getTicketsByStatus('PENDIENTE')} {t('tickets.status.open')}
                   </span>
                   <span className="detail-item">
                     <CheckCircle className="w-4 h-4" />
-                    {getTicketsByStatus('TERMINADO')} Resueltos
+                    {getTicketsByStatus('TERMINADO')} {t('tickets.status.resolved')}
                   </span>
                 </div>
               </div>
@@ -140,12 +142,12 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="metric-label">Técnicos Activos</p>
+                <p className="metric-label">{t('users.labels.technicians')}</p>
                 <p className="metric-value">{stats?.totalTecnicos || 0}</p>
                 <div className="metric-details">
                   <span className="detail-item">
                     <Users className="w-4 h-4" />
-                    {stats?.totalTecnicos || 0} Total
+                    {stats?.totalTecnicos || 0} {t('users.labels.total_users')}
                   </span>
                 </div>
               </div>
@@ -160,12 +162,12 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="metric-label">Tickets Sin Asignar</p>
+                <p className="metric-label">{t('tickets.table.no_assigned')}</p>
                 <p className="metric-value">{getTicketsByStatus('PENDIENTE')}</p>
                 <div className="metric-details">
                   <span className="detail-item">
                     <AlertTriangle className="w-4 h-4" />
-                    Requieren atención
+                    {t('admin.warning')}
                   </span>
                 </div>
               </div>
@@ -180,12 +182,12 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="metric-label">Tickets en Progreso</p>
+                <p className="metric-label">{t('tickets.status.in_progress')}</p>
                 <p className="metric-value">{getTicketsByStatus('EN_EJECUCION')}</p>
                 <div className="metric-details">
                   <span className="detail-item">
                     <TrendingUp className="w-4 h-4" />
-                    {getTicketsByStatus('PENDIENTE')} Pendientes
+                    {getTicketsByStatus('PENDIENTE')} {t('tickets.status.pending')}
                   </span>
                 </div>
               </div>
@@ -203,14 +205,14 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
-              Distribución por Prioridad
+{t('tickets.priority.distribution')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="priority-stats">
               <div className="priority-item high">
                 <div className="priority-info">
-                  <span className="priority-label">Alta</span>
+                  <span className="priority-label">{t('tickets.priority.high')}</span>
                   <span className="priority-count">{getTicketsByPriority('high')}</span>
                 </div>
                 <div className="priority-bar">
@@ -222,7 +224,7 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
               </div>
               <div className="priority-item medium">
                 <div className="priority-info">
-                  <span className="priority-label">Media</span>
+                  <span className="priority-label">{t('tickets.priority.medium')}</span>
                   <span className="priority-count">{getTicketsByPriority('medium')}</span>
                 </div>
                 <div className="priority-bar">
@@ -234,7 +236,7 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
               </div>
               <div className="priority-item low">
                 <div className="priority-info">
-                  <span className="priority-label">Baja</span>
+                  <span className="priority-label">{t('tickets.priority.low')}</span>
                   <span className="priority-count">{getTicketsByPriority('low')}</span>
                 </div>
                 <div className="priority-bar">
@@ -255,14 +257,14 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5" />
-              Tickets Recientes
+{t('tickets.recent')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {(tickets || []).length === 0 ? (
               <div className="empty-state">
                 <Ticket className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No hay tickets recientes</p>
+                <p className="text-muted-foreground">{t('tickets.no_tickets')}</p>
               </div>
             ) : (
               <div className="tickets-list">
@@ -275,7 +277,7 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
                           {ticket.estado}
                         </span>
                       </div>
-                      <p className="ticket-subject">{ticket.asunto || 'Sin asunto'}</p>
+                      <p className="ticket-subject">{ticket.asunto || t('tickets.no_subject')}</p>
                       <div className="ticket-meta">
                         <span className={`ticket-priority priority-${ticket.prioridad}`}>
                           {ticket.prioridad}
@@ -284,10 +286,10 @@ const DashboardModule: React.FC<DashboardModuleProps> = ({ userRole }) => {
                           {new Date(ticket.fechaCreacion).toLocaleDateString()}
                         </span>
                       </div>
-                      {ticket.tecnicoEmail && (
+                      {(ticket.tecnicoNombre || ticket.tecnicoEmail) && (
                         <div className="ticket-technician">
                           <span className="text-xs text-muted-foreground">
-                            Técnico: {ticket.tecnicoEmail}
+{t('tickets.table.technician')}: {ticket.tecnicoNombre || ticket.tecnicoEmail}
                           </span>
                         </div>
                       )}

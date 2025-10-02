@@ -15,6 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/sla")
+@CrossOrigin(origins = "*")
 public class SLAConfigurationController {
     
     private static final Logger log = LoggerFactory.getLogger(SLAConfigurationController.class);

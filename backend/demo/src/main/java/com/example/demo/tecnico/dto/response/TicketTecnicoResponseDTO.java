@@ -44,4 +44,9 @@ public class TicketTecnicoResponseDTO {
     
     // Comentarios del ticket
     private List<com.example.demo.ticket.dto.response.ComentarioResponseDTO> comentarios;
+    
+    // Permisos del técnico actual
+    private Boolean puedeCambiarEstado;
+    private Boolean esTecnicoEscalado;
+    private String rolTecnico; // "ASIGNADO", "ESCALADO", "ORIGINAL"
 }
