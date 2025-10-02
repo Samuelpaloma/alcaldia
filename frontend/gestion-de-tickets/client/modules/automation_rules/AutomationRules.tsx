@@ -55,8 +55,15 @@ const AutomationRules: React.FC = () => {
       const response = await api.getReglasAutomatizacion(0, 100);
       console.log('✅ Reglas cargadas desde backend:', response);
       
-      // Asegurar que siempre sea un array
-      const reglasArray = Array.isArray(response) ? response : [];
+      // El servidor devuelve {data: {content: [...]}} según los logs
+      let reglasArray = [];
+      if (response && response.data && response.data.content) {
+        reglasArray = response.data.content;
+      } else if (Array.isArray(response)) {
+        reglasArray = response;
+      }
+      
+      console.log('📋 Reglas extraídas:', reglasArray);
       setReglas(reglasArray);
       setError(null);
     } catch (error) {
@@ -69,6 +76,7 @@ const AutomationRules: React.FC = () => {
         variant: "destructive",
       });
     } finally {
+      console.log('🔄 Estableciendo loading = false');
       setLoading(false);
     }
   };
@@ -87,6 +95,16 @@ const AutomationRules: React.FC = () => {
       regla.prioridad.toString() === filtros.prioridad;
     
     return cumpleBusqueda && cumpleEstado && cumplePrioridad;
+  });
+
+  // Debug: Log para verificar el estado
+  console.log('🔍 Debug - Estado actual:', {
+    loading: loading,
+    reglas: reglas,
+    reglasLength: reglas.length,
+    reglasFiltradas: reglasFiltradas,
+    reglasFiltradasLength: reglasFiltradas.length,
+    filtros: filtros
   });
 
   const abrirModalCrear = () => {
@@ -290,6 +308,16 @@ const AutomationRules: React.FC = () => {
         <div className="header-content">
           <h1 className="rules-title">Reglas de Automatización</h1>
           <p className="rules-subtitle">Configura reglas automáticas para optimizar el flujo de tickets</p>
+          {/* Debug temporal */}
+          <div style={{marginTop: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px'}}>
+            <p><strong>Debug Info:</strong></p>
+            <p>Loading: {loading ? 'true' : 'false'}</p>
+            <p>Reglas: {reglas.length}</p>
+            <p>Reglas Filtradas: {reglasFiltradas.length}</p>
+            <button onClick={() => loadReglas()} style={{marginTop: '5px', padding: '5px 10px'}}>
+              Recargar Reglas
+            </button>
+          </div>
         </div>
         <div className="flex space-x-2">
           <Button 

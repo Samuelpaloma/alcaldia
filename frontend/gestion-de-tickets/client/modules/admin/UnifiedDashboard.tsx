@@ -13,6 +13,7 @@ import {
   Clock, 
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Download,
   RefreshCw,
   BarChart3,

@@ -115,9 +115,12 @@ public class TicketServiceImpl implements TicketService {
         
         // Procesar ticket con SLA y automatización integrada
         try {
+            System.out.println("🔧 [DEBUG] Llamando a SLA y automatización para ticket " + ticket.getId());
             slaAutomationService.procesarTicketCreado(ticket);
+            System.out.println("✅ [DEBUG] SLA y automatización procesados correctamente para ticket " + ticket.getId());
         } catch (Exception e) {
-            System.err.println("⚠️ [DEBUG] Error procesando SLA y automatización para ticket: " + e.getMessage());
+            System.err.println("❌ [DEBUG] Error procesando SLA y automatización para ticket " + ticket.getId() + ": " + e.getMessage());
+            e.printStackTrace();
         }
 
         // Manejar archivo adjunto si existe - usar el nuevo sistema de múltiples archivos

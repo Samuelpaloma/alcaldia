@@ -36,6 +36,7 @@ public class SLAAutomationService {
      * Procesa un ticket recién creado aplicando SLA y automatización
      */
     public void procesarTicketCreado(Ticket ticket) {
+        System.out.println("🔧 [SLA Automation] ===== PROCESANDO TICKET " + ticket.getId() + " CON SLA Y AUTOMATIZACIÓN =====");
         log.info("Procesando ticket {} con SLA y automatización", ticket.getId());
         
         try {
@@ -109,11 +110,21 @@ public class SLAAutomationService {
         
         for (ReglaAutomatizacion regla : reglasActivas) {
             try {
-                if (evaluarCondicion(regla.getCondicion(), ticket)) {
+                System.out.println("🔧 [SLA Automation] Evaluando regla: " + regla.getNombre());
+                System.out.println("🔧 [SLA Automation] Condición: " + regla.getCondicion());
+                System.out.println("🔧 [SLA Automation] Acción: " + regla.getAccion());
+                
+                boolean condicionCumplida = evaluarCondicion(regla.getCondicion(), ticket);
+                System.out.println("🔧 [SLA Automation] Condición cumplida: " + condicionCumplida);
+                
+                if (condicionCumplida) {
+                    System.out.println("✅ [SLA Automation] Ejecutando acción para regla: " + regla.getNombre());
                     ejecutarAccion(regla.getAccion(), ticket);
                     regla.incrementarEjecuciones();
                     reglaAutomatizacionRepository.save(regla);
                     log.info("Regla '{}' ejecutada para ticket {}", regla.getNombre(), ticket.getId());
+                } else {
+                    System.out.println("❌ [SLA Automation] Condición no cumplida para regla: " + regla.getNombre());
                 }
             } catch (Exception e) {
                 log.error("Error ejecutando regla '{}' para ticket {}: {}", 
@@ -219,22 +230,33 @@ public class SLAAutomationService {
      * Evalúa una condición simple
      */
     private boolean evaluarCondicionSimple(String condicion, Ticket ticket) {
+        System.out.println("🔧 [SLA Automation] Evaluando condición simple: " + condicion);
+        
         if (condicion.startsWith("categoria ==")) {
             String valor = extraerValorLiteral(condicion);
             String categoria = ticket.getCategoriaNombre();
-            return categoria != null && categoria.equalsIgnoreCase(valor);
+            System.out.println("🔧 [SLA Automation] Comparando categoría: '" + categoria + "' == '" + valor + "'");
+            boolean resultado = categoria != null && categoria.equalsIgnoreCase(valor);
+            System.out.println("🔧 [SLA Automation] Resultado categoría: " + resultado);
+            return resultado;
         }
         
         if (condicion.startsWith("prioridad ==")) {
             String valor = extraerValorLiteral(condicion);
             String prioridad = ticket.getPrioridad();
-            return prioridad != null && prioridad.equalsIgnoreCase(valor);
+            System.out.println("🔧 [SLA Automation] Comparando prioridad: '" + prioridad + "' == '" + valor + "'");
+            boolean resultado = prioridad != null && prioridad.equalsIgnoreCase(valor);
+            System.out.println("🔧 [SLA Automation] Resultado prioridad: " + resultado);
+            return resultado;
         }
         
         if (condicion.startsWith("estado ==")) {
             String valor = extraerValorLiteral(condicion);
             String estado = ticket.getEstado();
-            return estado != null && estado.equalsIgnoreCase(valor);
+            System.out.println("🔧 [SLA Automation] Comparando estado: '" + estado + "' == '" + valor + "'");
+            boolean resultado = estado != null && estado.equalsIgnoreCase(valor);
+            System.out.println("🔧 [SLA Automation] Resultado estado: " + resultado);
+            return resultado;
         }
         
         if (condicion.startsWith("consulta contains")) {
@@ -263,26 +285,84 @@ public class SLAAutomationService {
                 return;
             }
             
-            if (a.startsWith("asignar_tecnico_por_minima_carga")) {
-                usuarioRepository.findTechnicianWithLeastActiveTickets().ifPresent(tecnico -> {
-                    ticket.setTecnicoAsignado(tecnico);
-                    ticket.setEstado("ASIGNADO");
-                    ticketRepository.save(ticket);
+            if (a.startsWith("asignar_tecnico(")) {
+                String tecnicoIdStr = extraerValorLiteral(a);
+                try {
+                    Long tecnicoId = Long.parseLong(tecnicoIdStr);
+                    System.out.println("🔧 [SLA Automation] Asignando técnico específico ID: " + tecnicoId + " al ticket " + ticket.getId());
                     
-                    try {
-                        if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
-                            notificationRoleService.notificarAsignacionTicket(
-                                ticket.getId(), 
-                                ticket.getCreador().getIdUsuario(), 
-                                tecnico.getIdUsuario()
-                            );
+                    usuarioRepository.findById(tecnicoId).ifPresentOrElse(
+                        tecnico -> {
+                            if (tecnico.isTecnico() && tecnico.getActivo()) {
+                                System.out.println("✅ [SLA Automation] Técnico encontrado: " + tecnico.getEmail() + " (ID: " + tecnico.getIdUsuario() + ")");
+                                ticket.setTecnicoAsignado(tecnico);
+                                ticket.setEstado("ASIGNADO");
+                                ticketRepository.save(ticket);
+                                
+                                try {
+                                    if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
+                                        notificationRoleService.notificarAsignacionTicket(
+                                            ticket.getId(), 
+                                            ticket.getCreador().getIdUsuario(), 
+                                            tecnico.getIdUsuario()
+                                        );
+                                    }
+                                } catch (Exception ex) {
+                                    log.warn("Error notificando asignación automática: {}", ex.getMessage());
+                                }
+                                
+                                System.out.println("✅ [SLA Automation] Ticket " + ticket.getId() + " asignado automáticamente a técnico " + tecnico.getEmail());
+                            } else {
+                                System.out.println("⚠️ [SLA Automation] Usuario ID " + tecnicoId + " no es técnico activo");
+                            }
+                        },
+                        () -> {
+                            System.out.println("⚠️ [SLA Automation] Técnico ID " + tecnicoId + " no encontrado");
                         }
-                    } catch (Exception ex) {
-                        log.warn("Error notificando asignación automática: {}", ex.getMessage());
+                    );
+                } catch (NumberFormatException e) {
+                    System.out.println("❌ [SLA Automation] Error parseando ID de técnico: " + tecnicoIdStr);
+                }
+                return;
+            }
+            
+            if (a.startsWith("asignar_tecnico_por_minima_carga")) {
+                System.out.println("🔧 [SLA Automation] Buscando técnico con menor carga para ticket " + ticket.getId());
+                
+                // Verificar si hay técnicos disponibles
+                List<com.example.demo.usuario.model.Usuario> tecnicosActivos = usuarioRepository.findActiveTechnicians();
+                System.out.println("🔧 [SLA Automation] Técnicos activos encontrados: " + tecnicosActivos.size());
+                
+                if (tecnicosActivos.isEmpty()) {
+                    System.out.println("⚠️ [SLA Automation] No hay técnicos activos disponibles para asignar ticket " + ticket.getId());
+                    return;
+                }
+                
+                usuarioRepository.findTechnicianWithLeastActiveTickets().ifPresentOrElse(
+                    tecnico -> {
+                        System.out.println("✅ [SLA Automation] Técnico encontrado: " + tecnico.getEmail() + " (ID: " + tecnico.getIdUsuario() + ")");
+                        ticket.setTecnicoAsignado(tecnico);
+                        ticket.setEstado("ASIGNADO");
+                        ticketRepository.save(ticket);
+                        
+                        try {
+                            if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
+                                notificationRoleService.notificarAsignacionTicket(
+                                    ticket.getId(), 
+                                    ticket.getCreador().getIdUsuario(), 
+                                    tecnico.getIdUsuario()
+                                );
+                            }
+                        } catch (Exception ex) {
+                            log.warn("Error notificando asignación automática: {}", ex.getMessage());
+                        }
+                        
+                        System.out.println("✅ [SLA Automation] Ticket " + ticket.getId() + " asignado automáticamente a técnico " + tecnico.getEmail());
+                    },
+                    () -> {
+                        System.out.println("⚠️ [SLA Automation] No se pudo encontrar técnico con menor carga para ticket " + ticket.getId());
                     }
-                    
-                    log.info("Ticket {} asignado automáticamente a técnico {}", ticket.getId(), tecnico.getEmail());
-                });
+                );
                 return;
             }
             

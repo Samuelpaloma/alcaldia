@@ -29,7 +29,8 @@ public class SLAMonitoringService {
      */
     @Scheduled(fixedRate = 300000) // 5 minutos
     public void monitorearSLA() {
-        System.out.println("🔍 [SLA Monitoring] Iniciando monitoreo continuo de SLA...");
+        System.out.println("🔍 [SLA Monitoring] ===== INICIANDO MONITOREO CONTINUO DE SLA =====");
+        System.out.println("🔍 [SLA Monitoring] Timestamp: " + java.time.LocalDateTime.now());
         
         try {
             // Obtener todos los tickets activos
