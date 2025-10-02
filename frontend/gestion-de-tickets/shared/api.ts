@@ -1049,6 +1049,21 @@ class ApiClient {
     return this.request('/categorias/estadisticas');
   }
 
+  // Alias para compatibilidad con CategoriesManagement
+  async getCategoriaStats(): Promise<{
+    totalCategorias: number;
+    categoriasActivas: number;
+    categoriasInactivas: number;
+    categoriasConTickets?: number;
+  }> {
+    return this.request('/categorias/estadisticas');
+  }
+
+  // Alias para compatibilidad con CategoriesManagement
+  async deleteCategoria(id: number): Promise<ApiResponse> {
+    return this.eliminarCategoria(id);
+  }
+
   // ========== GESTIÓN DE EVIDENCIAS ==========
 
   async getEvidenciasPorTicket(ticketId: number): Promise<any[]> {
