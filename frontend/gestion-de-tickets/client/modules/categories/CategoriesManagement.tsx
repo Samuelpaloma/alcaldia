@@ -10,20 +10,19 @@ import { useToast } from '@/hooks/use-toast';
 import { useI18n } from '../../i18n';
 import './CategoriesManagement.css';
 import { api, CategoriaResponseDTO, PageResponse } from '../../../shared/api';
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  EyeOff,
-  Palette,
-  Hash,
+import { 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash2, 
+  Eye, 
+  EyeOff, 
+  Palette, 
+  Hash, 
   Tag,
   BarChart3,
   Filter,
-  MoreHorizontal,
-  Power
+  MoreHorizontal
 } from 'lucide-react';
 
 interface CategoriesManagementProps {
@@ -133,7 +132,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
         return;
       }
       
-      await api.crearCategoria(formData);
+      await api.createCategoria(formData);
       setShowCreateDialog(false);
       resetForm();
       loadCategories();
@@ -184,7 +183,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
         formData: formData
       });
       
-      await api.actualizarCategoria(editingCategory.id, formData);
+      await api.updateCategoria(editingCategory.id, formData);
       setEditingCategory(null);
       resetForm();
       loadCategories();
@@ -237,40 +236,6 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
       
       toast({
         title: "Error al desactivar",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleActivate = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres activar esta categoría?\n\nℹ️ NOTA: La categoría se activará y volverá a aparecer en las opciones de creación de tickets.')) return;
-
-    try {
-      console.log('✅ Activando categoría ID:', id);
-      await api.toggleEstadoCategoria(id);
-      loadCategories();
-      loadStats();
-      toast({
-        title: "Categoría activada",
-        description: "La categoría se activó correctamente y ya aparece en las opciones de creación de tickets",
-      });
-    } catch (error) {
-      console.error('❌ Error activando categoría:', error);
-      
-      // Determinar el tipo de error y mostrar mensaje apropiado
-      let errorMessage = "No se pudo activar la categoría";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('404')) {
-          errorMessage = "La categoría no existe.";
-        } else {
-          errorMessage = `Error: ${error.message}`;
-        }
-      }
-      
-      toast({
-        title: "Error al activar",
         description: errorMessage,
         variant: "destructive",
       });
@@ -560,27 +525,15 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    {category.activa ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(category.id)}
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        title="Desactivar categoría"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleActivate(category.id)}
-                        className="h-6 w-6 p-0 text-green-500 hover:text-green-700"
-                        title="Activar categoría"
-                      >
-                        <Power className="h-4 w-4" />
-                      </Button>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(category.id)}
+                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                      title="Desactivar categoría"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>

@@ -127,13 +127,13 @@ export default function ClientDashboard() {
     const diffInDays = Math.floor(diffInHours / 24);
 
     if (diffInHours < 1) {
-      return t("client.dashboard.a_few_minutes_ago");
+      return 'Hace unos minutos';
     } else if (diffInHours < 24) {
-      return t("client.dashboard.hours_ago", { hours: diffInHours });
+      return `Hace ${diffInHours} ${diffInHours === 1 ? 'hora' : 'horas'}`;
     } else if (diffInDays === 1) {
-      return t("client.dashboard.yesterday");
+      return 'Ayer';
     } else if (diffInDays < 7) {
-      return t("client.dashboard.days_ago", { days: diffInDays });
+      return `Hace ${diffInDays} días`;
     } else {
       return formatDate(dateString);
     }
@@ -156,7 +156,7 @@ export default function ClientDashboard() {
       if (isRecent) {
         // Actividad de creación de ticket
         activities.push({
-          title: `${t("client.dashboard.ticket_created")}: ${ticket.message?.substring(0, 30)}${ticket.message && ticket.message.length > 30 ? '...' : ''}`,
+          title: `Ticket creado: ${ticket.message?.substring(0, 30)}${ticket.message && ticket.message.length > 30 ? '...' : ''}`,
           time: formatTimeAgo(ticket.createdAt),
           color: '#3B82F6', // Azul
           ticketId: ticket.id
@@ -169,23 +169,23 @@ export default function ClientDashboard() {
 
           switch (ticket.status) {
             case 'ASIGNADO':
-              statusText = t("client.dashboard.ticket_assigned");
+              statusText = 'Ticket asignado';
               color = '#3B82F6'; // Azul
               break;
             case 'EN_PROGRESO':
-              statusText = t("client.dashboard.ticket_in_progress");
+              statusText = 'Ticket en progreso';
               color = '#F59E0B'; // Amarillo
               break;
             case 'ESCALADO':
-              statusText = t("client.dashboard.ticket_escalated");
+              statusText = 'Ticket escalado';
               color = '#EF4444'; // Rojo
               break;
             case 'RESUELTO':
-              statusText = t("client.dashboard.ticket_resolved");
+              statusText = 'Ticket resuelto';
               color = '#10B981'; // Verde
               break;
             case 'CERRADO':
-              statusText = t("client.dashboard.ticket_closed");
+              statusText = 'Ticket cerrado';
               color = '#6B7280'; // Gris
               break;
           }
@@ -203,7 +203,7 @@ export default function ClientDashboard() {
         // Actividad de asignación de técnico
         if (ticket.technician && ticket.technician !== 'Sin asignar') {
           activities.push({
-            title: `${t("client.dashboard.technician_assigned")}: ${ticket.technician}`,
+            title: `Técnico asignado: ${ticket.technician}`,
             time: formatTimeAgo(ticket.updatedAt || ticket.createdAt),
             color: '#8B5CF6', // Púrpura
             ticketId: ticket.id
@@ -242,15 +242,15 @@ export default function ClientDashboard() {
     <div className="section grid gap-6">
       {/* Header */}
       <div>
-        <h1 className="page-title">{t("client.dashboard.title")}</h1>
-        <p className="page-subtitle">{t("client.dashboard.subtitle")}</p>
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-subtitle">Resumen de tus tickets y actividad</p>
       </div>
 
       {/* Acciones rápidas */}
       <div className="flex justify-end">
         <Button onClick={() => navigate('/client/crear')} className="flex items-center gap-2">
           <TicketIcon className="w-4 h-4" />
-          {t("client.dashboard.new_ticket")}
+          Nuevo Ticket
         </Button>
       </div>
 
@@ -258,52 +258,52 @@ export default function ClientDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("client.dashboard.total_tickets")}</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
             <TicketIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.recentActivity} {t("client.dashboard.created_this_week")}
+              {stats.recentActivity} creados esta semana
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("client.dashboard.in_progress")}</CardTitle>
+            <CardTitle className="text-sm font-medium">En Progreso</CardTitle>
             <AlertCircle className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.inProgressTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.openTickets} {t("client.dashboard.pending")}
+              {stats.openTickets} pendientes
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("client.dashboard.resolved")}</CardTitle>
+            <CardTitle className="text-sm font-medium">Resueltos</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.resolvedTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.closedTickets} {t("client.dashboard.closed")}
+              {stats.closedTickets} cerrados
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t("client.dashboard.average_time")}</CardTitle>
+            <CardTitle className="text-sm font-medium">Tiempo Promedio</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.averageResolutionTime}</div>
             <p className="text-xs text-muted-foreground">
-              {t("client.dashboard.resolution_time")}
+              de resolución
             </p>
           </CardContent>
         </Card>
@@ -315,7 +315,7 @@ export default function ClientDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
-              {t("client.dashboard.recent_tickets")}
+              Tickets Recientes
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -323,13 +323,13 @@ export default function ClientDashboard() {
               {recentTickets.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
                   <TicketIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p>{t("client.dashboard.no_tickets")}</p>
+                  <p>No tienes tickets aún</p>
                   <Button 
                     onClick={() => navigate('/client/crear')} 
                     className="mt-2"
                     size="sm"
                   >
-                    {t("client.dashboard.create_first_ticket")}
+                    Crear tu primer ticket
                   </Button>
                 </div>
               ) : (
@@ -377,7 +377,7 @@ export default function ClientDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              {t("client.dashboard.recent_activity")}
+              Actividad Reciente
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -385,7 +385,7 @@ export default function ClientDashboard() {
               {generateRecentActivity().length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
                   <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p>{t("client.dashboard.no_recent_activity")}</p>
+                  <p>No hay actividad reciente</p>
                 </div>
               ) : (
                 generateRecentActivity().map((activity, index) => (

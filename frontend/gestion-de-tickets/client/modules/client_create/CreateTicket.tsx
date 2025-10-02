@@ -207,7 +207,7 @@ export default function CreateTicket() {
           setCurrentOptions(option.children);
           setChatHistory(prev => [...prev, {
             type: 'question',
-            content: `${t("client.create_ticket.chat.specific_query")} "${option.title}"?`,
+            content: `${t("client.chat.specific_query")} "${option.title}"?`,
             options: option.children
           }]);
         } else {
@@ -221,7 +221,7 @@ export default function CreateTicket() {
     setShowFreeText(true);
     setChatHistory(prev => [...prev, {
       type: 'freeText',
-      content: t("client.create_ticket.chat.not_found")
+      content: t("client.chat.not_found")
     }]);
   };
 
@@ -238,7 +238,7 @@ export default function CreateTicket() {
     // Prioridad 1: Si hay mensaje personalizado (texto libre), usarlo como descripción principal
     if (showFreeText && freeTextMessage) {
       const pathString = selectedPath.length > 0 
-        ? `${t("client.create_ticket.chat.selected_category")} ${selectedPath.map(p => p.title).join(' → ')}\n\n${t("client.create_ticket.chat.message")} ${freeTextMessage}`
+        ? `${t("client.chat.selected_category")} ${selectedPath.map(p => p.title).join(' → ')}\n\n${t("client.chat.message")} ${freeTextMessage}`
         : freeTextMessage;
       return pathString;
     }
@@ -246,7 +246,7 @@ export default function CreateTicket() {
     // Prioridad 2: Si hay mensaje directo en el campo, usarlo
     if (message && message.trim()) {
       const categoryPath = selectedPath.length > 0 
-        ? `${t("client.create_ticket.chat.selected_category")} ${selectedPath.map(p => p.title).join(' → ')}\n\n${t("client.create_ticket.chat.message")} ${message}`
+        ? `${t("client.chat.selected_category")} ${selectedPath.map(p => p.title).join(' → ')}\n\n${t("client.chat.message")} ${message}`
         : message;
       return categoryPath;
     }
@@ -259,7 +259,7 @@ export default function CreateTicket() {
       // Si tiene descripción específica, usarla; si no, usar el título
       const problemDescription = lastOption.description || lastOption.title;
       
-      return `${t("client.create_ticket.chat.selected_category")} ${categoryPath}\n\n${t("client.create_ticket.chat.problem_description")} ${problemDescription}`;
+      return `${t("client.chat.selected_category")} ${categoryPath}\n\n${t("client.chat.problem_description")} ${problemDescription}`;
     }
     
     return 'Consulta General';
@@ -343,7 +343,7 @@ export default function CreateTicket() {
         } catch (fileError) {
           console.error('❌ [DEBUG] Error procesando archivo:', fileError);
           toast({
-            title: t("client.create_ticket.error"),
+            title: t("client.error"),
             description: "Error al procesar el archivo adjunto",
             variant: "destructive",
           });
@@ -366,15 +366,15 @@ export default function CreateTicket() {
       resetChat();
       
       toast({
-        title: t("client.create_ticket.chat.success_title"),
-        description: t("client.create_ticket.chat.success_message") + " " + tkt.id,
+        title: t("client.chat.success_title"),
+        description: t("client.chat.success_message") + " " + tkt.id,
       });
       
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast({
-        title: t("client.create_ticket.error"),
-        description: error instanceof Error ? error.message : t("client.create_ticket.create_error"),
+        title: t("client.error"),
+        description: error instanceof Error ? error.message : t("client.create_error"),
         variant: "destructive",
       });
     } finally {
@@ -385,32 +385,32 @@ export default function CreateTicket() {
   return (
     <div className="section grid gap-4 p-4">
       <div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">{t("client.create_ticket.title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("client.create_ticket.fill_form")}</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">{t("client.create_ticket")}</h1>
+        <p className="text-muted-foreground text-sm">{t("client.fill_form")}</p>
       </div>
 
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-base text-card-foreground flex items-center gap-2">
             <Bot className="w-4 h-4" />
-            {t("client.create_ticket.chat.title")}
+            {t("client.chat.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form className="grid gap-3 md:grid-cols-2" onSubmit={submit}>
             <label className="grid gap-1">
-              <span className="label text-sm">{t("client.create_ticket.form.name")}</span>
+              <span className="label text-sm">{t("client.form.name")}</span>
               <Input 
                 value={name} 
                 disabled={true}
                 className="bg-muted"
-                placeholder={userLoading ? t("client.create_ticket.loading") : ""}
+                placeholder={userLoading ? t("client.loading") : ""}
               />
-              {userLoading && <span className="text-xs text-muted-foreground">{t("client.create_ticket.loading_user_info")}</span>}
+              {userLoading && <span className="text-xs text-muted-foreground">{t("client.loading_user_info")}</span>}
             </label>
             <label className="grid gap-1">
               <span className="label text-sm flex items-center gap-2">
-                {t("client.create_ticket.form.location")}
+                {t("client.form.location")}
                 <div className="group relative">
                   <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
@@ -423,19 +423,19 @@ export default function CreateTicket() {
                 value={location} 
                 disabled={true}
                 className="bg-muted"
-                placeholder={userLoading ? t("client.create_ticket.loading") : ""}
+                placeholder={userLoading ? t("client.loading") : ""}
               />
-              {userLoading && <span className="text-xs text-muted-foreground">{t("client.create_ticket.loading_user_info")}</span>}
+              {userLoading && <span className="text-xs text-muted-foreground">{t("client.loading_user_info")}</span>}
             </label>
             <div className="grid gap-1 md:col-span-2">
-              <span className="label text-sm">{t("client.create_ticket.form.describe_query")}</span>
+              <span className="label text-sm">{t("client.chat.describe_query")}</span>
               
               {/* Chat History */}
               <div className="border border-border rounded-lg p-4 bg-muted min-h-[200px] max-h-[400px] overflow-y-auto">
                 {chatHistory.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
-                    <p className="mb-4 text-foreground">{t("client.create_ticket.chat.welcome")}</p>
-                    <p className="text-sm text-muted-foreground">{t("client.create_ticket.chat.select_area")}</p>
+                    <p className="mb-4 text-foreground">{t("client.chat.welcome")}</p>
+                    <p className="text-sm text-muted-foreground">{t("client.chat.select_area")}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -487,8 +487,8 @@ export default function CreateTicket() {
                       onClick={handleNotFoundCase}
                       className="w-full text-left p-3 border-2 border-dashed border-muted-foreground rounded-lg hover:bg-muted text-muted-foreground"
                     >
-                      <div className="font-medium">{t("client.create_ticket.chat.not_found")}</div>
-                      <div className="text-sm mt-1">{t("client.create_ticket.chat.custom_message")}</div>
+                      <div className="font-medium">{t("client.chat.not_found")}</div>
+                      <div className="text-sm mt-1">{t("client.chat.custom_message")}</div>
                     </button>
                   </div>
                 )}
@@ -497,14 +497,14 @@ export default function CreateTicket() {
                 {showFreeText && (
                   <div className="mt-4 space-y-2">
                     <label className="block text-sm font-medium text-foreground">
-                      {t("client.create_ticket.chat.specific_query")}
+                      {t("client.chat.specific_query")}
                     </label>
                     <textarea
                       value={freeTextMessage}
                       onChange={(e) => setFreeTextMessage(e.target.value)}
                       className="w-full p-3 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-primary bg-background text-foreground"
                       rows={4}
-                      placeholder={t("client.create_ticket.chat.placeholder")}
+                      placeholder={t("client.chat.placeholder")}
                     />
                   </div>
                 )}
@@ -512,19 +512,19 @@ export default function CreateTicket() {
                 {/* Selected Path Summary */}
                 {(message || (showFreeText && freeTextMessage)) && (
                   <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <div className="font-medium text-green-600 mb-2">{t("client.create_ticket.chat.summary")}</div>
+                    <div className="font-medium text-green-600 mb-2">{t("client.chat.summary")}</div>
                     <div className="text-sm text-green-700">
                       {showFreeText && freeTextMessage ? (
                         <div>
                           {selectedPath.length > 0 && (
                             <div className="mb-2">
-                              <strong>{t("client.create_ticket.chat.category")}</strong> {selectedPath.map(p => p.title).join(' → ')}
+                              <strong>{t("client.chat.category")}</strong> {selectedPath.map(p => p.title).join(' → ')}
                             </div>
                           )}
-                          <div><strong>{t("client.create_ticket.chat.message")}</strong> {freeTextMessage}</div>
+                          <div><strong>{t("client.chat.message")}</strong> {freeTextMessage}</div>
                         </div>
                       ) : (
-                        <div><strong>{t("client.create_ticket.chat.selected_category")}</strong> {message}</div>
+                        <div><strong>{t("client.chat.selected_category")}</strong> {message}</div>
                       )}
                     </div>
                   </div>
@@ -538,22 +538,22 @@ export default function CreateTicket() {
                       onClick={resetChat}
                       className="text-sm text-primary hover:text-primary/80 underline"
                     >
-                      {t("client.create_ticket.chat.reset")}
+                      {t("client.chat.reset")}
                     </button>
                   </div>
                 )}
               </div>
             </div>
             <label className="grid gap-1">
-              <span className="label text-sm">{t("client.create_ticket.form.priority")}</span>
+              <span className="label text-sm">{t("client.form.priority")}</span>
               <select className="generic-select" value={priority} onChange={(e)=>setPriority(e.target.value as Priority)}>
-                <option value="high">{t("client.priority.high")}</option>
-                <option value="medium">{t("client.priority.medium")}</option>
-                <option value="low">{t("client.priority.low")}</option>
+                <option value="high">{t("tickets.priority.high")}</option>
+                <option value="medium">{t("tickets.priority.medium")}</option>
+                <option value="low">{t("tickets.priority.low")}</option>
               </select>
             </label>
             <label className="grid gap-1">
-              <span className="label text-sm">{t("client.create_ticket.form.attach")}</span>
+              <span className="label text-sm">{t("client.form.attach")}</span>
               <input 
                 type="file" 
                 onChange={(e) => {
@@ -594,10 +594,10 @@ export default function CreateTicket() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    {t("client.create_ticket.chat.sending")}
+                    {t("client.chat.sending")}
                   </>
                 ) : (
-                  t("client.create_ticket.submit_ticket")
+                  t("client.submit_ticket")
                 )}
               </Button>
             </div>
@@ -616,16 +616,16 @@ export default function CreateTicket() {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-card-foreground mb-2">
-                {t("client.create_ticket.chat.success_title")}
+                {t("client.chat.success_title")}
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {t("client.create_ticket.chat.success_message")} <strong className="text-green-600">{createdTicketId}</strong>
+                {t("client.chat.success_message")} <strong className="text-green-600">{createdTicketId}</strong>
               </p>
               <Button
                 onClick={() => setShowSuccessModal(false)}
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
-                {t("client.create_ticket.chat.accept")}
+                {t("client.chat.accept")}
               </Button>
             </div>
           </div>

@@ -13,7 +13,6 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "./navigationTypes"; // importa el tipo que definiste
-import { API_CONFIG } from '../config/api';
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -45,7 +44,7 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/forgot-password`, {
+      const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

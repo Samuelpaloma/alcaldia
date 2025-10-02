@@ -115,7 +115,7 @@ const App = () => (
             {/* Módulos especializados */}
             <Route path="/automation-rules" element={<AutomationRules />} />
             <Route path="/sla-configuration" element={<SLAConfiguration />} />
-            <Route path="/analytics" element={<Reports />} />
+            <Route path="/analytics" element={<UnifiedAnalytics />} />
           </Route>
         </Route>
 
