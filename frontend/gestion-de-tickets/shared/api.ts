@@ -365,6 +365,9 @@ export interface CategoriaRequestDTO {
   nombre: string;
   descripcion?: string;
   orden?: number;
+  colorHex?: string;
+  icono?: string;
+  activa?: boolean;
 }
 
 // ========== TIPOS PARA EVIDENCIAS ==========
@@ -1002,6 +1005,11 @@ class ApiClient {
     });
   }
 
+  // Alias para compatibilidad con el frontend
+  async createCategoria(data: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
+    return this.crearCategoria(data);
+  }
+
   async getCategoriaPorId(id: number): Promise<CategoriaResponseDTO> {
     return this.request(`/categorias/${id}`);
   }
@@ -1013,10 +1021,20 @@ class ApiClient {
     });
   }
 
+  // Alias para compatibilidad con el frontend
+  async updateCategoria(id: number, data: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
+    return this.actualizarCategoria(id, data);
+  }
+
   async eliminarCategoria(id: number): Promise<ApiResponse> {
     return this.request(`/categorias/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // Alias para compatibilidad con el frontend
+  async deleteCategoria(id: number): Promise<ApiResponse> {
+    return this.eliminarCategoria(id);
   }
 
   async toggleEstadoCategoria(id: number): Promise<CategoriaResponseDTO> {
@@ -1047,6 +1065,16 @@ class ApiClient {
     categoriasInactivas: number;
   }> {
     return this.request('/categorias/estadisticas');
+  }
+
+  // Alias para compatibilidad con el frontend
+  async getCategoriaStats(): Promise<{
+    totalCategorias: number;
+    categoriasActivas: number;
+    categoriasInactivas: number;
+    categoriasConTickets?: number;
+  }> {
+    return this.getEstadisticasCategorias();
   }
 
   // ========== GESTIÓN DE EVIDENCIAS ==========
