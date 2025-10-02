@@ -161,7 +161,7 @@ const UnifiedDashboard: React.FC = () => {
       const activeTechniciansData = technicians
         .map(tech => {
           console.log('🔧 [DEBUG] Técnico individual:', tech);
-          const ticketsActivos = tickets.filter(t => t.tecnicoAsignado === tech.nombreCompleto).length;
+          const ticketsActivos = tickets.filter(t => t.tecnicoNombre === tech.nombreCompleto).length;
           const techData = {
             id: tech.id, // Corregido: usar 'id' en lugar de 'idUsuario'
             nombre: tech.nombreCompleto,
