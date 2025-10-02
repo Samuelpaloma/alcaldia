@@ -80,7 +80,7 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
         if (!isSending) {
           console.log('🔄 Polling mensajes automático...');
           try {
-            await loadMessagesSmoothly();
+            await loadMessages(); // Usar loadMessages directo para que aparezca inmediatamente
           } catch (error) {
             console.error('🔄 Error en polling automático:', error);
           }
@@ -133,7 +133,9 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
             author: author,
             message: comentario.mensaje,
             timestamp: comentario.fechaCreacion,
-            type: 'text' as const
+            type: 'text' as const,
+            authorName: comentario.autor || 'Usuario', // NOMBRE REAL DEL AUTOR
+            authorEmail: comentario.autorEmail || '' // EMAIL DEL AUTOR
           };
         });
         chatMessages.push(...comentarios);

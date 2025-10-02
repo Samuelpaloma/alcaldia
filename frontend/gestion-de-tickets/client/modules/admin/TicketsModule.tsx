@@ -312,7 +312,7 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-muted-foreground font-medium">Técnico:</span>
                       <span className="text-foreground font-medium">
-                        {ticket.tecnicoEmail || 'Sin asignar'}
+                        {ticket.tecnicoNombre || ticket.tecnicoEmail || 'Sin asignar'}
                       </span>
                     </div>
                   </div>
