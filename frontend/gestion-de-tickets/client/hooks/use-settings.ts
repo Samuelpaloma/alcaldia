@@ -157,9 +157,15 @@ export const useSettings = () => {
         });
       }
       
+      // Cambiar idioma inmediatamente si es el campo language
+      if (key === 'language') {
+        console.log("Cambiando idioma inmediatamente a:", value);
+        setLocale(value);
+      }
+      
       return newSettings;
     });
-  }, [applyAppearanceSettings, syncProfileWithDatabase]);
+  }, [applyAppearanceSettings, syncProfileWithDatabase, setLocale]);
 
   // Actualizar múltiples configuraciones
   const updateSettings = useCallback((updates: Partial<UserSettings>) => {
@@ -195,17 +201,6 @@ export const useSettings = () => {
     applyAppearanceSettings(settings);
   }, [settings, applyAppearanceSettings]);
 
-  // Sincronizar idioma al cargar la página
-  useEffect(() => {
-    const storedLocale = localStorage.getItem('locale') as 'es' | 'en' | null;
-    if (storedLocale && storedLocale !== settings.language) {
-      console.log("Sincronizando idioma desde localStorage:", storedLocale);
-      setSettings(prev => ({
-        ...prev,
-        language: storedLocale
-      }));
-    }
-  }, []); // Solo al montar
 
   // Sincronizar datos del perfil cuando se carguen
   useEffect(() => {
@@ -220,24 +215,17 @@ export const useSettings = () => {
     }
   }, [profile]);
 
-  // Sincronizar idioma cuando cambie la configuración
+  // Sincronizar idioma al cargar la página (solo una vez)
   useEffect(() => {
-    if (settings.language && settings.language !== locale) {
-      console.log("Cambiando idioma de", locale, "a", settings.language);
-      setLocale(settings.language);
-    }
-  }, [settings.language, locale, setLocale]); // Incluir todas las dependencias
-
-  // Sincronizar idioma desde el contexto hacia settings
-  useEffect(() => {
-    if (locale && locale !== settings.language) {
-      console.log("Sincronizando idioma desde contexto:", locale);
+    const storedLocale = localStorage.getItem('locale') as 'es' | 'en' | null;
+    if (storedLocale && storedLocale !== settings.language) {
+      console.log("Sincronizando idioma desde localStorage al cargar:", storedLocale);
       setSettings(prev => ({
         ...prev,
-        language: locale
+        language: storedLocale
       }));
     }
-  }, [locale, settings.language]);
+  }, []); // Solo al montar, sin dependencias
 
   return {
     settings,

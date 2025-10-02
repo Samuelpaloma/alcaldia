@@ -8,7 +8,7 @@ GET http://localhost:8080/api/health
 ### 2. Obtener estadísticas iniciales de SLA
 GET http://localhost:8080/api/sla/estadisticas
 
-de
+
 
 ### 3. Crear configuración SLA para Hardware - Alta Prioridad
 POST http://localhost:8080/api/sla
