@@ -245,7 +245,12 @@ public class SLAAutomationService {
             String valor = extraerValorLiteral(condicion);
             String prioridad = ticket.getPrioridad();
             System.out.println("🔧 [SLA Automation] Comparando prioridad: '" + prioridad + "' == '" + valor + "'");
-            boolean resultado = prioridad != null && prioridad.equalsIgnoreCase(valor);
+            
+            // Mapear prioridades en español a inglés
+            String prioridadNormalizada = normalizarPrioridad(prioridad);
+            String valorNormalizado = normalizarPrioridad(valor);
+            
+            boolean resultado = prioridadNormalizada != null && prioridadNormalizada.equalsIgnoreCase(valorNormalizado);
             System.out.println("🔧 [SLA Automation] Resultado prioridad: " + resultado);
             return resultado;
         }
@@ -338,31 +343,34 @@ public class SLAAutomationService {
                     return;
                 }
                 
-                usuarioRepository.findTechnicianWithLeastActiveTickets().ifPresentOrElse(
-                    tecnico -> {
-                        System.out.println("✅ [SLA Automation] Técnico encontrado: " + tecnico.getEmail() + " (ID: " + tecnico.getIdUsuario() + ")");
-                        ticket.setTecnicoAsignado(tecnico);
-                        ticket.setEstado("ASIGNADO");
-                        ticketRepository.save(ticket);
-                        
-                        try {
-                            if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
-                                notificationRoleService.notificarAsignacionTicket(
-                                    ticket.getId(), 
-                                    ticket.getCreador().getIdUsuario(), 
-                                    tecnico.getIdUsuario()
-                                );
-                            }
-                        } catch (Exception ex) {
-                            log.warn("Error notificando asignación automática: {}", ex.getMessage());
+                // Obtener todos los técnicos y seleccionar uno aleatoriamente si tienen la misma carga
+                List<com.example.demo.usuario.model.Usuario> tecnicosConMenorCarga = usuarioRepository.findTechniciansWithLeastActiveTickets();
+                
+                if (!tecnicosConMenorCarga.isEmpty()) {
+                    // Si hay múltiples técnicos con la misma carga mínima, seleccionar el primero
+                    com.example.demo.usuario.model.Usuario tecnico = tecnicosConMenorCarga.get(0);
+                    System.out.println("✅ [SLA Automation] Técnico seleccionado: " + tecnico.getEmail() + " (ID: " + tecnico.getIdUsuario() + ")");
+                    
+                    ticket.setTecnicoAsignado(tecnico);
+                    ticket.setEstado("ASIGNADO");
+                    ticketRepository.save(ticket);
+                    
+                    try {
+                        if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
+                            notificationRoleService.notificarAsignacionTicket(
+                                ticket.getId(), 
+                                ticket.getCreador().getIdUsuario(), 
+                                tecnico.getIdUsuario()
+                            );
                         }
-                        
-                        System.out.println("✅ [SLA Automation] Ticket " + ticket.getId() + " asignado automáticamente a técnico " + tecnico.getEmail());
-                    },
-                    () -> {
-                        System.out.println("⚠️ [SLA Automation] No se pudo encontrar técnico con menor carga para ticket " + ticket.getId());
+                    } catch (Exception ex) {
+                        log.warn("Error notificando asignación automática: {}", ex.getMessage());
                     }
-                );
+                    
+                    System.out.println("✅ [SLA Automation] Ticket " + ticket.getId() + " asignado automáticamente a técnico " + tecnico.getEmail());
+                } else {
+                    System.out.println("⚠️ [SLA Automation] No se pudo encontrar técnico con menor carga para ticket " + ticket.getId());
+                }
                 return;
             }
             
@@ -433,12 +441,46 @@ public class SLAAutomationService {
      * Extrae valor literal de una expresión
      */
     private String extraerValorLiteral(String expr) {
+        // Buscar texto entre comillas dobles (e.g., "Hardware")
         int i = expr.indexOf('"');
         int j = expr.lastIndexOf('"');
         if (i >= 0 && j > i) {
             return expr.substring(i + 1, j);
         }
+        
+        // Buscar número entre paréntesis (e.g., (1))
+        int parenStart = expr.indexOf('(');
+        int parenEnd = expr.indexOf(')');
+        if (parenStart >= 0 && parenEnd > parenStart) {
+            return expr.substring(parenStart + 1, parenEnd);
+        }
+        
+        // Fallback: buscar después del último espacio
         String[] parts = expr.split("\\s+", 3);
         return parts.length >= 3 ? parts[2].replace("'", "").replace("\"", "") : "";
+    }
+    
+    /**
+     * Normaliza las prioridades para comparación (español -> inglés)
+     */
+    private String normalizarPrioridad(String prioridad) {
+        if (prioridad == null) return null;
+        
+        String prioridadLower = prioridad.toLowerCase().trim();
+        
+        // Mapear español a inglés
+        switch (prioridadLower) {
+            case "alta":
+            case "high":
+                return "high";
+            case "media":
+            case "medium":
+                return "medium";
+            case "baja":
+            case "low":
+                return "low";
+            default:
+                return prioridadLower; // Retornar tal como está si no se reconoce
+        }
     }
 }

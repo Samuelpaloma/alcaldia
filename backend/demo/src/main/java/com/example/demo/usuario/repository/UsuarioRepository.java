@@ -48,6 +48,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
            "AND t.estado NOT IN ('RESUELTO', 'CERRADO')) ASC")
     Optional<Usuario> findTechnicianWithLeastActiveTickets();
     
+    @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = 'TECNICO' AND u.activo = true " +
+           "AND (SELECT COUNT(t) FROM Ticket t WHERE t.tecnicoAsignado = u " +
+           "AND t.estado NOT IN ('RESUELTO', 'CERRADO')) = " +
+           "(SELECT MIN((SELECT COUNT(t2) FROM Ticket t2 WHERE t2.tecnicoAsignado = u2 " +
+           "AND t2.estado NOT IN ('RESUELTO', 'CERRADO'))) FROM Usuario u2 WHERE u2.tipoUsuario = 'TECNICO' AND u2.activo = true)")
+    List<Usuario> findTechniciansWithLeastActiveTickets();
+    
     @Query("SELECT u FROM Usuario u WHERE u.tipoUsuario = 'TECNICO' AND u.activo = true")
     List<Usuario> findActiveTechnicians();
     
