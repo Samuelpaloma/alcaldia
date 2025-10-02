@@ -365,6 +365,9 @@ export interface CategoriaRequestDTO {
   nombre: string;
   descripcion?: string;
   orden?: number;
+  colorHex?: string;
+  icono?: string;
+  activa?: boolean;
 }
 
 // ========== TIPOS PARA EVIDENCIAS ==========
@@ -2318,6 +2321,32 @@ class ApiClient {
     return this.request('/sla/monitoring/expiring');
   }
 
+  // ========== ALIASES PARA COMPATIBILIDAD ==========
+  
+  async getCategoriaStats(): Promise<{
+    totalCategorias: number;
+    categoriasActivas: number;
+    categoriasInactivas: number;
+    categoriasConTickets?: number;
+  }> {
+    return this.getEstadisticasCategorias();
+  }
+
+  async deleteCategoria(id: number): Promise<ApiResponse> {
+    return this.eliminarCategoria(id);
+  }
+
+  async createCategoria(data: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
+    return this.crearCategoria(data);
+  }
+
+  async updateCategoria(id: number, data: CategoriaRequestDTO): Promise<CategoriaResponseDTO> {
+    return this.actualizarCategoria(id, data);
+  }
+
+  async toggleCategoryStatus(id: number): Promise<CategoriaResponseDTO> {
+    return this.toggleEstadoCategoria(id);
+  }
 }
 
 // Exportar instancia única del cliente API
