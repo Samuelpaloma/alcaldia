@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function ClientHistory(){
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { tickets, isLoading, error } = useTickets();
@@ -110,11 +110,24 @@ export default function ClientHistory(){
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    const localeCode = locale === 'en' ? 'en-US' : 'es-ES';
+    return new Date(dateString).toLocaleDateString(localeCode, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
     });
+  };
+
+  const translateStatus = (status: string) => {
+    const statusKey = status.toLowerCase().replace(' ', '_');
+    const translationKey = `client.status.${statusKey}`;
+    const translation = t(translationKey);
+    
+    // Si la traducción es la misma que la clave, significa que no existe, usar el estado original
+    if (translation === translationKey) {
+      return status.toUpperCase();
+    }
+    return translation;
   };
 
   const scrollToTracking = (ticketId: string) => {
@@ -155,10 +168,10 @@ export default function ClientHistory(){
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
-                  <TableHead className="w-[200px]">Asunto</TableHead>
+                  <TableHead className="w-[200px]">{t("client.table.subject")}</TableHead>
                   <TableHead className="w-[120px]">{t("tickets.priority")}</TableHead>
                   <TableHead className="w-[140px]">{t("tickets.status")}</TableHead>
-                  <TableHead className="w-[120px]">Técnico</TableHead>
+                  <TableHead className="w-[120px]">{t("client.table.technician")}</TableHead>
                   <TableHead className="w-[100px]">{t("client.table.created")}</TableHead>
                   <TableHead className="w-[100px]">{t("tickets.status.closed")}</TableHead>
                   <TableHead className="w-[120px] text-right">{t("tickets.actions")}</TableHead>
@@ -173,17 +186,17 @@ export default function ClientHistory(){
                     </TableCell>
                     <TableCell>
                       <Badge className={getPriorityColor(ticket.priority)}>
-                        {ticket.priority === 'medium' ? 'MEDIA' : ticket.priority.toUpperCase()}
+                        {ticket.priority === 'medium' ? t("client.priority.medium") : ticket.priority.toUpperCase()}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge className={`${getStatusColor(ticket.status)} flex items-center gap-1 w-fit`}>
                         {getStatusIcon(ticket.status)}
-                        {ticket.status.toUpperCase()}
+                        {translateStatus(ticket.status)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {ticket.technician || 'Sin asignar'}
+                      {ticket.technician || t("client.table.unassigned")}
                     </TableCell>
                     <TableCell className="text-sm">
                       {formatDate(ticket.createdAt)}
@@ -210,7 +223,7 @@ export default function ClientHistory(){
                             className="text-xs"
                             title="Reabrir ticket"
                           >
-                            Reabrir
+                            {t("client.reopen")}
                           </Button>
                         )}
                       </div>
@@ -225,7 +238,7 @@ export default function ClientHistory(){
           {!isLoading && !error && tickets.length > ticketsPerPage && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
               <div className="text-sm text-muted-foreground">
-                Mostrando {startIndex + 1}-{Math.min(endIndex, tickets.length)} de {tickets.length} tickets
+                {t("client.pagination.showing")} {startIndex + 1}-{Math.min(endIndex, tickets.length)} {t("client.pagination.of")} {tickets.length} {t("client.pagination.tickets")}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -234,10 +247,10 @@ export default function ClientHistory(){
                   onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+                  {t("client.pagination.previous")}
                 </Button>
                 <span className="text-sm font-medium px-3">
-                  Página {currentPage} de {totalPages}
+                  {t("client.pagination.page")} {currentPage} {t("client.pagination.of")} {totalPages}
                 </span>
                 <Button
                   variant="outline"
@@ -245,7 +258,7 @@ export default function ClientHistory(){
                   onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Siguiente
+                  {t("client.pagination.next")}
                 </Button>
               </div>
             </div>

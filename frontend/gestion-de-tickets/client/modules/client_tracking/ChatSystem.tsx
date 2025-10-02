@@ -315,7 +315,7 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
     <Card className="h-[600px] flex flex-col">
       <CardHeader className="pb-3 flex-shrink-0">
             <CardTitle className="text-base">
-              Chat del Ticket #{ticketId}
+              {t("client.ticket_chat")} #{ticketId}
             </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-0 min-h-0">

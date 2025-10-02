@@ -290,7 +290,8 @@ export default function Register() {
       
       console.log('🔐 Verificando código...', verifyData);
       
-      const response: LoginResponse = await api.verifyEmail(verifyData);
+      // Usar verificación de registro (convierte PendingUser -> Usuario)
+      const response: LoginResponse = await api.verifyRegistration(verifyData);
       console.log('✅ Resultado de verificación:', response);
       
       // Configurar autenticación con solo token JWT (datos sensibles no se almacenan)

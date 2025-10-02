@@ -724,6 +724,14 @@ class ApiClient {
     });
   }
 
+  // Verificación de registro (PendingUser -> Usuario)
+  async verifyRegistration(data: VerifyEmailRequest): Promise<LoginResponse> {
+    return this.request('/auth/verify-registration', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async resendVerification(data: { email: string }): Promise<{ success: boolean; message: string }> {
     return this.request('/auth/resend-verification', {
       method: 'POST',

@@ -18,7 +18,7 @@ interface SettingsModalProps {
 }
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const { t } = useI18n();
+  const { t, setLocale, locale } = useI18n();
   const { settings, updateSetting } = useSettings();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
@@ -330,7 +330,13 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <CardContent className="space-y-3">
                     <div>
                       <Label className="text-muted-foreground text-xs">{t("settings.language")}</Label>
-                      <Select value={settings.language} onValueChange={(value) => updateSetting("language", value)}>
+                      <Select
+                        value={settings.language || locale}
+                        onValueChange={(value) => {
+                          updateSetting("language", value);
+                          setLocale((value as "es" | "en"));
+                        }}
+                      >
                         <SelectTrigger className="bg-background border-input text-foreground text-xs h-8">
                           <SelectValue />
                         </SelectTrigger>
