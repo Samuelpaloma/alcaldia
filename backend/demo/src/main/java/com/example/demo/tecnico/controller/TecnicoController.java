@@ -5,7 +5,6 @@ import com.example.demo.tecnico.dto.request.SubirEvidenciaRequestDTO;
 import com.example.demo.tecnico.dto.response.TicketTecnicoResponseDTO;
 import com.example.demo.tecnico.dto.response.EstadisticasTecnicoResponseDTO;
 import com.example.demo.ticket.dto.response.EvidenciaResponseDTO;
-import com.example.demo.ticket.dto.response.HistorialEstadoResponseDTO;
 import com.example.demo.tecnico.service.TecnicoService;
 import com.example.demo.evidencia.service.EvidenciaService;
 import com.example.demo.evidencia.dto.EvidenciaMovilDTO;
@@ -354,32 +353,6 @@ public class TecnicoController {
             log.error("Error obteniendo evidencias del ticket", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener evidencias: " + e.getMessage())
-            );
-        }
-    }
-    
-    /**
-     * Obtener historial de un ticket
-     * GET /api/tecnico/tickets/{ticketId}/historial
-     */
-    @GetMapping("/tickets/{ticketId}/historial")
-    // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
-    public ResponseEntity<?> obtenerHistorialTicket(
-            @PathVariable Long ticketId,
-            Authentication authentication) {
-        try {
-            log.info("Obteniendo historial del ticket {} para técnico", ticketId);
-            
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            String emailTecnico = userDetails.getEmail();
-            
-            List<HistorialEstadoResponseDTO> historial = tecnicoService.obtenerHistorialTicket(ticketId, emailTecnico);
-            
-            return ResponseEntity.ok(historial);
-        } catch (Exception e) {
-            log.error("Error obteniendo historial del ticket {}", ticketId, e);
-            return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error al obtener historial: " + e.getMessage())
             );
         }
     }
