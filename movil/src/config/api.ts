@@ -1,6 +1,6 @@
 // Configuración de la API
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8080',
+  BASE_URL: 'http://192.168.1.87:8080',
   ENDPOINTS: {
     AUTH: {
       VALIDATE_CREDENTIALS: '/api/auth/validate-credentials',
