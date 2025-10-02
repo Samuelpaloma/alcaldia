@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, X, User, Bell, Shield, Globe, Mail, MapPin, Building, Calendar, Save, Edit3 } from "lucide-react";
+import { Settings, X, User, Globe, Mail, MapPin, Building, Calendar, Save, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,26 +29,11 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [saving, setSaving] = useState(false);
   const [editData, setEditData] = useState<Partial<UsuarioDTO>>({});
   
-  // Estados para cambio de contraseña
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  // Estados para preferencias de notificaciones
-  const [notificationPrefs, setNotificationPrefs] = useState<PreferenciasNotificacionDTO>({
-    pushActivo: true,
-    emailActivo: false
-  });
 
   // Cargar perfil cuando se abre el modal
   useEffect(() => {
     if (isOpen && activeTab === "profile") {
       loadProfile();
-    }
-    if (isOpen && activeTab === "notifications") {
-      loadNotificationPreferences();
     }
   }, [isOpen, activeTab]);
 
@@ -227,22 +212,14 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 m-3 mb-0 bg-muted border border-border">
+            <TabsList className="grid w-full grid-cols-2 m-3 mb-0 bg-muted border border-border">
               <TabsTrigger value="profile" className="flex items-center gap-1 text-xs py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground hover:text-foreground hover:bg-muted">
                 <User className="w-3 h-3" />
                 {t("settings.profile")}
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-1 text-xs py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground hover:text-foreground hover:bg-muted">
-                <Bell className="w-3 h-3" />
-                {t("settings.notifications")}
-              </TabsTrigger>
               <TabsTrigger value="appearance" className="flex items-center gap-1 text-xs py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground hover:text-foreground hover:bg-muted">
                 <Globe className="w-3 h-3" />
                 {t("settings.language")}
-              </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-1 text-xs py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-muted-foreground hover:text-foreground hover:bg-muted">
-                <Shield className="w-3 h-3" />
-                {t("settings.security")}
               </TabsTrigger>
             </TabsList>
 
@@ -256,7 +233,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       {!editing && (
                         <Button onClick={handleEdit} size="sm" variant="outline" className="h-7">
                           <Edit3 className="h-3 w-3 mr-1" />
-                          Editar
+{t("settings.edit")}
                         </Button>
                       )}
                     </div>
@@ -265,31 +242,31 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     {profile ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <Label htmlFor="nombre" className="text-muted-foreground text-xs">Nombre</Label>
+                          <Label htmlFor="nombre" className="text-muted-foreground text-xs">{t("settings.full_name")}</Label>
                           <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
                             <User className="h-3 w-3 text-muted-foreground" />
                             <span>{profile.nombre}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">No se puede cambiar</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("settings.cannot_change")}</p>
                         </div>
                         <div>
-                          <Label htmlFor="apellido" className="text-muted-foreground text-xs">Apellido</Label>
+                          <Label htmlFor="apellido" className="text-muted-foreground text-xs">{t("settings.last_name")}</Label>
                           <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
                             <User className="h-3 w-3 text-muted-foreground" />
                             <span>{profile.apellido}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">No se puede cambiar</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("settings.cannot_change")}</p>
                         </div>
                         <div>
-                          <Label htmlFor="email" className="text-muted-foreground text-xs">Email</Label>
+                          <Label htmlFor="email" className="text-muted-foreground text-xs">{t("settings.email")}</Label>
                           <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
                             <Mail className="h-3 w-3 text-muted-foreground" />
                             <span>{profile.email}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">No se puede cambiar</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t("settings.cannot_change")}</p>
                         </div>
                         <div>
-                          <Label htmlFor="ubicacion" className="text-muted-foreground text-xs">Ubicación</Label>
+                          <Label htmlFor="ubicacion" className="text-muted-foreground text-xs">{t("settings.location")}</Label>
                           {editing ? (
                             <Input
                               id="ubicacion"
@@ -300,12 +277,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           ) : (
                             <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
                               <MapPin className="h-3 w-3 text-muted-foreground" />
-                              <span>{profile.ubicacion || 'No especificada'}</span>
+                              <span>{profile.ubicacion || t("settings.not_specified")}</span>
                             </div>
                           )}
                         </div>
                         <div>
-                          <Label htmlFor="departamento" className="text-muted-foreground text-xs">Departamento</Label>
+                          <Label htmlFor="departamento" className="text-muted-foreground text-xs">{t("settings.department")}</Label>
                           {editing ? (
                             <Input
                               id="departamento"
@@ -316,7 +293,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           ) : (
                             <div className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
                               <Building className="h-3 w-3 text-muted-foreground" />
-                              <span>{profile.departamento || 'No especificado'}</span>
+                              <span>{profile.departamento || t("settings.not_specified")}</span>
                             </div>
                           )}
                         </div>
@@ -343,53 +320,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </Card>
               </TabsContent>
 
-              {/* Notificaciones */}
-              <TabsContent value="notifications" className="space-y-3">
-                <Card className="bg-card border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-foreground text-sm">{t("settings.notification_preferences")}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between py-2">
-                      <div>
-                        <Label className="text-foreground text-sm font-medium">{t("settings.email_notifications")}</Label>
-                        <p className="text-xs text-muted-foreground mt-1">{t("settings.email_notifications_desc")}</p>
-                      </div>
-                      <Switch
-                        checked={notificationPrefs.emailActivo}
-                        onCheckedChange={(checked) => setNotificationPrefs({...notificationPrefs, emailActivo: checked})}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between py-2">
-                      <div>
-                        <Label className="text-foreground text-sm font-medium">{t("settings.push_notifications")}</Label>
-                        <p className="text-xs text-muted-foreground mt-1">{t("settings.push_notifications_desc")}</p>
-                      </div>
-                      <Switch
-                        checked={notificationPrefs.pushActivo}
-                        onCheckedChange={(checked) => setNotificationPrefs({...notificationPrefs, pushActivo: checked})}
-                      />
-                    </div>
-                    <div className="pt-2 border-t border-border">
-                      <Button 
-                        onClick={saveNotificationPreferences} 
-                        disabled={saving}
-                        size="sm" 
-                        className="h-7"
-                      >
-                        <Save className="h-3 w-3 mr-1" />
-                        {saving ? t("settings.saving") : t("settings.save_preferences")}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
               {/* Idioma */}
               <TabsContent value="appearance" className="space-y-3">
                 <Card className="bg-card border-border">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-foreground text-sm">{t("settings.personalization")}</CardTitle>
+                    <CardTitle className="text-foreground text-sm">{t("settings.language")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
@@ -399,8 +335,8 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border-border">
-                          <SelectItem value="es" className="text-foreground hover:bg-muted">{t("settings.language.spanish")}</SelectItem>
-                          <SelectItem value="en" className="text-foreground hover:bg-muted">{t("settings.language.english")}</SelectItem>
+                          <SelectItem value="es" className="text-foreground hover:bg-muted">Español</SelectItem>
+                          <SelectItem value="en" className="text-foreground hover:bg-muted">English</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -408,62 +344,6 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </Card>
               </TabsContent>
 
-              {/* Seguridad */}
-              <TabsContent value="security" className="space-y-3">
-                {/* Cambio de Contraseña */}
-                <Card className="bg-card border-border">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-foreground text-sm">{t("settings.password_change")}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <Label htmlFor="currentPassword" className="text-muted-foreground text-xs">{t("settings.current_password")} *</Label>
-                      <Input
-                        id="currentPassword"
-                        type="password"
-                        value={passwordData.currentPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                        className="bg-background border-input text-foreground text-xs h-8"
-                        placeholder={t("settings.current_password_placeholder")}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="newPassword" className="text-muted-foreground text-xs">{t("settings.new_password")} *</Label>
-                      <Input
-                        id="newPassword"
-                        type="password"
-                        value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                        className="bg-background border-input text-foreground text-xs h-8"
-                        placeholder={t("settings.new_password_placeholder")}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t("settings.password_requirements")}
-                      </p>
-                    </div>
-                    <div>
-                      <Label htmlFor="confirmPassword" className="text-muted-foreground text-xs">{t("settings.confirm_password")} *</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                        className="bg-background border-input text-foreground text-xs h-8"
-                        placeholder={t("settings.confirm_password_placeholder")}
-                      />
-                    </div>
-                    <Button 
-                      onClick={handleChangePassword} 
-                      disabled={saving || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
-                      size="sm" 
-                      className="h-7"
-                    >
-                      <Shield className="h-3 w-3 mr-1" />
-                      {saving ? t("settings.changing_password") : t("settings.change_password")}
-                    </Button>
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </div>
           </Tabs>
         </div>
@@ -471,7 +351,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         {/* Footer simplificado */}
         <div className="p-3 border-t border-border bg-card flex justify-end">
           <Button variant="outline" onClick={onClose} className="text-xs h-8 bg-background border-input text-foreground hover:bg-muted">
-            {t("settings.close")}
+            {t("common.close")}
           </Button>
         </div>
       </div>

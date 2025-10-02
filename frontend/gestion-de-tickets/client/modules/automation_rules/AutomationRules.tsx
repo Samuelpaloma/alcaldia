@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
+import { useI18n } from '../../i18n';
 import { api, ReglaAutomatizacionRequestDTO, ReglaAutomatizacionResponseDTO } from '../../../shared/api';
 import { 
   Settings, 
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 
 const AutomationRules: React.FC = () => {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [reglas, setReglas] = useState<ReglaAutomatizacionResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -296,7 +298,7 @@ const AutomationRules: React.FC = () => {
       <div className="automation-rules">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Cargando reglas de automatización...</p>
+          <p>{t("automation_rules.loading")}</p>
         </div>
       </div>
     );
@@ -306,18 +308,8 @@ const AutomationRules: React.FC = () => {
     <div className="automation-rules">
       <div className="rules-header">
         <div className="header-content">
-          <h1 className="rules-title">Reglas de Automatización</h1>
-          <p className="rules-subtitle">Configura reglas automáticas para optimizar el flujo de tickets</p>
-          {/* Debug temporal */}
-          <div style={{marginTop: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '5px'}}>
-            <p><strong>Debug Info:</strong></p>
-            <p>Loading: {loading ? 'true' : 'false'}</p>
-            <p>Reglas: {reglas.length}</p>
-            <p>Reglas Filtradas: {reglasFiltradas.length}</p>
-            <button onClick={() => loadReglas()} style={{marginTop: '5px', padding: '5px 10px'}}>
-              Recargar Reglas
-            </button>
-          </div>
+          <h1 className="rules-title">{t("automation_rules.title")}</h1>
+          <p className="rules-subtitle">{t("automation_rules.subtitle")}</p>
         </div>
         <div className="flex space-x-2">
           <Button 
@@ -326,11 +318,11 @@ const AutomationRules: React.FC = () => {
             className="btn-create"
           >
             <Zap className="w-4 h-4 mr-2" />
-            Ejecutar Todas
+            {t("automation_rules.execute_all")}
           </Button>
           <Button onClick={abrirModalCrear} className="btn-create">
             <Plus className="w-4 h-4 mr-2" />
-            Nueva Regla
+            {t("automation_rules.new_rule")}
           </Button>
         </div>
       </div>
@@ -352,7 +344,7 @@ const AutomationRules: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="busqueda"
-                  placeholder="Buscar por nombre..."
+                  placeholder={t("automation_rules.search_placeholder")}
                   value={filtros.busqueda}
                   onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
                   className="pl-10"
@@ -367,10 +359,10 @@ const AutomationRules: React.FC = () => {
                 onValueChange={(value) => setFiltros({ ...filtros, estado: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Todos los estados" />
+                  <SelectValue placeholder={t("automation_rules.all_statuses")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="all">{t("automation_rules.all_statuses")}</SelectItem>
                   <SelectItem value="activa">Activa</SelectItem>
                   <SelectItem value="inactiva">Inactiva</SelectItem>
                 </SelectContent>
@@ -384,10 +376,10 @@ const AutomationRules: React.FC = () => {
                 onValueChange={(value) => setFiltros({ ...filtros, prioridad: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Todas las prioridades" />
+                  <SelectValue placeholder={t("automation_rules.all_priorities")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas las prioridades</SelectItem>
+                  <SelectItem value="all">{t("automation_rules.all_priorities")}</SelectItem>
                   <SelectItem value="4">Crítica</SelectItem>
                   <SelectItem value="3">Alta</SelectItem>
                   <SelectItem value="2">Media</SelectItem>
@@ -407,7 +399,7 @@ const AutomationRules: React.FC = () => {
                 <Settings className="w-6 h-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total de Reglas</p>
+                <p className="text-sm font-medium text-gray-600">{t("automation_rules.total_rules")}</p>
                 <p className="text-2xl font-bold text-gray-900">{reglas.length}</p>
               </div>
             </div>
@@ -421,7 +413,7 @@ const AutomationRules: React.FC = () => {
                 <CheckCircle className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Reglas Activas</p>
+                <p className="text-sm font-medium text-gray-600">{t("automation_rules.active_rules")}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {reglas.filter(r => r.activa).length}
                 </p>
@@ -437,7 +429,7 @@ const AutomationRules: React.FC = () => {
                 <Zap className="w-6 h-6 text-yellow-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Ejecuciones</p>
+                <p className="text-sm font-medium text-gray-600">{t("automation_rules.total_executions")}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {reglas.reduce((sum, r) => sum + r.ejecuciones, 0)}
                 </p>

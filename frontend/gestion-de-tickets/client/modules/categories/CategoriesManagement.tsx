@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useI18n } from '../../i18n';
 import './CategoriesManagement.css';
 import { api, CategoriaResponseDTO, PageResponse } from '../../../shared/api';
 import {
@@ -39,6 +40,7 @@ interface CategoriaFormData {
 }
 
 export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ userRole }) => {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [categories, setCategories] = useState<CategoriaResponseDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -378,20 +380,20 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
     <div className="categories-module">
       <div className="module-header" style={{ marginTop: '-1rem' }}>
         <div className="header-content">
-          <h1 className="page-title">Gestión de Categorías</h1>
-          <p className="page-subtitle">Administra las categorías de tickets del sistema</p>
+          <h1 className="page-title">{t("categories.title")}</h1>
+          <p className="page-subtitle">{t("categories.subtitle")}</p>
         </div>
         <div className="header-actions" style={{ marginTop: '0.5rem' }}>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Nueva Categoría
+{t("categories.new_category")}
               </Button>
             </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Crear Nueva Categoría</DialogTitle>
+              <DialogTitle>{t("categories.create_new_category")}</DialogTitle>
             </DialogHeader>
             <CategoryForm 
               formData={formData}
@@ -426,7 +428,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
               <div className="flex items-center gap-2">
                 <Eye className="h-4 w-4 text-green-500" />
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Activas</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("categories.active_count")}</p>
                   <p className="text-lg font-bold">{stats.categoriasActivas || 0}</p>
                 </div>
               </div>
@@ -437,7 +439,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
               <div className="flex items-center gap-2">
                 <EyeOff className="h-4 w-4 text-red-500" />
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground">Inactivas</p>
+                  <p className="text-xs font-medium text-muted-foreground">{t("categories.inactive_count")}</p>
                   <p className="text-lg font-bold">{stats.categoriasInactivas || 0}</p>
                 </div>
               </div>
@@ -465,7 +467,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar categorías..."
+                  placeholder={t("categories.search_placeholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-9"
@@ -479,7 +481,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
                 size="sm"
                 className="h-9 px-3 text-xs"
               >
-                Todas
+{t("categories.all")}
               </Button>
               <Button
                 variant={filterActive === 'active' ? 'default' : 'outline'}
@@ -487,7 +489,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
                 size="sm"
                 className="h-9 px-3 text-xs"
               >
-                Activas
+{t("categories.active")}
               </Button>
               <Button
                 variant={filterActive === 'inactive' ? 'default' : 'outline'}
@@ -495,7 +497,7 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
                 size="sm"
                 className="h-9 px-3 text-xs"
               >
-                Inactivas
+{t("categories.inactive")}
               </Button>
             </div>
           </div>
@@ -539,13 +541,13 @@ export const CategoriesManagement: React.FC<CategoriesManagementProps> = ({ user
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-foreground text-sm truncate">{category.nombre}</h3>
                         <Badge variant={category.activa ? "default" : "secondary"} className="text-xs px-2 py-0.5 h-5">
-                          {category.activa ? 'Activa' : 'Inactiva'}
+                          {category.activa ? t("categories.active") : t("categories.inactive")}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>#{category.id}</span>
                         <span>•</span>
-                        <span>Orden: {category.orden}</span>
+                        <span>{t("categories.order")}: {category.orden}</span>
                       </div>
                     </div>
                   </div>

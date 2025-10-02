@@ -1,7 +1,7 @@
 /* Automation Rules Styles */
 .automation-rules {
-  padding: 32px;
-  max-width: 1400px;
+  padding: 24px;
+  max-width: 1200px;
   margin: 0 auto;
   min-height: calc(100vh - 80px);
 }
@@ -10,8 +10,8 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 40px;
-  padding-bottom: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -98,7 +98,18 @@
 }
 
 .filters-card {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+}
+
+/* Asegurar que los botones no se oculten */
+.rules-header .flex {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-create {
+  white-space: nowrap;
+  min-width: fit-content;
 }
 
 .filters-grid {

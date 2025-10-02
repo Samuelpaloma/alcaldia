@@ -13,6 +13,7 @@ import {
   Zap
 } from 'lucide-react';
 import { api } from '@shared/api';
+import { useI18n } from '../../i18n';
 
 interface SLAStats {
   totalTicketsActivos: number;
@@ -29,6 +30,7 @@ interface SLAMonitoringWidgetProps {
 }
 
 const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '' }) => {
+  const { t } = useI18n();
   const [stats, setStats] = useState<SLAStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +110,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-500" />
-            Monitoreo SLA
+            {t('dashboard.sla.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -127,7 +129,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-500" />
-            Monitoreo SLA
+            {t('dashboard.sla.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -157,7 +159,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-500" />
-            Monitoreo SLA
+            {t('dashboard.sla.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -173,7 +175,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-blue-500" />
-            Monitoreo SLA
+            {t('dashboard.sla.title')}
           </CardTitle>
           <Button 
             onClick={executeManualCheck} 
@@ -186,7 +188,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
             ) : (
               <Zap className="w-4 h-4" />
             )}
-            <span className="ml-2">Verificar</span>
+            <span className="ml-2">{t('dashboard.sla.verify')}</span>
           </Button>
         </div>
       </CardHeader>
@@ -198,7 +200,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
               <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
             <div className="text-2xl font-bold text-red-600">{stats.ticketsVencidos}</div>
-            <div className="text-sm text-red-700">Vencidos</div>
+            <div className="text-sm text-red-700">{t('dashboard.sla.overdue')}</div>
           </div>
           
           <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
@@ -206,7 +208,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
               <Clock className="w-5 h-5 text-orange-600" />
             </div>
             <div className="text-2xl font-bold text-orange-600">{stats.ticketsProximosVencer}</div>
-            <div className="text-sm text-orange-700">Próximos a vencer</div>
+            <div className="text-sm text-orange-700">{t('dashboard.sla.due_soon')}</div>
           </div>
         </div>
 
@@ -214,22 +216,22 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
             <div className="text-lg font-semibold text-green-600">{stats.ticketsEnTiempo}</div>
-            <div className="text-xs text-slate-600">En tiempo</div>
+            <div className="text-xs text-slate-600">{t('dashboard.sla.on_time')}</div>
           </div>
           <div>
             <div className="text-lg font-semibold text-blue-600">{stats.totalTicketsActivos}</div>
-            <div className="text-xs text-slate-600">Total activos</div>
+            <div className="text-xs text-slate-600">{t('dashboard.sla.total_active')}</div>
           </div>
           <div>
             <div className="text-lg font-semibold text-slate-600">{stats.ticketsSinSLA}</div>
-            <div className="text-xs text-slate-600">Sin SLA</div>
+            <div className="text-xs text-slate-600">{t('dashboard.sla.without_sla')}</div>
           </div>
         </div>
 
         {/* Porcentaje de cumplimiento */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">Cumplimiento SLA</span>
+            <span className="text-sm font-medium text-slate-700">{t('dashboard.sla.compliance')}</span>
             <span className="text-sm font-semibold text-slate-900">
               {stats.porcentajeCumplimiento.toFixed(1)}%
             </span>
@@ -260,10 +262,10 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
             }`}></div>
             <span className="text-xs text-slate-600">
               {stats.ticketsVencidos === 0 
-                ? 'Sistema estable' 
+                ? t('dashboard.sla.system_stable')
                 : stats.ticketsVencidos <= 2 
-                  ? 'Atención requerida' 
-                  : 'Crítico'}
+                  ? t('dashboard.sla.attention_required')
+                  : t('dashboard.sla.critical')}
             </span>
           </div>
           <span className="text-xs text-slate-500">
@@ -276,8 +278,8 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
           <Alert className="border-red-200 bg-red-50">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
-              <strong>{stats.ticketsVencidos}</strong> ticket{stats.ticketsVencidos > 1 ? 's' : ''} con SLA vencido
-              {stats.ticketsVencidos > 1 ? 's' : ''}. Acción inmediata requerida.
+              <strong>{stats.ticketsVencidos}</strong> {t('dashboard.sla.tickets_with_overdue_sla')}
+              {stats.ticketsVencidos > 1 ? 's' : ''}. {t('dashboard.sla.immediate_action_required')}.
             </AlertDescription>
           </Alert>
         )}
@@ -286,7 +288,7 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
           <Alert className="border-orange-200 bg-orange-50">
             <Clock className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
-              <strong>{stats.ticketsProximosVencer}</strong> ticket{stats.ticketsProximosVencer > 1 ? 's' : ''} próximo{stats.ticketsProximosVencer > 1 ? 's' : ''} a vencer.
+              <strong>{stats.ticketsProximosVencer}</strong> {t('dashboard.sla.tickets_approaching_deadline')}.
             </AlertDescription>
           </Alert>
         )}

@@ -15,11 +15,25 @@ const I18nContext = createContext<I18nContextType | null>(null);
 // Función para cargar las traducciones desde archivos JSON
 const loadTranslations = async (locale: Locale): Promise<Dict> => {
   try {
-    const response = await fetch(`/i18n/locales/${locale}.json`);
+    // Agregar timestamp para evitar caché
+    const timestamp = Date.now();
+    const response = await fetch(`/i18n/locales/${locale}.json?t=${timestamp}`);
+    
     if (!response.ok) {
-      throw new Error(`Failed to load ${locale} translations`);
+      throw new Error(`Failed to load ${locale} translations: ${response.status} ${response.statusText}`);
     }
-    return await response.json();
+    
+    const translations = await response.json();
+    console.log(`✅ Loaded ${Object.keys(translations).length} translations for ${locale}`);
+    console.log(`🔍 Pagination keys loaded:`, {
+      'pagination.showing': translations['pagination.showing'],
+      'pagination.to': translations['pagination.to'],
+      'pagination.of': translations['pagination.of'],
+      'pagination.tickets': translations['pagination.tickets'],
+      'pagination.previous': translations['pagination.previous'],
+      'pagination.next': translations['pagination.next']
+    });
+    return translations;
   } catch (error) {
     console.error(`Error loading ${locale} translations:`, error);
     // Fallback a traducciones básicas si falla la carga
@@ -76,7 +90,14 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const dict = useMemo(() => translations, [translations]);
-  const t = useCallback((key: string) => dict[key] ?? key, [dict]);
+  const t = useCallback((key: string) => {
+    const translation = dict[key] ?? key;
+    if (translation === key && (key.startsWith('pagination.') || key.startsWith('settings.') || key.startsWith('common.') || key.startsWith('ticket_detail.'))) {
+      console.warn(`⚠️ Missing translation for key: ${key}`);
+      console.log(`🔍 Available keys:`, Object.keys(dict).filter(k => k.includes(key.split('.')[0])));
+    }
+    return translation;
+  }, [dict]);
 
   const value = useMemo(() => ({ locale, t, setLocale }), [locale, t, setLocale]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

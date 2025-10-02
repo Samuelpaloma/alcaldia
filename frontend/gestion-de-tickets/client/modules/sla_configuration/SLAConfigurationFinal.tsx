@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Search, 
   Filter, 
@@ -18,6 +19,8 @@ import {
   Edit,
   Trash2
 } from "lucide-react";
+import { useI18n } from "../../i18n";
+import '../admin/UsersModule.css';
 
 interface SLAConfig {
   id: number;
@@ -35,6 +38,7 @@ interface SLAConfig {
 }
 
 export default function SLAConfigurationFinal() {
+  const { t } = useI18n();
   const [slaConfigs, setSlaConfigs] = useState<SLAConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -348,99 +352,92 @@ export default function SLAConfigurationFinal() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header Section - Diseño Sencillo */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Configuración SLA</h1>
-            <p className="text-gray-600 text-sm">Define los tiempos de respuesta y resolución para diferentes categorías y prioridades</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setMostrarModalCrear(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Configuración
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={cargarConfiguracionesSLA}
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Actualizar
-            </Button>
-          </div>
+    <div className="users-module">
+      {/* Header Section */}
+      <div className="module-header">
+        <div className="header-content">
+          <h1 className="page-title">{t("sla_configuration.title")}</h1>
+          <p className="page-subtitle">{t("sla_configuration.subtitle")}</p>
+        </div>
+        <div className="header-actions">
+          <Button 
+            className="create-btn"
+            onClick={() => setMostrarModalCrear(true)}
+          >
+            <Plus className="w-4 h-4" />
+            {t("sla_configuration.new_configuration")}
+          </Button>
+          <button 
+            className="refresh-btn"
+            onClick={cargarConfiguracionesSLA}
+          >
+            <RefreshCw className="w-4 h-4" />
+            {t("sla_configuration.update")}
+          </button>
         </div>
       </div>
 
       {/* Filters Section */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="pb-4">
+      <Card className="filters-card">
+        <CardHeader>
           <CardTitle className="flex items-center text-xl">
-            <Filter className="w-5 h-5 mr-2 text-blue-600" />
-            Filtros y Búsqueda
+            <Filter className="w-5 h-5 mr-2" />
+            {t("sla_configuration.filters_title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="filters-grid">
             {/* Búsqueda */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Buscar</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar por nombre..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="search-container">
+              <Search className="search-icon" />
+              <Input
+                placeholder={t("sla_configuration.search_placeholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
             </div>
 
             {/* Estado */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Estado</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todos los estados</option>
-                <option value="activo">Activo</option>
-                <option value="inactivo">Inactivo</option>
-              </select>
+            <div className="filter-group">
+              <Select value={statusFilter || "all"} onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}>
+                <SelectTrigger className="filter-select">
+                  <SelectValue placeholder={t("sla_configuration.all_statuses")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("sla_configuration.all_statuses")}</SelectItem>
+                  <SelectItem value="activo">Activo</SelectItem>
+                  <SelectItem value="inactivo">Inactivo</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Prioridad */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Prioridad</label>
-              <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Todas las prioridades</option>
-                <option value="CRITICA">Crítica</option>
-                <option value="ALTA">Alta</option>
-                <option value="MEDIA">Media</option>
-                <option value="BAJA">Baja</option>
-              </select>
+            <div className="filter-group">
+              <Select value={priorityFilter || "all"} onValueChange={(value) => setPriorityFilter(value === "all" ? "" : value)}>
+                <SelectTrigger className="filter-select">
+                  <SelectValue placeholder={t("sla_configuration.all_priorities")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("sla_configuration.all_priorities")}</SelectItem>
+                  <SelectItem value="CRITICA">Crítica</SelectItem>
+                  <SelectItem value="ALTA">Alta</SelectItem>
+                  <SelectItem value="MEDIA">Media</SelectItem>
+                  <SelectItem value="BAJA">Baja</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ marginBottom: '1.5rem' }}>
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total de Configuraciones</p>
+                <p className="text-sm font-medium text-gray-600">{t("sla_configuration.total_configurations")}</p>
                 <p className="text-2xl font-bold text-gray-900">{slaConfigs.length}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
@@ -454,7 +451,7 @@ export default function SLAConfigurationFinal() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Configuraciones Activas</p>
+                <p className="text-sm font-medium text-gray-600">{t("sla_configuration.active_configurations")}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {slaConfigs.filter(c => c.activo).length}
                 </p>
@@ -470,7 +467,7 @@ export default function SLAConfigurationFinal() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Configuraciones Inactivas</p>
+                <p className="text-sm font-medium text-gray-600">{t("sla_configuration.inactive_configurations")}</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {slaConfigs.filter(c => !c.activo).length}
                 </p>
@@ -484,22 +481,20 @@ export default function SLAConfigurationFinal() {
       </div>
 
       {/* Configuraciones SLA Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="users-grid" style={{ marginTop: '2rem' }}>
         {configuracionesFiltradas.map((config) => (
-          <Card key={config.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50 overflow-hidden">
-            <CardContent className="p-6">
+          <Card key={config.id} className="user-card">
+            <CardContent>
               {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Settings className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-lg leading-tight line-clamp-2">
-                      {config.nombre}
-                    </h3>
-                    <p className="text-sm text-gray-500">ID: #{config.id}</p>
-                  </div>
+              <div className="user-header">
+                <div className="user-avatar">
+                  <Settings className="w-5 h-5" />
+                </div>
+                <div className="user-info">
+                  <h3 className="user-name">
+                    {config.nombre}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">ID: #{config.id}</p>
                 </div>
               </div>
 
@@ -515,41 +510,42 @@ export default function SLAConfigurationFinal() {
               </div>
 
               {/* Description */}
-              <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                 {config.descripcion}
               </p>
 
               {/* SLA Times */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Respuesta:</span>
-                  <span className="font-semibold text-blue-600">{config.tiempoRespuestaHoras}h</span>
+              <div className="user-details">
+                <div className="detail-item">
+                  <Clock className="w-4 h-4" />
+                  <span>{t("sla_configuration.response")}: {config.tiempoRespuestaHoras}h</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Resolución:</span>
-                  <span className="font-semibold text-green-600">{config.tiempoResolucionHoras}h</span>
+                <div className="detail-item">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>{t("sla_configuration.resolution")}: {config.tiempoResolucionHoras}h</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Alerta:</span>
-                  <span className="font-semibold text-orange-600">{config.tiempoAlertaHoras}h</span>
+                <div className="detail-item">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{t("sla_configuration.alert")}: {config.tiempoAlertaHoras}h</span>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex space-x-2">
-                <Button size="sm" className="flex-1" onClick={() => abrirModalEdicion(config)}>
-                  <Edit className="w-4 h-4 mr-1" />
-                  Editar
-                </Button>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+              <div className="user-actions">
+                <button 
+                  className="action-btn edit"
+                  onClick={() => abrirModalEdicion(config)}
+                >
+                  <Edit className="w-4 h-4" />
+                  {t("sla_configuration.edit_btn")}
+                </button>
+                <button 
+                  className="action-btn deactivate"
                   onClick={() => eliminarConfiguracionSLA(config.id)}
                 >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Eliminar
-                </Button>
+                  <Trash2 className="w-4 h-4" />
+                  {t("sla_configuration.delete_btn")}
+                </button>
               </div>
             </CardContent>
           </Card>
@@ -572,7 +568,7 @@ export default function SLAConfigurationFinal() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Crear Nueva Configuración SLA</h2>
+              <h2 className="text-xl font-bold">{t("sla_configuration.create_new")}</h2>
               <button 
                 onClick={() => setMostrarModalCrear(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -719,7 +715,7 @@ export default function SLAConfigurationFinal() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 shadow-xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Editar Configuración SLA</h2>
+              <h2 className="text-xl font-bold">{t("sla_configuration.edit")}</h2>
               <button 
                 onClick={() => setMostrarModalEditar(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
