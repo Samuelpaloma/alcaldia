@@ -1,8 +1,17 @@
 package com.example.demo.encuesta.dto.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class EncuestaSatisfaccionResponseDTO {
     
     private Long id;
@@ -17,23 +26,12 @@ public class EncuestaSatisfaccionResponseDTO {
     private LocalDateTime fechaCreacion;
     private String nivelSatisfaccion;
 
-    // Constructores
-    public EncuestaSatisfaccionResponseDTO() {}
-
-    public EncuestaSatisfaccionResponseDTO(Long id, Long ticketId, String ticketAsunto, Integer calificacion, 
-                                         String comentario, List<String> aspectosPositivos, List<String> aspectosNegativos,
-                                         String nombreUsuario, String emailUsuario, LocalDateTime fechaCreacion) {
-        this.id = id;
-        this.ticketId = ticketId;
-        this.ticketAsunto = ticketAsunto;
-        this.calificacion = calificacion;
-        this.comentario = comentario;
-        this.aspectosPositivos = aspectosPositivos;
-        this.aspectosNegativos = aspectosNegativos;
-        this.nombreUsuario = nombreUsuario;
-        this.emailUsuario = emailUsuario;
-        this.fechaCreacion = fechaCreacion;
-        this.nivelSatisfaccion = calcularNivelSatisfaccion(calificacion);
+    // Método para calcular nivel de satisfacción
+    public String getNivelSatisfaccion() {
+        if (nivelSatisfaccion == null && calificacion != null) {
+            return calcularNivelSatisfaccion(calificacion);
+        }
+        return nivelSatisfaccion;
     }
 
     private String calcularNivelSatisfaccion(Integer calificacion) {
@@ -43,100 +41,4 @@ public class EncuestaSatisfaccionResponseDTO {
         if (calificacion >= 2) return "Malo";
         return "Terrible";
     }
-
-    // Getters y Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Long getTicketId() {
-        return ticketId;
-    }
-
-    public void setTicketId(Long ticketId) {
-        this.ticketId = ticketId;
-    }
-
-    public String getTicketAsunto() {
-        return ticketAsunto;
-    }
-
-    public void setTicketAsunto(String ticketAsunto) {
-        this.ticketAsunto = ticketAsunto;
-    }
-
-    public Integer getCalificacion() {
-        return calificacion;
-    }
-
-    public void setCalificacion(Integer calificacion) {
-        this.calificacion = calificacion;
-        this.nivelSatisfaccion = calcularNivelSatisfaccion(calificacion);
-    }
-
-    public String getComentario() {
-        return comentario;
-    }
-
-    public void setComentario(String comentario) {
-        this.comentario = comentario;
-    }
-
-    public List<String> getAspectosPositivos() {
-        return aspectosPositivos;
-    }
-
-    public void setAspectosPositivos(List<String> aspectosPositivos) {
-        this.aspectosPositivos = aspectosPositivos;
-    }
-
-    public List<String> getAspectosNegativos() {
-        return aspectosNegativos;
-    }
-
-    public void setAspectosNegativos(List<String> aspectosNegativos) {
-        this.aspectosNegativos = aspectosNegativos;
-    }
-
-    public String getNombreUsuario() {
-        return nombreUsuario;
-    }
-
-    public void setNombreUsuario(String nombreUsuario) {
-        this.nombreUsuario = nombreUsuario;
-    }
-
-    public String getEmailUsuario() {
-        return emailUsuario;
-    }
-
-    public void setEmailUsuario(String emailUsuario) {
-        this.emailUsuario = emailUsuario;
-    }
-
-    public LocalDateTime getFechaCreacion() {
-        return fechaCreacion;
-    }
-
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
-        this.fechaCreacion = fechaCreacion;
-    }
-
-    public String getNivelSatisfaccion() {
-        return nivelSatisfaccion;
-    }
-
-    public void setNivelSatisfaccion(String nivelSatisfaccion) {
-        this.nivelSatisfaccion = nivelSatisfaccion;
-    }
 }
-
-
-
-
-
-
