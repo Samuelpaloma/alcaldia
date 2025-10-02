@@ -1,0 +1,19 @@
+### Test Simple SLA Endpoints
+### Probar si los endpoints de SLA responden
+
+### 1. Test básico - Obtener configuraciones SLA
+GET http://localhost:8080/api/sla
+Accept: application/json
+
+### 2. Test configuraciones activas
+GET http://localhost:8080/api/sla/activas
+Accept: application/json
+
+### 3. Test estadísticas SLA
+GET http://localhost:8080/api/sla/estadisticas
+Accept: application/json
+
+### 4. Test endpoint dashboard SLA
+GET http://localhost:8080/api/dashboard/sla-analysis
+Accept: application/json
+
