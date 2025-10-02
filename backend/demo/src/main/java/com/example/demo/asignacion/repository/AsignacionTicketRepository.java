@@ -39,6 +39,17 @@ public interface AsignacionTicketRepository extends JpaRepository<AsignacionTick
     // Contar asignaciones por técnico en un rango de fechas
     @Query("SELECT COUNT(a) FROM AsignacionTicket a WHERE a.tecnicoId = :tecnicoId AND a.fechaAsignacion >= :desde")
     long countByTecnicoIdAndFechaAsignacionAfter(@Param("tecnicoId") Long tecnicoId, @Param("desde") LocalDateTime desde);
+    
+    // Buscar escalaciones por ticket
+    List<AsignacionTicket> findByTicketIdAndEsEscalacionTrue(Long ticketId);
+    
+    // Buscar asignaciones que pueden ver un ticket (original + escalaciones)
+    @Query("SELECT a FROM AsignacionTicket a WHERE a.ticketId = :ticketId AND (a.activa = true OR a.esEscalacion = true)")
+    List<AsignacionTicket> findAsignacionesVisiblesPorTicket(@Param("ticketId") Long ticketId);
+    
+    // Buscar asignaciones visibles por técnico (asignaciones originales + escalaciones donde participa)
+    @Query("SELECT a FROM AsignacionTicket a WHERE a.tecnicoId = :tecnicoId AND (a.activa = true OR a.esEscalacion = true)")
+    List<AsignacionTicket> findAsignacionesVisiblesPorTecnico(@Param("tecnicoId") Long tecnicoId);
 }
 
 

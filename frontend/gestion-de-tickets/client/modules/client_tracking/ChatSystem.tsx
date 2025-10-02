@@ -12,6 +12,8 @@ interface ChatMessage {
   message: string;
   timestamp: string;
   type: 'text' | 'status' | 'attachment';
+  authorName?: string; // Nombre real del autor
+  authorEmail?: string; // Email del autor
 }
 
 interface ChatSystemProps {
@@ -40,7 +42,9 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
                 data.tipoAutor === 'ADMINISTRADOR' ? 'technician' : 'client',
         message: data.mensaje,
         timestamp: data.fechaCreacion,
-        type: 'text'
+        type: 'text',
+        authorName: data.autor || 'Usuario', // Nombre real del autor con fallback
+        authorEmail: data.autorEmail || '' // Email del autor con fallback
       };
       
       console.log('🔥 [CHAT] Agregando mensaje a la lista:', newMessage);
@@ -76,7 +80,7 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
         if (!isSending) {
           console.log('🔄 Polling mensajes automático...');
           try {
-            await loadMessagesSmoothly();
+            await loadMessages(); // Usar loadMessages directo para que aparezca inmediatamente
           } catch (error) {
             console.error('🔄 Error en polling automático:', error);
           }
@@ -129,7 +133,9 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
             author: author,
             message: comentario.mensaje,
             timestamp: comentario.fechaCreacion,
-            type: 'text' as const
+            type: 'text' as const,
+            authorName: comentario.autor || 'Usuario', // NOMBRE REAL DEL AUTOR
+            authorEmail: comentario.autorEmail || '' // EMAIL DEL AUTOR
           };
         });
         chatMessages.push(...comentarios);
@@ -153,45 +159,56 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
       const trackingData = await api.getTicketTracking(ticketId);
       
       if (trackingData.comentarios) {
-        const newMessages: ChatMessage[] = trackingData.comentarios.map(comentario => {
+        console.log('🔍 [CHAT DEBUG] Comentarios recibidos del backend:', trackingData.comentarios);
+        console.log('🔍 [CHAT DEBUG] Primer comentario:', trackingData.comentarios[0]);
+        
+        const newMessages: ChatMessage[] = trackingData.comentarios.map((comentario, index) => {
+          console.log(`🔍 [CHAT DEBUG] Procesando comentario ${index}:`, {
+            id: comentario.id,
+            autor: comentario.autor,
+            autorEmail: comentario.autorEmail,
+            tipoAutor: comentario.tipoAutor,
+            mensaje: comentario.mensaje
+          });
+          console.log(`🔍 [CHAT DEBUG] Comentario completo ${index}:`, comentario);
+          console.log(`🔍 [CHAT DEBUG] Tipo de autor ${index}:`, typeof comentario.autor);
+          console.log(`🔍 [CHAT DEBUG] Autor es null/undefined ${index}:`, comentario.autor === null || comentario.autor === undefined);
+          console.log(`🔍 [CHAT DEBUG] Autor es string vacío ${index}:`, comentario.autor === '');
+          
           const isCurrentUser = comentario.autorEmail === trackingData.creadorEmail;
           const author = isCurrentUser ? 'client' : 
                         comentario.tipoAutor === 'TECNICO' ? 'technician' : 'system';
           
-          return {
+          const mappedMessage = {
             id: comentario.id.toString(),
             author: author,
             message: comentario.mensaje,
             timestamp: comentario.fechaCreacion,
-            type: 'text' as const
+            type: 'text' as const,
+            authorName: comentario.autor || 'Usuario', // Nombre real del autor con fallback
+            authorEmail: comentario.autorEmail || '' // Email del autor con fallback
           };
+          
+          console.log(`🔍 [CHAT DEBUG] Mapeo detallado ${index}:`, {
+            'comentario.autor': comentario.autor,
+            'mappedMessage.authorName': mappedMessage.authorName,
+            'comentario.autorEmail': comentario.autorEmail,
+            'mappedMessage.authorEmail': mappedMessage.authorEmail
+          });
+          
+          console.log(`🔍 [CHAT DEBUG] Mensaje mapeado ${index}:`, mappedMessage);
+          return mappedMessage;
         });
 
         // Ordenar mensajes por timestamp (ascendente)
         const mensajesOrdenados = newMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-        // Solo actualizar si hay cambios en la cantidad o contenido
-        setMessages(prevMessages => {
-          // Comparar por cantidad primero (más simple y confiable)
-          if (mensajesOrdenados.length !== prevMessages.length) {
-            console.log('🔄 [CLIENTE] Cambio en cantidad de mensajes detectado');
-            console.log('🔄 [CLIENTE] Mensajes anteriores:', prevMessages.length);
-            console.log('🔄 [CLIENTE] Mensajes nuevos:', mensajesOrdenados.length);
-            return mensajesOrdenados;
-          } else {
-            // Si la cantidad es igual, comparar por contenido
-            const prevContent = prevMessages.map(msg => `${msg.message}-${msg.timestamp}`).join('|');
-            const newContent = mensajesOrdenados.map(msg => `${msg.message}-${msg.timestamp}`).join('|');
-            
-            if (prevContent !== newContent) {
-              console.log('🔄 [CLIENTE] Cambio en contenido de mensajes detectado');
-              return mensajesOrdenados;
-            } else {
-              console.log('🔄 [CLIENTE] No hay cambios en los mensajes');
-              return prevMessages; // No hay cambios, mantener estado actual
-            }
-          }
-        });
+        // FORZAR ACTUALIZACIÓN COMPLETA - Los mensajes viejos no tienen authorName
+        console.log('🔄 [CLIENTE] FORZANDO ACTUALIZACIÓN COMPLETA DE MENSAJES');
+        console.log('🔄 [CLIENTE] Mensajes ordenados que se van a guardar:', mensajesOrdenados);
+        console.log('🔄 [CLIENTE] Primer mensaje ordenado:', mensajesOrdenados[0]);
+        
+        setMessages(mensajesOrdenados);
       }
     } catch (error) {
       console.error('Error cargando mensajes suavemente:', error);
@@ -218,7 +235,9 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
         author: 'client',
         message: messageText,
         timestamp: new Date().toISOString(),
-        type: 'text'
+        type: 'text',
+        authorName: 'Tú', // El usuario actual
+        authorEmail: '' // Se llenará cuando llegue la respuesta del servidor
       };
       setMessages(prev => [...prev, localMessage]);
       
@@ -255,13 +274,32 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
     return new Date(timestamp).toLocaleString();
   };
 
-  const getAuthorName = (author: string) => {
-    switch (author) {
-      case 'client': return 'Tú';
-      case 'technician': return 'Técnico';
-      case 'system': return 'Sistema';
-      default: return author;
+  const getAuthorName = (message: ChatMessage) => {
+    console.log('🔍 [AUTHOR DEBUG] Determinando nombre para mensaje:', {
+      id: message.id,
+      author: message.author,
+      authorName: message.authorName,
+      authorEmail: message.authorEmail
+    });
+    
+    // Si hay un nombre real del autor, usarlo
+    if (message.authorName && message.authorName.trim() !== '') {
+      console.log('✅ [AUTHOR DEBUG] Usando nombre real:', message.authorName);
+      return message.authorName;
     }
+    
+    // Fallback a nombres genéricos
+    const fallbackName = (() => {
+      switch (message.author) {
+        case 'client': return 'Tú';
+        case 'technician': return 'Técnico';
+        case 'system': return 'Sistema';
+        default: return message.author;
+      }
+    })();
+    
+    console.log('⚠️ [AUTHOR DEBUG] Usando fallback:', fallbackName);
+    return fallbackName;
   };
 
   const getAuthorColor = (author: string) => {
@@ -309,7 +347,7 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
                     : 'bg-gray-100 text-gray-900'
                 }`}>
                   <div className="text-xs opacity-75 mb-1">
-                    {getAuthorName(message.author)} • {formatTimestamp(message.timestamp)}
+                    {getAuthorName(message)} • {formatTimestamp(message.timestamp)}
                   </div>
                   <div className="text-sm whitespace-pre-wrap">{message.message}</div>
                 </div>

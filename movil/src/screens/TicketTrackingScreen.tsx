@@ -43,6 +43,10 @@ interface TicketInfo {
   historialAsignaciones?: HistorialItem[];
   comentarios?: ChatMessage[];
   evidencias?: EvidenciaItem[];
+  // Permisos del técnico actual
+  puedeCambiarEstado?: boolean;
+  esTecnicoEscalado?: boolean;
+  rolTecnico?: string; // "ASIGNADO", "ESCALADO", "ORIGINAL"
 }
 
 interface HistorialItem {
@@ -76,6 +80,7 @@ interface ChatMessage {
   fechaCreacion: string;
   esTecnico?: boolean;
   tipoAutor?: string;
+  autorEmail?: string;
 }
 
 interface EvidenciaItem {
@@ -95,7 +100,8 @@ interface EvidenciaItem {
   fechaSubida?: string;
   subidoPorNombre?: string;
   subidoPorEmail?: string;
-  subidoPor?: {
+  subidoPor?: string; // Para archivos de chat (tabla archivos_ticket)
+  subidoPorObject?: {
     nombre: string;
     email: string;
   };
@@ -345,6 +351,12 @@ export default function TicketTrackingScreen() {
         console.log('📜 [TICKET] HistorialEstados del backend:', data.historialEstados);
         console.log('📎 [TICKET] Evidencias del backend:', data.evidencias);
         console.log('💬 [TICKET] Comentarios del backend:', data.comentarios);
+        console.log('🔐 [TICKET] Permisos del backend:', {
+          puedeCambiarEstado: data.puedeCambiarEstado,
+          esTecnicoEscalado: data.esTecnicoEscalado,
+          rolTecnico: data.rolTecnico,
+          estado: data.estado
+        });
         
         // Mapear la respuesta del backend al formato esperado
         const ticketInfo = {
@@ -363,7 +375,11 @@ export default function TicketTrackingScreen() {
           creador: data.creador || { nombre: 'Usuario' },
           evidencias: data.evidencias || [],
           historial: data.historialEstados || data.historial || [],
-          historialEstados: data.historialEstados || []
+          historialEstados: data.historialEstados || [],
+          // Permisos del técnico actual
+          puedeCambiarEstado: data.puedeCambiarEstado ?? true,
+          esTecnicoEscalado: data.esTecnicoEscalado ?? false,
+          rolTecnico: data.rolTecnico || 'ASIGNADO'
         };
         
         console.log('📜 [TICKET] Historial mapeado:', ticketInfo.historial);
@@ -455,7 +471,8 @@ export default function TicketTrackingScreen() {
   const loadMessages = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:8080/api/tickets/${ticketId}/comentarios`, {
+      const baseUrl = __DEV__ ? 'http://192.168.1.87:8080/api' : 'http://localhost:8080/api';
+      const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -470,11 +487,13 @@ export default function TicketTrackingScreen() {
         
         // Mapear los comentarios al formato esperado
         const mappedMessages = (data || []).map((comment: any) => {
-          console.log('🔄 [MAPEO] Mensaje original:', {
+          console.log('🔄 [MAPEO] Mensaje original completo:', {
             id: comment.id,
             tipoAutor: comment.tipoAutor,
             esTecnico: comment.esTecnico,
-            autor: comment.autor
+            autor: comment.autor,
+            autorEmail: comment.autorEmail,
+            mensaje: comment.mensaje
           });
           
           return {
@@ -483,7 +502,8 @@ export default function TicketTrackingScreen() {
           mensaje: comment.mensaje || comment.contenido,
           fechaCreacion: comment.fechaCreacion || comment.fecha,
             esTecnico: comment.esTecnico || false,
-            tipoAutor: comment.tipoAutor
+            tipoAutor: comment.tipoAutor,
+            autorEmail: comment.autorEmail
           };
         });
         
@@ -517,7 +537,8 @@ export default function TicketTrackingScreen() {
   const loadMessagesSmoothly = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:8080/api/tickets/${ticketId}/comentarios`, {
+      const baseUrl = __DEV__ ? 'http://192.168.1.87:8080/api' : 'http://localhost:8080/api';
+      const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -597,8 +618,8 @@ export default function TicketTrackingScreen() {
       console.log('📜 [HISTORIAL] Token presente:', !!token);
       
       // Intentar primero con el endpoint específico del ticket
-      console.log('📜 [HISTORIAL] Intentando endpoint: /api/tickets/${ticketId}/historial');
-      let response = await fetch(`http://localhost:8080/api/tickets/${ticketId}/historial`, {
+      console.log('📜 [HISTORIAL] Intentando endpoint: /api/tecnico/tickets/${ticketId}/historial');
+      let response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/historial`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -608,127 +629,55 @@ export default function TicketTrackingScreen() {
 
       console.log('📜 [HISTORIAL] Respuesta status:', response.status);
 
-      // Si no existe, usar el endpoint de asignaciones
-      if (!response.ok && response.status === 404) {
-        console.log('🔄 [HISTORIAL] Endpoint específico no encontrado, intentando asignaciones...');
-        response = await fetch(`http://localhost:8080/api/asignaciones/ticket/${ticketId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
+      // Si no existe, mostrar error
+      if (!response.ok) {
+        console.error('❌ [HISTORIAL] Error obteniendo historial:', response.status, response.statusText);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       if (response.ok) {
         const data = await response.json();
         console.log('✅ [HISTORIAL] Historial cargado, cantidad:', data?.length || 0);
-        console.log('📜 [HISTORIAL] Datos de asignaciones:', JSON.stringify(data, null, 2));
+        console.log('📜 [HISTORIAL] Datos de historial de estados:', JSON.stringify(data, null, 2));
         
-        // Generar historial completo como en la web
+        // Procesar historial de estados del backend
         const historialCompleto: any[] = [];
         
-        // 1. Evento de creación del ticket (siempre primero)
-        if (ticketInfo) {
-          historialCompleto.push({
-            id: 'creacion',
-            fecha: ticketInfo.fechaCreacion,
-            fechaCambio: ticketInfo.fechaCreacion,
-            accion: 'Ticket creado',
-            descripcion: `Ticket creado`,
-            usuario: ticketInfo.creadorNombre || 'Usuario',
-            cambiadoPor: ticketInfo.creadorNombre || 'Usuario',
-            esCreacion: true
-          });
-        }
-        
-        // 2. Procesar asignaciones del ticket - ORDENAR POR FECHA para mostrar cronológicamente
-        const asignacionesOrdenadas = (data || []).sort((a: any, b: any) => 
-          new Date(a.fechaAsignacion).getTime() - new Date(b.fechaAsignacion).getTime()
-        );
-        
-        asignacionesOrdenadas.forEach((item: any, index: number) => {
-          console.log('🔄 [HISTORIAL-MAP] Procesando asignación:', item);
-          
-          let accion = '';
-          let descripcion = '';
-          let nombreTecnico = item.tecnicoNombre;
-          
-          // Si no hay nombre, intentar obtenerlo del tecnicoAsignado del ticket
-          if (!nombreTecnico && ticketInfo && ticketInfo.tecnicoAsignado) {
-            nombreTecnico = ticketInfo.tecnicoAsignado;
-          }
-          
-          // Determinar el tipo de operación basado en tipoOperacion
-          // Si tipoOperacion es null, inferir del contexto
-          let tipoOp = item.tipoOperacion;
-          
-          // Inferir tipo de operación si es null
-          if (!tipoOp) {
-            if (index === 0 && item.activa) {
-              tipoOp = 'ASIGNACION'; // Primera asignación
-            } else if (!item.activa) {
-              tipoOp = 'REASIGNAR'; // Si no está activa, fue reasignada
-            } else {
-              // Si es activa y no es la primera, probablemente es escalamiento
-              tipoOp = 'ESCALAMIENTO';
+        if (data && Array.isArray(data)) {
+          data.forEach((item: any, index: number) => {
+            console.log('🔄 [HISTORIAL-MAP] Procesando evento de estado:', item);
+            
+            // Crear descripción más detallada con el usuario
+            let descripcion = `${item.estadoAnterior || 'N/A'} → ${item.estadoNuevo || 'N/A'}`;
+            if (item.comentario) {
+              descripcion += `\nComentario: ${item.comentario}`;
             }
-          }
-          
-          if (tipoOp === 'ESCALAMIENTO') {
-            accion = 'Escalado';
-            descripcion = `Escalado a ${nombreTecnico || item.tecnicoEmail || 'Técnico'}`;
-          } else if (tipoOp === 'REASIGNAR') {
-            accion = 'Reasignado';
-            descripcion = `Reasignado a ${nombreTecnico || item.tecnicoEmail || 'Técnico'}`;
-          } else {
-            accion = 'Asignado';
-            descripcion = `Asignado a ${nombreTecnico || item.tecnicoEmail || 'Técnico'}`;
-          }
-          
-          historialCompleto.push({
-            id: item.id,
-            fecha: item.fechaAsignacion,
-            fechaCambio: item.fechaAsignacion,
-            accion: accion,
-            descripcion: descripcion,
-            usuario: item.asignadoPor || 'Sistema',
-            cambiadoPor: item.asignadoPor || 'Sistema',
-            tecnico: nombreTecnico,
-            tipoOperacion: tipoOp, // Usar el tipoOp procesado
-            esAsignacion: true,
-            activa: item.activa
-          });
-        });
-        
-        // 3. Agregar estado actual al final SOLO si no hay eventos recientes de escalación
-        if (ticketInfo) {
-          // Verificar si el último evento es una escalación reciente (últimos 5 minutos)
-          const ultimoEvento = historialCompleto[historialCompleto.length - 1];
-          const ahora = new Date();
-          const hace5Minutos = new Date(ahora.getTime() - 5 * 60 * 1000);
-          
-          const esEscalacionReciente = ultimoEvento && 
-            ultimoEvento.tipoOperacion === 'ESCALAMIENTO' && 
-            new Date(ultimoEvento.fecha) > hace5Minutos;
-          
-          // Solo agregar "Estado actual" si NO hay una escalación reciente
-          if (!esEscalacionReciente) {
+            if (item.observaciones) {
+              descripcion += `\nObservaciones: ${item.observaciones}`;
+            }
+            
             historialCompleto.push({
-              id: 'estado-actual',
-              fecha: ticketInfo.fechaActualizacion,
-              fechaCambio: ticketInfo.fechaActualizacion,
-              accion: 'Estado actual',
-              descripcion: `Estado: ${ticketInfo.estado}`,
-              usuario: 'Sistema',
-              cambiadoPor: 'Sistema',
-              estadoActual: ticketInfo.estado,
-              esEstadoActual: true
+              id: item.idHistorial || `estado-${index}`,
+              fecha: item.fechaCambio,
+              fechaCambio: item.fechaCambio,
+              accion: 'Cambio de estado',
+              descripcion: `${item.estadoAnterior || 'N/A'} → ${item.estadoNuevo || 'N/A'} por ${item.cambiadoPor || 'Usuario'}`,
+              usuario: item.cambiadoPor || 'Usuario',
+              cambiadoPor: item.cambiadoPor || 'Usuario',
+              cambiadoPorEmail: item.cambiadoPorEmail || '',
+              comentario: item.comentario,
+              observaciones: item.observaciones,
+              tipoOperacion: 'CAMBIO_ESTADO',
+              estadoAnterior: item.estadoAnterior,
+              estadoNuevo: item.estadoNuevo
             });
-          }
+          });
         }
         
-        console.log('📜 [HISTORIAL] Historial completo generado:', historialCompleto);
+        // Ordenar por fecha (más reciente primero)
+        historialCompleto.sort((a, b) => new Date(b.fechaCambio).getTime() - new Date(a.fechaCambio).getTime());
+        
+        console.log('📜 [HISTORIAL] Historial completo generado:', historialCompleto.length);
         setHistorial(historialCompleto);
       } else {
         console.warn('⚠️ [HISTORIAL] No se pudo cargar el historial:', response.status);
@@ -856,7 +805,8 @@ export default function TicketTrackingScreen() {
       
       const userData = JSON.parse(userInfo);
       
-      const response = await fetch(`http://localhost:8080/api/tickets/${ticketId}/comentarios`, {
+      const baseUrl = __DEV__ ? 'http://192.168.1.87:8080/api' : 'http://localhost:8080/api';
+      const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1045,11 +995,6 @@ export default function TicketTrackingScreen() {
     <View style={styles.tabContent}>
       {ticketInfo && (
         <>
-          {/* Título e ID */}
-          <View style={styles.ticketHeader}>
-            <Text style={styles.ticketId}>#{ticketInfo.id}</Text>
-            <Text style={styles.ticketAsunto}>{ticketInfo.asunto}</Text>
-          </View>
 
           {/* Información básica en cards */}
           <View style={styles.infoSection}>
@@ -1058,11 +1003,6 @@ export default function TicketTrackingScreen() {
             <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>ID:</Text>
               <Text style={styles.infoValueBold}>#{ticketInfo.id}</Text>
-            </View>
-            
-            <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Asunto:</Text>
-              <Text style={styles.infoValue}>{ticketInfo.asunto}</Text>
             </View>
             
             <View style={styles.infoCard}>
@@ -1080,23 +1020,45 @@ export default function TicketTrackingScreen() {
             </View>
             
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Técnico:</Text>
+              <Text style={styles.infoLabel}>Técnico Asignado:</Text>
               <Text style={styles.infoValue}>{ticketInfo.tecnicoAsignado || 'Sin asignar'}</Text>
             </View>
+            
+            {/* Mostrar técnico escalado si hay escalación */}
+            {ticketInfo.estado === 'ESCALADO' && ticketInfo.rolTecnico === 'ESCALADO' && (
+              <View style={[styles.infoCard, styles.escaladoCard]}>
+                <Text style={styles.infoLabel}>Técnico Escalado:</Text>
+                <Text style={[styles.infoValue, styles.escaladoText]}>
+                  {ticketInfo.tecnicoAsignado || 'Técnico actual'}
+                </Text>
+              </View>
+            )}
+            
+            {/* Indicador de rol del técnico actual */}
+            {ticketInfo.rolTecnico && (
+              <View style={[
+                styles.infoCard, 
+                ticketInfo.rolTecnico === 'ESCALADO' ? styles.escaladoCard : 
+                ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalCard : 
+                styles.asignadoCard
+              ]}>
+                <Text style={styles.infoLabel}>Tu rol:</Text>
+                <Text style={[
+                  styles.infoValue,
+                  ticketInfo.rolTecnico === 'ESCALADO' ? styles.escaladoText :
+                  ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalText :
+                  styles.asignadoText
+                ]}>
+                  {ticketInfo.rolTecnico === 'ESCALADO' ? '🔧 Técnico Escalado (Puedes cambiar estados)' :
+                   ticketInfo.rolTecnico === 'ORIGINAL' ? '👤 Técnico Original (Solo lectura)' :
+                   '🔧 Técnico Asignado (Puedes cambiar estados)'}
+                </Text>
+              </View>
+            )}
             
             <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>Ubicación:</Text>
               <Text style={styles.infoValue}>{ticketInfo.ubicacion || 'No especificada'}</Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Categoría:</Text>
-              <Text style={styles.infoValue}>{ticketInfo.categoria}</Text>
-            </View>
-            
-            <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Descripción:</Text>
-              <Text style={styles.infoValueMultiline}>{ticketInfo.descripcion}</Text>
             </View>
             
             <View style={styles.infoCard}>
@@ -1131,7 +1093,7 @@ export default function TicketTrackingScreen() {
             )}
             
             {/* Estado ASIGNADO - Primer paso: Iniciar trabajo */}
-            {ticketInfo.estado === 'ASIGNADO' && (
+            {ticketInfo.estado === 'ASIGNADO' && ticketInfo.puedeCambiarEstado && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.startButton]}
                 onPress={() => {
@@ -1154,8 +1116,40 @@ export default function TicketTrackingScreen() {
               </TouchableOpacity>
             )}
             
+            {/* Mensaje si no puede cambiar estados */}
+            {ticketInfo.estado === 'ASIGNADO' && !ticketInfo.puedeCambiarEstado && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoValue}>
+                  {ticketInfo.rolTecnico === 'ORIGINAL' 
+                    ? '🔒 Este ticket fue escalado. Solo el técnico escalado puede cambiar su estado.'
+                    : '🔒 No tienes permisos para cambiar el estado de este ticket.'
+                  }
+                </Text>
+              </View>
+            )}
+            
             {/* Estado EN_PROCESO - Segundo paso: Resolver ticket */}
-            {ticketInfo.estado === 'EN_PROCESO' && (
+            {(() => {
+              console.log('🔍 [DEBUG] Verificando botón EN_PROCESO:', {
+                estado: ticketInfo.estado,
+                puedeCambiarEstado: ticketInfo.puedeCambiarEstado,
+                rolTecnico: ticketInfo.rolTecnico,
+                esTecnicoEscalado: ticketInfo.esTecnicoEscalado
+              });
+              const condicion1 = ticketInfo.estado === 'EN_PROCESO';
+              const condicion2 = ticketInfo.puedeCambiarEstado;
+              const resultado = condicion1 && condicion2;
+              console.log('🔍 [DEBUG] Condiciones EN_PROCESO:', {
+                condicion1,
+                condicion2,
+                resultado
+              });
+              return resultado;
+            })() && (
+              (() => {
+                console.log('🎯 [RENDER] ¡RENDERIZANDO BOTÓN EN_PROCESO!');
+                return true;
+              })() &&
               <TouchableOpacity 
                 style={[styles.actionButton, styles.completeButton]}
                 onPress={() => {
@@ -1176,6 +1170,74 @@ export default function TicketTrackingScreen() {
               >
                 <Text style={styles.actionButtonText}>✅ Resolver Ticket</Text>
               </TouchableOpacity>
+            )}
+            
+            {/* Mensaje si no puede cambiar estados en EN_PROCESO */}
+            {ticketInfo.estado === 'EN_PROCESO' && !ticketInfo.puedeCambiarEstado && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoValue}>
+                  {ticketInfo.rolTecnico === 'ORIGINAL' 
+                    ? '🔒 Este ticket fue escalado. Solo el técnico escalado puede cambiar su estado.'
+                    : '🔒 No tienes permisos para cambiar el estado de este ticket.'
+                  }
+                </Text>
+              </View>
+            )}
+            
+            {/* Estado ESCALADO - Técnico escalado puede iniciar trabajo */}
+            {(() => {
+              console.log('🔍 [DEBUG] Verificando botón ESCALADO:', {
+                estado: ticketInfo.estado,
+                puedeCambiarEstado: ticketInfo.puedeCambiarEstado,
+                rolTecnico: ticketInfo.rolTecnico,
+                esTecnicoEscalado: ticketInfo.esTecnicoEscalado
+              });
+              const condicion1 = ticketInfo.estado === 'ESCALADO';
+              const condicion2 = ticketInfo.puedeCambiarEstado;
+              const resultado = condicion1 && condicion2;
+              console.log('🔍 [DEBUG] Condiciones:', {
+                condicion1,
+                condicion2,
+                resultado
+              });
+              return resultado;
+            })() && (
+              (() => {
+                console.log('🎯 [RENDER] ¡RENDERIZANDO BOTÓN ESCALADO!');
+                return true;
+              })() &&
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.startButton]}
+                onPress={() => {
+                  console.log('🔘 [BOTÓN] Botón "Iniciar Trabajo" presionado (ESCALADO)');
+                  console.log('🔘 [BOTÓN] Estado actual del ticket:', ticketInfo.estado);
+                  console.log('🔘 [BOTÓN] Mostrando modal de confirmación...');
+                  
+                  mostrarConfirmacion(
+                    '🚀 Iniciar Trabajo (Escalado)',
+                    '¿Deseas comenzar a trabajar en este ticket escalado? El estado cambiará a "EN PROCESO".',
+                    'Iniciar',
+                    () => {
+                      console.log('🔘 [BOTÓN] Usuario confirmó - Llamando a cambiarEstadoTicket("EN_PROCESO")');
+                      cambiarEstadoTicket('EN_PROCESO');
+                    }
+                  );
+                }}
+              >
+                <Text style={styles.actionButtonText}>🚀 Iniciar Trabajo (Escalado)</Text>
+              </TouchableOpacity>
+            )}
+            
+            {/* Mensaje si no puede cambiar estados en ESCALADO */}
+            {ticketInfo.estado === 'ESCALADO' && !ticketInfo.puedeCambiarEstado && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoValue}>
+                  {ticketInfo.rolTecnico === 'ORIGINAL' 
+                    ? '🔒 Este ticket fue escalado. Solo el técnico escalado puede cambiar su estado.'
+                    : '🔒 No tienes permisos para cambiar el estado de este ticket.'
+                  }
+                </Text>
+              </View>
             )}
             
             {/* Estado RESUELTO - Mostrar badge de éxito */}
@@ -1273,72 +1335,93 @@ export default function TicketTrackingScreen() {
   };
 
   const renderChat = () => (
-    <View style={styles.tabContent}>
-      <ScrollView 
-        ref={scrollViewRef}
-        style={styles.chatContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        {messages.map((message, index) => {
-          const isTechnician = message.esTecnico || message.tipoAutor === 'TECNICO';
-          console.log('🔍 Mensaje:', { 
-            id: message.id, 
-            autor: message.autor, 
-            esTecnico: message.esTecnico,
-            tipoAutor: message.tipoAutor,
-            isTechnician 
-          });
-          
-          return (
-            <View key={message.id || index} style={[
-              styles.messageContainer,
-              isTechnician ? styles.technicianMessage : styles.userMessage
-            ]}>
-              <View style={styles.messageHeader}>
-                <Text style={[
-                  styles.messageAuthor,
-                  isTechnician ? styles.technicianAuthor : styles.userAuthor
-                ]}>
-                  {isTechnician ? '👨‍🔧 Técnico' : '👤 Usuario'}
-                </Text>
-              </View>
-              <Text style={[
-                styles.messageText,
-                isTechnician ? styles.technicianText : styles.userText
-              ]}>{message.mensaje}</Text>
-              <Text style={[
-                styles.messageTime,
-                isTechnician ? styles.technicianTime : styles.userTime
-              ]}>{formatDate(message.fechaCreacion)}</Text>
-            </View>
-          );
-        })}
-      </ScrollView>
-      
-      <View style={styles.chatInputContainer}>
-        <TextInput
-          style={styles.chatInput}
-          value={newMessage}
-          onChangeText={setNewMessage}
-          placeholder="Escribe un mensaje..."
-          placeholderTextColor="#999"
-          multiline
-        />
-        <TouchableOpacity 
-          style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
-          onPress={sendMessage}
-          disabled={isSending || !newMessage.trim()}
+    <View style={styles.chatContainer}>
+      {/* Área de mensajes - Contenedor fijo */}
+      <View style={styles.messagesContainer}>
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.messagesScrollView}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.messagesContent}
         >
-          {isSending ? (
-            <ActivityIndicator size="small" color="#fff" />
+          {messages.length > 0 ? (
+            messages.map((message, index) => {
+              const isTechnician = message.esTecnico || message.tipoAutor === 'TECNICO';
+              console.log('🔍 Mensaje:', { 
+                id: message.id, 
+                autor: message.autor, 
+                esTecnico: message.esTecnico,
+                tipoAutor: message.tipoAutor,
+                isTechnician 
+              });
+              
+              return (
+                <View key={message.id || index} style={[
+                  styles.messageContainer,
+                  isTechnician ? styles.technicianMessage : styles.userMessage
+                ]}>
+                  <View style={styles.messageHeader}>
+                    <Text style={[
+                      styles.messageAuthor,
+                      isTechnician ? styles.technicianAuthor : styles.userAuthor
+                    ]}>
+                      {isTechnician ? '👨‍🔧 Técnico' : '👤 Cliente'}
+                    </Text>
+                    <Text style={[
+                      styles.messageSenderName,
+                      isTechnician ? styles.technicianSenderName : styles.userSenderName
+                    ]}>
+                      {getNombreRemitente(message)}
+                    </Text>
+                  </View>
+                  <Text style={[
+                    styles.messageText,
+                    isTechnician ? styles.technicianText : styles.userText
+                  ]}>{message.mensaje}</Text>
+                  <Text style={[
+                    styles.messageTime,
+                    isTechnician ? styles.technicianTime : styles.userTime
+                  ]}>{formatDate(message.fechaCreacion)}</Text>
+                </View>
+              );
+            })
           ) : (
-            <Text style={styles.sendButtonText}>Enviar</Text>
+            <View style={styles.emptyChatContainer}>
+              <Text style={styles.emptyChatIcon}>💬</Text>
+              <Text style={styles.emptyChatText}>No hay mensajes aún</Text>
+              <Text style={styles.emptyChatSubtext}>Inicia la conversación escribiendo un mensaje</Text>
+            </View>
           )}
-        </TouchableOpacity>
+        </ScrollView>
       </View>
-      <Text style={styles.pollingIndicator}>
-        💬 Los mensajes se actualizan automáticamente cada 5 segundos
-      </Text>
+
+              {/* Input de mensaje - Abajo */}
+              <View style={styles.chatInputContainer}>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.messageInput}
+                    placeholder="Escribe un mensaje..."
+                    value={newMessage}
+                    onChangeText={setNewMessage}
+                    multiline={false}
+                    maxLength={500}
+                    editable={!isSending}
+                    placeholderTextColor="#999"
+                    textAlignVertical="center"
+                  />
+                  <TouchableOpacity
+                    style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
+                    onPress={sendMessage}
+                    disabled={isSending || !newMessage.trim()}
+                  >
+                    {isSending ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.sendButtonText}>📤</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
     </View>
   );
 
@@ -1498,7 +1581,55 @@ export default function TicketTrackingScreen() {
   };
   
   const getSubidoPor = (evidencia: EvidenciaItem) => {
-    return evidencia.subidoPorNombre || evidencia.subidoPor?.nombre || 'Usuario';
+    // Para evidencias finales: subidoPorNombre
+    // Para archivos de chat: subidoPor
+    return evidencia.subidoPorNombre || evidencia.subidoPor || evidencia.subidoPorObject?.nombre || 'Usuario';
+  };
+
+  const sePuedePrevisualizar = (evidencia: EvidenciaItem) => {
+    const esImagen = evidencia.esImagen || evidencia.tipoMime?.startsWith('image/');
+    const esPDF = evidencia.esPDF || evidencia.tipoMime?.includes('pdf');
+    return esImagen || esPDF;
+  };
+
+  const getNombreRemitente = (message: ChatMessage) => {
+    console.log('🔍 [NOMBRE] Determinando nombre para mensaje:', {
+      autor: message.autor,
+      tipoAutor: message.tipoAutor,
+      esTecnico: message.esTecnico,
+      autorEmail: message.autorEmail
+    });
+    
+    // Si hay un nombre específico del autor y no es genérico, usarlo
+    if (message.autor && message.autor !== 'Usuario' && message.autor.trim() !== '') {
+      console.log('✅ [NOMBRE] Usando nombre específico:', message.autor);
+      return message.autor;
+    }
+    
+    // Si es técnico, mostrar "Técnico" + nombre si está disponible
+    if (message.esTecnico || message.tipoAutor === 'TECNICO') {
+      const nombre = message.autor && message.autor !== 'Usuario' ? message.autor : 'Técnico';
+      console.log('🔧 [NOMBRE] Es técnico:', nombre);
+      return nombre;
+    }
+    
+    // Si es cliente, mostrar "Cliente" + nombre si está disponible
+    if (message.tipoAutor === 'CLIENTE') {
+      const nombre = message.autor && message.autor !== 'Usuario' ? message.autor : 'Cliente';
+      console.log('👤 [NOMBRE] Es cliente:', nombre);
+      return nombre;
+    }
+    
+    // Si es administrador
+    if (message.tipoAutor === 'ADMINISTRADOR') {
+      const nombre = message.autor && message.autor !== 'Usuario' ? message.autor : 'Administrador';
+      console.log('👨‍💼 [NOMBRE] Es administrador:', nombre);
+      return nombre;
+    }
+    
+    // Fallback
+    console.log('⚠️ [NOMBRE] Usando fallback:', message.autor || 'Usuario');
+    return message.autor || 'Usuario';
   };
 
   const renderEvidencias = () => {
@@ -1579,13 +1710,15 @@ export default function TicketTrackingScreen() {
                   
                   {/* Acciones */}
                   <View style={styles.evidenciaActions}>
-                    <TouchableOpacity 
-                      style={styles.evidenciaActionButton}
-                      onPress={() => handlePreviewArchivo(evidencia)}
-                    >
-                      <Text style={styles.evidenciaActionIcon}>👁️</Text>
-                      <Text style={styles.evidenciaActionLabel}>Ver</Text>
-                    </TouchableOpacity>
+                    {sePuedePrevisualizar(evidencia) && (
+                      <TouchableOpacity 
+                        style={styles.evidenciaActionButton}
+                        onPress={() => handlePreviewArchivo(evidencia)}
+                      >
+                        <Text style={styles.evidenciaActionIcon}>👁️</Text>
+                        <Text style={styles.evidenciaActionLabel}>Ver</Text>
+                      </TouchableOpacity>
+                    )}
                     <TouchableOpacity 
                       style={styles.evidenciaActionButton}
                       onPress={() => handleDownloadEvidencia(evidencia)}
@@ -1762,25 +1895,34 @@ export default function TicketTrackingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Botón flotante para volver */}
-      <TouchableOpacity 
-        style={styles.backButtonFloat}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.backButtonFloatText}>←</Text>
-      </TouchableOpacity>
-
-      {/* Botón flotante para refrescar */}
-      <TouchableOpacity 
-        style={styles.refreshButtonFloat}
-        onPress={onRefresh}
-      >
-        <Text style={styles.refreshButtonFloatText}>🔄</Text>
-      </TouchableOpacity>
-
-      {/* Tabs */}
+      {/* Header del Ticket General - Arriba */}
+      <View style={styles.ticketGeneralHeader}>
+        <Text style={styles.ticketGeneralTitle}>Ticket General</Text>
+        <View style={styles.ticketHeaderActions}>
+          <TouchableOpacity 
+            style={styles.refreshButton}
+            onPress={() => {
+              console.log('🔄 [REFRESH] Actualizando ticket...');
+              loadInitialData();
+            }}
+          >
+            <Text style={styles.refreshButtonText}>🔄</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={() => {
+              console.log('❌ [CLOSE] Cerrando ticket...');
+              navigation.goBack();
+            }}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      {/* Tabs de navegación - Pegado al header */}
       <View style={styles.tabsContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'info' && styles.activeTab]}
           onPress={() => setActiveTab('info')}
         >
@@ -1788,15 +1930,7 @@ export default function TicketTrackingScreen() {
             📋 Info
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'historial' && styles.activeTab]}
-          onPress={() => setActiveTab('historial')}
-        >
-          <Text style={[styles.tabText, activeTab === 'historial' && styles.activeTabText]}>
-            📅 Historial
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'chat' && styles.activeTab]}
           onPress={() => setActiveTab('chat')}
         >
@@ -1804,7 +1938,15 @@ export default function TicketTrackingScreen() {
             💬 Chat
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'historial' && styles.activeTab]}
+          onPress={() => setActiveTab('historial')}
+        >
+          <Text style={[styles.tabText, activeTab === 'historial' && styles.activeTabText]}>
+            📜 Historial
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.tab, activeTab === 'evidencias' && styles.activeTab]}
           onPress={() => setActiveTab('evidencias')}
         >
@@ -1815,17 +1957,20 @@ export default function TicketTrackingScreen() {
       </View>
 
       {/* Content */}
-      <ScrollView 
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {activeTab === 'info' && renderTicketInfo()}
-        {activeTab === 'historial' && renderHistorial()}
-        {activeTab === 'chat' && renderChat()}
-        {activeTab === 'evidencias' && renderEvidencias()}
-      </ScrollView>
+      {activeTab === 'chat' ? (
+        renderChat()
+      ) : (
+        <ScrollView 
+          style={styles.content}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
+          {activeTab === 'info' && renderTicketInfo()}
+          {activeTab === 'historial' && renderHistorial()}
+          {activeTab === 'evidencias' && renderEvidencias()}
+        </ScrollView>
+      )}
 
       {/* Modal de subir evidencia */}
       <EvidenceModal
@@ -1969,17 +2114,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff', // Blanco
   },
-  refreshButton: {
-    padding: 8,
-  },
-  refreshButtonText: {
-    fontSize: 18,
-  },
   tabsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#2d2d2d',
     borderBottomWidth: 1,
-    borderBottomColor: '#333333',
+    borderBottomColor: '#3c3c3c',
   },
   tab: {
     flex: 1,
@@ -1989,15 +2128,16 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#60a5fa',
+    borderBottomColor: '#ffffff',
+    backgroundColor: '#3c3c3c',
   },
   tabText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#cccccc',
     fontWeight: '500',
   },
   activeTabText: {
-    color: '#60a5fa',
+    color: '#ffffff',
     fontWeight: '600',
   },
   content: {
@@ -2024,6 +2164,51 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
     marginBottom: 16,
+  },
+  ticketGeneralHeader: {
+    backgroundColor: '#1e1e1e',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2d2d2d',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ticketGeneralTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  ticketHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  refreshButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3c3c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  refreshButtonText: {
+    fontSize: 16,
+    color: '#ffffff',
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3c3c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
   ticketHeader: {
     backgroundColor: '#1e40af', // Azul oscuro
@@ -2074,6 +2259,31 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderLeftWidth: 3,
     borderLeftColor: '#60a5fa',
+  },
+  // Estilos para indicadores de rol
+  escaladoCard: {
+    backgroundColor: '#1a1a2e',
+    borderLeftColor: '#ff6b35',
+  },
+  originalCard: {
+    backgroundColor: '#2d1b69',
+    borderLeftColor: '#8b5cf6',
+  },
+  asignadoCard: {
+    backgroundColor: '#0f3460',
+    borderLeftColor: '#3b82f6',
+  },
+  escaladoText: {
+    color: '#ff6b35',
+    fontWeight: 'bold',
+  },
+  originalText: {
+    color: '#8b5cf6',
+    fontWeight: 'bold',
+  },
+  asignadoText: {
+    color: '#3b82f6',
+    fontWeight: 'bold',
   },
   infoLabel: {
     fontSize: 14,
@@ -2143,9 +2353,6 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     backgroundColor: '#4CAF50',
-  },
-  closeButton: {
-    backgroundColor: '#9E9E9E',
   },
   actionButtonText: {
     color: '#fff',
@@ -2250,11 +2457,73 @@ const styles = StyleSheet.create({
   },
   chatContainer: {
     flex: 1,
-    maxHeight: 400,
+    backgroundColor: '#1a1a1a',
+    flexDirection: 'column',
+  },
+  messagesContainer: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+  },
+  messagesScrollView: {
+    flex: 1,
+  },
+  messagesContent: {
+    padding: 16,
+    paddingBottom: 20,
+  },
+  emptyChatContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 30,
+  },
+  emptyChatIcon: {
+    fontSize: 64,
+    marginBottom: 24,
+    opacity: 0.8,
+  },
+  emptyChatText: {
+    fontSize: 20,
+    color: '#ffffff',
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  emptyChatSubtext: {
+    fontSize: 16,
+    color: '#9ca3af',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 280,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#1e1e1e',
+    borderTopWidth: 1,
+    borderTopColor: '#2d2d2d',
+  },
+  messageInput: {
+    flex: 1,
+    backgroundColor: '#2d2d2d',
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    marginRight: 12,
+    color: '#ffffff',
+    fontSize: 16,
+    height: 50,
+    maxHeight: 50,
+    borderWidth: 1,
+    borderColor: '#3c3c3c',
   },
   messageContainer: {
-    marginBottom: 12,
-    maxWidth: '80%',
+    marginBottom: 16,
+    maxWidth: '85%',
+    marginHorizontal: 4,
   },
   myMessage: {
     alignSelf: 'flex-end',
@@ -2340,16 +2609,18 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: '#007AFF',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    borderRadius: 25,
+    width: 50,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#3c3c3c',
   },
   sendButtonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '600',
   },
   pollingIndicator: {
@@ -2611,6 +2882,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
+    gap: 8,
+  },
+  messageSenderName: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  technicianSenderName: {
+    color: '#60a5fa',
+  },
+  userSenderName: {
+    color: '#34d399',
   },
   technicianBadge: {
     fontSize: 10,

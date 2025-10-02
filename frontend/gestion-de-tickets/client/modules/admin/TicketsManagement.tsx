@@ -33,7 +33,11 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
-  UserPlus
+  UserPlus,
+  FileText,
+  Image,
+  Download,
+  X
 } from "lucide-react";
 import { useI18n } from "@/i18n";
 import { api } from "@shared/api";
@@ -122,15 +126,25 @@ export default function TicketsManagement() {
   const [trackingData, setTrackingData] = useState<TicketTracking | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   
-  // Estados para el chat del admin
-  const [newMessage, setNewMessage] = useState("");
-  const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'info' | 'historial' | 'chat'>('info');
+  // Estados para el chat del admin (solo visualización)
+  const [activeTab, setActiveTab] = useState<'info' | 'historial' | 'chat' | 'evidencias'>('info');
   const [ws, setWs] = useState<WebSocket | null>(null);
   const [currentTicketId, setCurrentTicketId] = useState<number | null>(null);
   
   // Referencia para auto-scroll del chat
   const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para evidencias
+  const [evidencias, setEvidencias] = useState<any[]>([]);
+  const [evidenciasChat, setEvidenciasChat] = useState<any[]>([]);
+  const [evidenciasFinales, setEvidenciasFinales] = useState<any[]>([]);
+  const [activeEvidenceTab, setActiveEvidenceTab] = useState<'chat' | 'finales'>('chat');
+  const [isLoadingEvidencias, setIsLoadingEvidencias] = useState(false);
+  
+  // Estados para previsualización
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [archivoPreview, setArchivoPreview] = useState<any | null>(null);
 
   // Tickets de prueba para demostración
   const demoTickets = [
@@ -226,45 +240,25 @@ export default function TicketsManagement() {
   const loadTecnicos = async () => {
     try {
       const response = await api.getTechnicians(0, 50);
-      const tecnicosData = response.content.filter((user: any) => user.tipoUsuario === 'Técnico');
+      // Filtrar solo técnicos activos
+      const tecnicosData = response.content.filter((user: any) => 
+        user.tipoUsuario === 'Técnico' && user.activo === true
+      );
+      console.log('🔍 [TÉCNICOS] Técnicos cargados:', tecnicosData.length, 'de', response.content.length, 'total');
+      console.log('🔍 [TÉCNICOS] Técnicos activos:', tecnicosData.map(t => ({ id: t.id, nombre: t.nombre, activo: t.activo })));
       setTecnicos(tecnicosData || []);
     } catch (error) {
       console.error('Error cargando técnicos:', error);
       // Fallback a datos de prueba
       setTecnicos([
-        { id: 1, nombre: 'Juan Pérez', email: 'juan@empresa.com' },
-        { id: 2, nombre: 'María García', email: 'maria@empresa.com' },
-        { id: 3, nombre: 'Carlos López', email: 'carlos@empresa.com' }
+        { id: 1, nombre: 'Juan Pérez', email: 'juan@empresa.com', activo: true },
+        { id: 2, nombre: 'María García', email: 'maria@empresa.com', activo: true },
+        { id: 3, nombre: 'Carlos López', email: 'carlos@empresa.com', activo: true }
       ]);
     }
   };
 
-  // Función para enviar mensaje como administrador
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || isSendingMessage || !selectedTicket) return;
-
-    try {
-      setIsSendingMessage(true);
-      console.log('📤 [ADMIN] Enviando mensaje:', newMessage);
-      
-      // Enviar mensaje usando la API
-      await api.enviarComentario(selectedTicket.id, newMessage.trim());
-      
-      console.log('✅ [ADMIN] Mensaje enviado exitosamente');
-      
-      // Limpiar el input
-      setNewMessage('');
-      
-      // Recargar mensajes inmediatamente
-      await loadMessages(selectedTicket.id);
-      
-    } catch (error) {
-      console.error('❌ [ADMIN] Error enviando mensaje:', error);
-      // Aquí podrías mostrar una notificación de error al usuario
-    } finally {
-      setIsSendingMessage(false);
-    }
-  };
+  // El administrador solo visualiza, no envía mensajes
 
   // Manejar mensajes del WebSocket
   const handleWebSocketMessage = (data: any) => {
@@ -308,9 +302,10 @@ export default function TicketsManagement() {
     setActiveTab('info');
     setCurrentTicketId(ticket.id);
     
-    // Cargar mensajes e historial reales del ticket
+    // Cargar mensajes, historial y evidencias reales del ticket
     await loadTicketMessages(ticket.id);
     await loadTicketHistory(ticket.id);
+    await loadEvidencias(ticket.id);
     
     // Configurar WebSocket simple
     setupSimpleWebSocket(ticket.id);
@@ -755,6 +750,141 @@ export default function TicketsManagement() {
     }
   };
 
+  // Función para cargar evidencias del ticket
+  const loadEvidencias = async (ticketId: number) => {
+    try {
+      setIsLoadingEvidencias(true);
+      console.log('📎 Cargando evidencias del ticket:', ticketId);
+      
+      // Cargar evidencias finales
+      const evidenciasResponse = await api.getEvidenciasPorTicket(ticketId);
+      console.log('📎 Evidencias finales recibidas:', evidenciasResponse);
+      
+      // Cargar archivos del chat
+      const archivosResponse = await api.getArchivosTicket(ticketId);
+      console.log('📎 Archivos del chat recibidos:', archivosResponse);
+      
+      setEvidenciasFinales(evidenciasResponse || []);
+      setEvidenciasChat(archivosResponse || []);
+      setEvidencias([...(evidenciasResponse || []), ...(archivosResponse || [])]);
+    } catch (error) {
+      console.error('❌ Error cargando evidencias:', error);
+      setEvidenciasFinales([]);
+      setEvidenciasChat([]);
+      setEvidencias([]);
+    } finally {
+      setIsLoadingEvidencias(false);
+    }
+  };
+
+  // Función para previsualizar archivo
+  const handlePreview = async (evidencia: any) => {
+    console.log('🔍 [PREVIEW] Iniciando previsualización:', evidencia);
+    console.log('🔍 [PREVIEW] Estructura completa del objeto:', JSON.stringify(evidencia, null, 2));
+    
+    try {
+      let blob;
+      
+      // Debug: verificar todas las propiedades disponibles
+      console.log('🔍 [PREVIEW] Propiedades disponibles:', {
+        idEvidencia: evidencia.idEvidencia,
+        idArchivo: evidencia.idArchivo,
+        id: evidencia.id,
+        urlArchivo: evidencia.urlArchivo,
+        url: evidencia.url,
+        nombreArchivo: evidencia.nombreArchivo,
+        nombre: evidencia.nombre,
+        extensionArchivo: evidencia.extensionArchivo,
+        extension: evidencia.extension,
+        tipoMime: evidencia.tipoMime,
+        tipoArchivo: evidencia.tipoArchivo
+      });
+      
+      // Determinar si es evidencia final o archivo de chat
+      if (evidencia.idEvidencia) {
+        // Es evidencia final - usar la URL directa para previsualización
+        console.log('🔍 [PREVIEW] Previsualizando evidencia final:', evidencia.idEvidencia);
+        const url = evidencia.urlArchivo || evidencia.url;
+        if (url) {
+          // Para evidencias finales, abrir directamente en nueva pestaña
+          console.log('🔍 [PREVIEW] Abriendo URL en nueva pestaña:', url);
+          window.open(url, '_blank');
+          return;
+        } else {
+          throw new Error('No hay URL disponible para esta evidencia final');
+        }
+      } else if (evidencia.idArchivo || evidencia.id) {
+        // Es archivo de chat - usar API para previsualización
+        const archivoId = evidencia.idArchivo || evidencia.id;
+        console.log('🔍 [PREVIEW] Previsualizando archivo de chat:', archivoId);
+        blob = await api.previsualizarArchivoTicketEspecifico(currentTicketId!, archivoId);
+      } else {
+        // Intentar detectar por otras propiedades
+        console.log('🔍 [PREVIEW] Intentando detección alternativa...');
+        
+        // Si tiene URL, tratar como evidencia final
+        if (evidencia.urlArchivo || evidencia.url) {
+          console.log('🔍 [PREVIEW] Detectado como evidencia final por URL');
+          const url = evidencia.urlArchivo || evidencia.url;
+          window.open(url, '_blank');
+          return;
+        }
+        
+        // Si no tiene identificadores claros, mostrar error detallado
+        throw new Error(`No se pudo determinar el tipo de archivo. Propiedades disponibles: ${Object.keys(evidencia).join(', ')}`);
+      }
+      
+      console.log('✅ [PREVIEW] Blob recibido:', blob);
+      
+      const url = window.URL.createObjectURL(blob);
+      console.log('✅ [PREVIEW] URL creada:', url);
+      
+      setArchivoPreview(evidencia);
+      setPreviewUrl(url);
+      setShowPreview(true);
+      
+      console.log('✅ [PREVIEW] Modal de previsualización abierto');
+    } catch (error) {
+      console.error('❌ [PREVIEW] Error previsualizando archivo:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo previsualizar el archivo: " + (error as Error).message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const closePreview = () => {
+    setShowPreview(false);
+    setArchivoPreview(null);
+    if (previewUrl) {
+      window.URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
+  const getFileIcon = (tipoMime: string) => {
+    if (tipoMime?.startsWith('image/')) {
+      return <Image className="h-5 w-5 text-blue-500" />;
+    } else if (tipoMime === 'application/pdf') {
+      return <FileText className="h-5 w-5 text-red-500" />;
+    } else if (tipoMime?.includes('word') || tipoMime?.includes('document')) {
+      return <FileText className="h-5 w-5 text-blue-500" />;
+    } else if (tipoMime?.includes('excel') || tipoMime?.includes('spreadsheet')) {
+      return <FileText className="h-5 w-5 text-green-500" />;
+    } else {
+      return <FileText className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   // WebSocket simple para tiempo real
   const setupSimpleWebSocket = (ticketId: number) => {
     // Cerrar conexión existente
@@ -1082,7 +1212,7 @@ export default function TicketsManagement() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-muted-foreground">Cargando tickets...</p>
+          <p className="text-muted-foreground">{t("tickets.loading")}</p>
         </div>
       </div>
     );
@@ -1093,7 +1223,7 @@ export default function TicketsManagement() {
       {/* Header Section */}
       <div className="module-header">
         <div className="header-content">
-          <h1 className="page-title">Gestión de Tickets</h1>
+          <h1 className="page-title">{t("admin.tickets_management")}</h1>
           <p className="page-subtitle">Administra y supervisa todos los tickets del sistema</p>
         </div>
       </div>
@@ -1112,7 +1242,7 @@ export default function TicketsManagement() {
             <div className="search-container">
               <Search className="search-icon" />
               <Input
-                placeholder="Buscar tickets..."
+                placeholder={t("tickets.search_placeholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="search-input"
@@ -1123,10 +1253,10 @@ export default function TicketsManagement() {
             <div className="filter-group">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="filter-select">
-                  <SelectValue placeholder="Todos los estados" />
+                  <SelectValue placeholder={t("filters.status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="all">{t("filters.status")}</SelectItem>
                   <SelectItem value="pendiente">Pendiente</SelectItem>
                   <SelectItem value="asignado">Asignado</SelectItem>
                   <SelectItem value="escalado">Escalado</SelectItem>
@@ -1139,10 +1269,10 @@ export default function TicketsManagement() {
             <div className="filter-group">
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                 <SelectTrigger className="filter-select">
-                  <SelectValue placeholder="Todas las prioridades" />
+                  <SelectValue placeholder={t("filters.priority")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas las prioridades</SelectItem>
+                  <SelectItem value="all">{t("filters.priority")}</SelectItem>
                   <SelectItem value="high">Alta</SelectItem>
                   <SelectItem value="medium">Media</SelectItem>
                   <SelectItem value="low">Baja</SelectItem>
@@ -1154,10 +1284,10 @@ export default function TicketsManagement() {
             <div className="filter-group">
               <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
                 <SelectTrigger className="filter-select">
-                  <SelectValue placeholder="Todos los técnicos" />
+                  <SelectValue placeholder={t("filters.technician")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos los técnicos</SelectItem>
+                  <SelectItem value="all">{t("filters.technician")}</SelectItem>
                   <SelectItem value="w@s.com">w@s.com</SelectItem>
                   <SelectItem value="w@s.comassa">w@s.comassa</SelectItem>
                   <SelectItem value="marketing@empresa.com">marketing@empresa.com</SelectItem>
@@ -1284,10 +1414,10 @@ export default function TicketsManagement() {
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
                   <span><strong>Técnico:</strong> {
-                    ticket.tecnicoEmail ? (() => {
+                    ticket.tecnicoNombre || (ticket.tecnicoEmail ? (() => {
                       const tecnico = tecnicos.find(t => t.email === ticket.tecnicoEmail);
                       return tecnico ? `${tecnico.nombre} ${tecnico.apellido || ''}`.trim() : ticket.tecnicoEmail;
-                    })() : 'Sin asignar'
+                    })() : 'Sin asignar')
                   }</span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
@@ -1315,18 +1445,26 @@ export default function TicketsManagement() {
                     className="flex-1"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
-                    Asignar
+                    {t("tickets.assign")}
                   </Button>
                 ) : (
-                  <Button 
-                    variant="destructive"
-                    size="sm" 
-                    onClick={() => handleEscalateTicket(ticket)}
-                    className="flex-1"
-                  >
-                    <ArrowUp className="w-4 h-4 mr-1" />
-                    Escalar
-                  </Button>
+                  // Verificar si ya se escaló (solo una escalación por ticket)
+                  ticket.historialAsignaciones?.some(asignacion => asignacion.tipoOperacion === 'ESCALAMIENTO') ? (
+                    <div className="flex-1 flex items-center justify-center px-3 py-2 text-sm text-muted-foreground bg-muted rounded-md h-9 text-center">
+                      <Eye className="w-4 h-4 mr-1" />
+                      Ya Escalado
+                    </div>
+                  ) : (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleEscalateTicket(ticket)}
+                      className="flex-1"
+                    >
+                      <ArrowUp className="w-4 h-4 mr-1" />
+                      {t("tickets.escalate")}
+                    </Button>
+                  )
                 )}
               </div>
             </CardContent>
@@ -1517,7 +1655,7 @@ export default function TicketsManagement() {
                         setSelectedTecnico("");
                       }}
                     >
-                      Asignar Otro
+                      {t("tickets.assign")} Otro
                     </Button>
                   </div>
                 </div>
@@ -1619,7 +1757,7 @@ export default function TicketsManagement() {
                         setSelectedTecnico("");
                       }}
                     >
-                      Escalar Otro
+                      {t("tickets.escalate")} Otro
                     </Button>
                   </div>
                 </div>
@@ -1729,6 +1867,16 @@ export default function TicketsManagement() {
                       onClick={() => setActiveTab('chat')}
                     >
                       Chat
+                    </button>
+                    <button
+                      className={`px-4 py-3 text-sm font-medium border-b-2 ${
+                        activeTab === 'evidencias' 
+                          ? 'border-blue-500 text-blue-600' 
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                      onClick={() => setActiveTab('evidencias')}
+                    >
+                      Evidencias
                     </button>
                   </div>
                 </div>
@@ -1857,33 +2005,159 @@ export default function TicketsManagement() {
                         <div ref={chatEndRef} />
                       </div>
                       
-                      {/* Área de envío de mensajes para Admin */}
+                      {/* El administrador solo visualiza, no envía mensajes */}
                       <div className="border-t p-4 bg-muted/30">
-                        <div className="flex gap-2">
-                          <Input
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendMessage();
-                              }
-                            }}
-                            placeholder="Escribe un mensaje como administrador..."
-                            className="flex-1"
-                          />
-                          <Button 
-                            onClick={handleSendMessage}
-                            disabled={!newMessage.trim() || isSendingMessage}
-                            size="sm"
-                          >
-                            {isSendingMessage ? 'Enviando...' : 'Enviar'}
-                          </Button>
+                        <div className="flex items-center justify-center text-sm text-muted-foreground">
+                          <Eye className="w-4 h-4 mr-2" />
+                          Solo visualización - El administrador no puede enviar mensajes
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          💬 Los mensajes se actualizan automáticamente cada 3 segundos
-                        </p>
                       </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'evidencias' && (
+                    <div className="p-6">
+                      <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Evidencias del Ticket
+                      </h3>
+                      
+                      {/* Tabs de categorías de evidencias */}
+                      <div className="flex space-x-1 mb-4">
+                        <button
+                          className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                            activeEvidenceTab === 'chat' 
+                              ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                          onClick={() => setActiveEvidenceTab('chat')}
+                        >
+                          💬 Evidencias de Chat ({evidenciasChat.length})
+                        </button>
+                        <button
+                          className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                            activeEvidenceTab === 'finales' 
+                              ? 'bg-blue-100 text-blue-700 border border-blue-200' 
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
+                          onClick={() => setActiveEvidenceTab('finales')}
+                        >
+                          📋 Evidencias Finales ({evidenciasFinales.length})
+                        </button>
+                      </div>
+
+                      {isLoadingEvidencias ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="text-center">
+                            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+                            <p className="text-sm text-muted-foreground">Cargando evidencias...</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {(() => {
+                            const evidenciasActuales = activeEvidenceTab === 'chat' ? evidenciasChat : evidenciasFinales;
+                            
+                            if (evidenciasActuales.length === 0) {
+                              return (
+                                <div className="text-center py-12">
+                                  <div className="text-6xl mb-4">
+                                    {activeEvidenceTab === 'chat' ? '💬' : '📋'}
+                                  </div>
+                                  <h4 className="text-lg font-medium text-gray-900 mb-2">
+                                    {activeEvidenceTab === 'chat' 
+                                      ? 'No hay archivos del chat'
+                                      : 'No hay evidencias finales'}
+                                  </h4>
+                                  <p className="text-sm text-gray-500">
+                                    {activeEvidenceTab === 'chat'
+                                      ? 'Los archivos compartidos en el chat aparecerán aquí'
+                                      : 'Las evidencias finales subidas por el técnico aparecerán aquí'}
+                                  </p>
+                                </div>
+                              );
+                            }
+
+                            return evidenciasActuales.map((evidencia, index) => (
+                              <div key={evidencia.id || evidencia.idEvidencia || evidencia.idArchivo || index} 
+                                   className="border rounded-lg p-4 hover:bg-gray-50">
+                                <div className="flex items-start space-x-4">
+                                  {/* Icono del archivo */}
+                                  <div className="flex-shrink-0">
+                                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                      <span className="text-2xl">
+                                        {(() => {
+                                          const extension = evidencia.extensionArchivo || evidencia.nombreArchivo?.split('.').pop()?.toLowerCase();
+                                          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) return '🖼️';
+                                          if (['pdf'].includes(extension)) return '📄';
+                                          if (['doc', 'docx'].includes(extension)) return '📝';
+                                          if (['xls', 'xlsx'].includes(extension)) return '📊';
+                                          if (['zip', 'rar', '7z'].includes(extension)) return '📦';
+                                          return '📎';
+                                        })()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Información del archivo */}
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                                      {evidencia.nombreArchivo || evidencia.nombre || 'Archivo sin nombre'}
+                                    </h4>
+                                    {(evidencia.descripcion || evidencia.comentario) && (
+                                      <p className="text-sm text-gray-500 mt-1">
+                                        {evidencia.descripcion || evidencia.comentario}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                      <span>👤 {evidencia.subidoPorNombre || evidencia.subidoPor || 'Usuario'}</span>
+                                      <span>📅 {new Date(evidencia.fechaSubida || evidencia.fechaCreacion || new Date()).toLocaleDateString()}</span>
+                                      {evidencia.tamanioArchivo && (
+                                        <span>💾 {evidencia.tamanioFormateado || evidencia.tamanioArchivo}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Acciones */}
+                                  <div className="flex space-x-2">
+                                    {(() => {
+                                      const extension = evidencia.extensionArchivo || evidencia.nombreArchivo?.split('.').pop()?.toLowerCase();
+                                      const sePuedePrevisualizar = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'].includes(extension);
+                                      
+                                      return (
+                                        <>
+                                          {sePuedePrevisualizar && (
+                                            <button
+                                              className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                              onClick={() => handlePreview(evidencia)}
+                                            >
+                                              👁️ Ver
+                                            </button>
+                                          )}
+                                          <button
+                                            className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                                            onClick={() => {
+                                              const url = evidencia.urlArchivo || evidencia.url;
+                                              if (url) {
+                                                const link = document.createElement('a');
+                                                link.href = url;
+                                                link.download = evidencia.nombreArchivo || evidencia.nombre || 'archivo';
+                                                link.click();
+                                              }
+                                            }}
+                                          >
+                                            📥 Descargar
+                                          </button>
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              </div>
+                            ));
+                          })()}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1935,6 +2209,96 @@ export default function TicketsManagement() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Modal de previsualización */}
+      {showPreview && previewUrl && archivoPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Header del modal */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                {getFileIcon(archivoPreview.tipoMime || archivoPreview.tipoArchivo || '')}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {archivoPreview.nombreArchivo || archivoPreview.nombre || 'Archivo'}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {archivoPreview.tamanioFormateado || (archivoPreview.tamanioArchivo ? formatFileSize(archivoPreview.tamanioArchivo) : '')} • 
+                    {(archivoPreview.extensionArchivo || archivoPreview.nombreArchivo?.split('.').pop() || '').toUpperCase()}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                    const url = archivoPreview.urlArchivo || archivoPreview.url;
+                    if (url) {
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = archivoPreview.nombreArchivo || archivoPreview.nombre || 'archivo';
+                      link.click();
+                    }
+                  }}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar
+                </Button>
+                <Button
+                  onClick={closePreview}
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Contenido de previsualización */}
+            <div className="flex-1 p-4 overflow-auto">
+              {(() => {
+                const extension = archivoPreview.extensionArchivo || archivoPreview.nombreArchivo?.split('.').pop()?.toLowerCase();
+                const esImagen = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension);
+                const esPDF = extension === 'pdf';
+                
+                if (esImagen) {
+                  return (
+                    <div className="flex justify-center">
+                      <img
+                        src={previewUrl}
+                        alt={archivoPreview.nombreArchivo || archivoPreview.nombre}
+                        className="max-w-full max-h-full object-contain rounded-lg"
+                      />
+                    </div>
+                  );
+                } else if (esPDF) {
+                  return (
+                    <div className="w-full h-full">
+                      <iframe
+                        src={previewUrl}
+                        className="w-full h-full min-h-[500px] border-0 rounded-lg"
+                        title={archivoPreview.nombreArchivo || archivoPreview.nombre}
+                      />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                        <p className="text-gray-500">Previsualización no disponible para este tipo de archivo</p>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </div>
         </div>
       )}
 

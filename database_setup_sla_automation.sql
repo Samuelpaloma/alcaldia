@@ -2,7 +2,7 @@
 -- SCRIPT SQL PARA CONFIGURACIÓN DE SLA Y AUTOMATIZACIÓN
 -- ========================================
 -- Este script crea las tablas necesarias para el sistema de SLA y automatización
--- que se integró desde la rama paloma-HU-5
+-- que se integró desde la rama paloma-HU-4
 
 -- ========================================
 -- 1. TABLA DE CONFIGURACIONES SLA
