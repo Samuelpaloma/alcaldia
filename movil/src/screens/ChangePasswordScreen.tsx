@@ -11,6 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../hooks/useTheme';
+import { API_CONFIG } from '../config/api';
 
 const ChangePasswordScreen = () => {
   const { theme } = useTheme();
@@ -82,7 +83,7 @@ const ChangePasswordScreen = () => {
         token: token ? '[PROVIDED]' : '[EMPTY]'
       });
       
-      const response = await fetch('http://localhost:8080/api/auth/change-password', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

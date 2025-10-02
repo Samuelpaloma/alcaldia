@@ -5,6 +5,7 @@ import { NavigationContainer, NavigationContainerRef } from '@react-navigation/n
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import './src/i18n';
+import { API_CONFIG } from './src/config/api';
 
 // Pantallas
 import LoginScreen from './src/screens/LoginScreen';
@@ -52,7 +53,7 @@ export default function App() {
       const token = await AsyncStorage.getItem('authToken');
       if (token) {
         try {
-          const response = await fetch('http://localhost:8080/api/auth/logout', {
+          const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/logout`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -108,7 +109,7 @@ export default function App() {
       const token = await AsyncStorage.getItem('authToken');
       if (token) {
         // Verificar si el token sigue válido
-        const response = await fetch('http://localhost:8080/api/auth/verify', {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/verify`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

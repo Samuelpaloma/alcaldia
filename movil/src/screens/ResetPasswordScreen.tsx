@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "./navigationTypes"; // ajusta la ruta según tu estructura
+import { API_CONFIG } from '../config/api';
 
 type ResetPasswordScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -86,7 +87,7 @@ export default function ResetPasswordScreen() {
       console.log('📧 Email:', email);
       console.log('🔑 Código:', resetCode.trim());
       
-      const response = await fetch('http://localhost:8080/api/auth/reset-password', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

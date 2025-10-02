@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_CONFIG } from '../config/api';
 
 type VerifyScreenParams = {
   userId: number;
@@ -39,7 +40,7 @@ export default function VerifyScreen() {
       console.log('User ID:', userId);
       console.log('Code:', code);
 
-      const response = await fetch('http://localhost:8080/api/auth/verify-2fa', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/verify-2fa`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
