@@ -33,8 +33,8 @@ class EvidenceService {
     // En desarrollo, usar la IP de la máquina en lugar de localhost
     const isDevelopment = __DEV__;
     if (isDevelopment) {
-      // Usar la IP de la máquina (192.168.1.87)
-      return 'http://192.168.1.87:8080/api';
+      // Usar localhost para desarrollo
+      return 'http://localhost:8080/api';
     }
     return this.baseUrl;
   }
@@ -156,21 +156,38 @@ class EvidenceService {
         formData.append('ticketId', evidenceData.ticketId.toString());
         formData.append('descripcion', evidenceData.descripcion);
         
-        // Para React Native, usar el formato correcto
-        formData.append('archivo', {
-          uri: evidenceData.archivo.uri,
-          type: evidenceData.archivo.type,
-          name: evidenceData.archivo.name,
-        } as any);
+        // Para React Native Web, necesitamos convertir el archivo a Blob primero
+        let fileBlob;
+        if (evidenceData.archivo.uri.startsWith('blob:')) {
+          const response = await fetch(evidenceData.archivo.uri);
+          fileBlob = await response.blob();
+        } else {
+          // Para archivos del sistema de archivos, crear un Blob
+          const response = await fetch(evidenceData.archivo.uri);
+          fileBlob = await response.blob();
+        }
+        
+        // Crear un File object con el Blob
+        const file = new File([fileBlob], evidenceData.archivo.name, {
+          type: evidenceData.archivo.type
+        });
+        
+        formData.append('archivo', file);
 
         console.log('📎 Enviando FormData para evidencia final');
         console.log('📎 FormData ticketId:', evidenceData.ticketId);
         console.log('📎 FormData descripcion:', evidenceData.descripcion);
         console.log('📎 FormData archivo:', {
-          uri: evidenceData.archivo.uri,
-          type: evidenceData.archivo.type,
-          name: evidenceData.archivo.name,
+          name: file.name,
+          type: file.type,
+          size: file.size,
         });
+        
+        // Debug: verificar el FormData
+        console.log('📎 FormData entries:');
+        for (let [key, value] of formData.entries()) {
+          console.log(`📎 ${key}:`, value);
+        }
 
         response = await fetch(endpoint, {
           method: 'POST',

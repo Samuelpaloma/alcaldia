@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import './src/i18n';
 
 // Pantallas
 import LoginScreen from './src/screens/LoginScreen';
@@ -41,6 +42,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Login');
+  const [initialParams, setInitialParams] = useState<any>(undefined);
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   const handleLogout = async () => {
@@ -105,6 +108,13 @@ export default function App() {
   const checkAuthStatus = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
+      
+      // Verificar si hay un ticketId en la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const ticketId = urlParams.get('ticketId');
+      
+      console.log('🔍 [APP] Verificando URL params:', { ticketId });
+      
       if (token) {
         // Verificar si el token sigue válido
         const response = await fetch('http://localhost:8080/api/auth/verify', {
@@ -117,21 +127,38 @@ export default function App() {
           // Token válido
           setIsAuthenticated(true);
           console.log('✅ [APP] Token válido, usuario autenticado');
+          
+          // Si hay ticketId en la URL, ir directamente a TicketTracking
+          if (ticketId) {
+            const ticketIdNum = parseInt(ticketId);
+            if (!isNaN(ticketIdNum)) {
+              console.log('🎫 [APP] Ticket ID encontrado en URL, navegando a TicketTracking:', ticketIdNum);
+              setInitialRoute('TicketTracking');
+              setInitialParams({ ticketId: ticketIdNum });
+            } else {
+              setInitialRoute('Home');
+            }
+          } else {
+            setInitialRoute('Home');
+          }
         } else {
           // Token expirado, ir a Login
           await AsyncStorage.removeItem('authToken');
           await AsyncStorage.clear();
           setIsAuthenticated(false);
+          setInitialRoute('Login');
           console.log('⚠️ [APP] Token expirado, requiere nuevo login');
         }
       } else {
         // Sin token, ir a Login
         setIsAuthenticated(false);
+        setInitialRoute('Login');
         console.log('ℹ️ [APP] Sin token, mostrando login');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
+      setInitialRoute('Login');
     } finally {
       setIsReady(true);
       setLoading(false);
@@ -154,7 +181,7 @@ export default function App() {
     <ThemeProvider>
       <NavigationContainer ref={navigationRef}>
         <StatusBar style="auto" />
-        <Stack.Navigator initialRouteName={isAuthenticated ? "Home" : "Login"}>
+        <Stack.Navigator initialRouteName={initialRoute}>
         <Stack.Screen 
           name="Login" 
           component={LoginScreen} 
@@ -215,6 +242,7 @@ export default function App() {
           name="TicketTracking"
           component={TicketTrackingScreen}
           options={{ headerShown: false }}
+          initialParams={initialParams}
         />
         </Stack.Navigator>
       </NavigationContainer>

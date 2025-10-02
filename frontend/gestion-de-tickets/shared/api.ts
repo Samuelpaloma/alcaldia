@@ -775,7 +775,7 @@ class ApiClient {
     console.log('💬 [API] Obteniendo mensajes del ticket:', ticketId);
     
     try {
-      const response = await this.request(`/tickets/${ticketId}/comentarios`);
+      const response = await this.request<any[]>(`/tickets/${ticketId}/comentarios`);
       console.log('✅ [API] Mensajes obtenidos:', response);
       return response;
     } catch (error) {
@@ -1212,7 +1212,7 @@ class ApiClient {
     console.log('💬 [API] Enviando comentario:', { ticketId, mensaje });
     
     try {
-      const response = await this.request(`/tickets/${ticketId}/comentarios`, {
+      const response = await this.request<ApiResponse>(`/tickets/${ticketId}/comentarios`, {
       method: 'POST',
       body: JSON.stringify({ mensaje })
     });

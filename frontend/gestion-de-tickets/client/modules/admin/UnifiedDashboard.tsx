@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api, TicketResponseDTO, SystemStatsResponse } from '../../../shared/api';
+import { useI18n } from '../../i18n';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -55,6 +56,7 @@ interface ActiveTechnician {
 }
 
 const UnifiedDashboard: React.FC = () => {
+  const { t } = useI18n();
   const [metricas, setMetricas] = useState<DashboardMetrics | null>(null);
   const [recentTickets, setRecentTickets] = useState<RecentTicket[]>([]);
   const [activeTechnicians, setActiveTechnicians] = useState<ActiveTechnician[]>([]);
@@ -167,7 +169,7 @@ const UnifiedDashboard: React.FC = () => {
             nombre: tech.nombreCompleto,
             email: tech.email,
             ticketsActivos,
-            estado: ticketsActivos > 0 ? 'En línea' : 'Disponible',
+            estado: ticketsActivos > 0 ? t('dashboard.technician.online') : t('dashboard.technician.available'),
             activo: tech.activo // Agregar campo activo
           };
           console.log('🔧 [DEBUG] Técnico procesado:', techData);
@@ -219,13 +221,13 @@ const UnifiedDashboard: React.FC = () => {
     const diffInDays = Math.floor(diffInHours / 24);
 
     if (diffInHours < 1) {
-      return 'Hace unos minutos';
+      return t('dashboard.time_ago.minutes');
     } else if (diffInHours < 24) {
-      return `Hace ${diffInHours} ${diffInHours === 1 ? 'hora' : 'horas'}`;
+      return `${t('dashboard.time_ago.hour')} ${diffInHours} ${diffInHours === 1 ? t('dashboard.time_ago.hour') : t('dashboard.time_ago.hours')}`;
     } else if (diffInDays === 1) {
-      return 'Ayer';
+      return t('dashboard.time_ago.yesterday');
     } else if (diffInDays < 7) {
-      return `Hace ${diffInDays} días`;
+      return `${t('dashboard.time_ago.day')} ${diffInDays}`;
     } else {
       return date.toLocaleDateString('es-ES');
     }
@@ -272,6 +274,38 @@ const UnifiedDashboard: React.FC = () => {
     }
   };
 
+  const getStatusText = (estado: string) => {
+    switch (estado?.toUpperCase()) {
+      case 'PENDIENTE':
+        return t('dashboard.status.pending');
+      case 'ASIGNADO':
+        return t('dashboard.status.assigned');
+      case 'EN_PROGRESO':
+        return t('dashboard.status.in_progress');
+      case 'ESCALADO':
+        return t('dashboard.status.escalated');
+      case 'RESUELTO':
+        return t('dashboard.status.resolved');
+      case 'CERRADO':
+        return t('dashboard.status.closed');
+      default:
+        return estado;
+    }
+  };
+
+  const getPriorityText = (prioridad: string) => {
+    switch (prioridad?.toLowerCase()) {
+      case 'high':
+        return t('dashboard.priority.high');
+      case 'medium':
+        return t('dashboard.priority.medium');
+      case 'low':
+        return t('dashboard.priority.low');
+      default:
+        return prioridad;
+    }
+  };
+
   const getTendenciaColor = (valor: number, esPositivo: boolean) => {
     if (esPositivo) {
       return valor > 0 ? 'text-green-600' : 'text-red-600';
@@ -314,28 +348,28 @@ const UnifiedDashboard: React.FC = () => {
     <div className="unified-dashboard">
       <div className="dashboard-header">
         <div className="header-content">
-          <h1 className="dashboard-title">Dashboard Administrativo</h1>
-          <p className="dashboard-subtitle">Vista completa del sistema de gestión de tickets</p>
+          <h1 className="dashboard-title">{t('dashboard.title')}</h1>
+          <p className="dashboard-subtitle">{t('dashboard.subtitle')}</p>
         </div>
         <div className="header-actions">
           <Button onClick={loadMetricas} variant="outline">
             <RefreshCw className="w-4 h-4 mr-2" />
-            Actualizar
+            {t('dashboard.refresh')}
           </Button>
           <Button>
             <Download className="w-4 h-4 mr-2" />
-            Exportar
+            {t('dashboard.export')}
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Resumen</TabsTrigger>
-          <TabsTrigger value="analytics">Análisis</TabsTrigger>
-          <TabsTrigger value="performance">Rendimiento</TabsTrigger>
-          <TabsTrigger value="trends">Tendencias</TabsTrigger>
-          <TabsTrigger value="sla">Monitoreo SLA</TabsTrigger>
+          <TabsTrigger value="overview">{t('dashboard.tabs.summary')}</TabsTrigger>
+          <TabsTrigger value="analytics">{t('dashboard.tabs.analysis')}</TabsTrigger>
+          <TabsTrigger value="performance">{t('dashboard.tabs.performance')}</TabsTrigger>
+          <TabsTrigger value="trends">{t('dashboard.tabs.trends')}</TabsTrigger>
+          <TabsTrigger value="sla">{t('dashboard.tabs.sla_monitoring')}</TabsTrigger>
         </TabsList>
 
         {/* Pestaña Resumen */}
@@ -348,7 +382,7 @@ const UnifiedDashboard: React.FC = () => {
                     <Ticket className="w-6 h-6 text-blue-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total de Tickets</p>
+                    <p className="text-sm font-medium text-gray-600">{t('dashboard.metrics.total_tickets')}</p>
                     <p className="text-2xl font-bold text-gray-900">{metricas?.totalTickets}</p>
                     <div className="flex items-center mt-1">
                       <span className={`text-sm ${getTendenciaColor(12, true)}`}>
@@ -368,7 +402,7 @@ const UnifiedDashboard: React.FC = () => {
                     <CheckCircle className="w-6 h-6 text-green-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Tickets Resueltos</p>
+                    <p className="text-sm font-medium text-gray-600">{t('dashboard.metrics.resolved_tickets')}</p>
                     <p className="text-2xl font-bold text-gray-900">{metricas?.ticketsResueltos}</p>
                     <div className="flex items-center mt-1">
                       <span className={`text-sm ${getTendenciaColor(8, true)}`}>
@@ -388,7 +422,7 @@ const UnifiedDashboard: React.FC = () => {
                     <Clock className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Tickets Pendientes</p>
+                    <p className="text-sm font-medium text-gray-600">{t('dashboard.metrics.pending_tickets')}</p>
                     <p className="text-2xl font-bold text-gray-900">{metricas?.ticketsPendientes}</p>
                     <div className="flex items-center mt-1">
                       <span className={`text-sm ${getTendenciaColor(5, false)}`}>
@@ -408,7 +442,7 @@ const UnifiedDashboard: React.FC = () => {
                     <Activity className="w-6 h-6 text-purple-600" />
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Tiempo Promedio</p>
+                    <p className="text-sm font-medium text-gray-600">{t('dashboard.metrics.average_time')}</p>
                     <p className="text-2xl font-bold text-gray-900">{metricas?.tiempoPromedioResolucion}h</p>
                     <div className="flex items-center mt-1">
                       <span className={`text-sm ${getTendenciaColor(15, false)}`}>
@@ -431,7 +465,7 @@ const UnifiedDashboard: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <BarChart3 className="w-5 h-5 mr-2" />
-                  Tickets Recientes
+                  {t('dashboard.recent_tickets')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -449,15 +483,15 @@ const UnifiedDashboard: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm truncate">{ticket.asunto}</p>
                             <p className="text-xs text-gray-500">{formatTimeAgo(ticket.fechaCreacion)}</p>
-                            <p className="text-xs text-gray-400">Por: {ticket.creadoPor}</p>
+                            <p className="text-xs text-gray-400">{t('dashboard.by')}: {ticket.creadoPor}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <Badge className={`text-xs ${getPriorityColor(ticket.prioridad)}`}>
-                            {ticket.prioridad}
+                            {getPriorityText(ticket.prioridad)}
                           </Badge>
                           <Badge className={`text-xs ${getStatusColor(ticket.estado)}`}>
-                            {ticket.estado}
+                            {getStatusText(ticket.estado)}
                           </Badge>
                         </div>
                       </div>
@@ -471,7 +505,7 @@ const UnifiedDashboard: React.FC = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Users className="w-5 h-5 mr-2" />
-                  Técnicos Activos
+                  {t('dashboard.active_technicians')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -493,14 +527,14 @@ const UnifiedDashboard: React.FC = () => {
                           <div>
                             <p className="font-medium">{technician.nombre}</p>
                             <p className="text-xs text-gray-500">
-                              {technician.ticketsActivos} ticket{technician.ticketsActivos !== 1 ? 's' : ''} activo{technician.ticketsActivos !== 1 ? 's' : ''}
+                              {technician.ticketsActivos} {t('dashboard.technician.active_tickets')}
                             </p>
                           </div>
                         </div>
                         <Badge className={
-                          technician.estado === 'En línea' 
+                          technician.estado === t('dashboard.technician.online')
                             ? 'bg-green-100 text-green-800' 
-                            : technician.estado === 'Ocupado'
+                            : technician.estado === t('dashboard.technician.busy')
                             ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-gray-100 text-gray-800'
                         }>
@@ -700,7 +734,7 @@ const UnifiedDashboard: React.FC = () => {
                     <p className="text-gray-600 mb-4">Verificando tickets con SLA vencido...</p>
                     <Button variant="outline" size="sm">
                       <RefreshCw className="w-4 h-4 mr-2" />
-                      Verificar Ahora
+                      {t('dashboard.sla.verify_now')}
                     </Button>
                   </div>
                 </CardContent>
@@ -719,7 +753,7 @@ const UnifiedDashboard: React.FC = () => {
                     <p className="text-gray-600 mb-4">Verificando tickets próximos a vencer...</p>
                     <Button variant="outline" size="sm">
                       <RefreshCw className="w-4 h-4 mr-2" />
-                      Verificar Ahora
+                      {t('dashboard.sla.verify_now')}
                     </Button>
                   </div>
                 </CardContent>

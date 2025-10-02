@@ -1224,7 +1224,7 @@ export default function TicketsManagement() {
       <div className="module-header">
         <div className="header-content">
           <h1 className="page-title">{t("admin.tickets_management")}</h1>
-          <p className="page-subtitle">Administra y supervisa todos los tickets del sistema</p>
+          <p className="page-subtitle">{t("tickets_management.subtitle")}</p>
         </div>
       </div>
 
@@ -1233,7 +1233,7 @@ export default function TicketsManagement() {
         <CardHeader>
           <CardTitle className="flex items-center text-xl">
             <Filter className="w-5 h-5 mr-2" />
-            Filtros y Búsqueda
+{t("tickets_management.filters_title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -1256,11 +1256,11 @@ export default function TicketsManagement() {
                   <SelectValue placeholder={t("filters.status")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("filters.status")}</SelectItem>
-                  <SelectItem value="pendiente">Pendiente</SelectItem>
-                  <SelectItem value="asignado">Asignado</SelectItem>
-                  <SelectItem value="escalado">Escalado</SelectItem>
-                  <SelectItem value="resuelto">Resuelto</SelectItem>
+                  <SelectItem value="all">{t("tickets_management.all_statuses")}</SelectItem>
+                  <SelectItem value="pendiente">{t("dashboard.status.pending")}</SelectItem>
+                  <SelectItem value="asignado">{t("dashboard.status.assigned")}</SelectItem>
+                  <SelectItem value="escalado">{t("dashboard.status.escalated")}</SelectItem>
+                  <SelectItem value="resuelto">{t("dashboard.status.resolved")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1310,7 +1310,7 @@ export default function TicketsManagement() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Tickets</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("tickets_management.total_tickets")}</p>
                 <p className="text-2xl font-bold text-foreground">{tickets.length}</p>
               </div>
               <div className="p-3 bg-blue-100 rounded-full">
@@ -1324,7 +1324,7 @@ export default function TicketsManagement() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pendientes</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("tickets_management.pending")}</p>
                 <p className="text-2xl font-bold text-foreground">
                   {tickets.filter(t => t.estado === 'PENDIENTE').length}
                 </p>
@@ -1340,7 +1340,7 @@ export default function TicketsManagement() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Asignados</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("tickets_management.assigned")}</p>
                 <p className="text-2xl font-bold text-foreground">
                   {tickets.filter(t => t.estado === 'ASIGNADO' || t.estado === 'ESCALADO').length}
                 </p>
@@ -1356,7 +1356,7 @@ export default function TicketsManagement() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Resueltos</p>
+                <p className="text-sm font-medium text-muted-foreground">{t("tickets_management.resolved")}</p>
                 <p className="text-2xl font-bold text-foreground">
                   {tickets.filter(t => t.estado === 'RESUELTO').length}
                 </p>
@@ -1409,11 +1409,11 @@ export default function TicketsManagement() {
               <div className="space-y-2 mb-4 flex-grow">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <User className="w-4 h-4" />
-                  <span><strong>Solicitante:</strong> {ticket.creadorNombre || ticket.nombre || 'N/A'}</span>
+                  <span><strong>{t("tickets_management.requester")}:</strong> {ticket.creadorNombre || ticket.nombre || 'N/A'}</span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
-                  <span><strong>Técnico:</strong> {
+                  <span><strong>{t("tickets_management.technician")}:</strong> {
                     ticket.tecnicoNombre || (ticket.tecnicoEmail ? (() => {
                       const tecnico = tecnicos.find(t => t.email === ticket.tecnicoEmail);
                       return tecnico ? `${tecnico.nombre} ${tecnico.apellido || ''}`.trim() : ticket.tecnicoEmail;
@@ -1422,7 +1422,7 @@ export default function TicketsManagement() {
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Calendar className="w-4 h-4" />
-                  <span><strong>Fecha:</strong> {ticket.fechaCreacion}</span>
+                  <span><strong>{t("tickets_management.date")}:</strong> {ticket.fechaCreacion}</span>
                 </div>
               </div>
 
@@ -1435,7 +1435,7 @@ export default function TicketsManagement() {
                   className="flex-1"
                 >
                   <Eye className="w-4 h-4 mr-1" />
-                  Ver
+{t("tickets_management.view")}
                 </Button>
                 
                 {!ticket.tecnicoEmail ? (
@@ -1452,7 +1452,7 @@ export default function TicketsManagement() {
                   ticket.historialAsignaciones?.some(asignacion => asignacion.tipoOperacion === 'ESCALAMIENTO') ? (
                     <div className="flex-1 flex items-center justify-center px-3 py-2 text-sm text-muted-foreground bg-muted rounded-md h-9 text-center">
                       <Eye className="w-4 h-4 mr-1" />
-                      Ya Escalado
+{t("tickets_management.already_escalated")}
                     </div>
                   ) : (
                     <Button
@@ -1478,7 +1478,7 @@ export default function TicketsManagement() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredTickets.length)} de {filteredTickets.length} tickets
+{t("pagination.showing")} {startIndex + 1} {t("pagination.to")} {Math.min(endIndex, filteredTickets.length)} {t("pagination.of")} {filteredTickets.length} {t("pagination.tickets")}
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -1487,7 +1487,7 @@ export default function TicketsManagement() {
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
-                  Anterior
+{t("pagination.previous")}
                 </Button>
                 
                 {/* Números de página */}
@@ -1511,7 +1511,7 @@ export default function TicketsManagement() {
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
-                  Siguiente
+{t("pagination.next")}
                 </Button>
               </div>
             </div>
@@ -1793,27 +1793,27 @@ export default function TicketsManagement() {
                 <div className="space-y-6">
                   {/* Información del Ticket */}
                   <div>
-                    <h3 className="font-semibold mb-3">Información del Ticket</h3>
+                    <h3 className="font-semibold mb-3">{t('ticket_detail.info_section_title')}</h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Solicitante:</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('ticket_detail.requester')}:</label>
                         <p className="text-sm">{selectedTicket.creadorNombre || selectedTicket.nombre || 'N/A'}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Estado:</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('common.status')}:</label>
                         <div className="mt-1">{getStatusBadge(selectedTicket.estado)}</div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Prioridad:</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('common.priority')}:</label>
                         <div className="mt-1">{getPriorityBadge(selectedTicket.prioridad)}</div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-muted-foreground">Fecha:</label>
+                        <label className="text-sm font-medium text-muted-foreground">{t('common.date')}:</label>
                         <p className="text-sm">{selectedTicket.fechaCreacion}</p>
                       </div>
                       {selectedTicket.tecnicoEmail && (
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Técnico:</label>
+                          <label className="text-sm font-medium text-muted-foreground">{t('ticket_detail.technician')}:</label>
                           <p className="text-sm">{
                             (() => {
                               const tecnico = tecnicos.find(t => t.email === selectedTicket.tecnicoEmail);
@@ -1827,7 +1827,7 @@ export default function TicketsManagement() {
 
                   {/* Descripción */}
                   <div>
-                    <h3 className="font-semibold mb-3">Descripción</h3>
+                    <h3 className="font-semibold mb-3">{t('common.description')}</h3>
                     <p className="text-sm text-muted-foreground">{selectedTicket.descripcion}</p>
                   </div>
                 </div>
@@ -1846,7 +1846,7 @@ export default function TicketsManagement() {
                       }`}
                       onClick={() => setActiveTab('info')}
                     >
-                      Información
+{t('ticket_detail.tab_info')}
                     </button>
                     <button
                       className={`px-4 py-3 text-sm font-medium border-b-2 ${
@@ -1856,7 +1856,7 @@ export default function TicketsManagement() {
                       }`}
                       onClick={() => setActiveTab('historial')}
                     >
-                      Historial
+                      {t('ticket_detail.tab_history')}
                     </button>
                     <button
                       className={`px-4 py-3 text-sm font-medium border-b-2 ${
@@ -1866,7 +1866,7 @@ export default function TicketsManagement() {
                       }`}
                       onClick={() => setActiveTab('chat')}
                     >
-                      Chat
+                      {t('ticket_detail.tab_chat')}
                     </button>
                     <button
                       className={`px-4 py-3 text-sm font-medium border-b-2 ${
@@ -1876,7 +1876,7 @@ export default function TicketsManagement() {
                       }`}
                       onClick={() => setActiveTab('evidencias')}
                     >
-                      Evidencias
+                      {t('ticket_detail.tab_evidence')}
                     </button>
                   </div>
                 </div>
@@ -1885,22 +1885,22 @@ export default function TicketsManagement() {
                 <div className="flex-1 overflow-y-auto">
                   {activeTab === 'info' && (
                     <div className="p-6">
-                      <h3 className="font-semibold mb-4">Detalles del Ticket</h3>
+                      <h3 className="font-semibold mb-4">{t('ticket_detail.ticket_details')}</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">ID:</label>
+                          <label className="text-sm font-medium text-muted-foreground">{t('ticket_detail.id')}:</label>
                           <p className="text-sm">#{selectedTicket.id}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Categoría:</label>
+                          <label className="text-sm font-medium text-muted-foreground">{t('common.category')}:</label>
                           <p className="text-sm">{selectedTicket.categoria || 'General'}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Tiempo estimado:</label>
+                          <label className="text-sm font-medium text-muted-foreground">{t('ticket_detail.estimated_time')}:</label>
                           <p className="text-sm">{selectedTicket.tiempoEstimado || 'No especificado'}</p>
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-muted-foreground">Última actualización:</label>
+                          <label className="text-sm font-medium text-muted-foreground">{t('ticket_detail.last_update')}:</label>
                           <p className="text-sm">{selectedTicket.fechaCreacion}</p>
                         </div>
                       </div>
@@ -1911,20 +1911,20 @@ export default function TicketsManagement() {
                     <div className="p-6">
                       <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <Clock className="w-5 h-5" />
-                        Historial de Actividades
+{t('ticket_detail.activity_history')}
                       </h3>
                       
                       {isLoadingHistory ? (
                         <div className="flex items-center justify-center py-8">
                           <div className="text-center">
                             <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-                            <p className="text-muted-foreground">Cargando historial...</p>
+                            <p className="text-muted-foreground">{t('ticket_detail.loading_history')}</p>
                           </div>
                         </div>
                       ) : historial.length === 0 ? (
                         <div className="text-center py-8">
                           <Clock className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                          <p className="text-muted-foreground">No hay historial disponible</p>
+                          <p className="text-muted-foreground">{t('ticket_detail.no_history_available')}</p>
                         </div>
                       ) : (
                       <div className="space-y-4">
@@ -1945,7 +1945,7 @@ export default function TicketsManagement() {
                                 <p className="text-sm text-muted-foreground mb-1">{item.descripcion}</p>
                                 <p className="text-xs text-muted-foreground">
                                   <User className="w-3 h-3 inline mr-1" />
-                                  Por: {item.usuario}
+{t('ticket_detail.by')}: {item.usuario}
                                 </p>
                             </div>
                           </div>
@@ -1960,11 +1960,11 @@ export default function TicketsManagement() {
                       {/* Header con indicador de tiempo real */}
                       <div className="border-b p-3 bg-muted/30">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Chat en Tiempo Real</span>
+                          <span className="text-sm font-medium">{t('ticket_detail.real_time_chat')}</span>
                           <div className="flex items-center space-x-2">
                             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                             <span className="text-xs text-green-600 font-medium">
-                              {currentTicketId ? `Actualizando cada 3s (Ticket #${currentTicketId})` : 'Conectando...'}
+                              {currentTicketId ? t('ticket_detail.updating_every_3s', { ticketId: currentTicketId }) : t('ticket_detail.connecting')}
                             </span>
                           </div>
                         </div>
@@ -1974,7 +1974,7 @@ export default function TicketsManagement() {
                       <div className="flex-1 p-6 overflow-y-auto space-y-4">
                         {mensajes.length === 0 ? (
                           <div className="text-center text-sm text-muted-foreground py-8">
-                            <div className="animate-pulse">🔄 Cargando mensajes en tiempo real...</div>
+                            <div className="animate-pulse">🔄 {t('ticket_detail.loading_real_time_messages')}</div>
                           </div>
                         ) : (
                           mensajes.map((mensaje) => (
@@ -2050,7 +2050,7 @@ export default function TicketsManagement() {
                         <div className="flex items-center justify-center py-8">
                           <div className="text-center">
                             <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
-                            <p className="text-sm text-muted-foreground">Cargando evidencias...</p>
+                            <p className="text-sm text-muted-foreground">{t('ticket_detail.loading_evidence')}</p>
                           </div>
                         </div>
                       ) : (
@@ -2066,13 +2066,13 @@ export default function TicketsManagement() {
                                   </div>
                                   <h4 className="text-lg font-medium text-gray-900 mb-2">
                                     {activeEvidenceTab === 'chat' 
-                                      ? 'No hay archivos del chat'
-                                      : 'No hay evidencias finales'}
+                                      ? t('ticket_detail.no_chat_files')
+                                      : t('ticket_detail.no_final_evidence')}
                                   </h4>
                                   <p className="text-sm text-gray-500">
                                     {activeEvidenceTab === 'chat'
-                                      ? 'Los archivos compartidos en el chat aparecerán aquí'
-                                      : 'Las evidencias finales subidas por el técnico aparecerán aquí'}
+                                      ? t('ticket_detail.chat_files_will_appear_here')
+                                      : t('ticket_detail.final_evidence_will_appear_here')}
                                   </p>
                                 </div>
                               );
@@ -2102,7 +2102,7 @@ export default function TicketsManagement() {
                                   {/* Información del archivo */}
                                   <div className="flex-1 min-w-0">
                                     <h4 className="text-sm font-medium text-gray-900 truncate">
-                                      {evidencia.nombreArchivo || evidencia.nombre || 'Archivo sin nombre'}
+                                      {evidencia.nombreArchivo || evidencia.nombre || t('ticket_detail.unnamed_file')}
                                     </h4>
                                     {(evidencia.descripcion || evidencia.comentario) && (
                                       <p className="text-sm text-gray-500 mt-1">
@@ -2110,7 +2110,7 @@ export default function TicketsManagement() {
                                       </p>
                                     )}
                                     <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                                      <span>👤 {evidencia.subidoPorNombre || evidencia.subidoPor || 'Usuario'}</span>
+                                      <span>👤 {evidencia.subidoPorNombre || evidencia.subidoPor || t('common.user')}</span>
                                       <span>📅 {new Date(evidencia.fechaSubida || evidencia.fechaCreacion || new Date()).toLocaleDateString()}</span>
                                       {evidencia.tamanioArchivo && (
                                         <span>💾 {evidencia.tamanioFormateado || evidencia.tamanioArchivo}</span>
@@ -2131,7 +2131,7 @@ export default function TicketsManagement() {
                                               className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                                               onClick={() => handlePreview(evidencia)}
                                             >
-                                              👁️ Ver
+                                              👁️ {t('common.view')}
                                             </button>
                                           )}
                                           <button
@@ -2146,7 +2146,7 @@ export default function TicketsManagement() {
                                               }
                                             }}
                                           >
-                                            📥 Descargar
+                                            📥 {t('common.download')}
                                           </button>
                                         </>
                                       );

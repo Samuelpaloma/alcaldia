@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from '../hooks/useTranslation';
+import LanguageSelector from '../components/LanguageSelector';
 
 interface ConfiguracionesScreenProps {
   onLogout: () => void;
@@ -27,6 +29,7 @@ interface UserInfo {
 
 export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScreenProps) {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 
@@ -50,16 +53,6 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro de que quieres cerrar sesión?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Cerrar Sesión', style: 'destructive', onPress: onLogout }
-      ]
-    );
-  };
 
   const styles = createStyles();
 
@@ -82,7 +75,7 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
       />
       
       <View style={styles.header}>
-        <Text style={styles.title}>Configuraciones</Text>
+        <Text style={styles.title}>{t('settings.title')}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
           <Text style={styles.closeButtonText}>×</Text>
         </TouchableOpacity>
@@ -91,12 +84,12 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
       <View style={styles.content}>
         {/* Información Personal */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>👤 Información Personal</Text>
+          <Text style={styles.sectionTitle}>👤 {t('settings.personal_info')}</Text>
           
           {userInfo && (
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Nombre completo</Text>
+                <Text style={styles.infoLabel}>{t('profile.full_name')}</Text>
                 <Text style={styles.infoValue}>
                   {userInfo.nombre && userInfo.apellido 
                     ? `${userInfo.nombre} ${userInfo.apellido}`
@@ -107,7 +100,7 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
               <View style={styles.infoDivider} />
               
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoLabel}>{t('common.email')}</Text>
                 <Text style={styles.infoValue}>{userInfo.email}</Text>
               </View>
 
@@ -115,7 +108,7 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
                 <>
                   <View style={styles.infoDivider} />
                   <View style={styles.infoRow}>
-                    <Text style={styles.infoLabel}>Teléfono</Text>
+                    <Text style={styles.infoLabel}>{t('common.phone')}</Text>
                     <Text style={styles.infoValue}>{userInfo.telefono}</Text>
                   </View>
                 </>
@@ -124,10 +117,18 @@ export default function ConfiguracionesScreen({ onLogout }: ConfiguracionesScree
           )}
         </View>
 
-        {/* Botón de Cerrar Sesión */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
+        {/* Sección de Idioma */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🌐 {t('settings.language')}</Text>
+          
+          <View style={styles.languageSection}>
+            <View style={styles.languageContent}>
+              <Text style={styles.languageLabel}>{t('settings.change_language')}</Text>
+              <LanguageSelector />
+            </View>
+          </View>
+        </View>
+
       </View>
     </SafeAreaView>
   );
@@ -210,18 +211,22 @@ const createStyles = () => StyleSheet.create({
     height: 1,
     backgroundColor: '#333333',
   },
-  logoutButton: {
-    backgroundColor: '#ef4444',
-    paddingVertical: 16,
-    paddingHorizontal: 24,
+  languageSection: {
+    backgroundColor: '#1a1a1a',
     borderRadius: 12,
-    marginTop: 'auto',
-    marginBottom: 32,
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#333333',
+    padding: 16,
   },
-  logoutText: {
-    color: '#ffffff',
+  languageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  languageLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    color: '#e5e7eb',
+    fontWeight: '500',
+    flex: 1,
   },
 });
