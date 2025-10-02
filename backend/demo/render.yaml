@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: alcaldia-backend
+    env: java
+    buildCommand: ./mvnw clean package -DskipTests
+    startCommand: java -jar target/demo-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: alcaldia-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: alcaldia-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: alcaldia-db
+          property: password
+
+databases:
+  - name: alcaldia-db
+    databaseName: alcaldia
+    user: alcaldia_user

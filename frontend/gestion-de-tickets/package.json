@@ -15,7 +15,9 @@
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "vite build --config vite.config.server.ts",
-    "start": "node dist/server/node-build.mjs",
+    "start": "node server.js",
+    "start:prod": "NODE_ENV=production node server.js",
+    "render-postbuild": "npm run build",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc"
