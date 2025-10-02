@@ -14,6 +14,7 @@ import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.asignacion.model.HistorialAsignacion;
 import lombok.RequiredArgsConstructor;
 import java.util.Optional;
+import java.util.Comparator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -153,14 +155,57 @@ public class AdminService {
             .map(this::convertirHistorialAResponseDTO)
             .collect(Collectors.toList());
         
-        // Obtener historial de asignaciones
-        List<HistorialAsignacion> historialAsignaciones = historialAsignacionRepository.findByTicketIdOrderByFechaOperacionAsc(ticket.getId());
-        List<com.example.demo.asignacion.dto.response.AsignacionResponseDTO> historialAsignacionesDTO = historialAsignaciones.stream()
-            .map(this::convertirHistorialAsignacionAResponseDTO)
+        // Obtener historial de asignaciones directamente del repositorio
+        List<com.example.demo.asignacion.model.AsignacionTicket> asignacionesTicket = asignacionService.obtenerAsignacionesPorTicket(ticket.getId())
+            .stream()
+            .map(dto -> {
+                // Crear entidad básica con los datos disponibles
+                com.example.demo.asignacion.model.AsignacionTicket asignacion = new com.example.demo.asignacion.model.AsignacionTicket();
+                asignacion.setId(dto.getId());
+                asignacion.setTicketId(dto.getTicketId());
+                asignacion.setTecnicoId(dto.getTecnicoId());
+                asignacion.setFechaAsignacion(dto.getFechaAsignacion());
+                asignacion.setTipoOperacion(dto.getTipoOperacion());
+                asignacion.setActiva(dto.getActiva());
+                return asignacion;
+            })
             .collect(Collectors.toList());
         
-        // Obtener el técnico asignado original (primera asignación)
-        com.example.demo.usuario.model.Usuario tecnicoOriginal = asignacionService.obtenerTecnicoAsignadoOriginal(ticket.getId());
+        List<com.example.demo.asignacion.dto.response.AsignacionResponseDTO> historialAsignacionesDTO = asignacionesTicket.stream()
+            .map(this::convertirAsignacionTicketAResponseDTO)
+            .collect(Collectors.toList());
+        
+        // Obtener el técnico asignado ACTUAL (última asignación por fecha)
+        com.example.demo.usuario.model.Usuario tecnicoActual = null;
+        
+        // Debug logs
+        System.out.println("🔍 [ADMIN DEBUG] Ticket ID: " + ticket.getId());
+        System.out.println("🔍 [ADMIN DEBUG] Asignaciones ticket: " + asignacionesTicket.size());
+        for (com.example.demo.asignacion.model.AsignacionTicket at : asignacionesTicket) {
+            System.out.println("🔍 [ADMIN DEBUG] - Asignación: " + at.getTipoOperacion() + ", Técnico ID: " + at.getTecnicoId() + ", Fecha: " + at.getFechaAsignacion() + ", Es escalación: " + at.getEsEscalacion());
+        }
+        
+        if (!asignacionesTicket.isEmpty()) {
+            // Obtener la última asignación por fecha
+            com.example.demo.asignacion.model.AsignacionTicket ultimaAsignacion = asignacionesTicket.stream()
+                .max(Comparator.comparing(com.example.demo.asignacion.model.AsignacionTicket::getFechaAsignacion))
+                .orElse(null);
+            
+            System.out.println("🔍 [ADMIN DEBUG] Última asignación: " + (ultimaAsignacion != null ? ultimaAsignacion.getTipoOperacion() + " - Técnico ID: " + ultimaAsignacion.getTecnicoId() : "null"));
+            
+            if (ultimaAsignacion != null) {
+                tecnicoActual = usuarioRepository.findById(ultimaAsignacion.getTecnicoId()).orElse(null);
+                System.out.println("🔍 [ADMIN DEBUG] Técnico actual encontrado: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+            }
+        }
+        
+        // Si no hay asignación, usar el técnico del ticket
+        if (tecnicoActual == null) {
+            tecnicoActual = ticket.getTecnicoAsignado();
+            System.out.println("🔍 [ADMIN DEBUG] Usando técnico del ticket: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
+        }
+        
+        System.out.println("🔍 [ADMIN DEBUG] Técnico final seleccionado: " + (tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : "null"));
         
         return new TicketResponseDTO(
             ticket.getId(),
@@ -170,8 +215,8 @@ public class AdminService {
             ticket.getEstado(),
             ticket.getCreadorEmail(), // Usar método seguro
             ticket.getCreadorNombre(), // Usar método seguro
-            tecnicoOriginal != null ? tecnicoOriginal.getEmail() : null,
-            tecnicoOriginal != null ? tecnicoOriginal.getNombre() + " " + tecnicoOriginal.getApellido() : null,
+            tecnicoActual != null ? tecnicoActual.getEmail() : null,
+            tecnicoActual != null ? tecnicoActual.getNombre() + " " + tecnicoActual.getApellido() : null,
             ticket.getFechaCreacion(),
             ticket.getFechaActualizacion(),
             ticket.getCreadorNombre(), // Usar método seguro
@@ -262,6 +307,36 @@ public class AdminService {
             .fechaAsignacion(historial.getFechaOperacion() != null ? historial.getFechaOperacion() : historial.getFechaAccion())
             .activa(false)
             .tipoOperacion(historial.getTipoOperacion())
+            .build();
+    }
+    
+    private com.example.demo.asignacion.dto.response.AsignacionResponseDTO convertirAsignacionTicketAResponseDTO(com.example.demo.asignacion.model.AsignacionTicket asignacion) {
+        // Obtener información del técnico desde la base de datos
+        String tecnicoNombre = "Técnico";
+        String tecnicoEmail = "tecnico@alcaldia.gov.co";
+        if (asignacion.getTecnicoId() != null) {
+            Optional<Usuario> tecnicoOpt = usuarioRepository.findById(asignacion.getTecnicoId());
+            if (tecnicoOpt.isPresent()) {
+                Usuario tecnico = tecnicoOpt.get();
+                tecnicoNombre = tecnico.getNombre() + " " + tecnico.getApellido();
+                tecnicoEmail = tecnico.getEmail();
+            }
+        }
+        
+        return com.example.demo.asignacion.dto.response.AsignacionResponseDTO.builder()
+            .id(asignacion.getId())
+            .ticketId(asignacion.getTicketId())
+            .ticketAsunto("Ticket #" + asignacion.getTicketId())
+            .ticketEstado("ASIGNADO") // Estado genérico
+            .tecnicoId(asignacion.getTecnicoId())
+            .tecnicoNombre(tecnicoNombre)
+            .tecnicoEmail(tecnicoEmail)
+            .comentario(asignacion.getComentario())
+            .fechaAsignacion(asignacion.getFechaAsignacion())
+            // asignadoPor no está disponible en AsignacionResponseDTO
+            .tipoOperacion(asignacion.getTipoOperacion())
+            // esEscalacion no está disponible en AsignacionResponseDTO
+            .activa(asignacion.getActiva())
             .build();
     }
 }
