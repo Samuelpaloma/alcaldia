@@ -40,9 +40,17 @@ const SLAMonitoringWidget: React.FC<SLAMonitoringWidgetProps> = ({ className = '
       setError(null);
       
       const response = await api.getSLAMonitoringStats();
+      console.log('🔍 [SLA Widget] Respuesta del backend:', response);
+      
       if (response && response.data) {
+        console.log('✅ [SLA Widget] Datos SLA cargados:', response.data);
         setStats(response.data);
+      } else if (response) {
+        // Si la respuesta viene directamente sin .data
+        console.log('✅ [SLA Widget] Datos SLA cargados (directo):', response);
+        setStats(response);
       } else {
+        console.log('❌ [SLA Widget] No hay datos en la respuesta');
         setError('No se pudieron cargar las estadísticas de SLA');
       }
     } catch (err) {

@@ -78,20 +78,37 @@ const UnifiedDashboard: React.FC = () => {
         console.log('⚠️ [DEBUG] Métricas del dashboard no disponibles, usando datos calculados');
       }
       
-      // Cargar tickets recientes (usando historial de tickets)
-      const ticketsResponse = await api.getTicketsHistory(0, 100);
-      const tickets = ticketsResponse.content;
-      console.log('🎫 [DEBUG] Tickets recibidos:', tickets.length);
+      // Cargar tickets recientes
+      let tickets = [];
+      try {
+        tickets = await api.getAdminTickets();
+        console.log('🎫 [DEBUG] Tickets recibidos:', tickets.length);
+      } catch (error) {
+        console.log('⚠️ [DEBUG] Error cargando tickets:', error);
+        tickets = [];
+      }
       
       // Cargar técnicos
-      const techniciansResponse = await api.getTechnicians(0, 100);
-      const technicians = techniciansResponse.content;
-      console.log('👥 [DEBUG] Técnicos recibidos:', technicians.length);
+      let technicians = [];
+      try {
+        const techniciansResponse = await api.getTechnicians(0, 100);
+        technicians = techniciansResponse.content || techniciansResponse;
+        console.log('👥 [DEBUG] Técnicos recibidos:', technicians.length);
+      } catch (error) {
+        console.log('⚠️ [DEBUG] Error cargando técnicos:', error);
+        technicians = [];
+      }
       
       // Procesar datos reales
       const totalTickets = tickets.length;
       const ticketsResueltos = tickets.filter(t => t.estado === 'RESUELTO' || t.estado === 'CERRADO').length;
       const ticketsPendientes = tickets.filter(t => t.estado === 'PENDIENTE' || t.estado === 'ASIGNADO' || t.estado === 'EN_PROGRESO').length;
+      
+      console.log('📊 [DEBUG] Estadísticas calculadas:');
+      console.log('  - Total tickets:', totalTickets);
+      console.log('  - Tickets resueltos:', ticketsResueltos);
+      console.log('  - Tickets pendientes:', ticketsPendientes);
+      console.log('  - Técnicos:', technicians.length);
       
       // Calcular estadísticas por categoría
       const categoriaStats = new Map<string, number>();
@@ -140,20 +157,30 @@ const UnifiedDashboard: React.FC = () => {
         }));
       
       // Preparar técnicos activos
+      console.log('🔧 [DEBUG] Procesando técnicos:', technicians);
       const activeTechniciansData = technicians
         .map(tech => {
+          console.log('🔧 [DEBUG] Técnico individual:', tech);
           const ticketsActivos = tickets.filter(t => t.tecnicoAsignado === tech.nombreCompleto).length;
-          return {
-            id: tech.idUsuario,
+          const techData = {
+            id: tech.id, // Corregido: usar 'id' en lugar de 'idUsuario'
             nombre: tech.nombreCompleto,
             email: tech.email,
             ticketsActivos,
-            estado: ticketsActivos > 0 ? 'En línea' : 'Disponible'
+            estado: ticketsActivos > 0 ? 'En línea' : 'Disponible',
+            activo: tech.activo // Agregar campo activo
           };
+          console.log('🔧 [DEBUG] Técnico procesado:', techData);
+          return techData;
         })
-        .filter(tech => tech.ticketsActivos > 0)
+        .filter(tech => {
+          console.log('🔧 [DEBUG] Filtrando técnico:', tech.nombre, 'activo:', tech.activo);
+          return tech.activo; // Mostrar todos los técnicos activos, no solo los que tienen tickets
+        })
         .sort((a, b) => b.ticketsActivos - a.ticketsActivos)
         .slice(0, 3);
+      
+      console.log('🔧 [DEBUG] Técnicos activos finales:', activeTechniciansData);
       
       const metricasData: DashboardMetrics = {
         totalTickets,
