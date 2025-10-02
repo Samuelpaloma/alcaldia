@@ -1,0 +1,51 @@
+### ========================================
+### PRUEBA PATCH ENDPOINT - AUTOMATIZACIÓN
+### ========================================
+
+### 1. Verificar que el backend esté funcionando
+GET http://localhost:8080/api/health
+
+### 2. Obtener todas las reglas de automatización
+GET http://localhost:8080/api/automation-rules
+
+### 3. Crear una regla de prueba
+POST http://localhost:8080/api/automation-rules
+Content-Type: application/json
+
+{
+  "nombre": "Regla de Prueba PATCH",
+  "descripcion": "Regla para probar el endpoint PATCH",
+  "condicion": "categoria == \"Software\"",
+  "accion": "asignar_tecnico(2)",
+  "prioridad": 2,
+  "activa": true
+}
+
+### 4. Actualizar la regla usando PATCH (reemplaza {{ruleId}} con el ID de la regla creada)
+PATCH http://localhost:8080/api/automation-rules/{{ruleId}}
+Content-Type: application/json
+
+{
+  "nombre": "Regla de Prueba PATCH - Actualizada",
+  "descripcion": "Regla actualizada usando PATCH",
+  "condicion": "categoria == \"Hardware\"",
+  "accion": "asignar_tecnico(1)",
+  "prioridad": 1,
+  "activa": false
+}
+
+### 5. Verificar que la regla fue actualizada correctamente
+GET http://localhost:8080/api/automation-rules/{{ruleId}}
+
+### 6. Probar actualización con ID que no existe (debería dar error)
+PATCH http://localhost:8080/api/automation-rules/99999
+Content-Type: application/json
+
+{
+  "nombre": "Regla Inexistente",
+  "descripcion": "Esta regla no debería existir",
+  "condicion": "false",
+  "accion": "no_action()",
+  "prioridad": 1,
+  "activa": true
+}

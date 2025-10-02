@@ -132,6 +132,26 @@ public class ReglaAutomatizacionController {
     }
     
     /**
+     * Actualizar regla de automatización (PATCH)
+     * PATCH /api/automation-rules/{id}
+     */
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse> actualizarReglaPatch(
+            @PathVariable Long id,
+            @Valid @RequestBody ReglaAutomatizacionRequestDTO request) {
+        try {
+            log.info("Actualizando regla de automatización ID: {} (PATCH)", id);
+            ReglaAutomatizacionResponseDTO regla = reglaAutomatizacionService.actualizarRegla(id, request);
+            return ResponseEntity.ok(ApiResponse.success("Regla actualizada exitosamente", regla));
+        } catch (Exception e) {
+            log.error("Error actualizando regla ID: {} (PATCH)", id, e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al actualizar regla: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
      * Eliminar regla de automatización
      * DELETE /api/automation-rules/{id}
      */
