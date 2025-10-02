@@ -499,8 +499,8 @@ export default function TicketsManagement() {
         
         console.log('📋 Historial generado desde datos reales del ticket:', historialGenerado);
         setHistorial(historialGenerado);
-        return;
-      }
+            return;
+          }
       
       // Fallback: intentar API de historial si no hay datos en el ticket
       try {
@@ -615,9 +615,9 @@ export default function TicketsManagement() {
             fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
             descripcion: `Ticket asignado a ${nombreTecnicoAsignado}`
           });
-          
+        
           // Si está escalado, buscar un técnico diferente para la escalación
-          if (ticket.estado === 'ESCALADO') {
+        if (ticket.estado === 'ESCALADO') {
             console.log('📋 Procesando escalación para ticket:', ticket.id);
             console.log('📋 Técnico asignado:', ticket.tecnicoEmail);
             console.log('📋 Todos los técnicos:', tecnicos);
@@ -651,13 +651,13 @@ export default function TicketsManagement() {
             console.log('📋 INVESTIGACIÓN - Técnico seleccionado para escalación:', nombreTecnicoEscalado);
             console.log('📋 INVESTIGACIÓN - ¿Son diferentes?', nombreTecnicoAsignado !== nombreTecnicoEscalado);
             
-            historialGenerado.push({
-              id: 3,
-              accion: 'Ticket escalado',
+          historialGenerado.push({
+            id: 3,
+            accion: 'Ticket escalado',
               usuario: 'Administrador',
-              fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
+            fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
               descripcion: `Escalado a ${nombreTecnicoEscalado} por requerir atención especializada`
-            });
+          });
           }
         }
         
@@ -1298,9 +1298,9 @@ export default function TicketsManagement() {
 
               {/* Botones de acción */}
               <div className="flex gap-2 pt-4 border-t">
-                <Button
+                <Button 
                   variant="outline"
-                  size="sm"
+                  size="sm" 
                   onClick={() => handleViewTicket(ticket)}
                   className="flex-1"
                 >
@@ -1309,8 +1309,8 @@ export default function TicketsManagement() {
                 </Button>
                 
                 {!ticket.tecnicoEmail ? (
-                  <Button
-                    size="sm"
+                  <Button 
+                    size="sm" 
                     onClick={() => handleAssignTicket(ticket)}
                     className="flex-1"
                   >
@@ -1318,9 +1318,9 @@ export default function TicketsManagement() {
                     Asignar
                   </Button>
                 ) : (
-                  <Button
+                  <Button 
                     variant="destructive"
-                    size="sm"
+                    size="sm" 
                     onClick={() => handleEscalateTicket(ticket)}
                     className="flex-1"
                   >
@@ -1779,7 +1779,7 @@ export default function TicketsManagement() {
                           <p className="text-muted-foreground">No hay historial disponible</p>
                         </div>
                       ) : (
-                        <div className="space-y-4">
+                      <div className="space-y-4">
                           {historial.map((item, index) => (
                             <div key={item.id} className="flex items-start space-x-4 p-4 bg-muted/50 rounded-lg border border-border">
                               <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
@@ -1792,17 +1792,17 @@ export default function TicketsManagement() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-2">
                                   <p className="font-medium text-sm text-foreground">{item.accion}</p>
-                                  <p className="text-xs text-muted-foreground">{item.fecha}</p>
-                                </div>
+                                <p className="text-xs text-muted-foreground">{item.fecha}</p>
+                              </div>
                                 <p className="text-sm text-muted-foreground mb-1">{item.descripcion}</p>
                                 <p className="text-xs text-muted-foreground">
                                   <User className="w-3 h-3 inline mr-1" />
                                   Por: {item.usuario}
                                 </p>
-                              </div>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
+                      </div>
                       )}
                     </div>
                   )}
