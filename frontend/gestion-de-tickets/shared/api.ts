@@ -2310,7 +2310,186 @@ class ApiClient {
     return this.request('/sla/monitoring/expiring');
   }
 
+  // ==================== REPORTES ====================
+
+  /**
+   * Obtener estadísticas de reportes
+   */
+  async getReportesEstadisticas(): Promise<{
+    success: boolean;
+    message: string;
+    data: EstadisticasReportes;
+  }> {
+    console.log('🔍 [API-CLIENT] Solicitando estadísticas de reportes...');
+    const response = await this.request('/reports/estadisticas');
+    console.log('🔍 [API-CLIENT] Respuesta de estadísticas recibida:', response);
+    return response;
+  }
+
+  /**
+   * Obtener estadísticas básicas (más eficiente)
+   */
+  async getReportesEstadisticasBasicas(): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      totalTickets: number;
+      ticketsResueltos: number;
+      ticketsPendientes: number;
+      ticketsEnProceso: number;
+      tiempoPromedioResolucion: number;
+      satisfaccionPromedio: number;
+    };
+  }> {
+    console.log('🔍 [API-CLIENT] Solicitando estadísticas básicas...');
+    const response = await this.request('/reports/estadisticas-basicas');
+    console.log('🔍 [API-CLIENT] Respuesta de estadísticas básicas recibida:', response);
+    return response;
+  }
+
+  /**
+   * Obtener reportes mensuales
+   */
+  async getReportesMensuales(page: number = 0, size: number = 10): Promise<{
+    success: boolean;
+    message: string;
+    data: ReporteMensual[];
+  }> {
+    console.log(`🔍 [API-CLIENT] Solicitando reportes mensuales - página: ${page}, tamaño: ${size}`);
+    const response = await this.request(`/reports/mensuales?page=${page}&size=${size}`);
+    console.log('🔍 [API-CLIENT] Respuesta de reportes mensuales recibida:', response);
+    return response;
+  }
+
+  /**
+   * Obtener reporte mensual específico
+   */
+  async getReporteMensual(id: number): Promise<{
+    success: boolean;
+    message: string;
+    data: ReporteMensual;
+  }> {
+    return this.request(`/reports/mensuales/${id}`);
+  }
+
+  /**
+   * Generar reporte mensual
+   */
+  async generarReporteMensual(mes: number, año: number): Promise<{
+    success: boolean;
+    message: string;
+    data: ReporteMensual;
+  }> {
+    return this.request('/reports/mensuales/generar', {
+      method: 'POST',
+      body: JSON.stringify({ mes, año }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
+
+  /**
+   * Descargar reporte mensual
+   */
+  async descargarReporteMensual(id: number): Promise<{
+    success: boolean;
+    message: string;
+    data: Blob; // Archivo PDF como Blob
+  }> {
+    console.log('🔍 [API-CLIENT] Descargando reporte mensual ID:', id);
+    
+    try {
+      const response = await fetch(`${this.baseURL}/reports/mensuales/${id}/descargar`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('🔍 [API-CLIENT] Respuesta de descarga:', response.status, response.statusText);
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const blob = await response.blob();
+      console.log('🔍 [API-CLIENT] Archivo descargado, tamaño:', blob.size, 'bytes');
+
+      return {
+        success: true,
+        message: 'Archivo descargado exitosamente',
+        data: blob
+      };
+    } catch (error) {
+      console.error('🔍 [API-CLIENT] Error descargando reporte:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener tendencias de reportes
+   */
+  async getReportesTendencias(meses: number = 12): Promise<{
+    success: boolean;
+    message: string;
+    data: TendenciaMensual[];
+  }> {
+    return this.request(`/reports/tendencias?meses=${meses}`);
+  }
+
 }
 
 // Exportar instancia única del cliente API
 export const api = new ApiClient();
+
+// ==================== TIPOS DE REPORTES ====================
+
+export interface EstadisticasReportes {
+  totalTickets: number;
+  ticketsResueltos: number;
+  ticketsPendientes: number;
+  ticketsEnProceso: number;
+  tiempoPromedioResolucion: number;
+  satisfaccionPromedio: number;
+  ticketsPorCategoria: { [key: string]: number };
+  ticketsPorTecnico: { [key: string]: number };
+  tendenciaMensual: { [key: string]: number };
+}
+
+export interface ReporteMensual {
+  id: number;
+  mes: string;
+  año: number;
+  totalTickets: number;
+  ticketsResueltos: number;
+  ticketsPendientes: number;
+  ticketsEnProceso: number;
+  tiempoPromedioResolucion: number;
+  satisfaccionPromedio: number;
+  topCategorias: TopCategoria[];
+  topTecnicos: TopTecnico[];
+  fechaGeneracion: string;
+  archivoUrl?: string;
+  nombreArchivo?: string;
+  tamañoArchivo?: number;
+}
+
+export interface TopCategoria {
+  categoria: string;
+  cantidad: number;
+}
+
+export interface TopTecnico {
+  tecnico: string;
+  ticketsResueltos: number;
+  tiempoPromedioResolucion: number;
+}
+
+export interface TendenciaMensual {
+  mes: string;
+  año: number;
+  totalTickets: number;
+  ticketsResueltos: number;
+}
