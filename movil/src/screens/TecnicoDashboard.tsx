@@ -19,9 +19,11 @@ import type { RootStackParamList } from './navigationTypes';
 import { checkAuthStatus } from './utils/authHelpers';
 import NotificacionService from '../services/NotificacionService';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../hooks/useTranslation';
 import SecurityService from '../services/SecurityService';
 import NotificacionesModal from './components/NotificacionesModal';
 import PreferenciasNotificacionesModal from './components/PreferenciasNotificacionesModal';
+import LanguageSelector from '../components/LanguageSelector';
 import { useFocusEffect } from '@react-navigation/native';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,7 +48,32 @@ interface Ticket {
 export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const navigation = useNavigation<NavigationProp>();
   const { theme, isDark } = useTheme();
+  const { t } = useTranslation();
   const styles = createStyles(theme);
+
+  // Función para traducir estados
+  const getStatusText = (estado: string) => {
+    const statusMap: { [key: string]: string } = {
+      'PENDIENTE': t('common.pending'),
+      'ASIGNADO': t('tickets.assigned'),
+      'EN_PROCESO': t('common.in_progress'),
+      'RESUELTO': t('common.completed'),
+      'CERRADO': t('tickets.closed'),
+      'ESCALADO': t('tickets.escalated')
+    };
+    return statusMap[estado] || estado;
+  };
+
+  // Función para traducir prioridades
+  const getPriorityText = (prioridad: string) => {
+    const priorityMap: { [key: string]: string } = {
+      'ALTA': t('common.high'),
+      'MEDIA': t('common.medium'),
+      'BAJA': t('common.low'),
+      'CRITICA': t('common.critical')
+    };
+    return priorityMap[prioridad] || prioridad.toLowerCase();
+  };
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [userData, setUserData] = useState(null);
@@ -652,20 +679,20 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         <SafeAreaView style={styles.modalContainer}>
           {/* Header */}
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Mis Tickets</Text>
+            <Text style={styles.modalTitle}>{t('tickets.title')}</Text>
             <TouchableOpacity onPress={() => setMisTicketsVisible(false)}>
               <Text style={styles.closeButton}>×</Text>
             </TouchableOpacity>
           </View>
 
-        <Text style={styles.modalSubtitle}>Visualiza y actualiza tus tickets asignados</Text>
+        <Text style={styles.modalSubtitle}>{t('tickets.subtitle')}</Text>
 
         {/* Barra de búsqueda */}
         <View style={styles.searchSection}>
           <View style={styles.searchContainer}>
             <TextInput 
               style={styles.searchInput}
-              placeholder="Buscar tickets..."
+              placeholder={t('tickets.search_tickets')}
               placeholderTextColor="#999"
               value={searchText}
               onChangeText={setSearchText}
@@ -677,7 +704,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         <ScrollView style={styles.modalContent}>
           {ticketsLoading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Cargando tickets...</Text>
+              <Text style={styles.loadingText}>{t('tickets.loading')}</Text>
             </View>
           ) : filteredTickets.length > 0 ? (
             filteredTickets.map((ticket, index) => (
@@ -709,7 +736,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                     ticket.estado === 'ESCALADO' ? { backgroundColor: '#8b5cf6' } :
                     { backgroundColor: '#6b7280' }
                   ]}>
-                    <Text style={styles.tagText}>{ticket.estado}</Text>
+                    <Text style={styles.tagText}>{getStatusText(ticket.estado)}</Text>
                   </View>
                   
                   <View style={[
@@ -718,17 +745,17 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                     ticket.prioridad === 'MEDIA' ? styles.priorityMedium :
                     styles.priorityLow
                   ]}>
-                    <Text style={styles.tagText}>{ticket.prioridad?.toLowerCase()}</Text>
+                    <Text style={styles.tagText}>{getPriorityText(ticket.prioridad || '')}</Text>
                   </View>
 
                   <View style={styles.areaTag}>
-                    <Text style={styles.tagText}>Área: {ticket.categoria || 'Sistemas'}</Text>
+                    <Text style={styles.tagText}>{t('tickets.area')}: {ticket.categoria || t('tickets.default_area')}</Text>
                   </View>
                 </View>
 
                 {/* Estado actual */}
                 <View style={styles.currentStatusContainer}>
-                  <Text style={styles.currentStatusLabel}>Estado actual:</Text>
+                  <Text style={styles.currentStatusLabel}>{t('tickets.current_status')}:</Text>
                   <View style={[
                     styles.currentStatusBadge,
                     ticket.estado === 'PENDIENTE' ? { backgroundColor: '#dc2626' } :
@@ -739,7 +766,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                     ticket.estado === 'ESCALADO' ? { backgroundColor: '#8b5cf6' } :
                     { backgroundColor: '#6b7280' }
                   ]}>
-                    <Text style={styles.currentStatusText}>{ticket.estado}</Text>
+                    <Text style={styles.currentStatusText}>{getStatusText(ticket.estado)}</Text>
                   </View>
                 </View>
 
@@ -1247,9 +1274,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           }
         >
           {/* Título principal - sin header de navegación */}
-          <Text style={styles.mainTitle}>Panel de Técnico</Text>
+          <Text style={styles.mainTitle}>{t('dashboard.title')}</Text>
           <Text style={styles.subtitle}>
-            Resumen rápido de tus tickets asignados
+            {t('dashboard.subtitle')}
           </Text>
 
           {/* Estadísticas */}
@@ -1271,21 +1298,21 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                 <View style={styles.statsRow}>
                   <View style={styles.statCard}>
                     <Text style={styles.statNumber}>{stats.total}</Text>
-                    <Text style={styles.statLabel}>Total</Text>
+                    <Text style={styles.statLabel}>{t('common.total')}</Text>
                   </View>
                   <View style={styles.statCard}>
                     <Text style={[styles.statNumber, styles.statNumberRed]}>{stats.pendientes}</Text>
-                    <Text style={styles.statLabel}>Pendientes</Text>
+                    <Text style={styles.statLabel}>{t('common.pending')}</Text>
                   </View>
                 </View>
                 <View style={styles.statsRow}>
                   <View style={styles.statCard}>
                     <Text style={[styles.statNumber, styles.statNumberOrange]}>{stats.enProceso}</Text>
-                    <Text style={styles.statLabel}>En proceso</Text>
+                    <Text style={styles.statLabel}>{t('common.in_progress')}</Text>
                   </View>
                   <View style={styles.statCard}>
                     <Text style={[styles.statNumber, styles.statNumberGreen]}>{stats.finalizados}</Text>
-                    <Text style={styles.statLabel}>Finalizados</Text>
+                    <Text style={styles.statLabel}>{t('common.completed')}</Text>
                   </View>
                 </View>
               </>
@@ -1297,7 +1324,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             {/* Siempre mostrar Mis Tickets */}
             <View style={styles.actionSection}>
               <View style={styles.actionSectionContent}>
-                <Text style={styles.actionSectionTitle}>Mis Tickets</Text>
+                <Text style={styles.actionSectionTitle}>{t('dashboard.my_tickets')}</Text>
                 <Text style={styles.actionSectionCount}>({stats.total})</Text>
               </View>
               <TouchableOpacity 
@@ -1310,20 +1337,20 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   setMisTicketsVisible(true);
                 }}
               >
-                <Text style={styles.openSectionButtonText}>Abrir</Text>
+                <Text style={styles.openSectionButtonText}>{t('common.open')}</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.actionSection}>
               <View style={styles.actionSectionContent}>
-                <Text style={styles.actionSectionTitle}>Evidencias</Text>
+                <Text style={styles.actionSectionTitle}>{t('dashboard.evidences')}</Text>
                 <Text style={styles.actionSectionCount}>({stats.totalEvidencias || 0})</Text>
               </View>
               <TouchableOpacity 
                 style={styles.openSectionButton}
                 onPress={() => setEvidenciasVisible(true)}
               >
-                <Text style={styles.openSectionButtonText}>Abrir</Text>
+                <Text style={styles.openSectionButtonText}>{t('common.open')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1360,7 +1387,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             <TouchableOpacity 
               style={[styles.floatingButton, styles.floatingButtonLogout]}
               onPress={async () => {
-                const confirmado = window.confirm('¿Estás seguro de que quieres cerrar sesión?');
+                const confirmado = window.confirm(t('auth.logout_confirm'));
                 if (confirmado) {
                   if (onLogout) {
                     await onLogout();

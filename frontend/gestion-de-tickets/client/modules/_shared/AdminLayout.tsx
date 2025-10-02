@@ -68,7 +68,6 @@ export default function AdminLayout() {
               <NavLink to="/automation-rules" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("admin.automation_rules")}</NavLink>
               <NavLink to="/sla-configuration" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("admin.sla_configuration")}</NavLink>
               <NavLink to="/analytics" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("admin.analytics")}</NavLink>
-              <NavLink to="/logout" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`}>{t("auth.logout")}</NavLink>
             </div>
           </div>
         </nav>

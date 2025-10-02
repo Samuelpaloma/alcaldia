@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from './navigationTypes';
 import { useTheme } from '../hooks/useTheme';
+import { useTranslation } from '../hooks/useTranslation';
 import { webSocketService } from '../services/WebSocketService';
 import EvidenceModal from './components/EvidenceModal';
 
@@ -123,6 +124,7 @@ export default function TicketTrackingScreen() {
   const route = useRoute<TicketTrackingRouteProp>();
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
+  const { t } = useTranslation();
   const { ticketId } = route.params;
 
   const [ticketInfo, setTicketInfo] = useState<TicketInfo | null>(null);
@@ -998,36 +1000,36 @@ export default function TicketTrackingScreen() {
 
           {/* Información básica en cards */}
           <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>📋 Información del Ticket</Text>
+            <Text style={styles.sectionTitle}>📋 {t('ticket_detail.info_section_title')}</Text>
             
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>ID:</Text>
+              <Text style={styles.infoLabel}>{t('ticket_detail.id')}:</Text>
               <Text style={styles.infoValueBold}>#{ticketInfo.id}</Text>
             </View>
             
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Prioridad:</Text>
+              <Text style={styles.infoLabel}>{t('ticket_detail.priority')}:</Text>
               <View style={[styles.priorityBadge, { backgroundColor: getPrioridadColor(ticketInfo.prioridad) }]}>
                 <Text style={styles.priorityText}>{ticketInfo.prioridad?.toUpperCase()}</Text>
               </View>
             </View>
             
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Estado:</Text>
+              <Text style={styles.infoLabel}>{t('ticket_detail.status')}:</Text>
               <View style={[styles.statusBadge, { backgroundColor: getEstadoColor(ticketInfo.estado) }]}>
                 <Text style={styles.statusText}>{ticketInfo.estado}</Text>
               </View>
             </View>
             
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Técnico Asignado:</Text>
+              <Text style={styles.infoLabel}>{t('ticket_detail.assigned_technician')}:</Text>
               <Text style={styles.infoValue}>{ticketInfo.tecnicoAsignado || 'Sin asignar'}</Text>
             </View>
             
             {/* Mostrar técnico escalado si hay escalación */}
             {ticketInfo.estado === 'ESCALADO' && ticketInfo.rolTecnico === 'ESCALADO' && (
               <View style={[styles.infoCard, styles.escaladoCard]}>
-                <Text style={styles.infoLabel}>Técnico Escalado:</Text>
+                <Text style={styles.infoLabel}>{t('ticket_detail.escalated_technician')}:</Text>
                 <Text style={[styles.infoValue, styles.escaladoText]}>
                   {ticketInfo.tecnicoAsignado || 'Técnico actual'}
                 </Text>
@@ -1042,34 +1044,34 @@ export default function TicketTrackingScreen() {
                 ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalCard : 
                 styles.asignadoCard
               ]}>
-                <Text style={styles.infoLabel}>Tu rol:</Text>
+                <Text style={styles.infoLabel}>{t('ticket_detail.your_role')}:</Text>
                 <Text style={[
                   styles.infoValue,
                   ticketInfo.rolTecnico === 'ESCALADO' ? styles.escaladoText :
                   ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalText :
                   styles.asignadoText
                 ]}>
-                  {ticketInfo.rolTecnico === 'ESCALADO' ? '🔧 Técnico Escalado (Puedes cambiar estados)' :
-                   ticketInfo.rolTecnico === 'ORIGINAL' ? '👤 Técnico Original (Solo lectura)' :
-                   '🔧 Técnico Asignado (Puedes cambiar estados)'}
+                  {ticketInfo.rolTecnico === 'ESCALADO' ? `🔧 ${t('ticket_detail.escalated_technician_role')} (${t('ticket_detail.can_change_status')})` :
+                   ticketInfo.rolTecnico === 'ORIGINAL' ? `👤 ${t('ticket_detail.original_technician_role')} (${t('ticket_detail.read_only')})` :
+                   `🔧 ${t('ticket_detail.assigned_technician_role')} (${t('ticket_detail.can_change_status')})`}
                 </Text>
               </View>
             )}
             
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Ubicación:</Text>
+              <Text style={styles.infoLabel}>{t('ticket_detail.location')}:</Text>
               <Text style={styles.infoValue}>{ticketInfo.ubicacion || 'No especificada'}</Text>
             </View>
             
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Fecha de Creación:</Text>
+              <Text style={styles.infoLabel}>{t('ticket_detail.creation_date')}:</Text>
               <Text style={styles.infoValue}>{formatDate(ticketInfo.fechaCreacion)}</Text>
             </View>
           </View>
 
           {/* Acciones del técnico */}
           <View style={styles.actionsSection}>
-            <Text style={styles.sectionTitle}>⚡ Acciones Rápidas</Text>
+            <Text style={styles.sectionTitle}>⚡ {t('ticket_detail.quick_actions')}</Text>
             
             {/* Debug: Mostrar estado actual */}
             {(() => {
@@ -1102,9 +1104,9 @@ export default function TicketTrackingScreen() {
                   console.log('🔘 [BOTÓN] Mostrando modal de confirmación...');
                   
                   mostrarConfirmacion(
-                    '🚀 Iniciar Trabajo',
-                    '¿Deseas comenzar a trabajar en este ticket? El estado cambiará a "EN PROCESO".',
-                    'Iniciar',
+                    `🚀 ${t('ticket_detail.start_work')}`,
+                    t('ticket_detail.start_work_confirmation'),
+                    t('ticket_detail.start'),
                     () => {
                       console.log('🔘 [BOTÓN] Usuario confirmó - Llamando a cambiarEstadoTicket("EN_PROCESO")');
                       cambiarEstadoTicket('EN_PROCESO');
@@ -1112,7 +1114,7 @@ export default function TicketTrackingScreen() {
                   );
                 }}
               >
-                <Text style={styles.actionButtonText}>🚀 Iniciar Trabajo</Text>
+                <Text style={styles.actionButtonText}>🚀 {t('ticket_detail.start_work')}</Text>
               </TouchableOpacity>
             )}
             
@@ -1214,9 +1216,9 @@ export default function TicketTrackingScreen() {
                   console.log('🔘 [BOTÓN] Mostrando modal de confirmación...');
                   
                   mostrarConfirmacion(
-                    '🚀 Iniciar Trabajo (Escalado)',
-                    '¿Deseas comenzar a trabajar en este ticket escalado? El estado cambiará a "EN PROCESO".',
-                    'Iniciar',
+                    `🚀 ${t('ticket_detail.start_work_escalated')}`,
+                    t('ticket_detail.start_work_escalated_confirmation'),
+                    t('ticket_detail.start'),
                     () => {
                       console.log('🔘 [BOTÓN] Usuario confirmó - Llamando a cambiarEstadoTicket("EN_PROCESO")');
                       cambiarEstadoTicket('EN_PROCESO');
@@ -1224,7 +1226,7 @@ export default function TicketTrackingScreen() {
                   );
                 }}
               >
-                <Text style={styles.actionButtonText}>🚀 Iniciar Trabajo (Escalado)</Text>
+                <Text style={styles.actionButtonText}>🚀 {t('ticket_detail.start_work_escalated')}</Text>
               </TouchableOpacity>
             )}
             
@@ -1897,7 +1899,7 @@ export default function TicketTrackingScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header del Ticket General - Arriba */}
       <View style={styles.ticketGeneralHeader}>
-        <Text style={styles.ticketGeneralTitle}>Ticket General</Text>
+        <Text style={styles.ticketGeneralTitle}>{t('ticket_detail.title')}</Text>
         <View style={styles.ticketHeaderActions}>
           <TouchableOpacity 
             style={styles.refreshButton}
@@ -1927,7 +1929,7 @@ export default function TicketTrackingScreen() {
           onPress={() => setActiveTab('info')}
         >
           <Text style={[styles.tabText, activeTab === 'info' && styles.activeTabText]}>
-            📋 Info
+            📋 {t('ticket_detail.tab_info')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1935,7 +1937,7 @@ export default function TicketTrackingScreen() {
           onPress={() => setActiveTab('chat')}
         >
           <Text style={[styles.tabText, activeTab === 'chat' && styles.activeTabText]}>
-            💬 Chat
+            💬 {t('ticket_detail.tab_chat')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1943,7 +1945,7 @@ export default function TicketTrackingScreen() {
           onPress={() => setActiveTab('historial')}
         >
           <Text style={[styles.tabText, activeTab === 'historial' && styles.activeTabText]}>
-            📜 Historial
+            📜 {t('ticket_detail.tab_history')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -1951,7 +1953,7 @@ export default function TicketTrackingScreen() {
           onPress={() => setActiveTab('evidencias')}
         >
           <Text style={[styles.tabText, activeTab === 'evidencias' && styles.activeTabText]}>
-            📎 Evidencias
+            📎 {t('ticket_detail.tab_evidence')}
           </Text>
         </TouchableOpacity>
       </View>
