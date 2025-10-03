@@ -33,16 +33,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         System.out.println("🔥🔥🔥 [WEBSOCKET CONFIG] Registrando endpoint /ws");
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(
-                    "http://localhost:3000",
-                    "http://127.0.0.1:3000",
-                    "http://localhost:5173",
-                    "http://127.0.0.1:5173",
-                    "http://localhost:4173",
-                    "http://127.0.0.1:4173",
-                    "http://localhost:8081",
-                    "http://127.0.0.1:8081"
-                )
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
         System.out.println("🔥🔥🔥 [WEBSOCKET CONFIG] Endpoint registrado exitosamente");
     }

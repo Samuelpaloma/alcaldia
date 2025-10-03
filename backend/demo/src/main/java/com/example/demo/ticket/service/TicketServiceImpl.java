@@ -229,7 +229,7 @@ public class TicketServiceImpl implements TicketService {
                 .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
         
         // Verificar que el usuario tenga acceso al ticket
-        if (!ticket.getCreador().getEmail().equals(emailUsuario)) {
+        if (ticket.getCreador() == null || !ticket.getCreador().getEmail().equals(emailUsuario)) {
             throw new RuntimeException("No tienes permisos para ver este ticket");
         }
 

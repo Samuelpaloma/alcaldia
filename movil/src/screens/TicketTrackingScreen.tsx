@@ -339,7 +339,7 @@ export default function TicketTrackingScreen() {
       console.log('🎫 [TICKET] Cargando información del ticket:', ticketId);
       
       // Usar el endpoint correcto para técnicos
-      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}`, {
+      const response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -473,7 +473,7 @@ export default function TicketTrackingScreen() {
   const loadMessages = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const baseUrl = 'http://localhost:8080/api';
+      const baseUrl = 'http://10.3.234.61:8080/api';
       console.log('💬 [CHAT] Cargando mensajes para ticket:', ticketId);
       console.log('💬 [CHAT] URL:', `${baseUrl}/tickets/${ticketId}/comentarios`);
       const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
@@ -547,7 +547,7 @@ export default function TicketTrackingScreen() {
   const loadMessagesSmoothly = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const baseUrl = 'http://localhost:8080/api';
+      const baseUrl = 'http://10.3.234.61:8080/api';
       const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'GET',
         headers: {
@@ -629,7 +629,7 @@ export default function TicketTrackingScreen() {
       
       // Intentar primero con el endpoint específico del ticket
       console.log('📜 [HISTORIAL] Intentando endpoint: /api/tecnico/tickets/${ticketId}/historial');
-      let response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/historial`, {
+      let response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}/historial`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -740,7 +740,7 @@ export default function TicketTrackingScreen() {
       let evidenciasDelChat: any[] = [];
       try {
         console.log('💬 [EVIDENCIAS CHAT] Cargando archivos del chat...');
-        const responseChatFiles = await fetch(`http://localhost:8080/api/archivos-ticket/ticket/${ticketId}`, {
+        const responseChatFiles = await fetch(`http://10.3.234.61:8080/api/archivos-ticket/ticket/${ticketId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -763,7 +763,7 @@ export default function TicketTrackingScreen() {
       let evidenciasFinalesData: any[] = [];
       try {
         console.log('📋 [EVIDENCIAS FINALES] Cargando evidencias finales...');
-        const responseEvidenciasFinales = await fetch(`http://localhost:8080/api/evidencias/movil/ticket/${ticketId}`, {
+        const responseEvidenciasFinales = await fetch(`http://10.3.234.61:8080/api/evidencias/movil/ticket/${ticketId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -845,7 +845,7 @@ export default function TicketTrackingScreen() {
       
       const userData = JSON.parse(userInfo);
       
-      const baseUrl = 'http://localhost:8080/api';
+      const baseUrl = 'http://10.3.234.61:8080/api';
       console.log('💬 [SEND] Enviando mensaje para ticket:', ticketId);
       console.log('💬 [SEND] URL:', `${baseUrl}/tickets/${ticketId}/comentarios`);
       console.log('💬 [SEND] Mensaje:', messageText);
@@ -956,9 +956,9 @@ export default function TicketTrackingScreen() {
       };
       
       console.log('🔄 [CAMBIO ESTADO] Request body:', JSON.stringify(requestBody, null, 2));
-      console.log('🔄 [CAMBIO ESTADO] URL:', 'http://localhost:8080/api/tecnico/tickets/cambiar-estado');
+      console.log('🔄 [CAMBIO ESTADO] URL:', 'http://10.3.234.61:8080/api/tecnico/tickets/cambiar-estado');
       
-      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/cambiar-estado`, {
+      const response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/cambiar-estado`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1489,10 +1489,10 @@ export default function TicketTrackingScreen() {
       if (evidencia.id || evidencia.idArchivo) {
         // Es un archivo de la tabla archivos_ticket
         const archivoId = evidencia.id || evidencia.idArchivo;
-        url = `http://localhost:8080/api/archivos-ticket/preview/${ticketId}/${archivoId}`;
+        url = `http://10.3.234.61:8080/api/archivos-ticket/preview/${ticketId}/${archivoId}`;
       } else if (evidencia.idEvidencia) {
         // Es una evidencia de la tabla evidencias
-        url = `http://localhost:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/preview`;
+        url = `http://10.3.234.61:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/preview`;
       }
       
       console.log('👁️ [PREVIEW] URL de previsualización:', url);
@@ -1566,10 +1566,10 @@ export default function TicketTrackingScreen() {
       if (evidencia.id || evidencia.idArchivo) {
         // Es un archivo de la tabla archivos_ticket
         const archivoId = evidencia.id || evidencia.idArchivo;
-        url = `http://localhost:8080/api/archivos-ticket/descargar/${ticketId}/${archivoId}`;
+        url = `http://10.3.234.61:8080/api/archivos-ticket/descargar/${ticketId}/${archivoId}`;
       } else if (evidencia.idEvidencia) {
         // Es una evidencia de la tabla evidencias
-        url = `http://localhost:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/descargar`;
+        url = `http://10.3.234.61:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/descargar`;
       }
       
       console.log('📥 [DOWNLOAD] URL:', url);

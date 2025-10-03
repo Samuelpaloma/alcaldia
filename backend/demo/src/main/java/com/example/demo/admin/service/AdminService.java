@@ -47,7 +47,46 @@ public class AdminService {
         List<Ticket> tickets = ticketRepository.findAll();
         
         return tickets.stream()
-            .map(this::convertirTicketAResponseDTO)
+            .filter(ticket -> {
+                try {
+                    return ticket != null && ticket.getId() != null;
+                } catch (Exception e) {
+                    log.warn("⚠️ [ADMIN] Ticket con datos inválidos ignorado: {}", e.getMessage());
+                    return false;
+                }
+            })
+            .map(ticket -> {
+                try {
+                    return convertirTicketAResponseDTO(ticket);
+                } catch (Exception e) {
+                    log.error("❌ [ADMIN] Error convirtiendo ticket {}: {}", ticket.getId(), e.getMessage());
+                    // Crear un DTO básico para tickets con errores
+                    return new TicketResponseDTO(
+                        ticket.getId(),
+                        "Ticket con datos incompletos",
+                        "Este ticket tiene datos faltantes y no se puede mostrar completamente",
+                        "MEDIA",
+                        ticket.getEstado() != null ? ticket.getEstado() : "DESCONOCIDO",
+                        null, // creadorEmail
+                        "Usuario Desconocido", // creadorNombre
+                        null, // tecnicoEmail
+                        null, // tecnicoNombre
+                        ticket.getFechaCreacion() != null ? ticket.getFechaCreacion() : LocalDateTime.now(),
+                        ticket.getFechaActualizacion() != null ? ticket.getFechaActualizacion() : LocalDateTime.now(),
+                        "Usuario Desconocido", // creadorNombreCompleto
+                        ticket.getUbicacion() != null ? ticket.getUbicacion() : "Ubicación no especificada",
+                        "Ticket con datos incompletos", // consulta
+                        "General", // categoria
+                        null, // archivoAdjunto
+                        null, // nombreArchivo
+                        new ArrayList<>(), // evidencias
+                        new ArrayList<>(), // historialEstados
+                        new ArrayList<>(), // historialAsignaciones
+                        new ArrayList<>(), // comentarios
+                        null // archivosConversacion
+                    );
+                }
+            })
             .collect(Collectors.toList());
     }
     
@@ -72,7 +111,46 @@ public class AdminService {
         List<Ticket> tickets = ticketRepository.findByEstado(estado);
         
         return tickets.stream()
-            .map(this::convertirTicketAResponseDTO)
+            .filter(ticket -> {
+                try {
+                    return ticket != null && ticket.getId() != null;
+                } catch (Exception e) {
+                    log.warn("⚠️ [ADMIN] Ticket con datos inválidos ignorado: {}", e.getMessage());
+                    return false;
+                }
+            })
+            .map(ticket -> {
+                try {
+                    return convertirTicketAResponseDTO(ticket);
+                } catch (Exception e) {
+                    log.error("❌ [ADMIN] Error convirtiendo ticket {}: {}", ticket.getId(), e.getMessage());
+                    // Crear un DTO básico para tickets con errores
+                    return new TicketResponseDTO(
+                        ticket.getId(),
+                        "Ticket con datos incompletos",
+                        "Este ticket tiene datos faltantes y no se puede mostrar completamente",
+                        "MEDIA",
+                        ticket.getEstado() != null ? ticket.getEstado() : "DESCONOCIDO",
+                        null, // creadorEmail
+                        "Usuario Desconocido", // creadorNombre
+                        null, // tecnicoEmail
+                        null, // tecnicoNombre
+                        ticket.getFechaCreacion() != null ? ticket.getFechaCreacion() : LocalDateTime.now(),
+                        ticket.getFechaActualizacion() != null ? ticket.getFechaActualizacion() : LocalDateTime.now(),
+                        "Usuario Desconocido", // creadorNombreCompleto
+                        ticket.getUbicacion() != null ? ticket.getUbicacion() : "Ubicación no especificada",
+                        "Ticket con datos incompletos", // consulta
+                        "General", // categoria
+                        null, // archivoAdjunto
+                        null, // nombreArchivo
+                        new ArrayList<>(), // evidencias
+                        new ArrayList<>(), // historialEstados
+                        new ArrayList<>(), // historialAsignaciones
+                        new ArrayList<>(), // comentarios
+                        null // archivosConversacion
+                    );
+                }
+            })
             .collect(Collectors.toList());
     }
     
@@ -85,7 +163,46 @@ public class AdminService {
         List<Ticket> tickets = ticketRepository.findByTecnicoAsignadoIsNull();
         
         return tickets.stream()
-            .map(this::convertirTicketAResponseDTO)
+            .filter(ticket -> {
+                try {
+                    return ticket != null && ticket.getId() != null;
+                } catch (Exception e) {
+                    log.warn("⚠️ [ADMIN] Ticket con datos inválidos ignorado: {}", e.getMessage());
+                    return false;
+                }
+            })
+            .map(ticket -> {
+                try {
+                    return convertirTicketAResponseDTO(ticket);
+                } catch (Exception e) {
+                    log.error("❌ [ADMIN] Error convirtiendo ticket {}: {}", ticket.getId(), e.getMessage());
+                    // Crear un DTO básico para tickets con errores
+                    return new TicketResponseDTO(
+                        ticket.getId(),
+                        "Ticket con datos incompletos",
+                        "Este ticket tiene datos faltantes y no se puede mostrar completamente",
+                        "MEDIA",
+                        ticket.getEstado() != null ? ticket.getEstado() : "DESCONOCIDO",
+                        null, // creadorEmail
+                        "Usuario Desconocido", // creadorNombre
+                        null, // tecnicoEmail
+                        null, // tecnicoNombre
+                        ticket.getFechaCreacion() != null ? ticket.getFechaCreacion() : LocalDateTime.now(),
+                        ticket.getFechaActualizacion() != null ? ticket.getFechaActualizacion() : LocalDateTime.now(),
+                        "Usuario Desconocido", // creadorNombreCompleto
+                        ticket.getUbicacion() != null ? ticket.getUbicacion() : "Ubicación no especificada",
+                        "Ticket con datos incompletos", // consulta
+                        "General", // categoria
+                        null, // archivoAdjunto
+                        null, // nombreArchivo
+                        new ArrayList<>(), // evidencias
+                        new ArrayList<>(), // historialEstados
+                        new ArrayList<>(), // historialAsignaciones
+                        new ArrayList<>(), // comentarios
+                        null // archivosConversacion
+                    );
+                }
+            })
             .collect(Collectors.toList());
     }
     
@@ -101,7 +218,46 @@ public class AdminService {
         List<Ticket> tickets = ticketRepository.findByTecnicoAsignado(tecnico);
         
         return tickets.stream()
-            .map(this::convertirTicketAResponseDTO)
+            .filter(ticket -> {
+                try {
+                    return ticket != null && ticket.getId() != null;
+                } catch (Exception e) {
+                    log.warn("⚠️ [ADMIN] Ticket con datos inválidos ignorado: {}", e.getMessage());
+                    return false;
+                }
+            })
+            .map(ticket -> {
+                try {
+                    return convertirTicketAResponseDTO(ticket);
+                } catch (Exception e) {
+                    log.error("❌ [ADMIN] Error convirtiendo ticket {}: {}", ticket.getId(), e.getMessage());
+                    // Crear un DTO básico para tickets con errores
+                    return new TicketResponseDTO(
+                        ticket.getId(),
+                        "Ticket con datos incompletos",
+                        "Este ticket tiene datos faltantes y no se puede mostrar completamente",
+                        "MEDIA",
+                        ticket.getEstado() != null ? ticket.getEstado() : "DESCONOCIDO",
+                        null, // creadorEmail
+                        "Usuario Desconocido", // creadorNombre
+                        null, // tecnicoEmail
+                        null, // tecnicoNombre
+                        ticket.getFechaCreacion() != null ? ticket.getFechaCreacion() : LocalDateTime.now(),
+                        ticket.getFechaActualizacion() != null ? ticket.getFechaActualizacion() : LocalDateTime.now(),
+                        "Usuario Desconocido", // creadorNombreCompleto
+                        ticket.getUbicacion() != null ? ticket.getUbicacion() : "Ubicación no especificada",
+                        "Ticket con datos incompletos", // consulta
+                        "General", // categoria
+                        null, // archivoAdjunto
+                        null, // nombreArchivo
+                        new ArrayList<>(), // evidencias
+                        new ArrayList<>(), // historialEstados
+                        new ArrayList<>(), // historialAsignaciones
+                        new ArrayList<>(), // comentarios
+                        null // archivosConversacion
+                    );
+                }
+            })
             .collect(Collectors.toList());
     }
     
@@ -236,7 +392,7 @@ public class AdminService {
     private com.example.demo.ticket.dto.response.EvidenciaResponseDTO convertirEvidenciaAResponseDTO(Evidencia evidencia) {
         return com.example.demo.ticket.dto.response.EvidenciaResponseDTO.builder()
             .idEvidencia(evidencia.getIdEvidencia())
-            .ticketId(evidencia.getTicket().getId())
+            .ticketId(evidencia.getTicket() != null ? evidencia.getTicket().getId() : null)
             .tipoEvidencia(evidencia.getTipoEvidencia())
             .descripcion(evidencia.getDescripcion())
             .nombreArchivo(evidencia.getNombreArchivo())
@@ -244,22 +400,22 @@ public class AdminService {
             .tamanioArchivo(evidencia.getTamanioArchivo())
             .urlArchivo(evidencia.getUrlArchivo())
             .fechaSubida(evidencia.getFechaSubida())
-            .subidoPor(evidencia.getSubidoPor().getNombreCompleto())
-            .subidoPorEmail(evidencia.getSubidoPor().getEmail())
+            .subidoPor(evidencia.getSubidoPor() != null ? evidencia.getSubidoPor().getNombreCompleto() : "Usuario Desconocido")
+            .subidoPorEmail(evidencia.getSubidoPor() != null ? evidencia.getSubidoPor().getEmail() : null)
             .build();
     }
     
     private com.example.demo.ticket.dto.response.HistorialEstadoResponseDTO convertirHistorialAResponseDTO(HistorialEstadoTicket historial) {
         return com.example.demo.ticket.dto.response.HistorialEstadoResponseDTO.builder()
             .idHistorial(historial.getIdHistorial())
-            .ticketId(historial.getTicket().getId())
+            .ticketId(historial.getTicket() != null ? historial.getTicket().getId() : null)
             .estadoAnterior(historial.getEstadoAnterior())
             .estadoNuevo(historial.getEstadoNuevo())
             .comentario(historial.getComentario())
             .observaciones(historial.getObservaciones())
             .fechaCambio(historial.getFechaCambio())
-            .cambiadoPor(historial.getCambiadoPor().getNombreCompleto())
-            .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
+            .cambiadoPor(historial.getCambiadoPor() != null ? historial.getCambiadoPor().getNombreCompleto() : "Usuario Desconocido")
+            .cambiadoPorEmail(historial.getCambiadoPor() != null ? historial.getCambiadoPor().getEmail() : null)
             .tipoUsuario(historial.getTipoUsuario())
             .build();
     }

@@ -91,7 +91,9 @@ public class SLAAutomationService {
                 // Notificar a administradores sobre SLA aplicado
                 if (ticket.getCreador() != null) {
                     // Crear notificación para administradores
-                    notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                    if (ticket.getCreador() != null) {
+                        notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                    }
                 }
             }
         } catch (Exception e) {
@@ -308,7 +310,7 @@ public class SLAAutomationService {
                                     if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
                                         notificationRoleService.notificarAsignacionTicket(
                                             ticket.getId(), 
-                                            ticket.getCreador().getIdUsuario(), 
+                                            ticket.getCreador() != null ? ticket.getCreador().getIdUsuario() : null, 
                                             tecnico.getIdUsuario()
                                         );
                                     }
@@ -359,7 +361,7 @@ public class SLAAutomationService {
                         if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
                             notificationRoleService.notificarAsignacionTicket(
                                 ticket.getId(), 
-                                ticket.getCreador().getIdUsuario(), 
+                                ticket.getCreador() != null ? ticket.getCreador().getIdUsuario() : null, 
                                 tecnico.getIdUsuario()
                             );
                         }
@@ -394,7 +396,9 @@ public class SLAAutomationService {
             if (a.startsWith("notificar")) {
                 // Reutilizar sistema de notificaciones existente
                 if (ticket.getCreador() != null) {
-                    notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                    if (ticket.getCreador() != null) {
+                        notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                    }
                 }
                 return;
             }
@@ -425,7 +429,7 @@ public class SLAAutomationService {
                 if (ticket.getCreador() != null && tecnicoSenior.getIdUsuario() != null) {
                     notificationRoleService.notificarEscalacionTicket(
                         ticket.getId(), 
-                        ticket.getCreador().getIdUsuario(), 
+                        ticket.getCreador() != null ? ticket.getCreador().getIdUsuario() : null, 
                         tecnicoSenior.getIdUsuario()
                     );
                 }

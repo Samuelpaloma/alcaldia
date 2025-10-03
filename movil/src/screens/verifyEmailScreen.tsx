@@ -36,7 +36,7 @@ export default function VerifyEmailScreen() {
     try {
       console.log('📧 Enviando código de verificación inicial a:', email);
       
-      const response = await fetch('http://localhost:8080/api/auth/send-email-verification', {
+      const response = await fetch('http://10.3.234.61:8080/api/auth/send-email-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +74,7 @@ export default function VerifyEmailScreen() {
       };
       console.log('Request body:', JSON.stringify(requestBody));
 
-      const response = await fetch('http://localhost:8080/api/auth/verify-email', {
+      const response = await fetch('http://10.3.234.61:8080/api/auth/verify-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ export default function VerifyEmailScreen() {
     try {
       console.log('🔄 Reenviando código de verificación de email a:', email);
 
-      const response = await fetch('http://localhost:8080/api/auth/resend-verification', {
+      const response = await fetch('http://10.3.234.61:8080/api/auth/resend-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

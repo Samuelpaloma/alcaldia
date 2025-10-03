@@ -303,7 +303,9 @@ public class ReglaAutomatizacionServiceImpl implements ReglaAutomatizacionServic
                     ticketRepository.save(ticket);
                     try {
                         if (ticket.getCreador() != null && tecnico.getIdUsuario() != null) {
-                            notificationRoleService.notificarAsignacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario(), tecnico.getIdUsuario());
+                            if (ticket.getCreador() != null) {
+                                notificationRoleService.notificarAsignacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario(), tecnico.getIdUsuario());
+                            }
                         }
                     } catch (Exception ex) {
                         log.warn("Fallo al notificar asignación automática: {}", ex.getMessage());
@@ -324,7 +326,9 @@ public class ReglaAutomatizacionServiceImpl implements ReglaAutomatizacionServic
                         // Reusar NotificationRoleService con tipos predefinidos
                         try {
                             if ("rol:administrador".equalsIgnoreCase(destino)) {
-                                notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                                if (ticket.getCreador() != null) {
+                                    notificationRoleService.notificarCreacionTicket(ticket.getId(), ticket.getCreador().getIdUsuario());
+                                }
                             }
                         } catch (Exception ex) {
                             log.warn("Fallo al notificar acción: {}", ex.getMessage());

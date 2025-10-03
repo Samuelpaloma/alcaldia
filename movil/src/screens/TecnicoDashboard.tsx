@@ -170,7 +170,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       
       const token = await AsyncStorage.getItem('authToken');
       if (token) {
-        const response = await fetch('http://localhost:8080/api/auth/logout', {
+        const response = await fetch('http://10.3.234.61:8080/api/auth/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -223,7 +223,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch('http://localhost:8080/api/tecnico/dashboard', {
+      const response = await fetch('http://10.3.234.61:8080/api/tecnico/dashboard', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -356,9 +356,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     try {
       const token = await AsyncStorage.getItem('authToken');
       console.log('🎫 [FRONTEND] Token obtenido:', token ? `${token.substring(0, 20)}...` : 'null');
-      console.log('🎫 [FRONTEND] Llamando a: http://localhost:8080/api/tecnico/tickets');
+      console.log('🎫 [FRONTEND] Llamando a: http://10.3.234.61:8080/api/tecnico/tickets');
       
-      const response = await fetch('http://localhost:8080/api/tecnico/tickets', {
+      const response = await fetch('http://10.3.234.61:8080/api/tecnico/tickets', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -424,7 +424,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const aceptarTicket = async (ticketId: number) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/aceptar`, {
+      const response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}/aceptar`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -481,7 +481,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       
       formData.append('descripcion', descripcion);
 
-      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/finalizar`, {
+      const response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}/finalizar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -518,7 +518,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       
       console.log('📱 [EVIDENCIA] Obteniendo evidencias del ticket:', ticketId);
       
-      const response = await fetch(`http://localhost:8080/api/evidencias/movil/ticket/${ticketId}`, {
+      const response = await fetch(`http://10.3.234.61:8080/api/evidencias/movil/ticket/${ticketId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -552,7 +552,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       
       console.log('📱 [EVIDENCIA] Descargando evidencia:', nombreArchivo, 'del ticket:', ticketId);
       
-      const response = await fetch(`http://localhost:8080/api/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`, {
+      const response = await fetch(`http://10.3.234.61:8080/api/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -602,7 +602,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       console.log('📱 [EVIDENCIA] Cargando todas las evidencias del técnico...');
       
       // Obtener todos los tickets del técnico
-      const ticketsResponse = await fetch('http://localhost:8080/api/tecnico/tickets', {
+      const ticketsResponse = await fetch('http://10.3.234.61:8080/api/tecnico/tickets', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -621,7 +621,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         
         for (const ticket of tickets) {
           try {
-            const evidenciasResponse = await fetch(`http://localhost:8080/api/evidencias/movil/ticket/${ticket.id}`, {
+            const evidenciasResponse = await fetch(`http://10.3.234.61:8080/api/evidencias/movil/ticket/${ticket.id}`, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${token}`,

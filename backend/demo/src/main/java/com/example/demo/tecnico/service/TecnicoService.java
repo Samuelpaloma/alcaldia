@@ -71,7 +71,33 @@ public class TecnicoService {
         }
         
         return tickets.stream()
-            .map(this::convertirTicketAResponseDTO)
+            .filter(ticket -> {
+                try {
+                    // Verificar que el ticket tenga datos válidos
+                    return ticket != null && ticket.getId() != null;
+                } catch (Exception e) {
+                    log.warn("⚠️ [TECNICO] Ticket con datos inválidos ignorado: {}", e.getMessage());
+                    return false;
+                }
+            })
+            .map(ticket -> {
+                try {
+                    return convertirTicketAResponseDTO(ticket);
+                } catch (Exception e) {
+                    log.error("❌ [TECNICO] Error convirtiendo ticket {}: {}", ticket.getId(), e.getMessage());
+                    // Crear un DTO básico para tickets con errores
+                    TicketTecnicoResponseDTO errorDTO = new TicketTecnicoResponseDTO();
+                    errorDTO.setId(ticket.getId());
+                    errorDTO.setTitulo("Ticket con datos incompletos");
+                    errorDTO.setDescripcion("Este ticket tiene datos faltantes y no se puede mostrar completamente");
+                    errorDTO.setEstado(ticket.getEstado() != null ? ticket.getEstado() : "DESCONOCIDO");
+                    errorDTO.setCreadorNombre("Usuario Desconocido");
+                    errorDTO.setCreadorEmail(null);
+                    errorDTO.setTecnicoNombre(null);
+                    errorDTO.setTecnicoEmail(null);
+                    return errorDTO;
+                }
+            })
             .collect(Collectors.toList());
     }
     
@@ -525,8 +551,8 @@ public class TecnicoService {
         response.setUbicacion(ticket.getUbicacion());
         response.setConsulta(ticket.getConsulta());
         response.setCategoria(ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : ticket.getCategoriaString());
-        response.setCreadorNombre(ticket.getCreador().getNombreCompleto());
-        response.setCreadorEmail(ticket.getCreador().getEmail());
+        response.setCreadorNombre(ticket.getCreador() != null ? ticket.getCreador().getNombreCompleto() : "Usuario Desconocido");
+        response.setCreadorEmail(ticket.getCreador() != null ? ticket.getCreador().getEmail() : null);
         response.setFechaCreacion(ticket.getFechaCreacion());
         response.setFechaActualizacion(ticket.getFechaActualizacion());
         response.setArchivoAdjunto(ticket.getArchivoAdjunto());
@@ -555,8 +581,8 @@ public class TecnicoService {
             .tamanioArchivo(evidencia.getTamanioArchivo())
             .urlArchivo(evidencia.getUrlArchivo())
             .fechaSubida(evidencia.getFechaSubida())
-            .subidoPor(evidencia.getSubidoPor().getNombreCompleto())
-            .subidoPorEmail(evidencia.getSubidoPor().getEmail())
+            .subidoPor(evidencia.getSubidoPor() != null ? evidencia.getSubidoPor().getNombreCompleto() : "Usuario Desconocido")
+            .subidoPorEmail(evidencia.getSubidoPor() != null ? evidencia.getSubidoPor().getEmail() : null)
             .build();
     }
     
@@ -569,8 +595,8 @@ public class TecnicoService {
             .comentario(historial.getComentario())
             .observaciones(historial.getObservaciones())
             .fechaCambio(historial.getFechaCambio())
-            .cambiadoPor(historial.getCambiadoPor().getNombreCompleto())
-            .cambiadoPorEmail(historial.getCambiadoPor().getEmail())
+            .cambiadoPor(historial.getCambiadoPor() != null ? historial.getCambiadoPor().getNombreCompleto() : "Usuario Desconocido")
+            .cambiadoPorEmail(historial.getCambiadoPor() != null ? historial.getCambiadoPor().getEmail() : null)
             .tipoUsuario(historial.getTipoUsuario())
             .build();
     }

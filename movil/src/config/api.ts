@@ -1,6 +1,18 @@
+import { Platform } from 'react-native';
+
 // Configuración de la API
+// Detectar si estamos en emulador Android o dispositivo físico
+const isAndroidEmulator = __DEV__ && Platform.OS === 'android';
+const BASE_URL = isAndroidEmulator 
+  ? 'http://10.0.2.2:8080'  // Para emulador Android
+  : 'http://r:8080'; // Para dispositivo físico
+
+console.log('🔍 [API CONFIG] Platform:', Platform.OS);
+console.log('🔍 [API CONFIG] Is Android Emulator:', isAndroidEmulator);
+console.log('🔍 [API CONFIG] Base URL:', BASE_URL);
+
 export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8080',
+  BASE_URL: BASE_URL,
   ENDPOINTS: {
     AUTH: {
       VALIDATE_CREDENTIALS: '/api/auth/validate-credentials',
