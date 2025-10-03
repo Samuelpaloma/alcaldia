@@ -80,25 +80,25 @@ export default function ClientLayout() {
                 end
                 className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               >
-                Dashboard
+                {t("client.nav.dashboard")}
               </NavLink>
               <NavLink 
                 to="/client/crear" 
                 className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               >
-                Crear Ticket
+                {t("client.nav.create_ticket")}
               </NavLink>
               <NavLink 
                 to="/client/seguimiento" 
                 className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               >
-                Seguimiento de Ticket
+                {t("client.nav.tracking")}
               </NavLink>
               <NavLink 
                 to="/client/historial" 
                 className={({isActive}) => `nav-link text-xs py-2 px-3 rounded-md transition-colors ${isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
               >
-                Historial de Tickets
+                {t("client.nav.history")}
               </NavLink>
             </div>
           </div>
@@ -162,28 +162,28 @@ export default function ClientLayout() {
                       className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Dashboard
+                      {t("client.nav.dashboard")}
                     </NavLink>
                     <NavLink
                       to="/client/crear"
                       className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Crear Ticket
+                      {t("client.nav.create_ticket")}
                     </NavLink>
                     <NavLink
                       to="/client/seguimiento"
                       className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Seguimiento de Ticket
+                      {t("client.nav.tracking")}
                     </NavLink>
                     <NavLink
                       to="/client/historial"
                       className={({isActive}) => `block py-2 px-3 rounded-md text-sm hover:bg-muted transition-colors ${isActive ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground'}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Historial de Tickets
+                      {t("client.nav.history")}
                     </NavLink>
                   </div>
                 </div>

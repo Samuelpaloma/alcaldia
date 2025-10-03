@@ -494,6 +494,39 @@ public class TicketServiceImpl implements TicketService {
             .build();
     }
     
+    /**
+     * Guardar archivo en el sistema de archivos
+     */
+    private String guardarArchivoEnSistema(String contenidoBase64, String nombreOriginal) throws IOException {
+        // Configuración del directorio de uploads
+        String uploadDir = "uploads/tickets/";
+        File uploadDirectory = new File(uploadDir);
+        
+        // Crear directorio si no existe
+        if (!uploadDirectory.exists()) {
+            uploadDirectory.mkdirs();
+        }
+        
+        // Generar nombre único para el archivo
+        String extension = "";
+        if (nombreOriginal.contains(".")) {
+            extension = nombreOriginal.substring(nombreOriginal.lastIndexOf("."));
+        }
+        String nombreUnico = UUID.randomUUID().toString() + "_" + System.currentTimeMillis() + extension;
+        
+        // Ruta completa del archivo
+        String rutaCompleta = uploadDir + nombreUnico;
+        
+        // Decodificar Base64 y guardar archivo
+        byte[] contenido = Base64.getDecoder().decode(contenidoBase64);
+        
+        try (FileOutputStream fos = new FileOutputStream(rutaCompleta)) {
+            fos.write(contenido);
+        }
+        
+        System.out.println("📁 Archivo guardado: " + rutaCompleta);
+        return rutaCompleta;
+    }
     
     /**
      * Determinar el tipo MIME basado en la extensión

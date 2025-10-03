@@ -593,7 +593,7 @@ export default function ClientTracking() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <FileText className="w-5 h-5" />
-                    Información del ticket
+                    {t("client.ticket_info")}
                   </CardTitle>
                   <Button
                     variant="outline"
@@ -653,7 +653,7 @@ export default function ClientTracking() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  Historial del Ticket
+                  {t("client.ticket_history")}
                 </CardTitle>
               </CardHeader>
             <CardContent>

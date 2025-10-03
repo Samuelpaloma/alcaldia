@@ -473,7 +473,9 @@ export default function TicketTrackingScreen() {
   const loadMessages = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const baseUrl = __DEV__ ? 'http://192.168.1.87:8080/api' : 'http://localhost:8080/api';
+      const baseUrl = 'http://localhost:8080/api';
+      console.log('💬 [CHAT] Cargando mensajes para ticket:', ticketId);
+      console.log('💬 [CHAT] URL:', `${baseUrl}/tickets/${ticketId}/comentarios`);
       const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'GET',
         headers: {
@@ -481,6 +483,9 @@ export default function TicketTrackingScreen() {
           'Content-Type': 'application/json',
         }
       });
+
+      console.log('💬 [CHAT] Response status:', response.status);
+      console.log('💬 [CHAT] Response ok:', response.ok);
 
       if (response.ok) {
         const data = await response.json();
@@ -529,8 +534,11 @@ export default function TicketTrackingScreen() {
         console.warn('⚠️ [CHAT] No se pudieron cargar los mensajes:', response.status);
         setMessages([]); // Inicializar con array vacío
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [CHAT] Error cargando mensajes:', error);
+      console.error('❌ [CHAT] Error type:', typeof error);
+      console.error('❌ [CHAT] Error message:', error?.message);
+      console.error('❌ [CHAT] Error stack:', error?.stack);
       setMessages([]); // Inicializar con array vacío
     }
   };
@@ -539,7 +547,7 @@ export default function TicketTrackingScreen() {
   const loadMessagesSmoothly = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const baseUrl = __DEV__ ? 'http://192.168.1.87:8080/api' : 'http://localhost:8080/api';
+      const baseUrl = 'http://localhost:8080/api';
       const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'GET',
         headers: {
@@ -639,14 +647,21 @@ export default function TicketTrackingScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ [HISTORIAL] Historial cargado, cantidad:', data?.length || 0);
+        console.log('✅ [HISTORIAL] Historial cargado, estructura:', data);
         console.log('📜 [HISTORIAL] Datos de historial de estados:', JSON.stringify(data, null, 2));
         
         // Procesar historial de estados del backend
         const historialCompleto: any[] = [];
         
-        if (data && Array.isArray(data)) {
-          data.forEach((item: any, index: number) => {
+        // El backend devuelve un objeto con historialEstados e historialAsignaciones
+        const historialEstados = data.historialEstados || [];
+        const historialAsignaciones = data.historialAsignaciones || [];
+        
+        console.log('📜 [HISTORIAL] Estados encontrados:', historialEstados.length);
+        console.log('📜 [HISTORIAL] Asignaciones encontradas:', historialAsignaciones.length);
+        
+        if (historialEstados && Array.isArray(historialEstados)) {
+          historialEstados.forEach((item: any, index: number) => {
             console.log('🔄 [HISTORIAL-MAP] Procesando evento de estado:', item);
             
             // Crear descripción más detallada con el usuario
@@ -670,6 +685,29 @@ export default function TicketTrackingScreen() {
               comentario: item.comentario,
               observaciones: item.observaciones,
               tipoOperacion: 'CAMBIO_ESTADO',
+              estadoAnterior: item.estadoAnterior,
+              estadoNuevo: item.estadoNuevo
+            });
+          });
+        }
+        
+        // Procesar historial de asignaciones
+        if (historialAsignaciones && Array.isArray(historialAsignaciones)) {
+          historialAsignaciones.forEach((item: any, index: number) => {
+            console.log('🔄 [HISTORIAL-ASIGNACION] Procesando asignación:', item);
+            
+            historialCompleto.push({
+              id: `asignacion-${item.id || index}`,
+              fecha: item.fechaAsignacion,
+              fechaCambio: item.fechaAsignacion,
+              accion: 'Asignación',
+              descripcion: `Ticket asignado - ${item.tipoOperacion || 'Operación'}`,
+              usuario: item.emailUsuario || 'Sistema',
+              cambiadoPor: item.emailUsuario || 'Sistema',
+              cambiadoPorEmail: item.emailUsuario || '',
+              comentario: item.comentario || '',
+              observaciones: '',
+              tipoOperacion: item.tipoOperacion || 'ASIGNACION',
               estadoAnterior: item.estadoAnterior,
               estadoNuevo: item.estadoNuevo
             });
@@ -807,7 +845,12 @@ export default function TicketTrackingScreen() {
       
       const userData = JSON.parse(userInfo);
       
-      const baseUrl = __DEV__ ? 'http://192.168.1.87:8080/api' : 'http://localhost:8080/api';
+      const baseUrl = 'http://localhost:8080/api';
+      console.log('💬 [SEND] Enviando mensaje para ticket:', ticketId);
+      console.log('💬 [SEND] URL:', `${baseUrl}/tickets/${ticketId}/comentarios`);
+      console.log('💬 [SEND] Mensaje:', messageText);
+      console.log('💬 [SEND] Usuario ID:', userData.id || userData.idUsuario);
+      
       const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'POST',
         headers: {
@@ -819,6 +862,9 @@ export default function TicketTrackingScreen() {
           usuario_id: userData.id || userData.idUsuario
         })
       });
+
+      console.log('💬 [SEND] Response status:', response.status);
+      console.log('💬 [SEND] Response ok:', response.ok);
 
       if (response.ok) {
         const newComment = await response.json();
@@ -865,8 +911,11 @@ export default function TicketTrackingScreen() {
         // Restaurar el mensaje si falla
         setNewMessage(messageText);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ [CHAT] Error enviando mensaje:', error);
+      console.error('❌ [CHAT] Error type:', typeof error);
+      console.error('❌ [CHAT] Error message:', error?.message);
+      console.error('❌ [CHAT] Error stack:', error?.stack);
       Alert.alert('Error', 'Error de conexión');
     } finally {
       setIsSending(false);
@@ -1410,6 +1459,8 @@ export default function TicketTrackingScreen() {
                     editable={!isSending}
                     placeholderTextColor="#999"
                     textAlignVertical="center"
+                    onSubmitEditing={sendMessage}
+                    returnKeyType="send"
                   />
                   <TouchableOpacity
                     style={[styles.sendButton, isSending && styles.sendButtonDisabled]}
@@ -1914,7 +1965,13 @@ export default function TicketTrackingScreen() {
             style={styles.closeButton}
             onPress={() => {
               console.log('❌ [CLOSE] Cerrando ticket...');
-              navigation.goBack();
+              // Verificar si hay pantalla anterior, si no, ir al dashboard
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                // @ts-ignore - Navegación a pantalla principal
+                navigation.navigate('Home');
+              }
             }}
           >
             <Text style={styles.closeButtonText}>✕</Text>
@@ -2191,7 +2248,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3c3c3c',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2203,7 +2260,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3c3c3c',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -2499,29 +2556,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 280,
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#1e1e1e',
-    borderTopWidth: 1,
-    borderTopColor: '#2d2d2d',
-  },
-  messageInput: {
-    flex: 1,
-    backgroundColor: '#2d2d2d',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    marginRight: 12,
-    color: '#ffffff',
-    fontSize: 16,
-    height: 50,
-    maxHeight: 50,
-    borderWidth: 1,
-    borderColor: '#3c3c3c',
-  },
   messageContainer: {
     marginBottom: 16,
     maxWidth: '85%',
@@ -2597,17 +2631,22 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#333333',
   },
-  chatInput: {
+  inputContainer: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#374151',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  messageInput: {
+    flex: 1,
+    borderWidth: 0,
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
+    paddingVertical: 12,
     maxHeight: 100,
-    backgroundColor: '#111111',
+    backgroundColor: 'transparent',
     color: '#ffffff',
+    fontSize: 16,
   },
   sendButton: {
     backgroundColor: '#007AFF',

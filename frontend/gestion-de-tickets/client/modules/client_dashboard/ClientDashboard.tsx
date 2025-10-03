@@ -27,7 +27,7 @@ interface DashboardStats {
 }
 
 export default function ClientDashboard() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const { tickets, isLoading, error } = useTickets();
   const [stats, setStats] = useState<DashboardStats>({
@@ -112,7 +112,8 @@ export default function ClientDashboard() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
+    const userLocale = localStorage.getItem('locale') === 'en' ? 'en-US' : 'es-ES';
+    return new Date(dateString).toLocaleDateString(userLocale, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric'
@@ -127,13 +128,15 @@ export default function ClientDashboard() {
     const diffInDays = Math.floor(diffInHours / 24);
 
     if (diffInHours < 1) {
-      return 'Hace unos minutos';
+      return t('dashboard.time_ago.minutes') || 'A few minutes ago';
     } else if (diffInHours < 24) {
-      return `Hace ${diffInHours} ${diffInHours === 1 ? 'hora' : 'horas'}`;
+      const unit = diffInHours === 1 ? (t('dashboard.time_ago.hour') || 'hour') : (t('dashboard.time_ago.hours') || 'hours');
+      return `${diffInHours} ${unit} ${localStorage.getItem('locale') === 'en' ? 'ago' : ''}`.trim() || `Hace ${diffInHours} horas`;
     } else if (diffInDays === 1) {
-      return 'Ayer';
+      return t('dashboard.time_ago.yesterday') || 'Yesterday';
     } else if (diffInDays < 7) {
-      return `Hace ${diffInDays} días`;
+      const unit = diffInDays === 1 ? (t('dashboard.time_ago.day') || 'day') : (t('dashboard.time_ago.days') || 'days');
+      return `${diffInDays} ${unit} ${localStorage.getItem('locale') === 'en' ? 'ago' : ''}`.trim() || `Hace ${diffInDays} días`;
     } else {
       return formatDate(dateString);
     }
@@ -258,46 +261,46 @@ export default function ClientDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tickets</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("dashboard.metrics.total_tickets")}</CardTitle>
             <TicketIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.recentActivity} creados esta semana
+              {stats.recentActivity} {locale === 'en' ? 'created this week' : 'creados esta semana'}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Progreso</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("dashboard.metrics.pending_tickets")}</CardTitle>
             <AlertCircle className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.inProgressTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.openTickets} pendientes
+              {stats.openTickets} {locale === 'en' ? 'pending' : 'pendientes'}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resueltos</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("dashboard.metrics.resolved_tickets")}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.resolvedTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.closedTickets} cerrados
+              {stats.closedTickets} {locale === 'en' ? 'closed' : 'cerrados'}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tiempo Promedio</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("dashboard.metrics.average_time")}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -315,7 +318,7 @@ export default function ClientDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
-              Tickets Recientes
+              {t("dashboard.recent_tickets")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -377,7 +380,7 @@ export default function ClientDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="w-5 h-5" />
-              Actividad Reciente
+              {t("dashboard.tabs.summary")}
             </CardTitle>
           </CardHeader>
           <CardContent>

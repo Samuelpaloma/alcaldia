@@ -56,6 +56,16 @@ public class AuthController {
             "El código fue enviado a tu correo"
         ));
     }
+
+    /**
+     * Verificar email de registro y completar la creación del usuario
+     */
+    @PostMapping("/verify-registration")
+    public ResponseEntity<LoginResponse> verifyRegistration(@Valid @RequestBody VerifyEmailRequest request) {
+        log.info("Verificación de registro para email: {}", request.getEmail());
+        LoginResponse response = authService.verifyEmailAndCompleteRegistration(request);
+        return ResponseEntity.ok(response);
+    }
     
     /**
      * Verificar email con código - Para usuarios existentes

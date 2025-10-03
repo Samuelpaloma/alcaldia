@@ -16,8 +16,8 @@ const I18nContext = createContext<I18nContextType | null>(null);
 const loadTranslations = async (locale: Locale): Promise<Dict> => {
   try {
     // Agregar timestamp para evitar caché
-    const timestamp = Date.now();
-    const response = await fetch(`/i18n/locales/${locale}.json?t=${timestamp}`);
+    const timestamp = Date.now() + Math.random();
+    const response = await fetch(`/i18n/locales/${locale}.json?t=${timestamp}&v=${Date.now()}`);
     
     if (!response.ok) {
       throw new Error(`Failed to load ${locale} translations: ${response.status} ${response.statusText}`);
@@ -25,13 +25,12 @@ const loadTranslations = async (locale: Locale): Promise<Dict> => {
     
     const translations = await response.json();
     console.log(`✅ Loaded ${Object.keys(translations).length} translations for ${locale}`);
-    console.log(`🔍 Pagination keys loaded:`, {
-      'pagination.showing': translations['pagination.showing'],
-      'pagination.to': translations['pagination.to'],
-      'pagination.of': translations['pagination.of'],
-      'pagination.tickets': translations['pagination.tickets'],
-      'pagination.previous': translations['pagination.previous'],
-      'pagination.next': translations['pagination.next']
+    console.log(`🔍 Client keys loaded:`, {
+      'client.create_ticket': translations['client.create_ticket'],
+      'client.fill_form': translations['client.fill_form'],
+      'client.chat.title': translations['client.chat.title'],
+      'client.form.name': translations['client.form.name'],
+      'client.form.location': translations['client.form.location']
     });
     return translations;
   } catch (error) {
@@ -92,9 +91,9 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const dict = useMemo(() => translations, [translations]);
   const t = useCallback((key: string) => {
     const translation = dict[key] ?? key;
-    if (translation === key && (key.startsWith('pagination.') || key.startsWith('settings.') || key.startsWith('common.') || key.startsWith('ticket_detail.'))) {
+    if (translation === key && (key.startsWith('client.') || key.startsWith('pagination.') || key.startsWith('settings.') || key.startsWith('common.') || key.startsWith('ticket_detail.'))) {
       console.warn(`⚠️ Missing translation for key: ${key}`);
-      console.log(`🔍 Available keys:`, Object.keys(dict).filter(k => k.includes(key.split('.')[0])));
+      console.log(`🔍 Available client keys:`, Object.keys(dict).filter(k => k.startsWith('client.')));
     }
     return translation;
   }, [dict]);
