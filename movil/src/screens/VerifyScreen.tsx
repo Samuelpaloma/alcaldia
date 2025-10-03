@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../config/api';
 
 type VerifyScreenParams = {
   userId: number;
@@ -39,22 +40,16 @@ export default function VerifyScreen() {
       console.log('User ID:', userId);
       console.log('Code:', code);
 
-      const response = await fetch('http://localhost:8080/api/auth/verify-2fa', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: userId,
-          code: code.trim()
-        })
+      const data = await authAPI.verify2FA({
+        userId: userId,
+        userEmail: userEmail,
+        userName: userName,
+        code: code.trim()
       });
 
-      const data = await response.json();
-      console.log('🔍 Verify 2FA Response:', response.status);
       console.log('🔍 Verify 2FA Data:', data);
 
-      if (response.ok && data.accessToken) {
+      if (data.accessToken) {
         // 2FA verificado exitosamente
         console.log('✅ 2FA verificado exitosamente, guardando token...');
         
@@ -102,24 +97,17 @@ export default function VerifyScreen() {
     try {
       console.log('🔄 Reenviando código 2FA para usuario:', userId);
 
-      const response = await fetch('http://localhost:8080/api/auth/resend-2fa-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: userId })
+      await authAPI.resend2FACode({
+        userId: userId,
+        userEmail: userEmail
       });
 
-      if (response.ok) {
-        Alert.alert(
-          'Código reenviado',
-          'Te hemos enviado un nuevo código de verificación a tu correo.'
-        );
-        setTimer(60); // Reiniciar contador
-        setCode(''); // Limpiar código anterior
-      } else {
-        Alert.alert('Error', 'No se pudo reenviar el código. Intenta nuevamente.');
-      }
+      Alert.alert(
+        'Código reenviado',
+        'Te hemos enviado un nuevo código de verificación a tu correo.'
+      );
+      setTimer(60); // Reiniciar contador
+      setCode(''); // Limpiar código anterior
     } catch (error) {
       console.error('Error reenviando código:', error);
       Alert.alert('Error', 'Error de conexión al reenviar el código.');

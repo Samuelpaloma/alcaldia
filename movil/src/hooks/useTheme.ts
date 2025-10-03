@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usuarioAPI } from '../config/api';
 
 export interface Theme {
   colors: {
@@ -123,25 +124,12 @@ export const useThemeState = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:8080/api/usuario/preferencias-tema', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const themePreference = data.tema || 'light';
-        setIsDark(themePreference === 'dark');
-        
-        // Guardar en AsyncStorage para futuras cargas rápidas
-        await AsyncStorage.setItem('theme', themePreference);
-      } else {
-        // Si falla la carga desde BD, usar tema claro por defecto
-        setIsDark(false);
-        await AsyncStorage.setItem('theme', 'light');
-      }
+      const data = await usuarioAPI.getThemePreferences();
+      const themePreference = data.tema || 'light';
+      setIsDark(themePreference === 'dark');
+      
+      // Guardar en AsyncStorage para futuras cargas rápidas
+      await AsyncStorage.setItem('theme', themePreference);
     } catch (error) {
       console.error('Error cargando tema:', error);
       setIsDark(false);
@@ -161,15 +149,8 @@ export const useThemeState = () => {
       // Guardar en BD
       const token = await AsyncStorage.getItem('authToken');
       if (token) {
-        await fetch('http://localhost:8080/api/usuario/preferencias-tema', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tema: newTheme ? 'dark' : 'light'
-          }),
+        await usuarioAPI.updateThemePreferences({
+          tema: newTheme ? 'dark' : 'light'
         });
       }
     } catch (error) {

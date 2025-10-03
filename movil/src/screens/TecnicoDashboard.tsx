@@ -278,7 +278,14 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       console.log('🎫 [FRONTEND] Obteniendo tickets...');
       
       const data = await tecnicoAPI.getTickets();
-      console.log('🎫 Tickets recibidos:', data);
+      console.log('🎫 [DEBUG] Tickets recibidos:', data);
+      console.log('🎫 [DEBUG] Cantidad de tickets:', data?.length || 0);
+      
+      if (data && data.length > 0) {
+        console.log('🎫 [DEBUG] Primer ticket:', data[0]);
+        console.log('🎫 [DEBUG] Campos del primer ticket:', Object.keys(data[0]));
+      }
+      
       setTickets(data);
     } catch (error) {
       console.error('Error cargando tickets:', error);
@@ -289,6 +296,10 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
 
   // Función para filtrar tickets
   const filterTickets = () => {
+    console.log('🔍 [FILTER] ===== INICIANDO FILTRADO =====');
+    console.log('🔍 [FILTER] Tickets totales:', tickets.length);
+    console.log('🔍 [FILTER] Texto de búsqueda:', searchText);
+    
     let filtered = tickets;
 
     // Filtrar por texto de búsqueda
@@ -300,6 +311,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       );
     }
 
+    console.log('🔍 [FILTER] Tickets filtrados:', filtered.length);
+    console.log('🔍 [FILTER] Tickets filtrados:', filtered);
     setFilteredTickets(filtered);
   };
 

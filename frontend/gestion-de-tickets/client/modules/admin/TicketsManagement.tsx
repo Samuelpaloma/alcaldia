@@ -195,14 +195,22 @@ export default function TicketsManagement() {
       console.log('📋 [DASHBOARD] Tickets cargados:', data.tickets?.length || 0);
       
       // Cargar técnicos
-      const tecnicosMapeados = (data.tecnicos || []).map(t => ({
-        id: t.idUsuario,
-        nombre: `${t.nombre} ${t.apellido}`.trim(),
-        email: t.email,
-        activo: t.activo
-      }));
+      console.log('👥 [DEBUG] Datos de técnicos recibidos:', data.tecnicos);
+      const tecnicosMapeados = (data.tecnicos || [])
+        .filter(t => {
+          const idValido = t.id != null && t.id !== undefined && t.id !== '';
+          console.log('👥 [DEBUG] Técnico:', t, 'ID válido:', idValido);
+          return idValido;
+        })
+        .map(t => ({
+          id: t.id,
+          nombre: t.nombreCompleto || `${t.nombre || ''} ${t.apellido || ''}`.trim(),
+          email: t.email,
+          activo: t.activo
+        }));
       setTecnicos(tecnicosMapeados);
       console.log('👥 [DASHBOARD] Técnicos cargados:', tecnicosMapeados.length);
+      console.log('👥 [DEBUG] Técnicos mapeados:', tecnicosMapeados);
       
       // Verificar estado de conexión
       if (!data.connectionStatus.success) {
@@ -332,13 +340,19 @@ export default function TicketsManagement() {
       })));
       
       // Mapear a formato esperado por el componente
-      const tecnicosMapeados = response.map(t => ({
-        id: t.idUsuario,
-        nombre: t.nombre,
-        apellido: t.apellido,
-        email: t.email,
-        activo: t.activo
-      }));
+      console.log('👥 [DEBUG] Respuesta de técnicos:', response);
+      const tecnicosMapeados = response
+        .filter(t => {
+          const idValido = t.id != null && t.id !== undefined && t.id !== '';
+          console.log('👥 [DEBUG] Técnico API:', t, 'ID válido:', idValido);
+          return idValido;
+        })
+        .map(t => ({
+          id: t.id,
+          nombre: t.nombreCompleto || `${t.nombre || ''} ${t.apellido || ''}`.trim(),
+          email: t.email,
+          activo: t.activo
+        }));
       
       setTecnicos(tecnicosMapeados);
     } catch (error) {
@@ -1706,11 +1720,13 @@ export default function TicketsManagement() {
                     <SelectValue placeholder="Selecciona un técnico" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tecnicos.map((tecnico) => (
-                      <SelectItem key={tecnico.id} value={tecnico.id.toString()}>
-                        {tecnico.nombre} {tecnico.apellido || ''}
-                      </SelectItem>
-                    ))}
+                    {tecnicos
+                      .filter(tecnico => tecnico.id != null && tecnico.id !== undefined && tecnico.id !== '') // Filtrar técnicos sin ID válido
+                      .map((tecnico) => (
+                        <SelectItem key={tecnico.id} value={tecnico.id.toString()}>
+                          {tecnico.nombre} {tecnico.apellido || ''}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -2287,11 +2303,13 @@ export default function TicketsManagement() {
                     <SelectValue placeholder="Selecciona un técnico" />
                   </SelectTrigger>
                   <SelectContent>
-                    {tecnicos.map((tecnico) => (
-                      <SelectItem key={tecnico.id} value={tecnico.id.toString()}>
-                        {tecnico.nombre} {tecnico.apellido || ''}
-                      </SelectItem>
-                    ))}
+                    {tecnicos
+                      .filter(tecnico => tecnico.id != null && tecnico.id !== undefined && tecnico.id !== '') // Filtrar técnicos sin ID válido
+                      .map((tecnico) => (
+                        <SelectItem key={tecnico.id} value={tecnico.id.toString()}>
+                          {tecnico.nombre} {tecnico.apellido || ''}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

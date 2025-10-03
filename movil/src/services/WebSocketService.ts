@@ -3,6 +3,8 @@
  * Maneja la conexión y comunicación en tiempo real con el backend
  */
 
+import { getWebSocketUrl } from '../config/api';
+
 export interface WebSocketMessage {
   type: string;
   data: any;
@@ -77,8 +79,9 @@ class WebSocketService {
     try {
       console.log('🔌 [WebSocket] Conectando al servidor...');
       
-      // URL del WebSocket (ajustar según tu configuración)
-      const wsUrl = `ws://localhost:8080/ws?token=${encodeURIComponent(token)}&email=${encodeURIComponent(userEmail)}`;
+      // URL del WebSocket usando configuración centralizada
+      const baseWsUrl = getWebSocketUrl();
+      const wsUrl = `${baseWsUrl}?token=${encodeURIComponent(token)}&email=${encodeURIComponent(userEmail)}`;
       
       this.ws = new WebSocket(wsUrl);
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { authAPI } from '../config/api';
 
 type VerifyEmailScreenParams = {
   email: string;
@@ -36,21 +37,10 @@ export default function VerifyEmailScreen() {
     try {
       console.log('📧 Enviando código de verificación inicial a:', email);
       
-      const response = await fetch('http://10.3.234.61:8080/api/auth/send-email-verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email })
-      });
-
-      if (response.ok) {
-        console.log('✅ Código de verificación enviado automáticamente');
-      } else {
-        console.log('❌ Error enviando código inicial');
-      }
+      await authAPI.sendEmailVerification(email);
+      console.log('✅ Código de verificación enviado automáticamente');
     } catch (error) {
-      console.error('Error enviando código inicial:', error);
+      console.error('❌ Error enviando código inicial:', error);
     }
   };
 
@@ -74,28 +64,11 @@ export default function VerifyEmailScreen() {
       };
       console.log('Request body:', JSON.stringify(requestBody));
 
-      const response = await fetch('http://10.3.234.61:8080/api/auth/verify-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      const data = await response.json();
-      console.log('🔍 Verify Email Response:', response.status);
+      const data = await authAPI.verifyEmail(requestBody);
       console.log('🔍 Verify Email Data:', data);
 
-      if (response.ok) {
-        console.log('✅ Email verificado correctamente');
-        navigation.navigate('Login');
-      } else {
-        // Error en verificación
-        const errorMessage = data.message || 'Código de verificación inválido';
-        console.log('❌ Error verificando email:', errorMessage);
-        Alert.alert('Error de verificación', errorMessage);
-        setCode(''); // Limpiar código incorrecto
-      }
+      console.log('✅ Email verificado correctamente');
+      navigation.navigate('Login');
     } catch (error) {
       console.error('Error verificando email:', error);
       Alert.alert(
@@ -114,31 +87,17 @@ export default function VerifyEmailScreen() {
     try {
       console.log('🔄 Reenviando código de verificación de email a:', email);
 
-      const response = await fetch('http://10.3.234.61:8080/api/auth/resend-verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: email 
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert(
-          'Código reenviado',
-          'Te hemos enviado un nuevo código de verificación a tu correo.'
-        );
-        setTimer(60); // Reiniciar contador
-        setCode(''); // Limpiar código anterior
-      } else {
-        Alert.alert('Error', data.message || 'No se pudo reenviar el código. Intenta nuevamente.');
-      }
+      await authAPI.resendVerification(email);
+      
+      Alert.alert(
+        'Código reenviado',
+        'Te hemos enviado un nuevo código de verificación a tu correo.'
+      );
+      setTimer(60); // Reiniciar contador
+      setCode(''); // Limpiar código anterior
     } catch (error) {
       console.error('Error reenviando código:', error);
-      Alert.alert('Error', 'Error de conexión al reenviar el código.');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Error de conexión al reenviar el código.');
     } finally {
       setResending(false);
     }

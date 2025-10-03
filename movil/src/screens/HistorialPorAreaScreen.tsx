@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tecnicoAPI } from '../config/api';
 
 interface Ticket {
   id: number;
@@ -57,72 +58,47 @@ export default function HistorialPorAreaScreen() {
         return;
       }
 
-      console.log('📊 [HISTORIAL] Haciendo petición a: http://10.3.234.61:8080/api/tecnico/tickets');
+      console.log('📊 [HISTORIAL] Obteniendo tickets...');
       
-      const response = await fetch('http://10.3.234.61:8080/api/tecnico/tickets', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const tickets = await tecnicoAPI.getTickets();
+      console.log('📊 [HISTORIAL] Tickets recibidos:', tickets.length);
+      console.log('📊 [HISTORIAL] Estructura del primer ticket:', tickets[0]);
       
-      console.log('📊 [HISTORIAL] Respuesta recibida:', response.status, response.statusText);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('📊 [HISTORIAL] Respuesta del servidor:', data);
+      // Procesar los datos para agrupar por área
+      const areaGroups: AreaGroup[] = [];
+      
+      // Crear grupos para todas las áreas del sistema
+      systemAreas.forEach(area => {
+        const ticketsInArea = tickets.filter((ticket: any) => (ticket.categoria || 'Sin área') === area);
+        console.log(`📊 [HISTORIAL] Área ${area}: ${ticketsInArea.length} tickets`);
         
-        if (data.success && data.tickets) {
-          const tickets = data.tickets;
-          console.log('📊 [HISTORIAL] Tickets recibidos:', tickets.length);
-          console.log('📊 [HISTORIAL] Estructura del primer ticket:', tickets[0]);
-          
-          // Procesar los datos para agrupar por área
-          const areaGroups: AreaGroup[] = [];
-          
-          // Crear grupos para todas las áreas del sistema
-          systemAreas.forEach(area => {
-            const ticketsInArea = tickets.filter((ticket: any) => (ticket.categoria || 'Sin área') === area);
-            console.log(`📊 [HISTORIAL] Área ${area}: ${ticketsInArea.length} tickets`);
-            
-            areaGroups.push({
-              nombre: area,
-              tickets: ticketsInArea.map((ticket: any) => {
-                console.log(`📊 [HISTORIAL] Procesando ticket:`, {
-                  id: ticket.id,
-                  categoria: ticket.categoria,
-                  consulta: ticket.consulta,
-                  estado: ticket.estado
-                });
-                
-                return {
-                  id: ticket.id,
-                  titulo: ticket.consulta || ticket.titulo || 'Sin título',
-                  descripcion: ticket.descripcion || '',
-                  fechaCreacion: ticket.fechaCreacion || '',
-                  fechaCierre: ticket.fechaCierre || '',
-                  estado: ticket.estado || 'PENDIENTE',
-                  area: ticket.categoria || 'Sin área',
-                  prioridad: ticket.prioridad || 'MEDIA',
-                  tecnicoAsignado: ticket.tecnicoAsignado || ''
-                };
-              })
+        areaGroups.push({
+          nombre: area,
+          tickets: ticketsInArea.map((ticket: any) => {
+            console.log(`📊 [HISTORIAL] Procesando ticket:`, {
+              id: ticket.id,
+              categoria: ticket.categoria,
+              consulta: ticket.consulta,
+              estado: ticket.estado
             });
-          });
+            
+            return {
+              id: ticket.id,
+              titulo: ticket.consulta || ticket.titulo || 'Sin título',
+              descripcion: ticket.descripcion || '',
+              fechaCreacion: ticket.fechaCreacion || '',
+              fechaCierre: ticket.fechaCierre || '',
+              estado: ticket.estado || 'PENDIENTE',
+              area: ticket.categoria || 'Sin área',
+              prioridad: ticket.prioridad || 'MEDIA',
+              tecnicoAsignado: ticket.tecnicoAsignado || ''
+            };
+          })
+        });
+      });
 
-          setTicketsData(areaGroups);
-          console.log('📊 [HISTORIAL] Áreas del sistema:', systemAreas);
-        } else {
-          console.log('📊 [HISTORIAL] No hay tickets o error en la respuesta');
-          setTicketsData([]);
-          setAreas(['Todas las áreas']);
-        }
-      } else {
-        const errorData = await response.json();
-        console.error('📊 [HISTORIAL] Error del servidor:', errorData);
-        Alert.alert('Error', errorData.message || 'No se pudieron cargar los tickets');
-      }
+      setTicketsData(areaGroups);
+      console.log('📊 [HISTORIAL] Áreas del sistema:', systemAreas);
     } catch (error) {
       console.error('Error al cargar tickets:', error);
       Alert.alert('Error', 'No se pudo conectar con el servidor');
