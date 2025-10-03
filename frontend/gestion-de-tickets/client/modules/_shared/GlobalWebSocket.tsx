@@ -86,8 +86,8 @@ const GlobalWebSocket: React.FC = () => {
   const setupGlobalWebSocket = () => {
     try {
       console.log('🔔 [DEBUG] ===== CONFIGURANDO WEBSOCKET GLOBAL =====');
-      console.log('🔔 [DEBUG] URL WebSocket: http://localhost:8080/ws');
-      const socket = new SockJS('http://localhost:8080/ws');
+      console.log('🔔 [DEBUG] URL WebSocket: http://10.3.234.28:8080/ws');
+      const socket = new SockJS('http://10.3.234.28:8080/ws');
       const client = new Client({
         webSocketFactory: () => socket,
         debug: (str) => {

@@ -17,7 +17,7 @@ export const useRealtimeNotificationToasts = () => {
         // Importar dinámicamente para evitar problemas de SSR
         import('sockjs-client').then(({ default: SockJS }) => {
           import('@stomp/stompjs').then(({ Client }) => {
-            const socket = new SockJS('http://localhost:8080/ws');
+            const socket = new SockJS('http://10.3.234.28:8080/ws');
             const client = new Client({
               webSocketFactory: () => socket,
               debug: (str) => {

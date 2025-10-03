@@ -136,6 +136,7 @@ export default function TicketTrackingScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasLocalMessages, setHasLocalMessages] = useState(false);
   const [activeTab, setActiveTab] = useState<'info' | 'historial' | 'chat' | 'evidencias'>('info');
   const [userEmail, setUserEmail] = useState<string>('');
   const [activeEvidenceTab, setActiveEvidenceTab] = useState<'chat' | 'finales'>('chat');
@@ -381,18 +382,48 @@ export default function TicketTrackingScreen() {
       
       const data = await ticketsAPI.getComments(ticketId);
       console.log('✅ [CHAT] Mensajes cargados:', data);
+      console.log('✅ [CHAT] Primer comentario completo:', data?.[0]);
+      console.log('✅ [CHAT] Campos del primer comentario:', data?.[0] ? Object.keys(data[0]) : 'No hay comentarios');
       
       // Mapear los comentarios al formato esperado
-      const mappedMessages = (data || []).map((comment: Comment) => {
-        return {
+      const mappedMessages = (data || []).map((comment: Comment, index) => {
+        console.log(`🔍 [CHAT] Mapeando comentario ${index}:`, {
           id: comment.id,
-          autor: comment.usuario?.nombre || 'Usuario',
-          mensaje: comment.contenido,
+          contenido: comment.contenido,
+          contenidoLength: comment.contenido?.length,
+          mensaje: comment.mensaje,
+          mensajeLength: comment.mensaje?.length,
+          usuario: comment.usuario,
+          fechaCreacion: comment.fechaCreacion
+        });
+        
+        // Determinar si es técnico basado en el tipo de usuario o autor
+        const esTecnico = comment.usuario?.tipoUsuario === 'TECNICO' || 
+                         comment.tipoAutor === 'TECNICO' || 
+                         comment.esTecnico === true;
+        
+        // Intentar obtener el contenido del mensaje de diferentes campos posibles
+        const contenido = comment.contenido || comment.mensaje || '';
+        
+        const mappedMessage = {
+          id: comment.id,
+          autor: comment.usuario?.nombre || comment.autor || 'Usuario',
+          mensaje: contenido,
           fechaCreacion: comment.fechaCreacion,
-          esTecnico: false, // Se puede determinar basado en el tipo de usuario
-          tipoAutor: 'USUARIO',
-          autorEmail: ''
+          esTecnico: esTecnico,
+          tipoAutor: comment.tipoAutor || 'USUARIO',
+          autorEmail: comment.usuario?.email || comment.autorEmail || ''
         };
+        
+        console.log(`🔍 [CHAT] Mensaje mapeado ${index}:`, {
+          id: mappedMessage.id,
+          autor: mappedMessage.autor,
+          mensaje: mappedMessage.mensaje,
+          mensajeLength: mappedMessage.mensaje?.length,
+          esTecnico: mappedMessage.esTecnico
+        });
+        
+        return mappedMessage;
       });
       
       // Ordenar mensajes por fecha (del más antiguo al más nuevo - orden ascendente)
@@ -403,7 +434,24 @@ export default function TicketTrackingScreen() {
       });
       
       console.log('✅ [TÉCNICO] Mensajes ordenados (ascendente):', mensajesOrdenados.length);
-      setMessages(mensajesOrdenados);
+      
+      // Solo actualizar si hay una diferencia significativa en la cantidad de mensajes
+      // o si no estamos enviando un mensaje actualmente
+      setMessages(prevMessages => {
+        if (isSending || hasLocalMessages) {
+          console.log('🔄 [TÉCNICO] No actualizando mensajes - enviando mensaje o hay mensajes locales pendientes');
+          return prevMessages; // Mantener mensajes actuales si estamos enviando o hay mensajes locales
+        }
+        
+        // Si hay una diferencia significativa, actualizar
+        if (Math.abs(mensajesOrdenados.length - prevMessages.length) > 0) {
+          console.log('🔄 [TÉCNICO] Actualizando mensajes - diferencia detectada');
+          return mensajesOrdenados;
+        }
+        
+        console.log('🔄 [TÉCNICO] No hay cambios significativos en los mensajes');
+        return prevMessages; // Mantener mensajes actuales
+      });
       
       // Scroll al final después de cargar mensajes
       setTimeout(() => {
@@ -413,7 +461,10 @@ export default function TicketTrackingScreen() {
       }, 100);
     } catch (error: any) {
       console.error('❌ [CHAT] Error cargando mensajes:', error);
-      setMessages([]); // Inicializar con array vacío
+      // Solo limpiar mensajes si no estamos enviando uno
+      if (!isSending) {
+        setMessages([]); // Inicializar con array vacío
+      }
     }
   };
 
@@ -651,6 +702,9 @@ export default function TicketTrackingScreen() {
       
       console.log('💬 [SEND] Enviando mensaje para ticket:', ticketId);
       console.log('💬 [SEND] Mensaje:', messageText);
+      console.log('💬 [SEND] Longitud del mensaje:', messageText.length);
+      console.log('💬 [SEND] Mensaje trimmeado:', messageText.trim());
+      console.log('💬 [SEND] Longitud después de trim:', messageText.trim().length);
       
       await ticketsAPI.sendComment(ticketId, messageText);
       
@@ -672,6 +726,9 @@ export default function TicketTrackingScreen() {
         return newMessages;
       });
       
+      // Marcar que hay mensajes locales pendientes
+      setHasLocalMessages(true);
+      
       setNewMessage('');
       
       // Scroll al final solo cuando se envía un mensaje
@@ -682,14 +739,17 @@ export default function TicketTrackingScreen() {
       }, 100);
       
       // Recargar mensajes después de un delay para sincronizar con el servidor
+      // PERO solo si no hay mensajes locales pendientes
       setTimeout(async () => {
         try {
           console.log('🔄 [TÉCNICO] Sincronizando mensajes después del envío...');
+          // Limpiar el estado de mensajes locales y recargar
+          setHasLocalMessages(false);
           await loadMessages();
         } catch (error) {
           console.error('❌ [TÉCNICO] Error sincronizando mensajes:', error);
         }
-      }, 2000); // 2 segundos para dar tiempo al servidor
+      }, 3000); // 3 segundos para dar más tiempo al servidor
     } catch (error: any) {
       console.error('❌ [CHAT] Error enviando mensaje:', error);
       const errorMessage = error?.message || 'Error de conexión';

@@ -1312,9 +1312,13 @@ class ApiClient {
     console.log('💬 [API] Enviando comentario:', { ticketId, mensaje });
     
     try {
+      // Enviar tanto 'mensaje' como 'contenido' para compatibilidad
       const response = await this.request<ApiResponse>(`/tickets/${ticketId}/comentarios`, {
         method: 'POST',
-        body: JSON.stringify({ mensaje })
+        body: JSON.stringify({ 
+          mensaje: mensaje,
+          contenido: mensaje 
+        })
       });
       
       console.log('✅ [API] Comentario enviado exitosamente:', response);

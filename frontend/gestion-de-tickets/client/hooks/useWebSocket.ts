@@ -38,7 +38,8 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
     console.log('🔥 [WEBSOCKET] Token de autenticación:', token ? 'Presente' : 'No presente');
     
     // Crear conexión WebSocket con configuración más robusta
-    const socket = new SockJS('http://localhost:8080/ws', null, {
+    // Usar la IP del servidor en lugar de localhost
+    const socket = new SockJS('http://10.3.234.28:8080/ws', null, {
       debug: true,
       devel: true
     });

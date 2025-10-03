@@ -209,17 +209,21 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const data = await tecnicoAPI.getDashboard();
-      console.log('📊 Estadísticas recibidas:', data);
+      const response = await tecnicoAPI.getDashboard();
+      console.log('📊 Estadísticas recibidas:', response);
+      
+      // Extraer los datos del dashboard de la respuesta
+      const data = response.data || response;
+      console.log('📊 Datos del dashboard extraídos:', data);
       
       setStats({
-        total: data.ticketsTotal || 0,
+        total: data.totalTickets || data.ticketsTotal || 0,
         pendientes: data.ticketsPendientes || 0,
-        enProceso: data.ticketsEnProceso || 0,
-        finalizados: data.ticketsCompletados || 0,
-        evidencias: 0, // No disponible en la respuesta del dashboard
+        enProceso: data.ticketsEnEjecucion || data.ticketsEnProceso || 0,
+        finalizados: data.ticketsTerminados || data.ticketsCompletados || 0,
+        evidencias: data.totalEvidencias || 0,
         notificaciones: 0, // No disponible en la respuesta del dashboard
-        totalEvidencias: 0,
+        totalEvidencias: data.totalEvidencias || 0,
         totalNotificaciones: 0
       });
     } catch (error) {
@@ -277,16 +281,20 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     try {
       console.log('🎫 [FRONTEND] Obteniendo tickets...');
       
-      const data = await tecnicoAPI.getTickets();
-      console.log('🎫 [DEBUG] Tickets recibidos:', data);
-      console.log('🎫 [DEBUG] Cantidad de tickets:', data?.length || 0);
+      const response = await tecnicoAPI.getTickets();
+      console.log('🎫 [DEBUG] Respuesta completa recibida:', response);
       
-      if (data && data.length > 0) {
-        console.log('🎫 [DEBUG] Primer ticket:', data[0]);
-        console.log('🎫 [DEBUG] Campos del primer ticket:', Object.keys(data[0]));
+      // Extraer el array de tickets de la respuesta
+      const ticketsData = response.data || [];
+      console.log('🎫 [DEBUG] Tickets extraídos:', ticketsData);
+      console.log('🎫 [DEBUG] Cantidad de tickets:', ticketsData.length);
+      
+      if (ticketsData.length > 0) {
+        console.log('🎫 [DEBUG] Primer ticket:', ticketsData[0]);
+        console.log('🎫 [DEBUG] Campos del primer ticket:', Object.keys(ticketsData[0]));
       }
       
-      setTickets(data);
+      setTickets(ticketsData);
     } catch (error) {
       console.error('Error cargando tickets:', error);
     } finally {
@@ -424,7 +432,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       console.log('📱 [EVIDENCIA] Cargando todas las evidencias del técnico...');
       
       // Obtener todos los tickets del técnico
-      const tickets = await tecnicoAPI.getTickets();
+      const ticketsResponse = await tecnicoAPI.getTickets();
+      const tickets = ticketsResponse.data || [];
       
       console.log('📱 [EVIDENCIA] Tickets encontrados:', tickets.length);
       

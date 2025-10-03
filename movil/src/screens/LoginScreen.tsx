@@ -55,14 +55,9 @@ export default function LoginScreen() {
       };
 
       const data = await authAPI.login(credentials);
-      console.log('🔍 Response data:', data);
 
       // PRIMERO: Verificar si requiere verificación de email
       if (data.requireEmailVerification) {
-        console.log('📧 Email no verificado, navegando a VerifyEmailScreen');
-        console.log('📧 Data recibida:', data);
-        console.log('📧 Email en data:', data.email);
-        console.log('📧 Tipo de email:', typeof data.email);
         navigation.navigate('VerifyEmailScreen', {
           email: data.email
         });
@@ -72,7 +67,6 @@ export default function LoginScreen() {
       // SEGUNDO: Si response es OK, manejar casos exitosos
       if (data.accessToken) {
         // Login directo exitoso - GUARDAR TOKEN AQUÍ
-        console.log('✅ Login directo exitoso, guardando token y navegando a Home');
         await AsyncStorage.setItem('authToken', data.accessToken);
         await AsyncStorage.setItem('userInfo', JSON.stringify({
           userId: data.userId,
@@ -82,14 +76,12 @@ export default function LoginScreen() {
           telefono: data.telefono
         }));
         // Navegar manualmente a Home después del login exitoso
-        console.log('✅ Login exitoso, navegando a Home');
         navigation.reset({
           index: 0,
           routes: [{ name: 'Home' }],
         });
       } else if (data.require2fa) {
         // Login requiere 2FA - NO guardar token todavía
-        console.log('🔐 Login requiere 2FA, navegando a Verify2FA');
         navigation.navigate('Verify2FA', { 
           userId: data.userId,
           userEmail: data.email,

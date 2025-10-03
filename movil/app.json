@@ -21,11 +21,26 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#30692E"
-      }
+      },
+      "usesCleartextTraffic": true,
+      "networkSecurityConfig": {
+        "cleartextTrafficPermitted": true
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
+    "packagerOpts": {
+      "config": "metro.config.js"
     }
   }
 }
-
