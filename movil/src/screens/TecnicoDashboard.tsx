@@ -25,6 +25,7 @@ import NotificacionesModal from './components/NotificacionesModal';
 import PreferenciasNotificacionesModal from './components/PreferenciasNotificacionesModal';
 import LanguageSelector from '../components/LanguageSelector';
 import { useFocusEffect } from '@react-navigation/native';
+import { tecnicoAPI, authAPI, evidenciasAPI, ticketsAPI, Ticket as APITicket, DashboardData, Evidence } from '../config/api';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -168,22 +169,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     try {
       console.log('🚪 [LOGOUT] Iniciando proceso de logout...');
       
-      const token = await AsyncStorage.getItem('authToken');
-      if (token) {
-        const response = await fetch('http://10.3.234.61:8080/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          console.log('✅ [LOGOUT] Logout exitoso en el backend');
-        } else {
-          console.log('⚠️ [LOGOUT] Error en logout del backend, pero continuando...');
-        }
-      }
+      await authAPI.logout();
+      console.log('✅ [LOGOUT] Logout exitoso');
 
       // Limpiar TODO el almacenamiento local
       console.log('🗑️ [LOGOUT] Limpiando todo el almacenamiento local...');
@@ -222,85 +209,19 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch('http://10.3.234.61:8080/api/tecnico/dashboard', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
+      const data = await tecnicoAPI.getDashboard();
+      console.log('📊 Estadísticas recibidas:', data);
+      
+      setStats({
+        total: data.ticketsTotal || 0,
+        pendientes: data.ticketsPendientes || 0,
+        enProceso: data.ticketsEnProceso || 0,
+        finalizados: data.ticketsCompletados || 0,
+        evidencias: 0, // No disponible en la respuesta del dashboard
+        notificaciones: 0, // No disponible en la respuesta del dashboard
+        totalEvidencias: 0,
+        totalNotificaciones: 0
       });
-
-      if (response.ok) {
-        try {
-          const data = await response.json();
-          console.log('📊 Estadísticas recibidas:', data);
-          console.log('📊 Data success:', data?.success);
-          console.log('📊 Data stats:', data?.stats);
-          
-          if (data?.success && data?.data) {
-            setStats({
-              total: data.data.totalTickets || 0,
-              pendientes: data.data.ticketsPendientes || 0,
-              enProceso: data.data.ticketsEnEjecucion || 0,
-              finalizados: data.data.ticketsTerminados || 0,
-              evidencias: data.data.totalEvidencias || 0,
-              notificaciones: data.data.totalNotificaciones || 0,
-              totalEvidencias: data.data.totalEvidencias || 0,
-              totalNotificaciones: data.data.totalNotificaciones || 0
-            });
-          } else {
-            console.error('Error en respuesta del servidor:', data?.message || 'Respuesta inválida del servidor');
-            // Usar datos por defecto si la respuesta no es válida
-            setStats({
-              total: 0,
-              pendientes: 0,
-              enProceso: 0,
-              finalizados: 0,
-              evidencias: 0,
-              notificaciones: 0,
-              totalEvidencias: 0,
-              totalNotificaciones: 0
-            });
-          }
-        } catch (parseError) {
-          console.error('Error parseando respuesta JSON:', parseError);
-          // Usar datos por defecto si hay error parseando
-          setStats({
-            total: 0,
-            pendientes: 0,
-            enProceso: 0,
-            finalizados: 0,
-            evidencias: 0,
-            notificaciones: 0,
-            totalEvidencias: 0,
-            totalNotificaciones: 0
-          });
-        }
-      } else if (response.status === 401) {
-        console.log('Token inválido o expirado, redirigiendo a Login');
-        // Opcional: limpiar token y redirigir
-        await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('userInfo');
-      } else {
-        // Manejar errores 404 de forma silenciosa (endpoints no implementados)
-        if (response.status === 404) {
-          console.log('📊 Endpoint de estadísticas no implementado aún, usando datos por defecto');
-        } else {
-          console.error('Error del servidor:', response.status);
-        }
-        // Si hay error, mantener las estadísticas en 0
-        setStats({
-          total: 0,
-          pendientes: 0,
-          enProceso: 0,
-          finalizados: 0,
-          evidencias: 0,
-          notificaciones: 0,
-          totalEvidencias: 0,
-          totalNotificaciones: 0
-        });
-      }
     } catch (error) {
       console.error('Error cargando estadísticas:', error);
       // Si hay error de conexión, mantener las estadísticas en 0
@@ -354,41 +275,11 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     console.log('🎫 [FRONTEND] Timestamp:', new Date().toISOString());
     setTicketsLoading(true);
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      console.log('🎫 [FRONTEND] Token obtenido:', token ? `${token.substring(0, 20)}...` : 'null');
-      console.log('🎫 [FRONTEND] Llamando a: http://10.3.234.61:8080/api/tecnico/tickets');
+      console.log('🎫 [FRONTEND] Obteniendo tickets...');
       
-      const response = await fetch('http://10.3.234.61:8080/api/tecnico/tickets', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      console.log('🎫 [FRONTEND] Respuesta recibida:', response.status, response.statusText);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🎫 Tickets recibidos:', data);
-        if (data.success && data.data) {
-          setTickets(data.data);
-        } else {
-          console.error('Error en respuesta del servidor:', data.message);
-        }
-      } else if (response.status === 401) {
-        console.log('Token inválido o expirado, redirigiendo a Login');
-        await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('userInfo');
-      } else {
-        console.error('Error del servidor:', response.status);
-        try {
-          const errorData = await response.json();
-          console.error('Detalles del error:', errorData);
-        } catch (parseError) {
-          console.error('No se pudo parsear el error del servidor');
-        }
-      }
+      const data = await tecnicoAPI.getTickets();
+      console.log('🎫 Tickets recibidos:', data);
+      setTickets(data);
     } catch (error) {
       console.error('Error cargando tickets:', error);
     } finally {
@@ -423,31 +314,14 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   // Función para aceptar un ticket (PENDIENTE -> EN_PROCESO)
   const aceptarTicket = async (ticketId: number) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      const response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}/aceptar`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          Alert.alert('Éxito', 'Ticket aceptado exitosamente');
-          // Recargar tickets para actualizar la vista
-          await loadTickets();
-        } else {
-          Alert.alert('Error', data.message || 'Error al aceptar el ticket');
-        }
-      } else {
-        const errorData = await response.json();
-        Alert.alert('Error', errorData.message || 'Error del servidor');
-      }
+      await tecnicoAPI.acceptTicket(ticketId);
+      Alert.alert('Éxito', 'Ticket aceptado exitosamente');
+      // Recargar tickets para actualizar la vista
+      await loadTickets();
     } catch (error) {
       console.error('Error aceptando ticket:', error);
-      Alert.alert('Error', 'Error de conexión');
+      const errorMessage = (error as Error).message || 'Error de conexión';
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -460,53 +334,18 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   // Función para finalizar un ticket (EN_PROCESO -> FINALIZADA)
   const finalizarTicket = async (ticketId: number, archivoAdjunto: any, descripcion: string) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      const archivos = archivoAdjunto ? [archivoAdjunto] : [];
+      await tecnicoAPI.finalizeTicket(ticketId, descripcion, archivos);
       
-      const formData = new FormData();
-      
-      // Agregar archivo adjunto si existe
-      if (archivoAdjunto) {
-        // Para web, usar el archivo directamente
-        if (archivoAdjunto.file) {
-          formData.append('archivoAdjunto', archivoAdjunto.file);
-        } else {
-          // Fallback para otros formatos
-          formData.append('archivoAdjunto', {
-            uri: archivoAdjunto.uri,
-            type: archivoAdjunto.type,
-            name: archivoAdjunto.name,
-          } as any);
-        }
-      }
-      
-      formData.append('descripcion', descripcion);
-
-      const response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}/finalizar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          Alert.alert('Éxito', 'Ticket finalizado exitosamente');
-          setFinalizarModalVisible(false);
-          setSelectedTicket(null);
-          // Recargar tickets para actualizar la vista
-          await loadTickets();
-        } else {
-          Alert.alert('Error', data.message || 'Error al finalizar el ticket');
-        }
-      } else {
-        const errorData = await response.json();
-        Alert.alert('Error', errorData.message || 'Error del servidor');
-      }
+      Alert.alert('Éxito', 'Ticket finalizado exitosamente');
+      setFinalizarModalVisible(false);
+      setSelectedTicket(null);
+      // Recargar tickets para actualizar la vista
+      await loadTickets();
     } catch (error) {
       console.error('Error finalizando ticket:', error);
-      Alert.alert('Error', 'Error de conexión');
+      const errorMessage = (error as Error).message || 'Error de conexión';
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -514,32 +353,18 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const obtenerEvidencias = async (ticketId: number) => {
     try {
       setEvidenciasLoading(true);
-      const token = await AsyncStorage.getItem('authToken');
       
       console.log('📱 [EVIDENCIA] Obteniendo evidencias del ticket:', ticketId);
       
-      const response = await fetch(`http://10.3.234.61:8080/api/evidencias/movil/ticket/${ticketId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-      console.log('📱 [EVIDENCIA] Respuesta recibida:', data);
-
-      if (response.ok && data.success) {
-        console.log('📱 [EVIDENCIA] Evidencias obtenidas:', data.data);
-        setEvidencias(data.data || []);
-        setVerEvidenciasModalVisible(true);
-      } else {
-        console.error('📱 [EVIDENCIA] Error en respuesta:', data.message);
-        Alert.alert('Error', data.message || 'Error al obtener evidencias');
-      }
+      const data = await evidenciasAPI.getEvidences(ticketId);
+      console.log('📱 [EVIDENCIA] Evidencias obtenidas:', data);
+      
+      setEvidencias(data || []);
+      setVerEvidenciasModalVisible(true);
     } catch (error) {
       console.error('📱 [EVIDENCIA] Error obteniendo evidencias:', error);
-      Alert.alert('Error', 'Error de conexión al obtener evidencias');
+      const errorMessage = (error as Error).message || 'Error de conexión al obtener evidencias';
+      Alert.alert('Error', errorMessage);
     } finally {
       setEvidenciasLoading(false);
     }
@@ -548,48 +373,33 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   // Función para descargar evidencia
   const descargarEvidencia = async (ticketId: number, nombreArchivo: string) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      
       console.log('📱 [EVIDENCIA] Descargando evidencia:', nombreArchivo, 'del ticket:', ticketId);
       
-      const response = await fetch(`http://10.3.234.61:8080/api/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        // Obtener el archivo como blob
-        const blob = await response.blob();
-        
-        // Crear URL temporal para el archivo
-        const url = window.URL.createObjectURL(blob);
-        
-        // Crear elemento de descarga
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = nombreArchivo; // Nombre del archivo
-        link.style.display = 'none';
-        
-        // Agregar al DOM, hacer click y remover
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Limpiar la URL temporal
-        window.URL.revokeObjectURL(url);
-        
-        console.log('✅ [EVIDENCIA] Descarga exitosa');
-        Alert.alert('Éxito', `Archivo ${nombreArchivo} descargado exitosamente`);
-      } else {
-        console.error('❌ [EVIDENCIA] Error en descarga:', response.status);
-        const errorData = await response.json();
-        Alert.alert('Error', errorData.message || 'Error al descargar el archivo');
-      }
+      const blob = await evidenciasAPI.downloadEvidence(ticketId, nombreArchivo);
+      
+      // Crear URL temporal para el archivo
+      const url = window.URL.createObjectURL(blob);
+      
+      // Crear elemento de descarga
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = nombreArchivo; // Nombre del archivo
+      link.style.display = 'none';
+      
+      // Agregar al DOM, hacer click y remover
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar la URL temporal
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ [EVIDENCIA] Descarga exitosa');
+      Alert.alert('Éxito', `Archivo ${nombreArchivo} descargado exitosamente`);
     } catch (error) {
       console.error('❌ [EVIDENCIA] Error descargando archivo:', error);
-      Alert.alert('Error', 'Error de conexión al descargar');
+      const errorMessage = (error as Error).message || 'Error de conexión al descargar';
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -597,61 +407,36 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const cargarTodasLasEvidencias = async () => {
     try {
       setEvidenciasGlobalesLoading(true);
-      const token = await AsyncStorage.getItem('authToken');
       
       console.log('📱 [EVIDENCIA] Cargando todas las evidencias del técnico...');
       
       // Obtener todos los tickets del técnico
-      const ticketsResponse = await fetch('http://10.3.234.61:8080/api/tecnico/tickets', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (ticketsResponse.ok) {
-        const ticketsData = await ticketsResponse.json();
-        const tickets = ticketsData.data || [];
-        
-        console.log('📱 [EVIDENCIA] Tickets encontrados:', tickets.length);
-        
-        // Obtener evidencias de cada ticket
-        const todasEvidencias: any[] = [];
-        
-        for (const ticket of tickets) {
-          try {
-            const evidenciasResponse = await fetch(`http://10.3.234.61:8080/api/evidencias/movil/ticket/${ticket.id}`, {
-              method: 'GET',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (evidenciasResponse.ok) {
-              const evidenciasData = await evidenciasResponse.json();
-              if (evidenciasData.success && evidenciasData.data) {
-                // Agregar información del ticket a cada evidencia
-                const evidenciasConTicket = evidenciasData.data.map((evidencia: any) => ({
-                  ...evidencia,
-                  ticketNumero: ticket.id,
-                  ticketConsulta: ticket.consulta,
-                  ticketEstado: ticket.estado
-                }));
-                todasEvidencias.push(...evidenciasConTicket);
-              }
-            }
-          } catch (error) {
-            console.error(`Error obteniendo evidencias del ticket ${ticket.id}:`, error);
-          }
+      const tickets = await tecnicoAPI.getTickets();
+      
+      console.log('📱 [EVIDENCIA] Tickets encontrados:', tickets.length);
+      
+      // Obtener evidencias de cada ticket
+      const todasEvidencias: any[] = [];
+      
+      for (const ticket of tickets) {
+        try {
+          const evidencias = await evidenciasAPI.getEvidences(ticket.id);
+          
+          // Agregar información del ticket a cada evidencia
+          const evidenciasConTicket = evidencias.map((evidencia: any) => ({
+            ...evidencia,
+            ticketNumero: ticket.id,
+            ticketConsulta: ticket.titulo || ticket.consulta,
+            ticketEstado: ticket.estado
+          }));
+          todasEvidencias.push(...evidenciasConTicket);
+        } catch (error) {
+          console.error(`Error obteniendo evidencias del ticket ${ticket.id}:`, error);
         }
-        
-        console.log('📱 [EVIDENCIA] Total evidencias encontradas:', todasEvidencias.length);
-        setTodasLasEvidencias(todasEvidencias);
-      } else {
-        console.error('❌ [EVIDENCIA] Error obteniendo tickets');
       }
+      
+      console.log('📱 [EVIDENCIA] Total evidencias encontradas:', todasEvidencias.length);
+      setTodasLasEvidencias(todasEvidencias);
     } catch (error) {
       console.error('❌ [EVIDENCIA] Error cargando evidencias:', error);
     } finally {

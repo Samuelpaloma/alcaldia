@@ -11,6 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../hooks/useTheme';
+import { authAPI, ChangePasswordRequest } from '../config/api';
 
 const ChangePasswordScreen = () => {
   const { theme } = useTheme();
@@ -73,62 +74,36 @@ const ChangePasswordScreen = () => {
     setIsChangingPassword(true);
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      
       console.log('🔑 Enviando datos de cambio de contraseña:', {
         currentPassword: currentPassword ? '[PROVIDED]' : '[EMPTY]',
         newPassword: newPassword ? '[PROVIDED]' : '[EMPTY]',
-        confirmPassword: confirmPassword ? '[PROVIDED]' : '[EMPTY]',
-        token: token ? '[PROVIDED]' : '[EMPTY]'
+        confirmPassword: confirmPassword ? '[PROVIDED]' : '[EMPTY]'
       });
       
-      const response = await fetch('http://localhost:8080/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-          confirmPassword
-        })
-      });
+      const request: ChangePasswordRequest = {
+        currentPassword,
+        newPassword,
+        confirmPassword
+      };
 
-      console.log('🔍 Respuesta del servidor:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-
-      if (response.ok) {
-        showModal('success', '¡Contraseña cambiada exitosamente!', 'Tu contraseña ha sido actualizada correctamente. Ya puedes usar tu nueva contraseña para iniciar sesión.');
-      } else {
-        let errorMessage = "Error al cambiar la contraseña";
-        let errorDetails = "";
-        
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          
-          // Detalles específicos según el tipo de error
-          if (response.status === 400) {
-            errorDetails = "Verifica que la contraseña actual sea correcta y que la nueva contraseña cumpla con los requisitos.";
-          } else if (response.status === 401) {
-            errorDetails = "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.";
-          } else if (response.status === 500) {
-            errorDetails = "Error interno del servidor. Intenta nuevamente en unos minutos.";
-          }
-        } catch (e) {
-          errorDetails = `Error de conexión con el servidor (Código: ${response.status}). Verifica tu conexión a internet.`;
-        }
-        
-        showModal('error', errorMessage, errorDetails);
-      }
+      await authAPI.changePassword(request);
+      showModal('success', '¡Contraseña cambiada exitosamente!', 'Tu contraseña ha sido actualizada correctamente. Ya puedes usar tu nueva contraseña para iniciar sesión.');
     } catch (error) {
       console.error('Error changing password:', error);
-      showModal('error', 'Error de conexión', 'No se pudo conectar con el servidor. Verifica tu conexión a internet y que el servidor esté funcionando.');
+      const errorMessage = (error as Error).message || 'Error al cambiar la contraseña';
+      let errorDetails = '';
+      
+      if (errorMessage.includes('contraseña actual')) {
+        errorDetails = 'Verifica que la contraseña actual sea correcta y que la nueva contraseña cumpla con los requisitos.';
+      } else if (errorMessage.includes('sesión')) {
+        errorDetails = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
+      } else if (errorMessage.includes('servidor')) {
+        errorDetails = 'Error interno del servidor. Intenta nuevamente en unos minutos.';
+      } else if (errorMessage.includes('conexión')) {
+        errorDetails = 'No se pudo conectar con el servidor. Verifica tu conexión a internet y que el servidor esté funcionando.';
+      }
+      
+      showModal('error', errorMessage, errorDetails);
     } finally {
       setIsChangingPassword(false);
     }

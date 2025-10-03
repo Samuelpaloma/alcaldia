@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../../config/api';
 
 export const checkAuthStatus = async () => {
   try {
@@ -9,11 +10,9 @@ export const checkAuthStatus = async () => {
       return { isAuthenticated: false, userInfo: null };
     }
 
-    const response = await fetch('http://localhost:8080/api/auth/verify', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const isValid = await authAPI.verifyToken();
 
-    if (response.ok) {
+    if (isValid) {
       return { 
         isAuthenticated: true, 
         userInfo: userInfoStr ? JSON.parse(userInfoStr) : null 

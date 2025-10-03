@@ -16,6 +16,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "./navigationTypes"; // ajusta la ruta según tu estructura
+import { authAPI, ResetPasswordRequest } from '../config/api';
 
 type ResetPasswordScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -86,83 +87,59 @@ export default function ResetPasswordScreen() {
       console.log('📧 Email:', email);
       console.log('🔑 Código:', resetCode.trim());
       
-      const response = await fetch('http://localhost:8080/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email,
-          token: resetCode.trim(),
-          newPassword: newPassword.trim(),
-          confirmPassword: confirmPassword.trim()
-        })
-      });
+      const request: ResetPasswordRequest = {
+        email: email,
+        token: resetCode.trim(),
+        newPassword: newPassword.trim(),
+        confirmPassword: confirmPassword.trim()
+      };
 
-      console.log('📡 Respuesta del servidor - Status:', response.status);
-      const data = await response.json();
-      console.log('📦 Datos de respuesta:', data);
-
-      if (response.ok) {
-        console.log('✅ Respuesta exitosa del servidor:', data);
+      const data = await authAPI.resetPassword(request);
+      console.log('✅ Respuesta exitosa del servidor:', data);
+      
+      // Verificar si la respuesta contiene un token JWT (auto-login)
+      if (data.accessToken) {
+        console.log('🔑 Token JWT recibido, iniciando auto-login...');
         
-        // Verificar si la respuesta contiene un token JWT (auto-login)
-        if (data.accessToken) {
-          console.log('🔑 Token JWT recibido, iniciando auto-login...');
+        // Guardar el token en AsyncStorage para mantener la sesión
+        try {
+          await AsyncStorage.setItem('authToken', data.accessToken);
+          await AsyncStorage.setItem('userData', JSON.stringify({
+            userId: data.userId,
+            nombre: data.nombre,
+            apellido: data.apellido,
+            email: data.email,
+            tipoUsuario: data.tipoUsuario
+          }));
           
-          // Guardar el token en AsyncStorage para mantener la sesión
-          try {
-            await AsyncStorage.setItem('authToken', data.accessToken);
-            await AsyncStorage.setItem('userData', JSON.stringify({
-              userId: data.userId,
-              nombre: data.nombre,
-              apellido: data.apellido,
-              email: data.email,
-              tipoUsuario: data.tipoUsuario
-            }));
+          console.log('💾 Datos de sesión guardados correctamente');
+          
+          // Verificar que el token se guardó correctamente
+          const savedToken = await AsyncStorage.getItem('authToken');
+          const savedUserData = await AsyncStorage.getItem('userData');
+          console.log('🔍 Token guardado:', savedToken ? 'Sí' : 'No');
+          console.log('🔍 Datos de usuario guardados:', savedUserData ? 'Sí' : 'No');
+          
+          // Forzar verificación de autenticación en la app
+          console.log('🔄 Forzando verificación de autenticación...');
+          
+          // Usar setTimeout para asegurar que la navegación se ejecute después de guardar los datos
+          setTimeout(() => {
+            // Forzar verificación de autenticación
+            if (global.forceAppReload) {
+              global.forceAppReload();
+            }
             
-            console.log('💾 Datos de sesión guardados correctamente');
-            
-            // Verificar que el token se guardó correctamente
-            const savedToken = await AsyncStorage.getItem('authToken');
-            const savedUserData = await AsyncStorage.getItem('userData');
-            console.log('🔍 Token guardado:', savedToken ? 'Sí' : 'No');
-            console.log('🔍 Datos de usuario guardados:', savedUserData ? 'Sí' : 'No');
-            
-            // Forzar verificación de autenticación en la app
-            console.log('🔄 Forzando verificación de autenticación...');
-            
-            // Usar setTimeout para asegurar que la navegación se ejecute después de guardar los datos
-            setTimeout(() => {
-              // Forzar verificación de autenticación
-              if (global.forceAppReload) {
-                global.forceAppReload();
-              }
-              
-              // Navegar al login para que la app detecte la autenticación
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
-            }, 100);
-            
-          } catch (storageError) {
-            console.error('❌ Error guardando datos de sesión:', storageError);
-            // Si falla el almacenamiento, redirigir al login
-            Alert.alert(
-              'Contraseña actualizada',
-              'Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión.',
-              [
-                {
-                  text: 'Continuar',
-                  onPress: () => navigation.navigate('Login')
-                }
-              ]
-            );
-          }
-        } else {
-          console.log('⚠️ No se recibió token JWT, redirigiendo al login');
-          // Si no hay token, mostrar mensaje y redirigir al login
+            // Navegar al login para que la app detecte la autenticación
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          }, 100);
+          
+        } catch (storageError) {
+          console.error('❌ Error guardando datos de sesión:', storageError);
+          // Si falla el almacenamiento, redirigir al login
           Alert.alert(
             'Contraseña actualizada',
             'Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión.',
@@ -175,16 +152,28 @@ export default function ResetPasswordScreen() {
           );
         }
       } else {
-        const errorMessage = data.message || 'Error al actualizar la contraseña';
-        if (errorMessage.toLowerCase().includes('código') || errorMessage.toLowerCase().includes('token')) {
-          setCodeError(errorMessage);
-        } else {
-          setGeneralError(errorMessage);
-        }
+        console.log('⚠️ No se recibió token JWT, redirigiendo al login');
+        // Si no hay token, mostrar mensaje y redirigir al login
+        Alert.alert(
+          'Contraseña actualizada',
+          'Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión.',
+          [
+            {
+              text: 'Continuar',
+              onPress: () => navigation.navigate('Login')
+            }
+          ]
+        );
       }
     } catch (error) {
       console.error('Error al resetear contraseña:', error);
-      setGeneralError('No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.');
+      const errorMessage = (error as Error).message || 'No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.';
+      
+      if (errorMessage.toLowerCase().includes('código') || errorMessage.toLowerCase().includes('token')) {
+        setCodeError(errorMessage);
+      } else {
+        setGeneralError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
