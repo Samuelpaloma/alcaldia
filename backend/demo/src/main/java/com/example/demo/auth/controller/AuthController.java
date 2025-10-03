@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -232,15 +234,23 @@ public class AuthController {
      * Validar credenciales sin obtener token
      */
     @PostMapping("/validate-credentials")
-    public ResponseEntity<ApiResponse> validateCredentials(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<Map<String, Object>> validateCredentials(@Valid @RequestBody LoginRequest request) {
         log.info("Validación de credenciales para email: {}", request.getEmail());
         
         try {
             authService.validateCredentials(request);
-            return ResponseEntity.ok(new ApiResponse("Credenciales correctas"));
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Credenciales correctas");
+            response.put("data", null);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error validando credenciales: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(new ApiResponse(e.getMessage()));
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            response.put("data", null);
+            return ResponseEntity.badRequest().body(response);
         }
     }
     
@@ -565,6 +575,45 @@ public class AuthController {
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    // ========== DEBUG ENDPOINTS ==========
+    
+    @GetMapping("/debug/pending-users")
+    public ResponseEntity<?> getPendingUsers() {
+        log.info("🔍 [DEBUG] Consultando usuarios pendientes...");
+        try {
+            List<PendingUser> pendingUsers = pendingUserRepository.findAll();
+            log.info("🔍 [DEBUG] Usuarios pendientes encontrados: {}", pendingUsers.size());
+            
+            List<Map<String, Object>> response = pendingUsers.stream()
+                .map(pu -> {
+                    Map<String, Object> userInfo = new HashMap<>();
+                    userInfo.put("id", pu.getId());
+                    userInfo.put("email", pu.getEmail());
+                    userInfo.put("nombre", pu.getNombre());
+                    userInfo.put("apellido", pu.getApellido());
+                    userInfo.put("verificationCode", pu.getVerificationCode());
+                    userInfo.put("codeExpiration", pu.getCodeExpiration());
+                    userInfo.put("createdAt", pu.getCreatedAt());
+                    userInfo.put("verified", pu.isVerified());
+                    userInfo.put("verificationType", pu.getVerificationType());
+                    return userInfo;
+                })
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "count", pendingUsers.size(),
+                "users", response
+            ));
+        } catch (Exception e) {
+            log.error("❌ [DEBUG] Error consultando usuarios pendientes:", e);
+            return ResponseEntity.status(500).body(Map.of(
+                "success", false,
+                "error", e.getMessage()
+            ));
         }
     }
     

@@ -209,25 +209,25 @@ public class AdminService {
         
         return new TicketResponseDTO(
             ticket.getId(),
-            ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(), // asunto = solo categoría
-            ticket.getDescription(),
-            ticket.getPriority(),
-            ticket.getStatus(),
-            ticket.getCreatorEmail(), // Usar método seguro
-            ticket.getCreatorName(), // Usar método seguro
-            tecnicoActual != null ? tecnicoActual.getEmail() : null,
-            tecnicoActual != null ? tecnicoActual.getFullName() : null,
-            ticket.getCreatedAt(),
-            ticket.getUpdatedAt(),
-            ticket.getCreatorName(), // Usar método seguro
-            ticket.getLocation(),
-            ticket.getQuery(), // consulta completa para descripción
-            ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString(),
-            ticket.getAttachedFile(),
-            ticket.getFileName(),
-            evidenciasDTO,
-            historialDTO,
-            historialAsignacionesDTO,
+            ticket.getSubject() != null ? ticket.getSubject() : (ticket.getCategory() != null ? ticket.getCategory().getName() : "Sin asunto"), // asunto
+            ticket.getDescription() != null ? ticket.getDescription() : ticket.getQuery(), // descripcion
+            ticket.getPriority() != null ? ticket.getPriority().toString() : "MEDIUM", // prioridad
+            ticket.getStatus() != null ? ticket.getStatus().toString() : "PENDIENTE", // estado
+            ticket.getCreatorEmail() != null ? ticket.getCreatorEmail() : "unknown@example.com", // creadorEmail
+            ticket.getCreatorName() != null ? ticket.getCreatorName() : "Usuario Desconocido", // creadorNombre
+            tecnicoActual != null ? tecnicoActual.getEmail() : null, // tecnicoEmail
+            tecnicoActual != null ? tecnicoActual.getFullName() : null, // tecnicoNombre
+            ticket.getCreatedAt() != null ? ticket.getCreatedAt() : LocalDateTime.now(), // fechaCreacion
+            ticket.getUpdatedAt() != null ? ticket.getUpdatedAt() : LocalDateTime.now(), // fechaActualizacion
+            ticket.getCreatorName() != null ? ticket.getCreatorName() : "Usuario Desconocido", // nombre
+            ticket.getLocation() != null ? ticket.getLocation() : "Sin ubicación", // ubicacion
+            ticket.getQuery() != null ? ticket.getQuery() : "", // consulta
+            ticket.getCategory() != null ? ticket.getCategory().getName() : "Sin categoría", // categoria
+            ticket.getAttachedFile(), // archivoAdjunto
+            ticket.getFileName(), // nombreArchivo
+            evidenciasDTO, // evidencias
+            historialDTO, // historialEstados
+            historialAsignacionesDTO, // historialAsignaciones
             new ArrayList<>(), // comentarios vacío por ahora
             null // archivosConversacion - no necesario en el enfoque simplificado
         );

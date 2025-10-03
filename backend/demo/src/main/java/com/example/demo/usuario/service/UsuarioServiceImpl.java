@@ -13,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,8 +112,11 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<UsuarioDTO> getTechnicians(Pageable pageable, String search) {
+        // Mapear fechaCreacion a createdAt para compatibilidad con el frontend
+        Pageable mappedPageable = mapSortFields(pageable);
+        
         Page<Usuario> page = usuarioRepository.findByTipoUsuarioWithSearch(
-            TipoUsuario.TECNICO, search, pageable
+            TipoUsuario.TECNICO, search, mappedPageable
         );
         
         List<UsuarioDTO> content = page.getContent().stream()
@@ -124,8 +129,11 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<UsuarioDTO> getAdmins(Pageable pageable, String search) {
+        // Mapear fechaCreacion a createdAt para compatibilidad con el frontend
+        Pageable mappedPageable = mapSortFields(pageable);
+        
         Page<Usuario> page = usuarioRepository.findByTipoUsuarioWithSearch(
-            TipoUsuario.ADMINISTRADOR, search, pageable
+            TipoUsuario.ADMINISTRADOR, search, mappedPageable
         );
         
         List<UsuarioDTO> content = page.getContent().stream()
@@ -182,8 +190,11 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<UsuarioDTO> getFuncionarios(Pageable pageable, String search) {
+        // Mapear fechaCreacion a createdAt para compatibilidad con el frontend
+        Pageable mappedPageable = mapSortFields(pageable);
+        
         Page<Usuario> page = usuarioRepository.findByTipoUsuarioWithSearch(
-            TipoUsuario.FUNCIONARIO, search, pageable
+            TipoUsuario.FUNCIONARIO, search, mappedPageable
         );
         
         List<UsuarioDTO> content = page.getContent().stream()
@@ -451,5 +462,31 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         
         return false;
+    }
+    
+    /**
+     * Mapea los campos de ordenamiento del frontend a los campos del modelo
+     */
+    private Pageable mapSortFields(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) {
+            return pageable;
+        }
+        
+        List<Sort.Order> mappedOrders = pageable.getSort().stream()
+            .map(order -> {
+                String property = order.getProperty();
+                // Mapear fechaCreacion a createdAt
+                if ("fechaCreacion".equals(property)) {
+                    property = "createdAt";
+                }
+                return new Sort.Order(order.getDirection(), property);
+            })
+            .collect(Collectors.toList());
+        
+        return PageRequest.of(
+            pageable.getPageNumber(),
+            pageable.getPageSize(),
+            Sort.by(mappedOrders)
+        );
     }
 }

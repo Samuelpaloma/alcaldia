@@ -30,43 +30,81 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                                   FilterChain filterChain) throws ServletException, IOException {
         
         String path = request.getRequestURI();
-        log.debug("JwtRequestFilter procesando ruta: {}", path);
+        log.info("🔍 JwtRequestFilter procesando ruta: {}", path);
         
         try {
             String jwt = getJwtFromRequest(request);
             log.info("🔑 JWT extraído: {}", jwt != null ? "Sí" : "No");
-            log.info("🔑 JWT completo: {}", jwt);
+            if (jwt != null) {
+                log.info("🔑 JWT (primeros 20 chars): {}", jwt.substring(0, Math.min(20, jwt.length())));
+            }
             
-            if (StringUtils.hasText(jwt) && jwtTokenProvider.validateToken(jwt)) {
-                Long userId = jwtTokenProvider.getUserIdFromJWT(jwt);
-                
-                UserDetails userDetails = userDetailsService.loadUserById(userId);
-                
-                if (userDetails != null) {
-                    UsernamePasswordAuthenticationToken authentication = 
-                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            if (StringUtils.hasText(jwt)) {
+                log.info("🔑 Validando JWT...");
+                if (jwtTokenProvider.validateToken(jwt)) {
+                    log.info("✅ JWT válido, obteniendo usuario...");
+                    Long userId = jwtTokenProvider.getUserIdFromJWT(jwt);
+                    log.info("🔑 User ID extraído: {}", userId);
                     
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    UserDetails userDetails = userDetailsService.loadUserById(userId);
                     
-                    log.debug("Usuario autenticado: {} con roles: {}", 
-                            userDetails.getUsername(), userDetails.getAuthorities());
+                    if (userDetails != null) {
+                        log.info("✅ Usuario encontrado: {}", userDetails.getUsername());
+                        UsernamePasswordAuthenticationToken authentication = 
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        
+                        log.info("✅ Usuario autenticado: {} con roles: {}", 
+                                userDetails.getUsername(), userDetails.getAuthorities());
+                    } else {
+                        log.warn("⚠️ Usuario no encontrado para ID: {}", userId);
+                    }
+                } else {
+                    log.warn("⚠️ JWT inválido o expirado");
                 }
             } else {
-                log.debug("No hay JWT válido en la petición a: {}", path);
+                log.info("ℹ️ No hay JWT en la petición a: {}", path);
             }
         } catch (Exception ex) {
-            log.error("No se pudo establecer la autenticación del usuario en el contexto de seguridad", ex);
+            log.error("❌ Error estableciendo autenticación: ", ex);
         }
         
         filterChain.doFilter(request, response);
     }
     
     private String getJwtFromRequest(HttpServletRequest request) {
+        // Buscar en el header Authorization
         String bearerToken = request.getHeader("Authorization");
+        log.info("🔍 Header Authorization: {}", bearerToken != null ? "Presente" : "Ausente");
+        
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+            String token = bearerToken.substring(7);
+            log.info("🔑 Token extraído del header Authorization");
+            return token;
         }
+        
+        // Buscar en el header X-Authorization (fallback)
+        String xAuthToken = request.getHeader("X-Authorization");
+        log.info("🔍 Header X-Authorization: {}", xAuthToken != null ? "Presente" : "Ausente");
+        
+        if (StringUtils.hasText(xAuthToken) && xAuthToken.startsWith("Bearer ")) {
+            String token = xAuthToken.substring(7);
+            log.info("🔑 Token extraído del header X-Authorization");
+            return token;
+        }
+        
+        // Buscar en query parameter (fallback)
+        String queryToken = request.getParameter("token");
+        log.info("🔍 Query parameter token: {}", queryToken != null ? "Presente" : "Ausente");
+        
+        if (StringUtils.hasText(queryToken)) {
+            log.info("🔑 Token extraído del query parameter");
+            return queryToken;
+        }
+        
+        log.info("ℹ️ No se encontró token en ningún lugar");
         return null;
     }
     

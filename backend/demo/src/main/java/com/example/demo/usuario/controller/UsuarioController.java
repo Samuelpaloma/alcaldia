@@ -17,10 +17,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -51,7 +54,7 @@ public class UsuarioController {
     public ResponseEntity<PageResponse<UsuarioDTO>> getTechnicians(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "fechaCreacion") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String search) {
         
@@ -90,7 +93,7 @@ public class UsuarioController {
     public ResponseEntity<PageResponse<UsuarioDTO>> getAdmins(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "fechaCreacion") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String search) {
         
@@ -122,7 +125,7 @@ public class UsuarioController {
     public ResponseEntity<PageResponse<UsuarioDTO>> getFuncionarios(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "fechaCreacion") String sortBy,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String search) {
         
@@ -170,9 +173,54 @@ public class UsuarioController {
     
     // ========== PERFIL PERSONAL ==========
     
+    @GetMapping("/test-auth")
+    public ResponseEntity<Map<String, Object>> testAuth(Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("authentication", authentication != null ? "Presente" : "Ausente");
+        response.put("securityContext", SecurityContextHolder.getContext().getAuthentication() != null ? "Presente" : "Ausente");
+        response.put("timestamp", java.time.LocalDateTime.now());
+        
+        if (authentication != null) {
+            response.put("principal", authentication.getPrincipal().getClass().getSimpleName());
+            response.put("authorities", authentication.getAuthorities().stream()
+                .map(auth -> auth.getAuthority())
+                .collect(java.util.stream.Collectors.toList()));
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @GetMapping("/test-simple")
+    public ResponseEntity<Map<String, Object>> testSimple() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Endpoint funcionando correctamente");
+        response.put("timestamp", java.time.LocalDateTime.now());
+        response.put("status", "OK");
+        return ResponseEntity.ok(response);
+    }
+    
     @GetMapping("/profile")
     // @PreAuthorize("isAuthenticated()") // Temporalmente deshabilitado
     public ResponseEntity<UsuarioDTO> getMyProfile(Authentication authentication) {
+        log.info("🔍 [PROFILE-DEBUG] Llamada a getMyProfile - Authentication: {}", authentication);
+        log.info("🔍 [PROFILE-DEBUG] SecurityContext: {}", SecurityContextHolder.getContext().getAuthentication());
+        
+        // Si no hay autenticación, devolver un error más descriptivo
+        if (authentication == null) {
+            log.error("🔍 [PROFILE-DEBUG] No hay autenticación disponible");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(UsuarioDTO.builder()
+                    .id(0L)
+                    .email("error@example.com")
+                    .nombre("Error")
+                    .apellido("No Autenticado")
+                    .tipoUsuario("ERROR")
+                    .activo(false)
+                    .require2fa(false)
+                    .fechaCreacion(java.time.LocalDateTime.now())
+                    .build());
+        }
+        
         Long userId = getUserIdFromAuth(authentication);
         UsuarioDTO profile = usuarioService.getUserProfile(userId);
         return ResponseEntity.ok(profile);
@@ -248,7 +296,12 @@ public class UsuarioController {
     // ========== MÉTODO AUXILIAR ==========
     
     private Long getUserIdFromAuth(Authentication auth) {
+        log.info("🔍 [AUTH-DEBUG] Authentication object: {}", auth);
+        log.info("🔍 [AUTH-DEBUG] Authentication principal: {}", auth != null ? auth.getPrincipal() : "null");
+        log.info("🔍 [AUTH-DEBUG] Authentication authorities: {}", auth != null ? auth.getAuthorities() : "null");
+        
         if (auth == null || auth.getPrincipal() == null) {
+            log.error("🔍 [AUTH-DEBUG] Usuario no autenticado - auth: {}, principal: {}", auth, auth != null ? auth.getPrincipal() : "null");
             throw new IllegalArgumentException("Usuario no autenticado");
         }
         

@@ -166,10 +166,47 @@ export default function TicketsManagement() {
     { id: 16, asunto: 'Seguridad', descripcion: 'Actualización firewall', estado: 'ASIGNADO', prioridad: 'HIGH', tecnicoEmail: 'security@empresa.com', solicitante: 'Miguel Ángel', fechaCreacion: '29/9/2025' }
   ];
 
+  // Función de inicialización completa
+  const initializeDashboard = async () => {
+    try {
+      console.log('🚀 [DASHBOARD] Inicializando dashboard completo...');
+      setIsLoading(true);
+      
+      const data = await api.initializeDashboard();
+      console.log('✅ [DASHBOARD] Dashboard inicializado:', data);
+      
+      // Cargar tickets
+      setTickets(data.tickets || []);
+      console.log('📋 [DASHBOARD] Tickets cargados:', data.tickets?.length || 0);
+      
+      // Cargar técnicos
+      const tecnicosMapeados = (data.tecnicos || []).map(t => ({
+        id: t.idUsuario,
+        nombre: `${t.nombre} ${t.apellido}`.trim(),
+        email: t.email,
+        activo: t.activo
+      }));
+      setTecnicos(tecnicosMapeados);
+      console.log('👥 [DASHBOARD] Técnicos cargados:', tecnicosMapeados.length);
+      
+      // Verificar estado de conexión
+      if (!data.connectionStatus.success) {
+        console.warn('⚠️ [DASHBOARD] Problemas de conectividad:', data.connectionStatus.message);
+      }
+      
+    } catch (error) {
+      console.error('❌ [DASHBOARD] Error inicializando dashboard:', error);
+      // Fallback a métodos individuales
+      loadTickets();
+      loadTecnicos();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Cargar datos reales
-    loadTickets();
-    loadTecnicos();
+    initializeDashboard();
   }, []);
 
   // Efecto para resetear a página 1 cuando cambian los filtros
@@ -224,12 +261,39 @@ export default function TicketsManagement() {
   const loadTickets = async () => {
     try {
       setIsLoading(true);
+      console.log('🚀 [TICKETS] Iniciando carga de tickets...');
+      
       const response = await api.getTodosLosTickets();
-      console.log('📋 Datos de tickets recibidos:', response);
+      console.log('📋 [TICKETS] Datos de tickets recibidos:', response);
+      console.log('📋 [TICKETS] Número de tickets:', response?.length || 0);
+      
+      if (response && response.length > 0) {
+        console.log('📋 [TICKETS] Primer ticket completo:', response[0]);
+        console.log('📋 [TICKETS] Campos disponibles en primer ticket:', Object.keys(response[0]));
+        console.log('📋 [TICKETS] Estados de tickets:', response.map(t => ({ 
+          id: t.id, 
+          estado: t.estado, 
+          creador: t.creadorNombre, 
+          tecnico: t.tecnicoNombre,
+          asunto: t.asunto,
+          prioridad: t.prioridad
+        })));
+        
+        // Verificar si los campos están llegando correctamente
+        const primerTicket = response[0];
+        console.log('🔍 [TICKETS] Verificación de campos:');
+        console.log('  - creadorNombre:', primerTicket.creadorNombre);
+        console.log('  - tecnicoNombre:', primerTicket.tecnicoNombre);
+        console.log('  - fechaCreacion:', primerTicket.fechaCreacion);
+        console.log('  - asunto:', primerTicket.asunto);
+        console.log('  - estado:', primerTicket.estado);
+      }
+      
       setTickets(response || []);
     } catch (error) {
-      console.error('Error cargando tickets:', error);
+      console.error('❌ [TICKETS] Error cargando tickets:', error);
       // Fallback a datos de prueba si falla la API
+      console.log('🔄 [TICKETS] Usando datos de prueba como fallback');
       setTickets(demoTickets);
     } finally {
       setIsLoading(false);
@@ -239,17 +303,32 @@ export default function TicketsManagement() {
   // Función para cargar técnicos desde la API
   const loadTecnicos = async () => {
     try {
-      const response = await api.getTechnicians(0, 50);
-      // Filtrar solo técnicos activos
-      const tecnicosData = response.content.filter((user: any) => 
-        user.tipoUsuario === 'Técnico' && user.activo === true
-      );
-      console.log('🔍 [TÉCNICOS] Técnicos cargados:', tecnicosData.length, 'de', response.content.length, 'total');
-      console.log('🔍 [TÉCNICOS] Técnicos activos:', tecnicosData.map(t => ({ id: t.id, nombre: t.nombre, activo: t.activo })));
-      setTecnicos(tecnicosData || []);
+      console.log('🚀 [TÉCNICOS] Iniciando carga de técnicos...');
+      const response = await api.getTechniciansForSelect();
+      console.log('🔍 [TÉCNICOS] Técnicos cargados:', response.length);
+      console.log('🔍 [TÉCNICOS] Primer técnico:', response[0]);
+      console.log('🔍 [TÉCNICOS] Campos disponibles:', response[0] ? Object.keys(response[0]) : 'No hay técnicos');
+      console.log('🔍 [TÉCNICOS] Técnicos activos:', response.map(t => ({ 
+        id: t.idUsuario, 
+        nombre: t.nombre, 
+        apellido: t.apellido,
+        email: t.email,
+        activo: t.activo 
+      })));
+      
+      // Mapear a formato esperado por el componente
+      const tecnicosMapeados = response.map(t => ({
+        id: t.idUsuario,
+        nombre: `${t.nombre} ${t.apellido}`.trim(),
+        email: t.email,
+        activo: t.activo
+      }));
+      
+      setTecnicos(tecnicosMapeados);
     } catch (error) {
-      console.error('Error cargando técnicos:', error);
+      console.error('❌ [TÉCNICOS] Error cargando técnicos:', error);
       // Fallback a datos de prueba
+      console.log('🔄 [TÉCNICOS] Usando datos de prueba como fallback');
       setTecnicos([
         { id: 1, nombre: 'Juan Pérez', email: 'juan@empresa.com', activo: true },
         { id: 2, nombre: 'María García', email: 'maria@empresa.com', activo: true },
@@ -1409,7 +1488,7 @@ export default function TicketsManagement() {
               <div className="space-y-2 mb-4 flex-grow">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <User className="w-4 h-4" />
-                  <span><strong>{t("tickets_management.requester")}:</strong> {ticket.creadorNombre || ticket.nombre || 'N/A'}</span>
+                  <span><strong>{t("tickets_management.requester")}:</strong> {ticket.creadorNombre || 'N/A'}</span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Users className="w-4 h-4" />
@@ -1422,7 +1501,7 @@ export default function TicketsManagement() {
                 </div>
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Calendar className="w-4 h-4" />
-                  <span><strong>{t("tickets_management.date")}:</strong> {ticket.fechaCreacion}</span>
+                  <span><strong>{t("tickets_management.date")}:</strong> {ticket.fechaCreacion ? new Date(ticket.fechaCreacion).toLocaleDateString('es-ES') : 'N/A'}</span>
                 </div>
               </div>
 

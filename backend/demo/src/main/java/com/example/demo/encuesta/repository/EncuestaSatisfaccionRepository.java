@@ -13,14 +13,18 @@ import java.util.List;
 public interface EncuestaSatisfaccionRepository extends JpaRepository<EncuestaSatisfaccion, Long> {
     
     // Buscar encuestas por ticket
-    List<EncuestaSatisfaccion> findByTicketIdAndActivoTrue(Long ticketId);
+    @Query("SELECT e FROM EncuestaSatisfaccion e WHERE e.ticket.id = :ticketId AND e.activo = true")
+    List<EncuestaSatisfaccion> findByTicketIdAndActivoTrue(@Param("ticketId") Long ticketId);
     
     // Buscar encuestas por usuario
-    List<EncuestaSatisfaccion> findByUsuarioIdUsuarioAndActivoTrue(Long idUsuario);
+    @Query("SELECT e FROM EncuestaSatisfaccion e WHERE e.usuario.id = :idUsuario AND e.activo = true")
+    List<EncuestaSatisfaccion> findByUsuarioIdAndActivoTrue(@Param("idUsuario") Long idUsuario);
     
     // Buscar encuestas en un rango de fechas
+    @Query("SELECT e FROM EncuestaSatisfaccion e WHERE e.fechaCreacion BETWEEN :fechaInicio AND :fechaFin AND e.activo = true")
     List<EncuestaSatisfaccion> findByFechaCreacionBetweenAndActivoTrue(
-            LocalDateTime fechaInicio, LocalDateTime fechaFin);
+            @Param("fechaInicio") LocalDateTime fechaInicio, 
+            @Param("fechaFin") LocalDateTime fechaFin);
     
     // Calcular promedio de calificaciones
     @Query("SELECT AVG(e.calificacion) FROM EncuestaSatisfaccion e WHERE e.activo = true")

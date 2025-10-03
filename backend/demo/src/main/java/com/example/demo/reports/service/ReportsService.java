@@ -36,13 +36,13 @@ public class ReportsService {
         // Calcular estadísticas básicas
         long totalTickets = todosLosTickets.size();
         long ticketsResueltos = todosLosTickets.stream()
-                .filter(t -> "RESUELTO".equals(t.getEstado()))
+                .filter(t -> "RESUELTO".equals(t.getStatus()))
                 .count();
         long ticketsPendientes = todosLosTickets.stream()
-                .filter(t -> "PENDIENTE".equals(t.getEstado()))
+                .filter(t -> "PENDIENTE".equals(t.getStatus()))
                 .count();
         long ticketsEnProceso = todosLosTickets.stream()
-                .filter(t -> "EN_PROCESO".equals(t.getEstado()))
+                .filter(t -> "EN_PROCESO".equals(t.getStatus()))
                 .count();
         
         log.info("🔍 [REPORTS-DEBUG] Estadísticas básicas - Total: {}, Resueltos: {}, Pendientes: {}, En Proceso: {}", 
@@ -59,16 +59,16 @@ public class ReportsService {
         // Agrupar por categoría
         Map<String, Long> ticketsPorCategoria = todosLosTickets.stream()
                 .collect(Collectors.groupingBy(
-                    ticket -> ticket.getCategoriaNombre() != null ? ticket.getCategoriaNombre() : "Sin categoría",
+                    ticket -> ticket.getCategoryName() != null ? ticket.getCategoryName() : "Sin categoría",
                     Collectors.counting()
                 ));
         log.info("🔍 [REPORTS-DEBUG] Tickets por categoría: {}", ticketsPorCategoria);
         
         // Agrupar por técnico
         Map<String, Long> ticketsPorTecnico = todosLosTickets.stream()
-                .filter(t -> t.getTecnicoAsignado() != null)
+                .filter(t -> t.getAssignedTechnician() != null)
                 .collect(Collectors.groupingBy(
-                    ticket -> ticket.getTecnicoAsignado().getNombre() + " " + ticket.getTecnicoAsignado().getApellido(),
+                    ticket -> ticket.getAssignedTechnician().getFullName(),
                     Collectors.counting()
                 ));
         log.info("🔍 [REPORTS-DEBUG] Tickets por técnico: {}", ticketsPorTecnico);
@@ -124,15 +124,15 @@ public class ReportsService {
             long totalTickets = todosLosTickets.size();
             
             long ticketsResueltos = todosLosTickets.stream()
-                    .filter(t -> "RESUELTO".equals(t.getEstado()))
+                    .filter(t -> "RESUELTO".equals(t.getStatus()))
                     .count();
             
             long ticketsPendientes = todosLosTickets.stream()
-                    .filter(t -> "PENDIENTE".equals(t.getEstado()))
+                    .filter(t -> "PENDIENTE".equals(t.getStatus()))
                     .count();
             
             long ticketsEnProceso = todosLosTickets.stream()
-                    .filter(t -> "EN_PROCESO".equals(t.getEstado()))
+                    .filter(t -> "EN_PROCESO".equals(t.getStatus()))
                     .count();
             
             log.info("🔍 [REPORTS-DEBUG] Conteos básicos - Total: {}, Resueltos: {}, Pendientes: {}, En Proceso: {}", 
@@ -186,13 +186,13 @@ public class ReportsService {
         // Calcular métricas del mes
         long totalTickets = ticketsDelMes.size();
         long ticketsResueltos = ticketsDelMes.stream()
-                .filter(t -> "RESUELTO".equals(t.getEstado()))
+                .filter(t -> "RESUELTO".equals(t.getStatus()))
                 .count();
         long ticketsPendientes = ticketsDelMes.stream()
-                .filter(t -> "PENDIENTE".equals(t.getEstado()))
+                .filter(t -> "PENDIENTE".equals(t.getStatus()))
                 .count();
         long ticketsEnProceso = ticketsDelMes.stream()
-                .filter(t -> "EN_PROCESO".equals(t.getEstado()))
+                .filter(t -> "EN_PROCESO".equals(t.getStatus()))
                 .count();
         
         double tiempoPromedioResolucion = calcularTiempoPromedioResolucion(ticketsDelMes);
@@ -201,7 +201,7 @@ public class ReportsService {
         // Top categorías del mes
         List<ReporteMensualResponseDTO.TopCategoriaDTO> topCategorias = ticketsDelMes.stream()
                 .collect(Collectors.groupingBy(
-                    ticket -> ticket.getCategoria() != null ? ticket.getCategoria().getNombre() : "Sin categoría",
+                    ticket -> ticket.getCategory() != null ? ticket.getCategory().getName() : "Sin categoría",
                     Collectors.counting()
                 ))
                 .entrySet().stream()
@@ -215,9 +215,9 @@ public class ReportsService {
         
         // Top técnicos del mes
         List<ReporteMensualResponseDTO.TopTecnicoDTO> topTecnicos = ticketsDelMes.stream()
-                .filter(t -> t.getTecnicoAsignado() != null && "RESUELTO".equals(t.getEstado()))
+                .filter(t -> t.getAssignedTechnician() != null && "RESUELTO".equals(t.getStatus()))
                 .collect(Collectors.groupingBy(
-                    ticket -> ticket.getTecnicoAsignado().getNombre() + " " + ticket.getTecnicoAsignado().getApellido(),
+                    ticket -> ticket.getAssignedTechnician().getFullName(),
                     Collectors.counting()
                 ))
                 .entrySet().stream()
@@ -281,7 +281,7 @@ public class ReportsService {
             tendencia.put("año", año);
             tendencia.put("totalTickets", ticketsDelMes.size());
             tendencia.put("ticketsResueltos", ticketsDelMes.stream()
-                    .filter(t -> "RESUELTO".equals(t.getEstado()))
+                    .filter(t -> "RESUELTO".equals(t.getStatus()))
                     .count());
             
             tendencias.add(tendencia);
@@ -296,15 +296,15 @@ public class ReportsService {
         try {
             List<Ticket> todosLosTickets = ticketRepository.findAll();
             List<Ticket> ticketsResueltos = todosLosTickets.stream()
-                    .filter(t -> "RESUELTO".equals(t.getEstado()))
+                    .filter(t -> "RESUELTO".equals(t.getStatus()))
                     .collect(Collectors.toList());
             
             return ticketsResueltos.stream()
-                    .filter(t -> t.getFechaActualizacion() != null)
+                    .filter(t -> t.getUpdatedAt() != null)
                     .mapToDouble(t -> {
                         long horas = java.time.Duration.between(
-                                t.getFechaCreacion(),
-                                t.getFechaActualizacion()
+                                t.getCreatedAt(),
+                                t.getUpdatedAt()
                         ).toHours();
                         return horas / 24.0; // Convertir a días
                     })
@@ -318,11 +318,11 @@ public class ReportsService {
     
     private double calcularTiempoPromedioResolucion(List<Ticket> tickets) {
         return tickets.stream()
-                .filter(t -> "RESUELTO".equals(t.getEstado()) && t.getFechaActualizacion() != null)
+                .filter(t -> "RESUELTO".equals(t.getStatus()) && t.getUpdatedAt() != null)
                 .mapToDouble(t -> {
                     long horas = java.time.Duration.between(
-                            t.getFechaCreacion(),
-                            t.getFechaActualizacion()
+                            t.getCreatedAt(),
+                            t.getUpdatedAt()
                     ).toHours();
                     return horas / 24.0; // Convertir a días
                 })
@@ -356,7 +356,7 @@ public class ReportsService {
     private List<Ticket> obtenerTicketsDelMes(int mes, int año) {
         return ticketRepository.findAll().stream()
                 .filter(ticket -> {
-                    LocalDateTime fechaCreacion = ticket.getFechaCreacion();
+                    LocalDateTime fechaCreacion = ticket.getCreatedAt();
                     return fechaCreacion.getMonthValue() == mes && fechaCreacion.getYear() == año;
                 })
                 .collect(Collectors.toList());
@@ -371,7 +371,7 @@ public class ReportsService {
             
             long cantidad = tickets.stream()
                     .filter(ticket -> {
-                        LocalDateTime fechaCreacion = ticket.getFechaCreacion();
+                        LocalDateTime fechaCreacion = ticket.getCreatedAt();
                         return fechaCreacion.getMonthValue() == fecha.getMonthValue() 
                                && fechaCreacion.getYear() == fecha.getYear();
                     })

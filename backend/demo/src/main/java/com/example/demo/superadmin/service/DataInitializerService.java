@@ -30,7 +30,10 @@ public class DataInitializerService implements CommandLineRunner {
         // 1. Crear superadmin por defecto si no existe
         crearSuperAdminPorDefecto();
         
-        // 2. Crear técnico de prueba si no existe
+        // 2. Crear usuario de prueba
+        crearUsuarioDePrueba();
+        
+        // 3. Crear técnico de prueba si no existe
         crearTecnicoDePrueba();
         
         log.info("✅ Inicialización de datos completada");
@@ -67,6 +70,39 @@ public class DataInitializerService implements CommandLineRunner {
         log.info("   📧 Email: {}", savedSuperAdmin.getEmail());
         log.info("   🔑 Contraseña: SuperAdmin123");
         log.info("   ⚠️  IMPORTANTE: Cambia la contraseña en el primer acceso");
+    }
+    
+    /**
+     * Crea un usuario de prueba con el email samupalo3@gmail.com
+     */
+    private void crearUsuarioDePrueba() {
+        String emailPrueba = "samupalo3@gmail.com";
+        
+        // Verificar si ya existe
+        if (usuarioRepository.findByEmail(emailPrueba).isPresent()) {
+            log.info("✅ Usuario de prueba ya existe: {}", emailPrueba);
+            return;
+        }
+        
+        // Crear usuario de prueba
+        Usuario usuarioPrueba = Usuario.builder()
+            .email(emailPrueba)
+            .password(passwordEncoder.encode("Samuel123"))
+            .firstName("Samuel")
+            .lastName("Paloma")
+            .userType(TipoUsuario.ADMINISTRADOR)
+            .active(true)
+            .emailVerified(true)
+            .temporaryPassword(false)
+            .require2fa(false)
+            .build();
+        
+        Usuario savedUsuario = usuarioRepository.save(usuarioPrueba);
+        
+        log.info("🎉 Usuario de prueba creado exitosamente:");
+        log.info("   📧 Email: {}", savedUsuario.getEmail());
+        log.info("   🔑 Contraseña: Samuel123");
+        log.info("   👤 Tipo: {}", savedUsuario.getUserType());
     }
     
     /**

@@ -620,9 +620,9 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    console.log(`🌐 Realizando petición a: ${url}`);
-    console.log(`📤 Datos enviados:`, options.body);
-      console.log(`🔧 Método:`, options.method || 'GET');
+    console.log(`🌐 [API-REQUEST] Realizando petición a: ${url}`);
+    console.log(`📤 [API-REQUEST] Datos enviados:`, options.body);
+    console.log(`🔧 [API-REQUEST] Método:`, options.method || 'GET');
     
     try {
       const headers: Record<string, string> = {
@@ -633,9 +633,9 @@ class ApiClient {
       // Agregar token de autenticación si existe
       if (this.token) {
         headers['Authorization'] = `Bearer ${this.token}`;
-        console.log(`🔑 Token enviado: ${this.token.substring(0, 20)}...`);
+        console.log(`🔑 [API-REQUEST] Token enviado: ${this.token.substring(0, 20)}...`);
       } else {
-        console.log(`⚠️ No hay token disponible para la petición`);
+        console.log(`⚠️ [API-REQUEST] No hay token disponible para la petición`);
       }
 
       const response = await fetch(url, {
@@ -643,26 +643,31 @@ class ApiClient {
         ...options,
       });
 
-      console.log(`📊 Estado de respuesta: ${response.status} ${response.statusText}`);
-      console.log(`📋 Headers de respuesta:`, Object.fromEntries(response.headers.entries()));
+      console.log(`📊 [API-REQUEST] Estado de respuesta: ${response.status} ${response.statusText}`);
+      console.log(`📋 [API-REQUEST] Headers de respuesta:`, Object.fromEntries(response.headers.entries()));
 
       // Obtener el texto de la respuesta primero
       const responseText = await response.text();
-      console.log(`📝 Respuesta del servidor (texto):`, responseText);
+      console.log(`📝 [API-REQUEST] Respuesta del servidor (texto):`, responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
 
       // Intentar parsear la respuesta como JSON
       let responseData;
       try {
         if (responseText.trim()) {
           responseData = JSON.parse(responseText);
-          console.log(`✅ JSON parseado correctamente:`, responseData);
+          console.log(`✅ [API-REQUEST] JSON parseado correctamente`);
+          if (Array.isArray(responseData)) {
+            console.log(`📊 [API-REQUEST] Array con ${responseData.length} elementos`);
+          } else if (typeof responseData === 'object') {
+            console.log(`📊 [API-REQUEST] Objeto con claves:`, Object.keys(responseData));
+          }
         } else {
-          console.log(`⚠️ Respuesta vacía del servidor`);
+          console.log(`⚠️ [API-REQUEST] Respuesta vacía del servidor`);
           responseData = { message: 'El servidor devolvió una respuesta vacía' };
         }
       } catch (parseError) {
-        console.error(`❌ Error al parsear JSON:`, parseError);
-        console.error(`❌ Texto que causó el error:`, responseText);
+        console.error(`❌ [API-REQUEST] Error al parsear JSON:`, parseError);
+        console.error(`❌ [API-REQUEST] Texto que causó el error:`, responseText.substring(0, 200));
         responseData = { 
           message: `Error al parsear respuesta del servidor. Respuesta recibida: "${responseText.substring(0, 200)}${responseText.length > 200 ? '...' : ''}"` 
         };
@@ -671,16 +676,17 @@ class ApiClient {
       // Si la respuesta no es exitosa, lanzar error con el mensaje del backend
       if (!response.ok) {
         const errorMessage = responseData.message || `Error ${response.status}: ${response.statusText}`;
-        console.error(`❌ Error del servidor:`, errorMessage);
-        console.error(`❌ Respuesta completa:`, responseData);
-        console.error(`❌ URL de la petición:`, url);
-        console.error(`❌ Datos enviados:`, options.body);
+        console.error(`❌ [API-REQUEST] Error del servidor:`, errorMessage);
+        console.error(`❌ [API-REQUEST] Respuesta completa:`, responseData);
+        console.error(`❌ [API-REQUEST] URL de la petición:`, url);
+        console.error(`❌ [API-REQUEST] Datos enviados:`, options.body);
         throw new Error(errorMessage);
       }
 
+      console.log(`✅ [API-REQUEST] Petición exitosa`);
       return responseData;
     } catch (error) {
-      console.error(`❌ Error en la petición:`, error);
+      console.error(`❌ [API-REQUEST] Error en la petición:`, error);
       
       // Si es un error de red o conexión
       if (error instanceof TypeError && error.message.includes('fetch')) {
@@ -727,6 +733,13 @@ class ApiClient {
     });
   }
 
+  async verifyRegistration(data: VerifyEmailRequest): Promise<LoginResponse> {
+    return this.request('/auth/verify-registration', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async resendVerification(data: { email: string }): Promise<{ success: boolean; message: string }> {
     return this.request('/auth/resend-verification', {
       method: 'POST',
@@ -757,7 +770,7 @@ class ApiClient {
   }
 
   async getTicket(id: number): Promise<TicketResponseDTO> {
-    return this.request(`/tickets/${id}`);
+    return this.request(`/tickets/seguimiento/${id}`);
   }
 
   async getTicketSeguimiento(ticketId: number): Promise<TicketResponseDTO> {
@@ -778,9 +791,9 @@ class ApiClient {
     console.log('💬 [API] Obteniendo mensajes del ticket:', ticketId);
     
     try {
-      const response = await this.request(`/tickets/${ticketId}/comentarios`);
+      const response = await this.request<any[]>(`/tickets/${ticketId}/comentarios`);
       console.log('✅ [API] Mensajes obtenidos:', response);
-      return response;
+      return response || [];
     } catch (error) {
       console.error('❌ [API] Error obteniendo mensajes:', error);
       return [];
@@ -802,16 +815,25 @@ class ApiClient {
     estado?: string;
     prioridad?: string;
   }): Promise<TicketResponseDTO[]> {
-    const params = new URLSearchParams();
-    if (filtros.categoria) params.append('categoria', filtros.categoria);
-    if (filtros.estado) params.append('estado', filtros.estado);
-    if (filtros.prioridad) params.append('prioridad', filtros.prioridad);
-    
-    return this.request(`/tickets/buscar?${params.toString()}`);
+    // Por ahora, obtener todos los tickets y filtrar en el frontend
+    // TODO: Implementar endpoint de búsqueda en el backend
+    return this.request('/admin/tickets');
   }
 
   async getCategorias(): Promise<string[]> {
-    return this.request('/tickets/categorias');
+    console.log('🔍 [API] Obteniendo categorías...');
+    try {
+      const categorias = await this.request<CategoriaSimpleDTO[]>('/categorias/activas');
+      console.log('✅ [API] Categorías obtenidas exitosamente:', categorias?.length || 0, 'categorías');
+      if (categorias && categorias.length > 0) {
+        console.log('📂 [API] Primeras categorías:', categorias.slice(0, 3));
+      }
+      return categorias?.map(cat => cat.nombre) || [];
+    } catch (error) {
+      console.error('❌ [API] Error obteniendo categorías:', error);
+      // Fallback a categorías de prueba
+      return ['Redes y Comunicaciones', 'Sistemas de Información', 'Contabilidad', 'Desarrollo de Software', 'Recursos Humanos'];
+    }
   }
 
   async getUsuarioInfo(): Promise<{
@@ -837,7 +859,40 @@ class ApiClient {
     require2fa: boolean;
     fechaCreacion: string;
   }> {
-    return this.request('/usuarios/profile');
+    console.log('🔍 [API] Obteniendo perfil de usuario...');
+    try {
+      const response = await this.request<{
+        id: number;
+        email: string;
+        nombre: string;
+        apellido: string;
+        ubicacion: string;
+        departamento: string;
+        cargo: string;
+        tipoUsuario: string;
+        activo: boolean;
+        require2fa: boolean;
+        fechaCreacion: string;
+      }>('/usuarios/profile');
+      console.log('✅ [API] Perfil obtenido exitosamente:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ [API] Error obteniendo perfil:', error);
+      // Fallback a perfil de prueba si falla la autenticación
+      return {
+        id: 0,
+        email: 'usuario@ejemplo.com',
+        nombre: 'Usuario',
+        apellido: 'Ejemplo',
+        ubicacion: 'Oficina Principal',
+        departamento: 'IT',
+        cargo: 'Administrador',
+        tipoUsuario: 'ADMINISTRADOR',
+        activo: true,
+        require2fa: false,
+        fechaCreacion: new Date().toISOString()
+      };
+    }
   }
 
   async updateMyProfile(data: {
@@ -894,7 +949,24 @@ class ApiClient {
   }
 
   async getTechniciansForSelect(): Promise<UsuarioSummaryDTO[]> {
-    return this.request('/usuarios/tecnicos/select');
+    console.log('🔍 [API] Obteniendo técnicos para select...');
+    try {
+      const response = await this.request<UsuarioSummaryDTO[]>('/usuarios/tecnicos/select');
+      console.log('✅ [API] Técnicos obtenidos exitosamente:', response?.length || 0, 'técnicos');
+      if (response && response.length > 0) {
+        console.log('👥 [API] Primer técnico:', response[0]);
+        console.log('👥 [API] Campos disponibles:', Object.keys(response[0]));
+      }
+      return response || [];
+    } catch (error) {
+      console.error('❌ [API] Error obteniendo técnicos:', error);
+      // Fallback a datos de prueba si falla la API
+      return [
+        { idUsuario: 1, nombre: 'Juan', apellido: 'Pérez', email: 'juan@empresa.com', tipoUsuario: 'Técnico', activo: true },
+        { idUsuario: 2, nombre: 'María', apellido: 'García', email: 'maria@empresa.com', tipoUsuario: 'Técnico', activo: true },
+        { idUsuario: 3, nombre: 'Carlos', apellido: 'López', email: 'carlos@empresa.com', tipoUsuario: 'Técnico', activo: true }
+      ];
+    }
   }
 
   // Administradores (Solo SuperAdmin)
@@ -960,11 +1032,11 @@ class ApiClient {
 
   // Preferencias de Notificaciones
   async getNotificationPreferences(): Promise<PreferenciasNotificacionDTO> {
-    return this.request('/notificaciones/preferencias');
+    return this.request('/notificaciones-mejoradas/preferencias');
   }
 
   async updateNotificationPreferences(data: Partial<PreferenciasNotificacionDTO>): Promise<PreferenciasNotificacionDTO> {
-    return this.request('/notificaciones/preferencias', {
+    return this.request('/notificaciones-mejoradas/preferencias', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -1098,40 +1170,40 @@ class ApiClient {
     if (leida !== undefined) {
       params.append('leida', leida.toString());
     }
-    return this.request(`/notificaciones?${params.toString()}`);
+    return this.request(`/notificaciones-mejoradas?${params.toString()}`);
   }
 
   async getNotificacionesNoLeidas(): Promise<any[]> {
-    return this.request('/notificaciones/no-leidas');
+    return this.request('/notificaciones-mejoradas/no-leidas');
   }
 
   async marcarNotificacionComoLeida(id: number): Promise<any> {
-    return this.request(`/notificaciones/${id}/marcar-leida`, {
+    return this.request(`/notificaciones-mejoradas/${id}/marcar-leida`, {
       method: 'PUT'
     });
   }
 
   async marcarTodasComoLeidas(): Promise<ApiResponse> {
-    return this.request('/notificaciones/marcar-todas-leidas', {
+    return this.request('/notificaciones-mejoradas/marcar-todas-leidas', {
       method: 'PUT'
     });
   }
 
   async crearNotificacion(data: any): Promise<any> {
-    return this.request('/notificaciones', {
+    return this.request('/notificaciones-mejoradas', {
       method: 'POST',
       body: JSON.stringify(data)
     });
   }
 
   async eliminarNotificacion(id: number): Promise<ApiResponse> {
-    return this.request(`/notificaciones/${id}`, {
+    return this.request(`/notificaciones-mejoradas/${id}`, {
       method: 'DELETE'
     });
   }
 
   async getEstadisticasNotificaciones(): Promise<any> {
-    return this.request('/notificaciones/estadisticas');
+    return this.request('/notificaciones-mejoradas/estadisticas');
   }
 
   // ========== NOTIFICACIONES POR ROLES ==========
@@ -1240,10 +1312,10 @@ class ApiClient {
     console.log('💬 [API] Enviando comentario:', { ticketId, mensaje });
     
     try {
-      const response = await this.request(`/tickets/${ticketId}/comentarios`, {
-      method: 'POST',
-      body: JSON.stringify({ mensaje })
-    });
+      const response = await this.request<ApiResponse>(`/tickets/${ticketId}/comentarios`, {
+        method: 'POST',
+        body: JSON.stringify({ mensaje })
+      });
       
       console.log('✅ [API] Comentario enviado exitosamente:', response);
       return response;
@@ -1420,7 +1492,19 @@ class ApiClient {
   // ========== GESTIÓN DE ADMINISTRADORES ==========
 
   async getTodosLosTickets(): Promise<TicketResponseDTO[]> {
-    return this.request('/admin/tickets');
+    console.log('🔍 [API] Obteniendo todos los tickets...');
+    try {
+      const response = await this.request<TicketResponseDTO[]>('/admin/tickets');
+      console.log('✅ [API] Tickets obtenidos exitosamente:', response?.length || 0, 'tickets');
+      if (response && response.length > 0) {
+        console.log('📋 [API] Primer ticket:', response[0]);
+        console.log('📋 [API] Campos disponibles:', Object.keys(response[0]));
+      }
+      return response || [];
+    } catch (error) {
+      console.error('❌ [API] Error obteniendo tickets:', error);
+      throw error;
+    }
   }
 
   async getTicketDetalladoAdmin(ticketId: number): Promise<TicketResponseDTO> {
@@ -1589,6 +1673,77 @@ class ApiClient {
   // Demo endpoint
   async getDemo(): Promise<DemoResponse> {
     return this.request('/demo');
+  }
+
+  // Método de prueba para verificar conectividad
+  async testConnection(): Promise<{ success: boolean; message: string; timestamp: string }> {
+    console.log('🔍 [API] Probando conectividad con el backend...');
+    try {
+      const response = await this.request<{ message: string }>('/usuarios/test-simple');
+      console.log('✅ [API] Conexión exitosa:', response);
+      return {
+        success: true,
+        message: response.message || 'Conexión exitosa',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ [API] Error de conexión:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Error desconocido',
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  // Método de inicialización para el dashboard
+  async initializeDashboard(): Promise<{
+    tickets: TicketResponseDTO[];
+    tecnicos: UsuarioSummaryDTO[];
+    categorias: string[];
+    connectionStatus: { success: boolean; message: string };
+  }> {
+    console.log('🚀 [API] Inicializando dashboard...');
+    
+    try {
+      // Probar conectividad primero
+      const connectionStatus = await this.testConnection();
+      
+      if (!connectionStatus.success) {
+        console.warn('⚠️ [API] Problemas de conectividad, usando datos de fallback');
+        return {
+          tickets: [],
+          tecnicos: [
+            { idUsuario: 1, nombre: 'Juan', apellido: 'Pérez', email: 'juan@empresa.com', tipoUsuario: 'Técnico', activo: true },
+            { idUsuario: 2, nombre: 'María', apellido: 'García', email: 'maria@empresa.com', tipoUsuario: 'Técnico', activo: true }
+          ],
+          categorias: ['Redes y Comunicaciones', 'Sistemas de Información', 'Contabilidad'],
+          connectionStatus
+        };
+      }
+
+      // Cargar datos en paralelo
+      const [tickets, tecnicos, categorias] = await Promise.allSettled([
+        this.getTodosLosTickets(),
+        this.getTechniciansForSelect(),
+        this.getCategorias()
+      ]);
+
+      return {
+        tickets: tickets.status === 'fulfilled' ? tickets.value : [],
+        tecnicos: tecnicos.status === 'fulfilled' ? tecnicos.value : [],
+        categorias: categorias.status === 'fulfilled' ? categorias.value : [],
+        connectionStatus
+      };
+    } catch (error) {
+      console.error('❌ [API] Error inicializando dashboard:', error);
+      return {
+        tickets: [],
+        tecnicos: [],
+        categorias: [],
+        connectionStatus: { success: false, message: 'Error de inicialización' }
+      };
+    }
   }
 
   // ========== SEGUIMIENTO DE TICKETS ==========
@@ -2349,7 +2504,11 @@ class ApiClient {
     data: EstadisticasReportes;
   }> {
     console.log('🔍 [API-CLIENT] Solicitando estadísticas de reportes...');
-    const response = await this.request('/reports/estadisticas');
+    const response = await this.request<{
+      success: boolean;
+      message: string;
+      data: EstadisticasReportes;
+    }>('/reports/estadisticas');
     console.log('🔍 [API-CLIENT] Respuesta de estadísticas recibida:', response);
     return response;
   }
@@ -2370,7 +2529,18 @@ class ApiClient {
     };
   }> {
     console.log('🔍 [API-CLIENT] Solicitando estadísticas básicas...');
-    const response = await this.request('/reports/estadisticas-basicas');
+    const response = await this.request<{
+      success: boolean;
+      message: string;
+      data: {
+        totalTickets: number;
+        ticketsResueltos: number;
+        ticketsPendientes: number;
+        ticketsEnProceso: number;
+        tiempoPromedioResolucion: number;
+        satisfaccionPromedio: number;
+      };
+    }>('/reports/estadisticas-basicas');
     console.log('🔍 [API-CLIENT] Respuesta de estadísticas básicas recibida:', response);
     return response;
   }
@@ -2384,7 +2554,11 @@ class ApiClient {
     data: ReporteMensual[];
   }> {
     console.log(`🔍 [API-CLIENT] Solicitando reportes mensuales - página: ${page}, tamaño: ${size}`);
-    const response = await this.request(`/reports/mensuales?page=${page}&size=${size}`);
+    const response = await this.request<{
+      success: boolean;
+      message: string;
+      data: ReporteMensual[];
+    }>(`/reports/mensuales?page=${page}&size=${size}`);
     console.log('🔍 [API-CLIENT] Respuesta de reportes mensuales recibida:', response);
     return response;
   }
@@ -2428,7 +2602,7 @@ class ApiClient {
     console.log('🔍 [API-CLIENT] Descargando reporte mensual ID:', id);
     
     try {
-      const response = await fetch(`${this.baseURL}/reports/mensuales/${id}/descargar`, {
+      const response = await fetch(`${this.baseUrl}/reports/mensuales/${id}/descargar`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.token}`,

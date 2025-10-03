@@ -64,7 +64,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     Page<Usuario> findByUserTypeAndActive(TipoUsuario userType, Boolean active, Pageable pageable);
     
     @Query("SELECT u FROM Usuario u WHERE u.userType = :tipo " +
-           "AND (:search IS NULL OR u.firstName LIKE %:search% OR u.lastName LIKE %:search% OR u.email LIKE %:search%)")
+           "AND (:search IS NULL OR u.firstName LIKE %:search% OR u.lastName LIKE %:search% OR u.email LIKE %:search%) " +
+           "ORDER BY u.createdAt DESC")
     Page<Usuario> findByTipoUsuarioWithSearch(@Param("tipo") TipoUsuario tipo, 
                                             @Param("search") String search, 
                                             Pageable pageable);

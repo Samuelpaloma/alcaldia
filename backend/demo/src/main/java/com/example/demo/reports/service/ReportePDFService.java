@@ -152,8 +152,8 @@ public class ReportePDFService {
     private List<Ticket> obtenerTicketsDelMes(int mes, int año) {
         return ticketRepository.findAll().stream()
                 .filter(ticket -> {
-                    LocalDateTime fechaCreacion = ticket.getFechaCreacion();
-                    return fechaCreacion.getMonthValue() == mes && fechaCreacion.getYear() == año;
+                    LocalDateTime fechaCreacion = ticket.getCreatedAt();
+                    return fechaCreacion != null && fechaCreacion.getMonthValue() == mes && fechaCreacion.getYear() == año;
                 })
                 .collect(Collectors.toList());
     }
@@ -162,7 +162,7 @@ public class ReportePDFService {
         return encuestaRepository.findAll().stream()
                 .filter(encuesta -> {
                     LocalDateTime fechaCreacion = encuesta.getFechaCreacion();
-                    return fechaCreacion.getMonthValue() == mes && fechaCreacion.getYear() == año;
+                    return fechaCreacion != null && fechaCreacion.getMonthValue() == mes && fechaCreacion.getYear() == año;
                 })
                 .collect(Collectors.toList());
     }
@@ -210,7 +210,7 @@ public class ReportePDFService {
 
     private String generarResumenEjecutivo(List<Ticket> tickets, List<EncuestaSatisfaccion> encuestas) {
         long totalTickets = tickets.size();
-        long ticketsResueltos = tickets.stream().filter(t -> "RESUELTO".equals(t.getEstado())).count();
+        long ticketsResueltos = tickets.stream().filter(t -> "RESUELTO".equals(t.getStatus())).count();
         double satisfaccionPromedio = encuestas.stream().mapToInt(EncuestaSatisfaccion::getCalificacion).average().orElse(0.0);
         
         return String.format("""
@@ -228,9 +228,9 @@ public class ReportePDFService {
 
     private String generarEstadisticasTickets(List<Ticket> tickets) {
         long total = tickets.size();
-        long resueltos = tickets.stream().filter(t -> "RESUELTO".equals(t.getEstado())).count();
-        long pendientes = tickets.stream().filter(t -> "PENDIENTE".equals(t.getEstado())).count();
-        long enProceso = tickets.stream().filter(t -> "EN_PROCESO".equals(t.getEstado())).count();
+        long resueltos = tickets.stream().filter(t -> "RESUELTO".equals(t.getStatus())).count();
+        long pendientes = tickets.stream().filter(t -> "PENDIENTE".equals(t.getStatus())).count();
+        long enProceso = tickets.stream().filter(t -> "EN_PROCESO".equals(t.getStatus())).count();
         
         return String.format("""
             ESTADÍSTICAS DE TICKETS
@@ -276,7 +276,7 @@ public class ReportePDFService {
     private String generarAnalisisPorCategoria(List<Ticket> tickets) {
         Map<String, Long> porCategoria = tickets.stream()
                 .collect(Collectors.groupingBy(
-                    t -> t.getCategoriaNombre() != null ? t.getCategoriaNombre() : "Sin categoría",
+                    t -> t.getCategoryName() != null ? t.getCategoryName() : "Sin categoría",
                     Collectors.counting()
                 ));
         
@@ -297,9 +297,9 @@ public class ReportePDFService {
 
     private String generarAnalisisPorTecnico(List<Ticket> tickets) {
         Map<String, Long> porTecnico = tickets.stream()
-                .filter(t -> t.getTecnicoAsignado() != null)
+                .filter(t -> t.getAssignedTechnician() != null)
                 .collect(Collectors.groupingBy(
-                    t -> t.getTecnicoAsignado().getNombreCompleto(),
+                    t -> t.getAssignedTechnician().getFullName(),
                     Collectors.counting()
                 ));
         
