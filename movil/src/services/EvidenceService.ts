@@ -25,18 +25,12 @@ export interface EvidenceResponse {
   subidoPorEmail: string;
 }
 
+import { API_CONFIG } from '../config/api';
+
 class EvidenceService {
-  private baseUrl = 'http://localhost:8080/api';
-  
   // Detectar la IP correcta para React Native
   private getBaseUrl(): string {
-    // En desarrollo, usar la IP de la máquina en lugar de localhost
-    const isDevelopment = __DEV__;
-    if (isDevelopment) {
-      // Usar la IP de la máquina (192.168.1.87)
-      return 'http://192.168.1.87:8080/api';
-    }
-    return this.baseUrl;
+    return API_CONFIG.BASE_URL;
   }
 
   private async getAuthHeaders() {

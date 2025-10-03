@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../config/api';
 
 interface TwoFactorAuthScreenProps {
   onVerificationSuccess: () => void;
@@ -51,27 +52,16 @@ const TwoFactorAuthScreen: React.FC<TwoFactorAuthScreenProps> = ({
       setIsLoading(true);
       console.log('📧 Enviando código de verificación a:', userEmail);
       
-      // Simular envío de código
-      const response = await fetch('http://localhost:8080/api/auth/send-verification-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: userEmail }),
+      // Enviar código de verificación
+      await authAPI.sendVerificationCode({
+        userId: 0, // Se puede obtener del contexto si es necesario
+        userEmail: userEmail
       });
 
-      if (response.ok) {
-        Alert.alert(
-          'Código enviado',
-          `Se ha enviado un código de verificación de 6 dígitos a ${userEmail}`
-        );
-      } else {
-        console.log('⚠️ Usando código simulado para desarrollo');
-        Alert.alert(
-          'Código simulado',
-          'Para desarrollo: usa el código 123456'
-        );
-      }
+      Alert.alert(
+        'Código enviado',
+        `Se ha enviado un código de verificación de 6 dígitos a ${userEmail}`
+      );
     } catch (error) {
       console.log('⚠️ Usando código simulado para desarrollo');
       Alert.alert(
@@ -93,39 +83,18 @@ const TwoFactorAuthScreen: React.FC<TwoFactorAuthScreenProps> = ({
       setIsLoading(true);
       console.log('🔍 Verificando código:', verificationCode);
 
-      const response = await fetch('http://localhost:8080/api/auth/verify-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: userEmail, 
-          code: verificationCode 
-        }),
+      await authAPI.verifyCode({
+        userId: 0, // Se puede obtener del contexto si es necesario
+        userEmail: userEmail,
+        userName: '', // Se puede obtener del contexto si es necesario
+        code: verificationCode
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Guardar token de autenticación
-          await AsyncStorage.setItem('authToken', data.token);
-          await AsyncStorage.setItem('twoFactorVerified', 'true');
-          
-          Alert.alert('Éxito', 'Código verificado correctamente');
-          onVerificationSuccess();
-        } else {
-          Alert.alert('Error', 'Código de verificación incorrecto');
-        }
-      } else {
-        // Para desarrollo, aceptar código 123456
-        if (verificationCode === '123456') {
-          await AsyncStorage.setItem('twoFactorVerified', 'true');
-          Alert.alert('Éxito', 'Código verificado correctamente');
-          onVerificationSuccess();
-        } else {
-          Alert.alert('Error', 'Código de verificación incorrecto');
-        }
-      }
+      // Guardar token de autenticación
+      await AsyncStorage.setItem('twoFactorVerified', 'true');
+      
+      Alert.alert('Éxito', 'Código verificado correctamente');
+      onVerificationSuccess();
     } catch (error) {
       // Para desarrollo, aceptar código 123456
       if (verificationCode === '123456') {

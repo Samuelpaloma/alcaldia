@@ -16,8 +16,9 @@ export interface ComentarioRequest {
   usuarioId?: number;
 }
 
+import { API_CONFIG } from '../config/api';
+
 class ChatService {
-  private baseUrl = 'http://localhost:8080/api';
 
   private async getAuthHeaders() {
     const token = await AsyncStorage.getItem('authToken');
@@ -35,7 +36,7 @@ class ChatService {
   async getComentarios(ticketId: number): Promise<ChatMessage[]> {
     try {
       const headers = await this.getAuthHeaders();
-      const response = await fetch(`${this.baseUrl}/tickets/${ticketId}/comentarios`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/tickets/${ticketId}/comentarios`, {
         method: 'GET',
         headers,
       });
@@ -69,7 +70,7 @@ class ChatService {
         usuarioId: userData?.id || 1
       };
 
-      const response = await fetch(`${this.baseUrl}/tickets/${ticketId}/comentarios`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/tickets/${ticketId}/comentarios`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -97,7 +98,7 @@ class ChatService {
       const headers = await this.getAuthHeaders();
       console.log('📡 Headers enviados:', headers);
       
-      const url = `${this.baseUrl}/tecnico/tickets/${ticketId}`;
+      const url = `${API_CONFIG.BASE_URL}/tecnico/tickets/${ticketId}`;
       console.log('🌐 URL:', url);
       
       const response = await fetch(url, {

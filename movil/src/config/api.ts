@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuración de la API
 // Detectar si estamos en emulador Android o dispositivo físico
@@ -54,6 +55,10 @@ export const API_CONFIG = {
     },
     USUARIO: {
       THEME_PREFERENCES: '/api/usuario/preferencias-tema'
+    },
+    WEBSOCKET: {
+      BASE_URL: 'ws://10.0.2.2:8080/ws', // Para emulador Android
+      PHYSICAL_DEVICE_URL: 'ws://10.3.234.28:8080/ws' // Para dispositivo físico
     }
   },
   TIMEOUT: 10000, // 10 segundos
@@ -195,13 +200,20 @@ const makeRequest = async (url: string, options: RequestInit = {}): Promise<Resp
 
 // Función auxiliar para obtener headers de autenticación
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
   const token = await AsyncStorage.getItem('authToken');
   
   return {
     ...API_CONFIG.HEADERS,
     ...(token && { 'Authorization': `Bearer ${token}` })
   };
+};
+
+// Función auxiliar para obtener URL del WebSocket
+export const getWebSocketUrl = (): string => {
+  const isAndroidEmulator = __DEV__ && Platform.OS === 'android';
+  return isAndroidEmulator 
+    ? API_CONFIG.ENDPOINTS.WEBSOCKET.BASE_URL
+    : API_CONFIG.ENDPOINTS.WEBSOCKET.PHYSICAL_DEVICE_URL;
 };
 
 // ===== FUNCIONES DE AUTENTICACIÓN =====

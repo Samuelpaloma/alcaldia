@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_BASE_URL = 'http://localhost:8080/api/auth';
+import { API_CONFIG } from '../config/api';
 
 export interface TwoFAStatus {
   enabled: boolean;
@@ -27,7 +26,7 @@ class SecurityService {
     try {
       console.log('🔒 [SECURITY] Obteniendo estado de 2FA...');
       
-      const response = await fetch(`${API_BASE_URL}/2fa/status`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/2fa/status`, {
         method: 'GET',
         headers: await this.getAuthHeaders(),
       });
@@ -53,7 +52,7 @@ class SecurityService {
     try {
       console.log('🔒 [SECURITY] Cambiando estado de 2FA a:', enabled);
       
-      const response = await fetch(`${API_BASE_URL}/2fa/toggle`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/2fa/toggle`, {
         method: 'POST',
         headers: await this.getAuthHeaders(),
         body: JSON.stringify({ enabled }),

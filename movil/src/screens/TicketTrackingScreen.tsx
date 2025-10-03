@@ -23,7 +23,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { webSocketService } from '../services/WebSocketService';
 import EvidenceModal from './components/EvidenceModal';
-import { tecnicoAPI, ticketsAPI, evidenciasAPI, Ticket, Comment, Evidence } from '../config/api';
+import { tecnicoAPI, ticketsAPI, evidenciasAPI, Ticket, Comment, Evidence, API_CONFIG } from '../config/api';
 
 type TicketTrackingRouteProp = RouteProp<RootStackParamList, 'TicketTracking'>;
 
@@ -421,18 +421,8 @@ export default function TicketTrackingScreen() {
   const loadMessagesSmoothly = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const baseUrl = 'http://10.3.234.61:8080/api';
-      const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('🔄 [TÉCNICO] Polling - Datos recibidos:', data);
+      const data = await ticketsAPI.getComments(ticketId);
+      console.log('🔄 [TÉCNICO] Polling - Datos recibidos:', data);
         
         const newMessages = (data || []).map((comment: any) => ({
           id: comment.id || `${comment.fechaCreacion}-${comment.mensaje}`,
@@ -486,9 +476,6 @@ export default function TicketTrackingScreen() {
             }
           }
         });
-      } else {
-        console.warn('⚠️ [TÉCNICO] Error en polling:', response.status);
-      }
     } catch (error) {
       console.error('❌ [TÉCNICO] Error cargando mensajes suavemente:', error);
     }
@@ -503,25 +490,8 @@ export default function TicketTrackingScreen() {
       
       // Intentar primero con el endpoint específico del ticket
       console.log('📜 [HISTORIAL] Intentando endpoint: /api/tecnico/tickets/${ticketId}/historial');
-      let response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}/historial`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      console.log('📜 [HISTORIAL] Respuesta status:', response.status);
-
-      // Si no existe, mostrar error
-      if (!response.ok) {
-        console.error('❌ [HISTORIAL] Error obteniendo historial:', response.status, response.statusText);
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ [HISTORIAL] Historial cargado, estructura:', data);
+      const data = await tecnicoAPI.getTicketHistory(ticketId);
+      console.log('✅ [HISTORIAL] Historial cargado, estructura:', data);
         console.log('📜 [HISTORIAL] Datos de historial de estados:', JSON.stringify(data, null, 2));
         
         // Procesar historial de estados del backend
@@ -593,10 +563,6 @@ export default function TicketTrackingScreen() {
         
         console.log('📜 [HISTORIAL] Historial completo generado:', historialCompleto.length);
         setHistorial(historialCompleto);
-      } else {
-        console.warn('⚠️ [HISTORIAL] No se pudo cargar el historial:', response.status);
-        setHistorial([]); // Inicializar con array vacío
-      }
     } catch (error) {
       console.error('❌ [HISTORIAL] Error cargando historial:', error);
       setHistorial([]); // Inicializar con array vacío

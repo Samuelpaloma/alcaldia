@@ -1,6 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+import { API_CONFIG } from '../config/api';
 
 export interface Notificacion {
   id: number;
@@ -41,7 +40,7 @@ class NotificacionService {
     console.log('🔔 [MAKE REQUEST] Endpoint:', endpoint);
     console.log('🔔 [MAKE REQUEST] Method:', method);
     console.log('🔔 [MAKE REQUEST] Auth token present:', !!authToken);
-    console.log('🔔 [MAKE REQUEST] Full URL:', `${API_BASE_URL}${endpoint}`);
+    console.log('🔔 [MAKE REQUEST] Full URL:', `${API_CONFIG.BASE_URL}${endpoint}`);
     
     const defaultHeaders = {
       'Content-Type': 'application/json',
@@ -58,7 +57,7 @@ class NotificacionService {
     }
 
     console.log('🔔 [MAKE REQUEST] Sending request...');
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, options);
     console.log('🔔 [MAKE REQUEST] Response status:', response.status);
     console.log('🔔 [MAKE REQUEST] Response ok:', response.ok);
 
