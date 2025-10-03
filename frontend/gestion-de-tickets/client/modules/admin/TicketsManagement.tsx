@@ -129,6 +129,21 @@ export default function TicketsManagement() {
   // Estados para el chat del admin (solo visualización)
   const [activeTab, setActiveTab] = useState<'info' | 'historial' | 'chat' | 'evidencias'>('info');
   const [ws, setWs] = useState<WebSocket | null>(null);
+
+  // Helper para mostrar nombres evitando "undefined undefined"
+  const containsInvalidToken = (v?: string) => /(^|\s)(undefined|null)(\s|$)/i.test(String(v || ''));
+  const clean = (value?: string) => {
+    if (!value) return '';
+    const v = String(value).trim();
+    if (containsInvalidToken(v)) return '';
+    return v;
+  };
+  const buildTechnicianName = (tecnico: any) => {
+    const first = clean(tecnico?.nombre);
+    const last = clean(tecnico?.apellido);
+    const full = [first, last].filter(Boolean).join(' ').trim();
+    return containsInvalidToken(full) ? '' : full;
+  };
   const [currentTicketId, setCurrentTicketId] = useState<number | null>(null);
   
   // Referencia para auto-scroll del chat
@@ -319,7 +334,8 @@ export default function TicketsManagement() {
       // Mapear a formato esperado por el componente
       const tecnicosMapeados = response.map(t => ({
         id: t.idUsuario,
-        nombre: `${t.nombre} ${t.apellido}`.trim(),
+        nombre: t.nombre,
+        apellido: t.apellido,
         email: t.email,
         activo: t.activo
       }));
@@ -1654,7 +1670,12 @@ export default function TicketsManagement() {
                     <p className="text-foreground">{
                       (() => {
                         const tecnico = tecnicos.find(t => t.email === selectedTicket.tecnicoEmail);
-                        return tecnico ? `${tecnico.nombre} ${tecnico.apellido || ''}`.trim() : selectedTicket.tecnicoEmail;
+                        if (tecnico) {
+                          const nombre = buildTechnicianName(tecnico);
+                          return nombre || tecnico.email;
+                        }
+                        const nombreTicket = buildTechnicianName({ nombre: selectedTicket.tecnicoNombre });
+                        return nombreTicket || selectedTicket.tecnicoEmail || 'Sin asignar';
                       })()
                     }</p>
                   </div>
@@ -1896,7 +1917,12 @@ export default function TicketsManagement() {
                           <p className="text-sm">{
                             (() => {
                               const tecnico = tecnicos.find(t => t.email === selectedTicket.tecnicoEmail);
-                              return tecnico ? `${tecnico.nombre} ${tecnico.apellido || ''}`.trim() : selectedTicket.tecnicoEmail;
+                              if (tecnico) {
+                                const nombre = buildTechnicianName(tecnico);
+                                return nombre || tecnico.email;
+                              }
+                              const nombreTicket = buildTechnicianName({ nombre: selectedTicket.tecnicoNombre });
+                              return nombreTicket || selectedTicket.tecnicoEmail || 'Sin asignar';
                             })()
                           }</p>
                         </div>

@@ -169,9 +169,37 @@ public class CategoriaController {
         log.info("Obteniendo categorías - página: {}, tamaño: {}, activa: {}, nombre: {}", 
                 page, size, activa, nombre);
         
-        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) 
+        // Mapear alias de ordenación del frontend a propiedades válidas del modelo
+        String mappedSortBy;
+        String sortByLower = sortBy != null ? sortBy.toLowerCase() : "";
+        switch (sortByLower) {
+            case "orden":
+                mappedSortBy = "order"; // Campo en entidad: order (columna sort_order)
+                break;
+            case "nombre":
+                mappedSortBy = "name";
+                break;
+            case "activo":
+            case "activa":
+                mappedSortBy = "active";
+                break;
+            case "creado":
+            case "fechacreacion":
+            case "createdat":
+                mappedSortBy = "createdAt";
+                break;
+            case "actualizado":
+            case "fechaactualizacion":
+            case "updatedat":
+                mappedSortBy = "updatedAt";
+                break;
+            default:
+                mappedSortBy = "order"; // Valor seguro por defecto
+        }
+
+        Sort.Direction direction = "desc".equalsIgnoreCase(sortDir)
             ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, mappedSortBy));
         
         PageResponse<CategoriaResponseDTO> categorias = categoriaService
             .obtenerTodasLasCategorias(pageable, activa, nombre);
