@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api, UsuarioDTO, CreateTecnicoRequest, CreateFuncionarioRequest } from '../../../shared/api';
+import { useI18n } from "@/i18n";
 import { 
   Search, 
   Filter, 
@@ -25,6 +26,8 @@ interface UsersModuleProps {
 }
 
 const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
+  const { t } = useI18n();
+  
   // Estado para ver/editar usuario
   const [showViewEditModal, setShowViewEditModal] = useState(false);
   const [viewEditMode, setViewEditMode] = useState<'view' | 'edit'>('view');
@@ -243,8 +246,8 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
     <div className="users-module" style={{ paddingTop: '0.5rem' }}>
       <div className="module-header">
         <div className="header-content">
-          <h1 className="page-title">Gestión de Usuarios</h1>
-          <p className="page-subtitle">Administra técnicos y usuarios del sistema</p>
+          <h1 className="page-title">{t('users.management.title')}</h1>
+          <p className="page-subtitle">{t('users.management.subtitle')}</p>
         </div>
         <div className="header-actions">
           <Button
@@ -255,7 +258,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
             className="create-btn"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Nuevo Técnico
+            {t('users.management.new_technician')}
           </Button>
           <Button
             onClick={() => {
@@ -266,7 +269,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
             className="create-btn"
           >
             <Users className="w-4 h-4 mr-2" />
-            Nuevo Funcionario
+            {t('users.management.new_official')}
           </Button>
         </div>
       </div>
@@ -289,7 +292,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
             <div className="search-container">
               <Search className="search-icon" />
               <Input
-                placeholder="Buscar usuarios..."
+                placeholder={t('users.management.search_users')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
@@ -306,9 +309,9 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                 }}
                 className="filter-select"
               >
-                <option value="TODOS">Todos los tipos ({allUsers.length})</option>
-                <option value="TECNICO">Técnicos ({tecnicos.length})</option>
-                <option value="FUNCIONARIO">Funcionarios ({funcionarios.length})</option>
+                <option value="TODOS">{t('users.management.all_types')} ({allUsers.length})</option>
+                <option value="TECNICO">{t('users.management.technicians')} ({tecnicos.length})</option>
+                <option value="FUNCIONARIO">{t('users.management.officials')} ({funcionarios.length})</option>
               </select>
             </div>
             
@@ -318,7 +321,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="filter-select"
               >
-                <option value="TODOS">Todos los estados</option>
+                <option value="TODOS">{t('users.management.all_statuses')}</option>
                 <option value="ACTIVO">Activos</option>
                 <option value="INACTIVO">Inactivos</option>
               </select>
@@ -332,7 +335,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
-            Usuarios ({filteredUsers.length})
+            {t('users.management.users')} ({filteredUsers.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -367,7 +370,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                     </div>
                     <div className="detail-item">
                       <Calendar className="w-4 h-4" />
-                      <span>Creado: {new Date(user.fechaCreacion).toLocaleDateString()}</span>
+                      <span>{t('users.management.created')}: {new Date(user.fechaCreacion).toLocaleDateString()}</span>
                     </div>
                   </div>
                   
@@ -379,7 +382,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                       className={`action-btn ${user.activo ? 'deactivate' : 'activate'}`}
                     >
                       {user.activo ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                      {user.activo ? 'Desactivar' : 'Activar'}
+                      {user.activo ? t('users.management.deactivate') : t('users.management.activate')}
                     </Button>
                     
                     <Button
@@ -395,7 +398,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                       }}
                     >
                       <Edit className="w-4 h-4" />
-                      Editar
+                      {t('users.management.edit')}
                     </Button>
                   </div>
                 </div>
@@ -411,7 +414,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
           <div className="modal-content">
             <div className="modal-header">
               <h3 className="modal-title">
-                {viewEditMode === 'view' ? 'Ver Usuario' : 'Editar Usuario'}
+                {viewEditMode === 'view' ? t('users.management.view_user') : t('users.management.edit_user')}
               </h3>
               <button
                 onClick={() => setShowViewEditModal(false)}
@@ -427,7 +430,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                   <p><strong>Email:</strong> {selectedUser.email}</p>
                   <p><strong>Tipo:</strong> {selectedUser.tipoUsuario}</p>
                   <p><strong>Estado:</strong> {selectedUser.activo ? 'Activo' : 'Inactivo'}</p>
-                  <p><strong>Creado:</strong> {selectedUser.fechaCreacion ? new Date(selectedUser.fechaCreacion).toLocaleDateString() : 'N/A'}</p>
+                  <p><strong>{t('users.management.created')}:</strong> {selectedUser.fechaCreacion ? new Date(selectedUser.fechaCreacion).toLocaleDateString() : 'N/A'}</p>
                   {/* Puedes agregar más campos si lo necesitas */}
                 </div>
               ) : (
@@ -508,7 +511,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                   onClick={() => setViewEditMode('edit')}
                   className="btn-primary"
                 >
-                  Editar
+                  {t('users.management.edit')}
                 </Button>
               )}
             </div>
@@ -521,7 +524,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
           <div className="modal-content">
             <div className="modal-header">
               <h3 className="modal-title">
-                Crear {createUserType === 'TECNICO' ? 'Técnico' : 'Funcionario'}
+                {createUserType === 'TECNICO' ? t('users.create_technician.title') : t('users.create_official.title')}
               </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
@@ -534,76 +537,76 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
             <div className="modal-body">
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Nombre *</label>
+                  <label className="form-label">{t('users.create_technician.name')} *</label>
                   <Input
                     value={formData.nombre}
                     onChange={(e) => setFormData({...formData, nombre: e.target.value})}
-                    placeholder="Nombre del usuario"
+                    placeholder={t('users.create_technician.name_placeholder')}
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Apellido *</label>
+                  <label className="form-label">{t('users.create_technician.lastname')} *</label>
                   <Input
                     value={formData.apellido}
                     onChange={(e) => setFormData({...formData, apellido: e.target.value})}
-                    placeholder="Apellido del usuario"
+                    placeholder={t('users.create_technician.lastname_placeholder')}
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Email *</label>
+                  <label className="form-label">{t('users.create_technician.email')} *</label>
                   <Input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    placeholder="email@ejemplo.com"
+                    placeholder={t('users.create_technician.email_placeholder')}
                     required
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Contraseña *</label>
+                  <label className="form-label">{t('users.create_technician.password')} *</label>
                   <Input
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número"
+                    placeholder={t('users.create_technician.password_help')}
                     required
                     minLength={8}
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número
+                    {t('users.create_technician.password_validation')}
                   </p>
                 </div>
                 
                 
                 <div className="form-group">
-                  <label className="form-label">Cargo</label>
+                  <label className="form-label">{t('users.create_technician.position')}</label>
                   <Input
                     value={formData.cargo}
                     onChange={(e) => setFormData({...formData, cargo: e.target.value})}
-                    placeholder={createUserType === 'TECNICO' ? 'Técnico' : 'Administrador'}
+                    placeholder={createUserType === 'TECNICO' ? t('users.create_technician.position_placeholder') : 'Administrador'}
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Departamento</label>
+                  <label className="form-label">{t('users.create_technician.department')}</label>
                   <Input
                     value={formData.departamento}
                     onChange={(e) => setFormData({...formData, departamento: e.target.value})}
-                    placeholder="Sistemas"
+                    placeholder={t('users.create_technician.department_placeholder')}
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label className="form-label">Ubicación</label>
+                  <label className="form-label">{t('users.create_technician.location')}</label>
                   <Input
                     value={formData.ubicacion}
                     onChange={(e) => setFormData({...formData, ubicacion: e.target.value})}
-                    placeholder="Bogotá, Colombia"
+                    placeholder={t('users.create_technician.location_placeholder')}
                   />
                 </div>
               </div>
@@ -614,7 +617,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                 variant="outline"
                 onClick={() => setShowCreateModal(false)}
               >
-                Cancelar
+                {t('users.create_technician.cancel_button')}
               </Button>
               <Button
                 onClick={handleCreateUser}
@@ -622,7 +625,7 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                 className="btn-primary"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
-                Crear Usuario
+                {createUserType === 'TECNICO' ? t('users.create_technician.create_button') : t('users.create_official.create_button')}
               </Button>
             </div>
           </div>

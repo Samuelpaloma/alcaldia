@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useI18n } from '@/i18n';
 import { 
   Bell, 
   Check, 
@@ -41,6 +42,39 @@ const NotificationsCenter: React.FC = () => {
     console.log('🔔 [DEBUG] Estado de notificaciones actualizado:', notificaciones);
     console.log('🔔 [DEBUG] Cantidad de notificaciones:', notificaciones.length);
   }, [notificaciones]);
+  const { t } = useI18n();
+  
+  // Función para interpolar variables en strings de traducción
+  const interpolateString = (template: string, variables: Record<string, string | number>) => {
+    return template.replace(/\{(\w+)\}/g, (match, key) => {
+      return variables[key]?.toString() || match;
+    });
+  };
+
+  // Función para limpiar nombres duplicados
+  const cleanName = (name: string) => {
+    if (!name) return name;
+    
+    // Limpiar espacios extra
+    let cleaned = name.trim();
+    
+    // Detectar y corregir patrones de duplicación comunes
+    const patterns = [
+      // Patrón: "paloma paloma" -> "paloma"
+      /(\w+)\s+\1\b/gi,
+      // Patrón: "prueba prueba" -> "prueba"  
+      /(\w+)\s+\1\b/gi,
+      // Patrón: "administrador administrador" -> "administrador"
+      /(\w+)\s+\1\b/gi
+    ];
+    
+    patterns.forEach(pattern => {
+      cleaned = cleaned.replace(pattern, '$1');
+    });
+    
+    return cleaned;
+  };
+  
   const [filtros, setFiltros] = useState({
     busqueda: '',
     tipo: '',
@@ -227,8 +261,8 @@ const NotificationsCenter: React.FC = () => {
       {/* Header */}
       <div className="notifications-header">
         <div className="header-content">
-          <h1 className="notifications-title">Centro de Notificaciones</h1>
-          <p className="notifications-subtitle">Gestiona todas las notificaciones del sistema</p>
+          <h1 className="notifications-title">{t('notifications.title')}</h1>
+          <p className="notifications-subtitle">{t('notifications.subtitle')}</p>
           <div className="connection-status">
             <div className="status-indicator connected">
               <div className="status-dot"></div>
@@ -239,11 +273,11 @@ const NotificationsCenter: React.FC = () => {
         <div className="header-actions">
           <Button onClick={loadNotificaciones} variant="outline" disabled={loading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Recargar
+                {t('notifications.reload')}
           </Button>
           <Button onClick={marcarTodasComoLeidas} variant="outline">
             <Check className="w-4 h-4 mr-2" />
-            Marcar todas como leídas
+            {t('notifications.mark_all_read')}
           </Button>
         </div>
       </div>
@@ -266,7 +300,7 @@ const NotificationsCenter: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="busqueda"
-                  placeholder="Buscar notificaciones..."
+                  placeholder={t('notifications.search_placeholder')}
                   value={filtros.busqueda}
                   onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
                   className="pl-10"

@@ -28,6 +28,7 @@ interface TicketsModuleProps {
 }
 
 const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
+  const { t } = useI18n();
   const [tickets, setTickets] = useState<TicketResponseDTO[]>([]);
   const [tecnicos, setTecnicos] = useState<UsuarioDTO[]>([]);
   const [categorias, setCategorias] = useState<CategoriaSimpleDTO[]>([]);
@@ -42,6 +43,28 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
   const [selectedTecnico, setSelectedTecnico] = useState('');
   const [ticketHistory, setTicketHistory] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Función para procesar y traducir la descripción del ticket
+  const processTicketDescription = (description: string) => {
+    if (!description) return description;
+    
+    // Reemplazar las claves de traducción con sus valores traducidos
+    let processedDescription = description;
+    
+    // Reemplazar client.chat.selected_category
+    processedDescription = processedDescription.replace(
+      /client\.chat\.selected_category/g, 
+      t('client.chat.selected_category')
+    );
+    
+    // Reemplazar client.chat.message
+    processedDescription = processedDescription.replace(
+      /client\.chat\.message/g, 
+      t('client.chat.message')
+    );
+    
+    return processedDescription;
+  };
 
   const loadData = async () => {
     try {
@@ -496,7 +519,7 @@ const TicketsModule: React.FC<TicketsModuleProps> = ({ userRole }) => {
                     <div>
                       <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Descripción</label>
                       <p className="text-sm text-foreground mt-1">
-                        {selectedTicket.descripcion}
+                        {processTicketDescription(selectedTicket.descripcion)}
                       </p>
                     </div>
                   )}

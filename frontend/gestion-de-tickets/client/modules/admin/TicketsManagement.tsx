@@ -565,8 +565,8 @@ export default function TicketsManagement() {
         // 1. Evento de creación (siempre primero)
         historialGenerado.push({
           id: 1,
-          accion: 'Ticket creado',
-          descripcion: `Ticket creado por ${currentTicket.creadorNombre || currentTicket.nombre || 'Usuario'}`,
+          accion: t('tickets.history.ticket_created_action'),
+          descripcion: `${t('tickets.history.ticket_created_description')} ${currentTicket.creadorNombre || currentTicket.nombre || 'Usuario'}`,
           fecha: currentTicket.fechaCreacion,
           usuario: currentTicket.creadorNombre || currentTicket.nombre || 'Usuario'
         });
@@ -635,8 +635,8 @@ export default function TicketsManagement() {
             // 1. Evento de creación
             historialGenerado.push({
               id: 1,
-              accion: 'Ticket creado',
-              descripcion: `Ticket creado por ${(response as any).tecnicoNombre || (response as any).tecnicoEmail || 'Usuario'}`,
+              accion: t('tickets.history.ticket_created_action'),
+              descripcion: `${t('tickets.history.ticket_created_description')} ${(response as any).tecnicoNombre || (response as any).tecnicoEmail || 'Usuario'}`,
               fecha: response.fechaCreacion,
               usuario: (response as any).tecnicoNombre || (response as any).tecnicoEmail || 'Usuario'
             });
@@ -699,10 +699,10 @@ export default function TicketsManagement() {
         const historialGenerado = [
           { 
             id: 1, 
-            accion: 'Ticket creado', 
+            accion: t('tickets.history.ticket_created_action'), 
             usuario: ticket.creadorNombre || ticket.nombre || 'Usuario', 
             fecha: ticket.fechaCreacion, 
-            descripcion: `El ticket fue creado por ${ticket.creadorNombre || ticket.nombre || 'el usuario'}` 
+            descripcion: `${t('tickets.history.ticket_created_description')} ${ticket.creadorNombre || ticket.nombre || 'el usuario'}` 
           }
         ];
         
@@ -714,10 +714,10 @@ export default function TicketsManagement() {
           
           historialGenerado.push({
             id: 2,
-            accion: 'Ticket asignado',
-            usuario: 'Administrador',
+            accion: t('tickets.history.ticket_assigned_action'),
+            usuario: t('tickets.history.administrator'),
             fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
-            descripcion: `Ticket asignado a ${nombreTecnicoAsignado}`
+            descripcion: `${t('tickets.history.ticket_assigned_description')} ${nombreTecnicoAsignado}`
           });
         
           // Si está escalado, buscar un técnico diferente para la escalación
@@ -783,10 +783,10 @@ export default function TicketsManagement() {
         const historialGenerado: HistorialItem[] = [
           { 
             id: 1, 
-            accion: 'Ticket creado', 
+            accion: t('tickets.history.ticket_created_action'), 
             usuario: ticket.creadorNombre || ticket.nombre || 'Usuario', 
             fecha: ticket.fechaCreacion, 
-            descripcion: `El ticket fue creado por ${ticket.creadorNombre || ticket.nombre || 'el usuario'}` 
+            descripcion: `${t('tickets.history.ticket_created_description')} ${ticket.creadorNombre || ticket.nombre || 'el usuario'}` 
           }
         ];
         
@@ -798,10 +798,10 @@ export default function TicketsManagement() {
           
           historialGenerado.push({
             id: 2,
-            accion: 'Ticket asignado',
-            usuario: 'Administrador',
+            accion: t('tickets.history.ticket_assigned_action'),
+            usuario: t('tickets.history.administrator'),
             fecha: ticket.fechaActualizacion || ticket.fechaCreacion,
-            descripcion: `Ticket asignado a ${nombreTecnicoAsignado}`
+            descripcion: `${t('tickets.history.ticket_assigned_description')} ${nombreTecnicoAsignado}`
           });
           
           // Si está escalado, mostrar la escalación con el técnico real asignado al ticket
@@ -1264,10 +1264,10 @@ export default function TicketsManagement() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'ASIGNADO': { color: 'bg-blue-600 text-white', icon: Users, label: 'ASIGNADO' },
-      'ESCALADO': { color: 'bg-red-600 text-white', icon: ArrowUp, label: 'ESCALADO' },
-      'PENDIENTE': { color: 'bg-yellow-600 text-white', icon: Clock, label: 'PENDIENTE' },
-      'RESUELTO': { color: 'bg-green-600 text-white', icon: CheckCircle, label: 'RESUELTO' }
+      'ASIGNADO': { color: 'bg-blue-600 text-white', icon: Users, label: t('tickets.status.ASIGNADO') },
+      'ESCALADO': { color: 'bg-red-600 text-white', icon: ArrowUp, label: t('tickets.status.ESCALADO') },
+      'PENDIENTE': { color: 'bg-yellow-600 text-white', icon: Clock, label: t('tickets.status.PENDIENTE') },
+      'RESUELTO': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.status.resolved') }
     };
     
     const config = statusConfig[status] || statusConfig['PENDIENTE'];
@@ -1283,12 +1283,12 @@ export default function TicketsManagement() {
 
   const getPriorityBadge = (priority: string) => {
     const priorityConfig = {
-      'HIGH': { color: 'bg-red-600 text-white', icon: AlertTriangle, label: 'ALTA' },
-      'MEDIUM': { color: 'bg-yellow-600 text-white', icon: Clock, label: 'MEDIA' },
-      'LOW': { color: 'bg-green-600 text-white', icon: CheckCircle, label: 'BAJA' },
-      'high': { color: 'bg-red-600 text-white', icon: AlertTriangle, label: 'ALTA' },
-      'medium': { color: 'bg-yellow-600 text-white', icon: Clock, label: 'MEDIA' },
-      'low': { color: 'bg-green-600 text-white', icon: CheckCircle, label: 'BAJA' }
+      'HIGH': { color: 'bg-red-600 text-white', icon: AlertTriangle, label: t('tickets.priority.ALTA') },
+      'MEDIUM': { color: 'bg-yellow-600 text-white', icon: Clock, label: t('tickets.priority.MEDIA') },
+      'LOW': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.priority.BAJA') },
+      'high': { color: 'bg-red-600 text-white', icon: AlertTriangle, label: t('tickets.priority.ALTA') },
+      'medium': { color: 'bg-yellow-600 text-white', icon: Clock, label: t('tickets.priority.MEDIA') },
+      'low': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.priority.BAJA') }
     };
     
     const config = priorityConfig[priority] || priorityConfig['medium'];
@@ -1314,6 +1314,28 @@ export default function TicketsManagement() {
       'Respaldo': 'bg-indigo-600 text-white'
     };
     return colors[category] || 'bg-gray-600 text-white';
+  };
+
+  // Función para procesar y traducir la descripción del ticket
+  const processTicketDescription = (description: string) => {
+    if (!description) return description;
+    
+    // Reemplazar las claves de traducción con sus valores traducidos
+    let processedDescription = description;
+    
+    // Reemplazar client.chat.selected_category
+    processedDescription = processedDescription.replace(
+      /client\.chat\.selected_category/g, 
+      t('client.chat.selected_category')
+    );
+    
+    // Reemplazar client.chat.message
+    processedDescription = processedDescription.replace(
+      /client\.chat\.message/g, 
+      t('client.chat.message')
+    );
+    
+    return processedDescription;
   };
 
   if (isLoading) {
@@ -1511,7 +1533,7 @@ export default function TicketsManagement() {
 
               {/* Description */}
               <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                {ticket.descripcion}
+                {processTicketDescription(ticket.descripcion)}
               </p>
 
               {/* Info */}
@@ -1751,7 +1773,7 @@ export default function TicketsManagement() {
                 <div className="space-y-3">
                   <div className="flex items-center space-x-2 text-green-600">
                     <CheckCircle className="w-5 h-5" />
-                    <span className="font-medium">¡Ticket asignado exitosamente!</span>
+                    <span className="font-medium">{t('tickets.history.ticket_assigned_success')}</span>
                   </div>
                   <div className="flex space-x-2">
                     <Button 
@@ -1949,7 +1971,7 @@ export default function TicketsManagement() {
                   {/* Descripción */}
                   <div>
                     <h3 className="font-semibold mb-3">{t('common.description')}</h3>
-                    <p className="text-sm text-muted-foreground">{selectedTicket.descripcion}</p>
+                    <p className="text-sm text-muted-foreground">{processTicketDescription(selectedTicket.descripcion)}</p>
                   </div>
                 </div>
               </div>
@@ -2018,7 +2040,7 @@ export default function TicketsManagement() {
                         </div>
                         <div>
                           <label className="text-sm font-medium text-muted-foreground">{t('ticket_detail.estimated_time')}:</label>
-                          <p className="text-sm">{selectedTicket.tiempoEstimado || 'No especificado'}</p>
+                          <p className="text-sm">{selectedTicket.tiempoEstimado || t('tickets.table.not_specified')}</p>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-muted-foreground">{t('ticket_detail.last_update')}:</label>
@@ -2052,8 +2074,8 @@ export default function TicketsManagement() {
                           {historial.map((item, index) => (
                             <div key={item.id} className="flex items-start space-x-4 p-4 bg-muted/50 rounded-lg border border-border">
                               <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
-                                item.accion === 'Ticket creado' ? 'bg-blue-500' :
-                                item.accion === 'Asignado' || item.accion === 'Ticket asignado' ? 'bg-green-500' :
+                                item.accion === t('tickets.history.ticket_created_action') ? 'bg-blue-500' :
+                                item.accion === 'Asignado' || item.accion === t('tickets.history.ticket_assigned_action') ? 'bg-green-500' :
                                 item.accion === 'Escalado' || item.accion === 'Ticket escalado' ? 'bg-orange-500' :
                                 item.accion === 'Reasignado' ? 'bg-purple-500' :
                                 'bg-gray-500'
@@ -2140,7 +2162,7 @@ export default function TicketsManagement() {
                     <div className="p-6">
                       <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <FileText className="w-5 h-5" />
-                        Evidencias del Ticket
+                        {t('ticket_detail.evidences_title')}
                       </h3>
                       
                       {/* Tabs de categorías de evidencias */}
@@ -2153,7 +2175,7 @@ export default function TicketsManagement() {
                           }`}
                           onClick={() => setActiveEvidenceTab('chat')}
                         >
-                          💬 Evidencias de Chat ({evidenciasChat.length})
+                          💬 {t('ticket_detail.chat_evidences')} ({evidenciasChat.length})
                         </button>
                         <button
                           className={`px-4 py-2 text-sm font-medium rounded-lg ${
@@ -2163,7 +2185,7 @@ export default function TicketsManagement() {
                           }`}
                           onClick={() => setActiveEvidenceTab('finales')}
                         >
-                          📋 Evidencias Finales ({evidenciasFinales.length})
+                          📋 {t('ticket_detail.final_evidences')} ({evidenciasFinales.length})
                         </button>
                       </div>
 

@@ -162,10 +162,10 @@ export default function TicketsManagement() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      'asignado': { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Users, label: 'ASIGNADO' },
-      'escalado': { color: 'bg-red-100 text-red-800 border-red-200', icon: ArrowUp, label: 'ESCALADO' },
-      'pendiente': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'PENDIENTE' },
-      'resuelto': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'RESUELTO' }
+      'asignado': { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Users, label: t('tickets.status.ASIGNADO') },
+      'escalado': { color: 'bg-red-100 text-red-800 border-red-200', icon: ArrowUp, label: t('tickets.status.ESCALADO') },
+      'pendiente': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: t('tickets.status.PENDIENTE') },
+      'resuelto': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: t('tickets.status.resolved') }
     };
     
     const config = statusConfig[status] || statusConfig['pendiente'];
@@ -181,9 +181,9 @@ export default function TicketsManagement() {
 
   const getPriorityBadge = (priority: string) => {
     const priorityConfig = {
-      'high': { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertTriangle, label: 'ALTA' },
-      'medium': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'MEDIA' },
-      'low': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: 'BAJA' }
+      'high': { color: 'bg-red-100 text-red-800 border-red-200', icon: AlertTriangle, label: t('tickets.priority.ALTA') },
+      'medium': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: t('tickets.priority.MEDIA') },
+      'low': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: t('tickets.priority.BAJA') }
     };
     
     const config = priorityConfig[priority] || priorityConfig['medium'];

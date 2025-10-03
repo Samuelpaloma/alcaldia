@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Bell, CheckCircle2, Trash2, Filter, MoreHorizontal, Eye, EyeOff } from 'lucide-react';
 import { useRoleNotifications } from '@/hooks/use-role-notifications';
+import { useI18n } from '@/i18n';
 
 interface UnifiedNotificationsModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
   userEmail,
   userRole
 }) => {
+  const { t } = useI18n();
   const {
     notifications,
     unreadCount,
@@ -36,6 +38,69 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Función para interpolar variables en strings de traducción
+  const interpolateString = (template: string, variables: Record<string, string | number>) => {
+    return template.replace(/\{(\w+)\}/g, (match, key) => {
+      return variables[key]?.toString() || match;
+    });
+  };
+
+  // Función para limpiar nombres duplicados
+  const cleanName = (name: string) => {
+    if (!name) return name;
+    
+    // Limpiar espacios extra
+    let cleaned = name.trim();
+    
+    // Detectar y corregir patrones de duplicación comunes
+    const patterns = [
+      // Patrón: "paloma paloma" -> "paloma"
+      /(\w+)\s+\1\b/gi,
+      // Patrón: "prueba prueba" -> "prueba"  
+      /(\w+)\s+\1\b/gi,
+      // Patrón: "administrador administrador" -> "administrador"
+      /(\w+)\s+\1\b/gi
+    ];
+    
+    patterns.forEach(pattern => {
+      cleaned = cleaned.replace(pattern, '$1');
+    });
+    
+    return cleaned;
+  };
+
+  // Función para procesar mensajes de notificación y traducirlos
+  const processNotificationMessage = (mensaje: string) => {
+    if (!mensaje) return mensaje;
+    
+    // Patrón para "Has asignado el ticket #X del funcionario Y al técnico Z"
+    const assignedPattern = /Has asignado el ticket #(\d+) del funcionario (.+?) al técnico (.+)/;
+    const assignedMatch = mensaje.match(assignedPattern);
+    if (assignedMatch) {
+      const [, ticketId, officialName, technicianName] = assignedMatch;
+      const template = t('notifications.ticket_assigned');
+      return interpolateString(template, { 
+        ticketId, 
+        officialName: cleanName(officialName), 
+        technicianName: cleanName(technicianName) 
+      });
+    }
+    
+    // Patrón para "Nuevo ticket creado por X (#Y)"
+    const createdPattern = /Nuevo ticket creado por (.+?) \(#(\d+)\)/;
+    const createdMatch = mensaje.match(createdPattern);
+    if (createdMatch) {
+      const [, userName, ticketId] = createdMatch;
+      const template = t('notifications.ticket_created');
+      return interpolateString(template, { 
+        userName: cleanName(userName), 
+        ticketId 
+      });
+    }
+    
+    return mensaje;
+  };
 
   // Filtrar notificaciones por búsqueda
   const filteredNotifications = notifications.filter(notification => {
@@ -93,9 +158,15 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    if (diffInSeconds < 60) return 'Hace un momento';
-    if (diffInSeconds < 3600) return `Hace ${Math.floor(diffInSeconds / 60)} min`;
-    if (diffInSeconds < 86400) return `Hace ${Math.floor(diffInSeconds / 3600)} h`;
+    if (diffInSeconds < 60) return t('notifications.just_now');
+    if (diffInSeconds < 3600) {
+      const template = t('notifications.minutes_ago');
+      return interpolateString(template, { minutes: Math.floor(diffInSeconds / 60) });
+    }
+    if (diffInSeconds < 86400) {
+      const template = t('notifications.hours_ago');
+      return interpolateString(template, { hours: Math.floor(diffInSeconds / 3600) });
+    }
     return date.toLocaleDateString();
   };
 
@@ -140,10 +211,10 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
               <Bell className="w-6 h-6" />
               <div>
                 <h2 className="text-xl font-semibold">
-                  Panel de Notificaciones
+                  {t('notifications.title')}
                 </h2>
                 <p className="text-[hsl(var(--primary-foreground)/0.8)] text-sm">
-                  Centro de notificaciones del sistema
+                  {t('notifications.subtitle')}
                 </p>
               </div>
             </div>
@@ -172,7 +243,7 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[hsl(var(--muted-foreground))] w-4 h-4" />
               <input
                 type="text"
-                placeholder="Buscar notificaciones..."
+                placeholder={t('notifications.search_placeholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-[hsl(var(--border))] rounded-lg bg-[hsl(var(--background))] text-[hsl(var(--foreground))] placeholder-[hsl(var(--muted-foreground))] focus:ring-2 focus:ring-[hsl(var(--primary))] focus:border-transparent"
@@ -278,7 +349,7 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <p className={`text-sm font-medium ${!notification.leida ? 'text-[hsl(var(--foreground))]' : 'text-[hsl(var(--muted-foreground))]'}`}>
-                            {notification.mensaje}
+                            {processNotificationMessage(notification.mensaje)}
                           </p>
                           
                           <div className="mt-2 flex items-center space-x-4 text-xs text-[hsl(var(--muted-foreground))]">
@@ -287,10 +358,10 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
                               <span>Ticket #{notification.ticketId}</span>
                             )}
                             {notification.usuarioActorNombre && (
-                              <span>Por: {notification.usuarioActorNombre}</span>
+                              <span>{t('notifications.by')}: {cleanName(notification.usuarioActorNombre)}</span>
                             )}
                             <span className={`px-2 py-1 rounded-full text-xs ${getColor(notification.tipo)}`}>
-                              {notification.prioridad || 'Normal'}
+                              {notification.prioridad ? t(`notifications.priority.${notification.prioridad.toLowerCase()}`) : t('notifications.priority.normal')}
                             </span>
                           </div>
                         </div>
@@ -328,8 +399,8 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
         <div className="px-6 py-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted)/0.3)]">
           <div className="flex items-center justify-between text-sm text-[hsl(var(--muted-foreground))]">
             <span>
-              Mostrando {filteredNotifications.length} de {notifications.length} notificaciones
-              {unreadCount > 0 && ` • ${unreadCount} no leídas`}
+              {interpolateString(t('notifications.showing'), { current: filteredNotifications.length, total: notifications.length })}
+              {unreadCount > 0 && ` • ${unreadCount} ${t('notifications.unread')}`}
             </span>
             
             <div className="flex items-center space-x-4">
@@ -337,7 +408,7 @@ export const UnifiedNotificationsModal: React.FC<UnifiedNotificationsModalProps>
                 onClick={loadNotifications}
                 className="text-[hsl(var(--primary))] hover:text-[hsl(var(--primary)/0.8)] transition-colors"
               >
-                Recargar
+                {t('notifications.reload')}
               </button>
             </div>
           </div>
