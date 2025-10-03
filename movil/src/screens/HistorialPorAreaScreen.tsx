@@ -57,9 +57,9 @@ export default function HistorialPorAreaScreen() {
         return;
       }
 
-      console.log('📊 [HISTORIAL] Haciendo petición a: http://localhost:8080/api/tecnico/tickets');
+      console.log('📊 [HISTORIAL] Haciendo petición a: http://10.3.234.61:8080/api/tecnico/tickets');
       
-      const response = await fetch('http://localhost:8080/api/tecnico/tickets', {
+      const response = await fetch('http://10.3.234.61:8080/api/tecnico/tickets', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -13,6 +13,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "./navigationTypes"; // importa el tipo que definiste
+import { authAPI, ForgotPasswordRequest } from '../config/api';
 
 type ForgotPasswordScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -44,27 +45,17 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/auth/forgot-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim()
-        })
-      });
+      const request: ForgotPasswordRequest = {
+        email: email.trim()
+      };
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Navegar a la pantalla de reset con el email
-        navigation.navigate('ResetPasswordScreen', { email: email.trim() });
-      } else {
-        setEmailError(data.message || 'No se pudo enviar el correo de recuperación');
-      }
+      await authAPI.forgotPassword(request);
+      // Navegar a la pantalla de reset con el email
+      navigation.navigate('ResetPasswordScreen', { email: email.trim() });
     } catch (error) {
       console.error('Error al enviar correo de recuperación:', error);
-      setEmailError('No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.');
+      const errorMessage = (error as Error).message || 'No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.';
+      setEmailError(errorMessage);
     } finally {
       setLoading(false);
     }

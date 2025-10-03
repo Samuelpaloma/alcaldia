@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Image, Modal, StatusBar } from 'react-native';
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI, LoginRequest } from '../config/api';
 
 export default function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -48,19 +49,12 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:8080/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: email.trim(),
-          password: password.trim()
-        })
-      });
+      const credentials: LoginRequest = {
+        email: email.trim(),
+        password: password.trim()
+      };
 
-      const data = await response.json();
-      console.log('🔍 Response status:', response.status);
+      const data = await authAPI.login(credentials);
       console.log('🔍 Response data:', data);
 
       // PRIMERO: Verificar si requiere verificación de email
@@ -76,47 +70,43 @@ export default function LoginScreen() {
       }
 
       // SEGUNDO: Si response es OK, manejar casos exitosos
-      if (response.ok) {
-        if (data.accessToken) {
-          // Login directo exitoso - GUARDAR TOKEN AQUÍ
-          console.log('✅ Login directo exitoso, guardando token y navegando a Home');
-          await AsyncStorage.setItem('authToken', data.accessToken);
-          await AsyncStorage.setItem('userInfo', JSON.stringify({
-            userId: data.userId,
-            email: data.email,
-            nombre: data.nombre,
-            apellido: data.apellido,
-            telefono: data.telefono
-          }));
-          // Navegar manualmente a Home después del login exitoso
-          console.log('✅ Login exitoso, navegando a Home');
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-          });
-        } else if (data.require2fa) {
-          // Login requiere 2FA - NO guardar token todavía
-          console.log('🔐 Login requiere 2FA, navegando a Verify2FA');
-          navigation.navigate('Verify2FA', { 
-            userId: data.userId,
-            userEmail: data.email,
-            userName: data.nombre 
-          });
-        }
-      } else {
-        // Errores normales
-        const errorMessage = data.message || 'Credenciales incorrectas';
-        if (errorMessage.includes('correo') || errorMessage.includes('email')) {
-          setEmailError(errorMessage);
-        } else if (errorMessage.includes('contraseña') || errorMessage.includes('password')) {
-          setPasswordError(errorMessage);
-        } else {
-          setGeneralError(errorMessage);
-        }
+      if (data.accessToken) {
+        // Login directo exitoso - GUARDAR TOKEN AQUÍ
+        console.log('✅ Login directo exitoso, guardando token y navegando a Home');
+        await AsyncStorage.setItem('authToken', data.accessToken);
+        await AsyncStorage.setItem('userInfo', JSON.stringify({
+          userId: data.userId,
+          email: data.email,
+          nombre: data.nombre,
+          apellido: data.apellido,
+          telefono: data.telefono
+        }));
+        // Navegar manualmente a Home después del login exitoso
+        console.log('✅ Login exitoso, navegando a Home');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      } else if (data.require2fa) {
+        // Login requiere 2FA - NO guardar token todavía
+        console.log('🔐 Login requiere 2FA, navegando a Verify2FA');
+        navigation.navigate('Verify2FA', { 
+          userId: data.userId,
+          userEmail: data.email,
+          userName: data.nombre 
+        });
       }
     } catch (error) {
       console.error('Error de conexión:', error);
-      setGeneralError('No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.');
+      const errorMessage = (error as Error).message || 'No se pudo conectar con el servidor. Verifique su conexión e intente nuevamente.';
+      
+      if (errorMessage.includes('correo') || errorMessage.includes('email')) {
+        setEmailError(errorMessage);
+      } else if (errorMessage.includes('contraseña') || errorMessage.includes('password')) {
+        setPasswordError(errorMessage);
+      } else {
+        setGeneralError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

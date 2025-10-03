@@ -23,6 +23,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { webSocketService } from '../services/WebSocketService';
 import EvidenceModal from './components/EvidenceModal';
+import { tecnicoAPI, ticketsAPI, evidenciasAPI, Ticket, Comment, Evidence } from '../config/api';
 
 type TicketTrackingRouteProp = RouteProp<RootStackParamList, 'TicketTracking'>;
 
@@ -335,210 +336,83 @@ export default function TicketTrackingScreen() {
 
   const loadTicketInfo = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
       console.log('🎫 [TICKET] Cargando información del ticket:', ticketId);
       
-      // Usar el endpoint correcto para técnicos
-      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ [TICKET] Información del ticket cargada:', data);
-        console.log('📜 [TICKET] HistorialEstados del backend:', data.historialEstados);
-        console.log('📎 [TICKET] Evidencias del backend:', data.evidencias);
-        console.log('💬 [TICKET] Comentarios del backend:', data.comentarios);
-        console.log('🔐 [TICKET] Permisos del backend:', {
-          puedeCambiarEstado: data.puedeCambiarEstado,
-          esTecnicoEscalado: data.esTecnicoEscalado,
-          rolTecnico: data.rolTecnico,
-          estado: data.estado
-        });
-        
-        // Mapear la respuesta del backend al formato esperado
-        const ticketInfo = {
-          id: data.idTicket || data.id,
-          asunto: data.consulta || data.asunto || `Ticket #${ticketId}`,
-          descripcion: data.descripcion || data.consulta || 'Sin descripción',
-          categoria: data.categoria || 'Sin categoría',
-          estado: data.estado || 'PENDIENTE',
-          prioridad: data.prioridad || 'MEDIA',
-          tecnicoAsignado: data.tecnicoNombre || data.tecnicoAsignado || 'Sin asignar',
-          tecnicoNombre: data.tecnicoNombre,
-          creadorNombre: data.creadorNombre,
-          fechaCreacion: data.fechaCreacion || new Date().toISOString(),
-          fechaActualizacion: data.fechaActualizacion || new Date().toISOString(),
-          ubicacion: data.ubicacion || 'Sin ubicación',
-          creador: data.creador || { nombre: 'Usuario' },
-          evidencias: data.evidencias || [],
-          historial: data.historialEstados || data.historial || [],
-          historialEstados: data.historialEstados || [],
-          // Permisos del técnico actual
-          puedeCambiarEstado: data.puedeCambiarEstado ?? true,
-          esTecnicoEscalado: data.esTecnicoEscalado ?? false,
-          rolTecnico: data.rolTecnico || 'ASIGNADO'
-        };
-        
-        console.log('📜 [TICKET] Historial mapeado:', ticketInfo.historial);
-        
-        setTicketInfo(ticketInfo);
-        
-        // Si viene historialEstados en el ticket, usarlo directamente
-        if (data.historialEstados && data.historialEstados.length > 0) {
-          console.log('📜 [TICKET] Usando historialEstados del ticket:', data.historialEstados);
-          const historialMapeado = data.historialEstados.map((item: any) => ({
-            id: item.idHistorial || item.id,
-            fecha: item.fechaCambio,
-            fechaCambio: item.fechaCambio,
-            accion: 'Cambio de estado',
-            descripcion: item.comentario || `${item.estadoAnterior} → ${item.estadoNuevo}`,
-            usuario: item.cambiadoPor || item.nombreCambiadoPor || 'Sistema',
-            cambiadoPor: item.cambiadoPor || item.nombreCambiadoPor || 'Sistema',
-            estadoAnterior: item.estadoAnterior,
-            estadoNuevo: item.estadoNuevo,
-            observaciones: item.observaciones
-          }));
-          console.log('📜 [TICKET] Historial procesado desde ticket:', historialMapeado);
-          setHistorial(historialMapeado);
-        }
-        
-        // Siempre cargar evidencias con la llamada separada para asegurar que se obtengan
-        console.log('📎 [TICKET] Evidencias en respuesta inicial:', data.evidencias);
-        // No usamos las evidencias del ticket inicial, siempre hacemos la llamada específica
-        // para asegurar que se carguen todas las evidencias
-        
-        // Si vienen comentarios en el ticket, usarlos directamente
-        if (data.comentarios && data.comentarios.length > 0) {
-          console.log('💬 [TICKET] Usando comentarios del ticket:', data.comentarios);
-          const comentariosMapeados = data.comentarios.map((comment: any) => ({
-            id: comment.id,
-            autor: comment.autor || comment.nombreUsuario || 'Usuario',
-            mensaje: comment.mensaje || comment.contenido,
-            fechaCreacion: comment.fechaCreacion || comment.fecha,
-            esTecnico: comment.esTecnico || false,
-            tipoAutor: comment.tipoAutor
-          }));
-          setMessages(comentariosMapeados.sort((a: ChatMessage, b: ChatMessage) => {
-            return new Date(a.fechaCreacion).getTime() - new Date(b.fechaCreacion).getTime();
-          }));
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('❌ [TICKET] Error cargando información del ticket:', response.status, errorText);
-        
-        // Intentar extraer el mensaje de error del backend
-        let errorMessage = 'No se pudo cargar la información del ticket.';
-        
-        try {
-          const errorJson = JSON.parse(errorText);
-          // El backend puede devolver el mensaje en diferentes formatos
-          errorMessage = errorJson.message || errorJson.error || errorMessage;
-        } catch (e) {
-          // Si no es JSON, usar el texto directamente si es legible
-          if (errorText && errorText.length < 200 && !errorText.includes('<html')) {
-            errorMessage = errorText;
-          }
-        }
-        
-        // Guardar el mensaje de error para mostrarlo en la pantalla
-        setErrorMessage(errorMessage);
-        
-        // Si es error de permisos, mostrar el mensaje específico del backend
-        if (response.status === 400 || response.status === 403) {
-          Alert.alert(
-            '🚫 Acceso Denegado', 
-            errorMessage,
-            [
-              {
-                text: 'Volver al Dashboard',
-                onPress: () => navigation.goBack()
-              }
-            ]
-          );
-        } else {
-          Alert.alert('Error', errorMessage);
-        }
-      }
+      const data = await tecnicoAPI.getTicketDetail(ticketId);
+      console.log('✅ [TICKET] Información del ticket cargada:', data);
+      
+      // Mapear la respuesta del backend al formato esperado
+      const ticketInfo = {
+        id: data.id,
+        asunto: data.titulo || `Ticket #${ticketId}`,
+        descripcion: data.descripcion || 'Sin descripción',
+        categoria: data.categoria || 'Sin categoría',
+        estado: data.estado || 'PENDIENTE',
+        prioridad: data.prioridad || 'MEDIA',
+        tecnicoAsignado: data.tecnico?.nombre || 'Sin asignar',
+        tecnicoNombre: data.tecnico?.nombre,
+        creadorNombre: data.usuario?.nombre,
+        fechaCreacion: data.fechaCreacion || new Date().toISOString(),
+        fechaActualizacion: data.fechaActualizacion || new Date().toISOString(),
+        ubicacion: data.ubicacion || 'Sin ubicación',
+        creador: data.usuario || { nombre: 'Usuario' },
+        evidencias: [],
+        historial: [],
+        historialEstados: [],
+        // Permisos del técnico actual
+        puedeCambiarEstado: true,
+        esTecnicoEscalado: false,
+        rolTecnico: 'ASIGNADO'
+      };
+      
+      setTicketInfo(ticketInfo);
+      
     } catch (error: any) {
       console.error('❌ [TICKET] Error cargando información del ticket:', error);
-      Alert.alert('Error', error?.message || 'Error de conexión al cargar el ticket');
+      const errorMessage = error?.message || 'Error de conexión al cargar el ticket';
+      setErrorMessage(errorMessage);
+      Alert.alert('Error', errorMessage);
     }
   };
 
   const loadMessages = async () => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      const baseUrl = 'http://localhost:8080/api';
       console.log('💬 [CHAT] Cargando mensajes para ticket:', ticketId);
-      console.log('💬 [CHAT] URL:', `${baseUrl}/tickets/${ticketId}/comentarios`);
-      const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      console.log('💬 [CHAT] Response status:', response.status);
-      console.log('💬 [CHAT] Response ok:', response.ok);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ [CHAT] Mensajes cargados:', data);
-        console.log('📋 [CHAT] Primer mensaje de ejemplo:', data[0]);
-        
-        // Mapear los comentarios al formato esperado
-        const mappedMessages = (data || []).map((comment: any) => {
-          console.log('🔄 [MAPEO] Mensaje original completo:', {
-            id: comment.id,
-            tipoAutor: comment.tipoAutor,
-            esTecnico: comment.esTecnico,
-            autor: comment.autor,
-            autorEmail: comment.autorEmail,
-            mensaje: comment.mensaje
-          });
-          
-          return {
+      
+      const data = await ticketsAPI.getComments(ticketId);
+      console.log('✅ [CHAT] Mensajes cargados:', data);
+      
+      // Mapear los comentarios al formato esperado
+      const mappedMessages = (data || []).map((comment: Comment) => {
+        return {
           id: comment.id,
-          autor: comment.autor || comment.nombreUsuario || 'Usuario',
-          mensaje: comment.mensaje || comment.contenido,
-          fechaCreacion: comment.fechaCreacion || comment.fecha,
-            esTecnico: comment.esTecnico || false,
-            tipoAutor: comment.tipoAutor,
-            autorEmail: comment.autorEmail
-          };
-        });
-        
-        // Ordenar mensajes por fecha (del más antiguo al más nuevo - orden ascendente)
-        const mensajesOrdenados = mappedMessages.sort((a: ChatMessage, b: ChatMessage) => {
-          const fechaA = new Date(a.fechaCreacion).getTime();
-          const fechaB = new Date(b.fechaCreacion).getTime();
-          return fechaA - fechaB; // Orden ascendente (más antiguo primero, más nuevo al final)
-        });
-        
-        console.log('✅ [TÉCNICO] Mensajes ordenados (ascendente):', mensajesOrdenados.length);
-        setMessages(mensajesOrdenados);
-        
-        // Scroll al final después de cargar mensajes
-        setTimeout(() => {
-          if (scrollViewRef.current) {
-            scrollViewRef.current.scrollToEnd({ animated: true });
-          }
-        }, 100);
-      } else {
-        console.warn('⚠️ [CHAT] No se pudieron cargar los mensajes:', response.status);
-        setMessages([]); // Inicializar con array vacío
-      }
+          autor: comment.usuario?.nombre || 'Usuario',
+          mensaje: comment.contenido,
+          fechaCreacion: comment.fechaCreacion,
+          esTecnico: false, // Se puede determinar basado en el tipo de usuario
+          tipoAutor: 'USUARIO',
+          autorEmail: ''
+        };
+      });
+      
+      // Ordenar mensajes por fecha (del más antiguo al más nuevo - orden ascendente)
+      const mensajesOrdenados = mappedMessages.sort((a: ChatMessage, b: ChatMessage) => {
+        const fechaA = new Date(a.fechaCreacion).getTime();
+        const fechaB = new Date(b.fechaCreacion).getTime();
+        return fechaA - fechaB; // Orden ascendente (más antiguo primero, más nuevo al final)
+      });
+      
+      console.log('✅ [TÉCNICO] Mensajes ordenados (ascendente):', mensajesOrdenados.length);
+      setMessages(mensajesOrdenados);
+      
+      // Scroll al final después de cargar mensajes
+      setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollToEnd({ animated: true });
+        }
+      }, 100);
     } catch (error: any) {
       console.error('❌ [CHAT] Error cargando mensajes:', error);
-      console.error('❌ [CHAT] Error type:', typeof error);
-      console.error('❌ [CHAT] Error message:', error?.message);
-      console.error('❌ [CHAT] Error stack:', error?.stack);
       setMessages([]); // Inicializar con array vacío
     }
   };
@@ -547,7 +421,7 @@ export default function TicketTrackingScreen() {
   const loadMessagesSmoothly = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
-      const baseUrl = 'http://localhost:8080/api';
+      const baseUrl = 'http://10.3.234.61:8080/api';
       const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
         method: 'GET',
         headers: {
@@ -629,7 +503,7 @@ export default function TicketTrackingScreen() {
       
       // Intentar primero con el endpoint específico del ticket
       console.log('📜 [HISTORIAL] Intentando endpoint: /api/tecnico/tickets/${ticketId}/historial');
-      let response = await fetch(`http://localhost:8080/api/tecnico/tickets/${ticketId}/historial`, {
+      let response = await fetch(`http://10.3.234.61:8080/api/tecnico/tickets/${ticketId}/historial`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -733,28 +607,13 @@ export default function TicketTrackingScreen() {
     try {
       console.log('📎 [EVIDENCIAS] ===== INICIANDO loadEvidencias =====');
       console.log('📎 [EVIDENCIAS] Ticket ID:', ticketId);
-      const token = await AsyncStorage.getItem('authToken');
-      console.log('📎 [EVIDENCIAS] Token presente:', !!token);
       
       // Cargar evidencias de chat (archivos_ticket)
       let evidenciasDelChat: any[] = [];
       try {
         console.log('💬 [EVIDENCIAS CHAT] Cargando archivos del chat...');
-        const responseChatFiles = await fetch(`http://localhost:8080/api/archivos-ticket/ticket/${ticketId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-        if (responseChatFiles.ok) {
-          const dataChatFiles = await responseChatFiles.json();
-          if (Array.isArray(dataChatFiles) && dataChatFiles.length > 0) {
-            evidenciasDelChat = dataChatFiles;
-            console.log('✅ [EVIDENCIAS CHAT] Archivos de chat encontrados:', evidenciasDelChat.length);
-          }
-        }
+        evidenciasDelChat = await evidenciasAPI.getChatFiles(ticketId);
+        console.log('✅ [EVIDENCIAS CHAT] Archivos de chat encontrados:', evidenciasDelChat.length);
       } catch (err) {
         console.log('⚠️ [EVIDENCIAS CHAT] No se pudieron cargar archivos del chat:', err);
       }
@@ -763,28 +622,8 @@ export default function TicketTrackingScreen() {
       let evidenciasFinalesData: any[] = [];
       try {
         console.log('📋 [EVIDENCIAS FINALES] Cargando evidencias finales...');
-        const responseEvidenciasFinales = await fetch(`http://localhost:8080/api/evidencias/movil/ticket/${ticketId}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (responseEvidenciasFinales.ok) {
-          const responseData = await responseEvidenciasFinales.json();
-          let data = responseData;
-          
-          // Si la respuesta tiene el formato {success, data, message}
-          if (responseData.success !== undefined && responseData.data !== undefined) {
-            data = responseData.data;
-          }
-          
-          if (Array.isArray(data) && data.length > 0) {
-            evidenciasFinalesData = data;
-            console.log('✅ [EVIDENCIAS FINALES] Evidencias finales encontradas:', evidenciasFinalesData.length);
-          }
-        }
+        evidenciasFinalesData = await evidenciasAPI.getEvidences(ticketId);
+        console.log('✅ [EVIDENCIAS FINALES] Evidencias finales encontradas:', evidenciasFinalesData.length);
       } catch (err) {
         console.log('⚠️ [EVIDENCIAS FINALES] No se pudieron cargar evidencias finales:', err);
       }
@@ -835,7 +674,6 @@ export default function TicketTrackingScreen() {
 
     try {
       setIsSending(true);
-      const token = await AsyncStorage.getItem('authToken');
       const userInfo = await AsyncStorage.getItem('userInfo');
       
       if (!userInfo) {
@@ -845,78 +683,53 @@ export default function TicketTrackingScreen() {
       
       const userData = JSON.parse(userInfo);
       
-      const baseUrl = 'http://localhost:8080/api';
       console.log('💬 [SEND] Enviando mensaje para ticket:', ticketId);
-      console.log('💬 [SEND] URL:', `${baseUrl}/tickets/${ticketId}/comentarios`);
       console.log('💬 [SEND] Mensaje:', messageText);
-      console.log('💬 [SEND] Usuario ID:', userData.id || userData.idUsuario);
       
-      const response = await fetch(`${baseUrl}/tickets/${ticketId}/comentarios`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          mensaje: messageText,
-          usuario_id: userData.id || userData.idUsuario
-        })
+      await ticketsAPI.sendComment(ticketId, messageText);
+      
+      console.log('✅ [CHAT] Mensaje enviado exitosamente');
+      
+      // Agregar el mensaje a la lista local inmediatamente
+      const localMessage = {
+        id: Date.now(),
+        autor: userData.nombre || 'Tú',
+        mensaje: messageText,
+        fechaCreacion: new Date().toISOString(),
+        esTecnico: true
+      };
+      
+      console.log('✅ [TÉCNICO] Agregando mensaje local:', localMessage);
+      setMessages(prev => {
+        const newMessages = [...prev, localMessage];
+        console.log('✅ [TÉCNICO] Total mensajes después de agregar:', newMessages.length);
+        return newMessages;
       });
-
-      console.log('💬 [SEND] Response status:', response.status);
-      console.log('💬 [SEND] Response ok:', response.ok);
-
-      if (response.ok) {
-        const newComment = await response.json();
-        console.log('✅ [CHAT] Mensaje enviado:', newComment);
-        
-        // Agregar el mensaje a la lista local inmediatamente
-        const localMessage = {
-          id: newComment.id || Date.now(),
-          autor: userData.nombre || 'Tú',
-          mensaje: messageText,
-          fechaCreacion: new Date().toISOString(),
-          esTecnico: true
-        };
-        
-        console.log('✅ [TÉCNICO] Agregando mensaje local:', localMessage);
-        setMessages(prev => {
-          const newMessages = [...prev, localMessage];
-          console.log('✅ [TÉCNICO] Total mensajes después de agregar:', newMessages.length);
-          return newMessages;
-        });
-        
-        setNewMessage('');
-        
-        // Scroll al final solo cuando se envía un mensaje
-        setTimeout(() => {
-          if (scrollViewRef.current) {
-            scrollViewRef.current.scrollToEnd({ animated: true });
-          }
-        }, 100);
-        
-        // Recargar mensajes después de un delay para sincronizar con el servidor
-        setTimeout(async () => {
-          try {
-            console.log('🔄 [TÉCNICO] Sincronizando mensajes después del envío...');
-            await loadMessages();
-          } catch (error) {
-            console.error('❌ [TÉCNICO] Error sincronizando mensajes:', error);
-          }
-        }, 2000); // 2 segundos para dar tiempo al servidor
-      } else {
-        const errorText = await response.text();
-        console.error('❌ [CHAT] Error enviando mensaje:', response.status, errorText);
-        Alert.alert('Error', 'No se pudo enviar el mensaje');
-        // Restaurar el mensaje si falla
-        setNewMessage(messageText);
-      }
+      
+      setNewMessage('');
+      
+      // Scroll al final solo cuando se envía un mensaje
+      setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollToEnd({ animated: true });
+        }
+      }, 100);
+      
+      // Recargar mensajes después de un delay para sincronizar con el servidor
+      setTimeout(async () => {
+        try {
+          console.log('🔄 [TÉCNICO] Sincronizando mensajes después del envío...');
+          await loadMessages();
+        } catch (error) {
+          console.error('❌ [TÉCNICO] Error sincronizando mensajes:', error);
+        }
+      }, 2000); // 2 segundos para dar tiempo al servidor
     } catch (error: any) {
       console.error('❌ [CHAT] Error enviando mensaje:', error);
-      console.error('❌ [CHAT] Error type:', typeof error);
-      console.error('❌ [CHAT] Error message:', error?.message);
-      console.error('❌ [CHAT] Error stack:', error?.stack);
-      Alert.alert('Error', 'Error de conexión');
+      const errorMessage = error?.message || 'Error de conexión';
+      Alert.alert('Error', errorMessage);
+      // Restaurar el mensaje si falla
+      setNewMessage(messageText);
     } finally {
       setIsSending(false);
     }
@@ -946,63 +759,19 @@ export default function TicketTrackingScreen() {
       console.log('🔄 [CAMBIO ESTADO] Estado anterior:', ticketInfo?.estado);
       console.log('🔄 [CAMBIO ESTADO] Estado nuevo:', nuevoEstado);
       
-      const token = await AsyncStorage.getItem('authToken');
-      console.log('🔄 [CAMBIO ESTADO] Token presente:', !!token);
+      await tecnicoAPI.changeTicketState(ticketId, nuevoEstado, `Estado cambiado a ${nuevoEstado}`);
       
-      const requestBody = {
-        ticketId: ticketId,
-        nuevoEstado: nuevoEstado,
-        comentarios: `Estado cambiado a ${nuevoEstado}`
-      };
+      console.log('✅ [CAMBIO ESTADO] Estado cambiado exitosamente');
+      Alert.alert('✅ Éxito', `El ticket ha sido marcado como ${nuevoEstado}`);
       
-      console.log('🔄 [CAMBIO ESTADO] Request body:', JSON.stringify(requestBody, null, 2));
-      console.log('🔄 [CAMBIO ESTADO] URL:', 'http://localhost:8080/api/tecnico/tickets/cambiar-estado');
-      
-      const response = await fetch(`http://localhost:8080/api/tecnico/tickets/cambiar-estado`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
-
-      console.log('🔄 [CAMBIO ESTADO] Response status:', response.status);
-      console.log('🔄 [CAMBIO ESTADO] Response ok:', response.ok);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ [CAMBIO ESTADO] Respuesta exitosa:', data);
-        console.log('✅ [CAMBIO ESTADO] Nuevo estado confirmado:', data.estado);
-        
-        Alert.alert('✅ Éxito', `El ticket ha sido marcado como ${nuevoEstado}`);
-        
-        // Recargar datos
-        console.log('🔄 [CAMBIO ESTADO] Recargando datos del ticket...');
-        await loadInitialData();
-        console.log('✅ [CAMBIO ESTADO] Datos recargados exitosamente');
-      } else {
-        const errorText = await response.text();
-        console.error('❌ [CAMBIO ESTADO] Error response status:', response.status);
-        console.error('❌ [CAMBIO ESTADO] Error response text:', errorText);
-        
-        let errorMessage = 'No se pudo cambiar el estado del ticket.';
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.message || errorJson.error || errorMessage;
-        } catch (e) {
-          if (errorText && errorText.length < 200) {
-            errorMessage = errorText;
-          }
-        }
-        
-        Alert.alert('❌ Error', errorMessage);
-      }
+      // Recargar datos
+      console.log('🔄 [CAMBIO ESTADO] Recargando datos del ticket...');
+      await loadInitialData();
+      console.log('✅ [CAMBIO ESTADO] Datos recargados exitosamente');
     } catch (error: any) {
       console.error('❌ [CAMBIO ESTADO] Error exception:', error);
-      console.error('❌ [CAMBIO ESTADO] Error message:', error?.message);
-      console.error('❌ [CAMBIO ESTADO] Error stack:', error?.stack);
-      Alert.alert('❌ Error', error?.message || 'Error de conexión al cambiar el estado');
+      const errorMessage = error?.message || 'Error de conexión al cambiar el estado';
+      Alert.alert('❌ Error', errorMessage);
     }
   };
 
@@ -1489,10 +1258,10 @@ export default function TicketTrackingScreen() {
       if (evidencia.id || evidencia.idArchivo) {
         // Es un archivo de la tabla archivos_ticket
         const archivoId = evidencia.id || evidencia.idArchivo;
-        url = `http://localhost:8080/api/archivos-ticket/preview/${ticketId}/${archivoId}`;
+        url = await evidenciasAPI.getPreviewUrl(ticketId, archivoId);
       } else if (evidencia.idEvidencia) {
         // Es una evidencia de la tabla evidencias
-        url = `http://localhost:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/preview`;
+        url = await evidenciasAPI.getPreviewUrl(ticketId, evidencia.nombreCompletoArchivo);
       }
       
       console.log('👁️ [PREVIEW] URL de previsualización:', url);
@@ -1566,10 +1335,10 @@ export default function TicketTrackingScreen() {
       if (evidencia.id || evidencia.idArchivo) {
         // Es un archivo de la tabla archivos_ticket
         const archivoId = evidencia.id || evidencia.idArchivo;
-        url = `http://localhost:8080/api/archivos-ticket/descargar/${ticketId}/${archivoId}`;
+        url = await evidenciasAPI.getDownloadUrl(ticketId, archivoId);
       } else if (evidencia.idEvidencia) {
         // Es una evidencia de la tabla evidencias
-        url = `http://localhost:8080/api/evidencias/${ticketId}/${evidencia.nombreCompletoArchivo}/descargar`;
+        url = await evidenciasAPI.getDownloadUrl(ticketId, evidencia.nombreCompletoArchivo);
       }
       
       console.log('📥 [DOWNLOAD] URL:', url);

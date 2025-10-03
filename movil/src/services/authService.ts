@@ -9,6 +9,31 @@ class AuthService {
   }
 
   /**
+   * Método auxiliar para hacer peticiones HTTP con mejor manejo de errores
+   */
+  private async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+        headers: {
+          ...API_CONFIG.HEADERS,
+          ...options.headers,
+        },
+      });
+      
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+
+  /**
    * Validar credenciales sin obtener token
    */
   async validateCredentials(email: string, password: string): Promise<ApiResponse> {
@@ -16,10 +41,11 @@ class AuthService {
       console.log('🔍 [AUTH] Validando credenciales...');
       console.log('🔍 [AUTH] URL:', `${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.VALIDATE_CREDENTIALS}`);
       console.log('🔍 [AUTH] Email:', email);
+      console.log('🔍 [AUTH] Base URL:', this.baseUrl);
+      console.log('🔍 [AUTH] Full URL:', `${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.VALIDATE_CREDENTIALS}`);
       
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.VALIDATE_CREDENTIALS}`, {
+      const response = await this.makeRequest(`${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.VALIDATE_CREDENTIALS}`, {
         method: 'POST',
-        headers: API_CONFIG.HEADERS,
         body: JSON.stringify({ email, password })
       });
 
@@ -37,8 +63,15 @@ class AuthService {
     } catch (error) {
       console.error('❌ [AUTH] Error validando credenciales:', error);
       
-      // Verificar si es error de conexión
-      if (error.message.includes('Failed to fetch') || error.message.includes('Network request failed')) {
+      // Verificar si es error de conexión (múltiples variantes)
+      const errorMessage = (error as Error).message || (error as any).toString();
+      if (errorMessage.includes('Failed to fetch') || 
+          errorMessage.includes('Network request failed') ||
+          errorMessage.includes('Network Error') ||
+          errorMessage.includes('TypeError: Network request failed') ||
+          errorMessage.includes('fetch failed') ||
+          (error as Error).name === 'TypeError' ||
+          (error as any).code === 'NETWORK_ERROR') {
         throw new Error('No se puede conectar al servidor. Verifica que el backend esté corriendo en el puerto 8080.');
       }
       
@@ -51,9 +84,8 @@ class AuthService {
    */
   async requestLoginCode(email: string, password: string): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.REQUEST_LOGIN_CODE}`, {
+      const response = await this.makeRequest(`${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.REQUEST_LOGIN_CODE}`, {
         method: 'POST',
-        headers: API_CONFIG.HEADERS,
         body: JSON.stringify({ email, password })
       });
 
@@ -66,6 +98,19 @@ class AuthService {
       return data;
     } catch (error) {
       console.error('Error solicitando código de verificación:', error);
+      
+      // Verificar si es error de conexión
+      const errorMessage = (error as Error).message || (error as any).toString();
+      if (errorMessage.includes('Failed to fetch') || 
+          errorMessage.includes('Network request failed') ||
+          errorMessage.includes('Network Error') ||
+          errorMessage.includes('TypeError: Network request failed') ||
+          errorMessage.includes('fetch failed') ||
+          (error as Error).name === 'TypeError' ||
+          (error as any).code === 'NETWORK_ERROR') {
+        throw new Error('No se puede conectar al servidor. Verifica que el backend esté corriendo en el puerto 8080.');
+      }
+      
       throw error;
     }
   }
@@ -79,9 +124,8 @@ class AuthService {
       console.log('🔍 [AUTH] Email:', email);
       console.log('🔍 [AUTH] Code:', code);
       
-      const response = await fetch(`${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.VERIFY_LOGIN_CODE}`, {
+      const response = await this.makeRequest(`${this.baseUrl}${API_CONFIG.ENDPOINTS.AUTH.VERIFY_LOGIN_CODE}`, {
         method: 'POST',
-        headers: API_CONFIG.HEADERS,
         body: JSON.stringify({ email, code })
       });
 
@@ -100,6 +144,19 @@ class AuthService {
       return data;
     } catch (error) {
       console.error('❌ [AUTH] Error verificando código:', error);
+      
+      // Verificar si es error de conexión
+      const errorMessage = (error as Error).message || (error as any).toString();
+      if (errorMessage.includes('Failed to fetch') || 
+          errorMessage.includes('Network request failed') ||
+          errorMessage.includes('Network Error') ||
+          errorMessage.includes('TypeError: Network request failed') ||
+          errorMessage.includes('fetch failed') ||
+          (error as Error).name === 'TypeError' ||
+          (error as any).code === 'NETWORK_ERROR') {
+        throw new Error('No se puede conectar al servidor. Verifica que el backend esté corriendo en el puerto 8080.');
+      }
+      
       throw error;
     }
   }
