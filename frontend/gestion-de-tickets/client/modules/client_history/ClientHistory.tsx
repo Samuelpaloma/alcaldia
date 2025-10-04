@@ -119,15 +119,31 @@ export default function ClientHistory(){
   };
 
   const translateStatus = (status: string) => {
-    const statusKey = status.toLowerCase().replace(' ', '_');
-    const translationKey = `client.status.${statusKey}`;
-    const translation = t(translationKey);
+    // Mapear estados específicos a sus claves de traducción
+    const statusMap: Record<string, string> = {
+      'ASIGNADO': 'client.status.assigned',
+      'PENDIENTE': 'client.status.pending',
+      'EN_PROGRESO': 'client.status.in_progress',
+      'RESUELTO': 'client.status.resolved',
+      'CERRADO': 'client.status.closed',
+      'ASSIGNED': 'client.status.assigned',
+      'PENDING': 'client.status.pending',
+      'IN_PROGRESS': 'client.status.in_progress',
+      'RESOLVED': 'client.status.resolved',
+      'CLOSED': 'client.status.closed'
+    };
     
-    // Si la traducción es la misma que la clave, significa que no existe, usar el estado original
-    if (translation === translationKey) {
-      return status.toUpperCase();
+    const translationKey = statusMap[status.toUpperCase()];
+    if (translationKey) {
+      const translation = t(translationKey);
+      // Si la traducción es diferente a la clave, usarla
+      if (translation !== translationKey) {
+        return translation;
+      }
     }
-    return translation;
+    
+    // Fallback: usar el estado original en mayúsculas
+    return status.toUpperCase();
   };
 
   const scrollToTracking = (ticketId: string) => {
@@ -167,7 +183,7 @@ export default function ClientHistory(){
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">ID</TableHead>
+                  <TableHead className="w-[100px]">{t("client.table.id")}</TableHead>
                   <TableHead className="w-[200px]">{t("client.table.subject")}</TableHead>
                   <TableHead className="w-[120px]">{t("tickets.priority")}</TableHead>
                   <TableHead className="w-[140px]">{t("tickets.status")}</TableHead>
@@ -210,7 +226,7 @@ export default function ClientHistory(){
                           size="sm" 
                           variant="outline" 
                           className="flex items-center gap-1"
-                          title="Ver seguimiento del ticket"
+                          title={t("client.table.view_tracking")}
                           onClick={() => scrollToTracking(ticket.id.toString())}
                         >
                           <Eye className="w-3 h-3" />
@@ -221,7 +237,7 @@ export default function ClientHistory(){
                             variant="outline" 
                             onClick={()=>reopenTicket(ticket.id)}
                             className="text-xs"
-                            title="Reabrir ticket"
+                            title={t("client.table.reopen_ticket")}
                           >
                             {t("client.reopen")}
                           </Button>

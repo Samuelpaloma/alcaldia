@@ -30,7 +30,10 @@ const loadTranslations = async (locale: Locale): Promise<Dict> => {
       'client.fill_form': translations['client.fill_form'],
       'client.chat.title': translations['client.chat.title'],
       'client.form.name': translations['client.form.name'],
-      'client.form.location': translations['client.form.location']
+      'client.form.location': translations['client.form.location'],
+      'client.tracking.complete_history_title': translations['client.tracking.complete_history_title'],
+      'client.tracking.current_status': translations['client.tracking.current_status'],
+      'client.tracking.showing_events': translations['client.tracking.showing_events']
     });
     return translations;
   } catch (error) {
@@ -94,9 +97,11 @@ export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
     if (translation === key && (key.startsWith('client.') || key.startsWith('pagination.') || key.startsWith('settings.') || key.startsWith('common.') || key.startsWith('ticket_detail.'))) {
       console.warn(`⚠️ Missing translation for key: ${key}`);
       console.log(`🔍 Available client keys:`, Object.keys(dict).filter(k => k.startsWith('client.')));
+      console.log(`🔍 Current locale: ${locale}`);
+      console.log(`🔍 Dict size: ${Object.keys(dict).length}`);
     }
     return translation;
-  }, [dict]);
+  }, [dict, locale]);
 
   const value = useMemo(() => ({ locale, t, setLocale }), [locale, t, setLocale]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

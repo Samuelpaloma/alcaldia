@@ -580,25 +580,25 @@ export default function SLAConfigurationFinal() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre de la Configuración
+                  {t("sla_configuration.form.configuration_name")}
                 </label>
                 <Input
                   type="text"
                   value={formularioSLA.nombre}
                   onChange={(e) => setFormularioSLA({ ...formularioSLA, nombre: e.target.value })}
-                  placeholder="Ej: SLA Redes - Alta Prioridad"
+                  placeholder={t("sla_configuration.form.configuration_name_placeholder")}
                   className="w-full"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descripción
+                  {t("sla_configuration.form.description")}
                 </label>
                 <textarea
                   value={formularioSLA.descripcion}
                   onChange={(e) => setFormularioSLA({ ...formularioSLA, descripcion: e.target.value })}
-                  placeholder="Describe el propósito de esta configuración SLA..."
+                  placeholder={t("sla_configuration.form.description_placeholder")}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -607,30 +607,30 @@ export default function SLAConfigurationFinal() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Categoría
+                    {t("sla_configuration.form.category")}
                   </label>
                   <Input
                     type="text"
                     value={formularioSLA.categoriaNombre}
                     onChange={(e) => setFormularioSLA({ ...formularioSLA, categoriaNombre: e.target.value })}
-                    placeholder="Ej: Redes, Software"
+                    placeholder={t("sla_configuration.form.category_placeholder")}
                     className="w-full"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prioridad
+                    {t("sla_configuration.form.priority")}
                   </label>
                   <select
                     value={formularioSLA.prioridad}
                     onChange={(e) => setFormularioSLA({ ...formularioSLA, prioridad: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="CRITICA">Crítica</option>
-                    <option value="ALTA">Alta</option>
-                    <option value="MEDIA">Media</option>
-                    <option value="BAJA">Baja</option>
+                    <option value="CRITICA">{t("sla_configuration.form.priority.critical")}</option>
+                    <option value="ALTA">{t("sla_configuration.form.priority.high")}</option>
+                    <option value="MEDIA">{t("sla_configuration.form.priority.medium")}</option>
+                    <option value="BAJA">{t("sla_configuration.form.priority.low")}</option>
                   </select>
                 </div>
               </div>
@@ -638,7 +638,7 @@ export default function SLAConfigurationFinal() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiempo de Respuesta (horas)
+                    {t("sla_configuration.form.response_time")}
                   </label>
                   <Input
                     type="number"
@@ -651,7 +651,7 @@ export default function SLAConfigurationFinal() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiempo de Resolución (horas)
+                    {t("sla_configuration.form.resolution_time")}
                   </label>
                   <Input
                     type="number"
@@ -664,7 +664,7 @@ export default function SLAConfigurationFinal() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiempo de Alerta (horas)
+                    {t("sla_configuration.form.alert_time")}
                   </label>
                   <Input
                     type="number"
@@ -685,7 +685,7 @@ export default function SLAConfigurationFinal() {
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="activo" className="text-sm font-medium text-gray-700">
-                  Configuración activa
+                  {t("sla_configuration.form.active_configuration")}
                 </label>
               </div>
             </div>
@@ -696,14 +696,14 @@ export default function SLAConfigurationFinal() {
                 onClick={() => setMostrarModalCrear(false)}
               >
                 <X className="w-4 h-4 mr-2" />
-                Cancelar
+                {t("sla_configuration.form.cancel")}
               </Button>
               <Button 
                 onClick={crearConfiguracionSLA}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Crear Configuración
+                {t("sla_configuration.form.create_configuration")}
               </Button>
             </div>
           </div>
@@ -727,25 +727,25 @@ export default function SLAConfigurationFinal() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre de la Configuración
+                  {t("sla_configuration.form.configuration_name")}
                 </label>
                 <Input
                   type="text"
                   value={formularioSLA.nombre}
                   onChange={(e) => setFormularioSLA({ ...formularioSLA, nombre: e.target.value })}
-                  placeholder="Ej: SLA Redes - Alta Prioridad"
+                  placeholder={t("sla_configuration.form.configuration_name_placeholder")}
                   className="w-full"
                 />
               </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descripción
+                  {t("sla_configuration.form.description")}
                 </label>
                 <textarea
                   value={formularioSLA.descripcion}
                   onChange={(e) => setFormularioSLA({ ...formularioSLA, descripcion: e.target.value })}
-                  placeholder="Describe el propósito de esta configuración SLA..."
+                  placeholder={t("sla_configuration.form.description_placeholder")}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -754,30 +754,30 @@ export default function SLAConfigurationFinal() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Categoría
+                    {t("sla_configuration.form.category")}
                   </label>
                   <Input
                     type="text"
                     value={formularioSLA.categoriaNombre}
                     onChange={(e) => setFormularioSLA({ ...formularioSLA, categoriaNombre: e.target.value })}
-                    placeholder="Ej: Redes, Software"
+                    placeholder={t("sla_configuration.form.category_placeholder")}
                     className="w-full"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Prioridad
+                    {t("sla_configuration.form.priority")}
                   </label>
                   <select
                     value={formularioSLA.prioridad}
                     onChange={(e) => setFormularioSLA({ ...formularioSLA, prioridad: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="CRITICA">Crítica</option>
-                    <option value="ALTA">Alta</option>
-                    <option value="MEDIA">Media</option>
-                    <option value="BAJA">Baja</option>
+                    <option value="CRITICA">{t("sla_configuration.form.priority.critical")}</option>
+                    <option value="ALTA">{t("sla_configuration.form.priority.high")}</option>
+                    <option value="MEDIA">{t("sla_configuration.form.priority.medium")}</option>
+                    <option value="BAJA">{t("sla_configuration.form.priority.low")}</option>
                   </select>
                 </div>
               </div>
@@ -785,7 +785,7 @@ export default function SLAConfigurationFinal() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiempo de Respuesta (horas)
+                    {t("sla_configuration.form.response_time")}
                   </label>
                   <Input
                     type="number"
@@ -798,7 +798,7 @@ export default function SLAConfigurationFinal() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiempo de Resolución (horas)
+                    {t("sla_configuration.form.resolution_time")}
                   </label>
                   <Input
                     type="number"
@@ -811,7 +811,7 @@ export default function SLAConfigurationFinal() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tiempo de Alerta (horas)
+                    {t("sla_configuration.form.alert_time")}
                   </label>
                   <Input
                     type="number"
@@ -832,7 +832,7 @@ export default function SLAConfigurationFinal() {
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label htmlFor="activo-edit" className="text-sm font-medium text-gray-700">
-                  Configuración activa
+                  {t("sla_configuration.form.active_configuration")}
                 </label>
               </div>
             </div>
@@ -843,7 +843,7 @@ export default function SLAConfigurationFinal() {
                 onClick={() => setMostrarModalEditar(false)}
               >
                 <X className="w-4 h-4 mr-2" />
-                Cancelar
+                {t("sla_configuration.form.cancel")}
               </Button>
               <Button 
                 onClick={actualizarConfiguracionSLA}

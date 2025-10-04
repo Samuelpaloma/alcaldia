@@ -606,45 +606,46 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
   predefinedColors,
   predefinedIcons
 }) => {
+  const { t } = useI18n();
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="nombre">Nombre *</Label>
+          <Label htmlFor="nombre">{t("categories.form.name")} *</Label>
           <Input
             id="nombre"
             value={formData.nombre}
             onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-            placeholder="Nombre de la categoría"
+            placeholder={t("categories.form.name_placeholder")}
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="orden">Orden</Label>
+          <Label htmlFor="orden">{t("categories.form.order")}</Label>
           <Input
             id="orden"
             type="number"
             value={formData.orden}
             onChange={(e) => setFormData({ ...formData, orden: parseInt(e.target.value) || 1 })}
-            placeholder="Orden de visualización"
+            placeholder={t("categories.form.order_placeholder")}
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="descripcion">Descripción</Label>
+        <Label htmlFor="descripcion">{t("categories.form.description")}</Label>
         <Textarea
           id="descripcion"
           value={formData.descripcion}
           onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-          placeholder="Descripción de la categoría"
+          placeholder={t("categories.form.description_placeholder")}
           rows={3}
         />
       </div>
 
       <div className="space-y-2">
-        <Label>Color</Label>
+        <Label>{t("categories.form.color")}</Label>
         <div className="flex flex-wrap gap-2">
           {predefinedColors.map((color) => (
             <button
@@ -667,7 +668,7 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
       </div>
 
       <div className="space-y-2">
-        <Label>Icono</Label>
+        <Label>{t("categories.form.icon")}</Label>
         <div className="grid grid-cols-10 gap-2">
           {predefinedIcons.map((icon) => (
             <button
@@ -692,15 +693,15 @@ const CategoryForm: React.FC<CategoryFormProps> = ({
           onChange={(e) => setFormData({ ...formData, activa: e.target.checked })}
           className="rounded"
         />
-        <Label htmlFor="activa">Categoría activa</Label>
+        <Label htmlFor="activa">{t("categories.form.active_category")}</Label>
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
         <Button onClick={onCancel} variant="outline">
-          Cancelar
+          {t("categories.form.cancel")}
         </Button>
         <Button onClick={onSave} disabled={saving || !formData.nombre.trim()}>
-          {saving ? 'Guardando...' : 'Guardar'}
+          {saving ? t("common.saving") : t("categories.form.save")}
         </Button>
       </div>
     </div>

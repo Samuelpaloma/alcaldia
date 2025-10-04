@@ -323,15 +323,15 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
         <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
           {/* Indicador de orden */}
           <div className="text-xs text-center text-muted-foreground mb-2 pb-2 border-b border-gray-200">
-            📝 Mensajes más recientes abajo
+            📝 {t("client.tracking.recent_messages_below")}
           </div>
           {isLoading ? (
             <div className="text-center text-sm text-muted-foreground py-8">
-              Cargando mensajes...
+              {t("client.tracking.loading_messages")}
             </div>
           ) : messages.length === 0 ? (
             <div className="text-center text-sm text-muted-foreground py-8">
-              No hay mensajes aún. ¡Sé el primero en escribir!
+              {t("client.tracking.no_messages_yet")}
             </div>
           ) : (
             messages.map((message) => (
@@ -364,7 +364,7 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Escribe tu mensaje..."
+              placeholder={t("client.tracking.write_message_placeholder")}
               disabled={isSending}
               className="flex-1"
             />
@@ -373,13 +373,13 @@ export default function ChatSystem({ ticketId, onMessageSent }: ChatSystemProps)
               disabled={!newMessage.trim() || isSending}
               size="sm"
             >
-              {isSending ? 'Enviando...' : 'Enviar'}
+              {isSending ? t("client.tracking.sending") : t("client.tracking.send")}
             </Button>
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            Presiona Enter para enviar, Shift+Enter para nueva línea
+            {t("client.tracking.send_instructions")}
             <br />
-            💬 Los mensajes se actualizan automáticamente cada 15 segundos
+            💬 {t("client.tracking.auto_update")}
           </div>
         </div>
       </CardContent>

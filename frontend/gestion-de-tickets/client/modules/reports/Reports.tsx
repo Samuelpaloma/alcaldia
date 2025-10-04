@@ -23,6 +23,7 @@ import {
   Activity
 } from 'lucide-react';
 import { api, EstadisticasReportes, ReporteMensual } from '../../../shared/api';
+import { useI18n } from '../../i18n';
 
 interface ReportData {
   id: number;
@@ -34,6 +35,7 @@ interface ReportData {
 }
 
 const Reports: React.FC = () => {
+  const { t } = useI18n();
   const [reportes, setReportes] = useState<ReportData[]>([]);
   const [reportesMensuales, setReportesMensuales] = useState<ReporteMensual[]>([]);
   const [estadisticas, setEstadisticas] = useState<EstadisticasReportes | null>(null);
@@ -189,7 +191,7 @@ const Reports: React.FC = () => {
       <div className="reports">
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Cargando reportes...</p>
+          <p>{t("reports.loading")}</p>
         </div>
       </div>
     );
@@ -199,8 +201,8 @@ const Reports: React.FC = () => {
     <div className="reports">
       <div className="reports-header">
         <div className="header-content">
-          <h1 className="reports-title">Reportes y Análisis</h1>
-          <p className="reports-subtitle">Gestiona reportes detallados del sistema</p>
+          <h1 className="reports-title">{t("reports.title")}</h1>
+          <p className="reports-subtitle">{t("reports.subtitle")}</p>
         </div>
       </div>
 
@@ -222,10 +224,10 @@ const Reports: React.FC = () => {
                   <Activity className="w-6 h-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Tickets</p>
+                  <p className="text-sm font-medium text-gray-600">{t("reports.total_tickets")}</p>
                   <p className="text-2xl font-bold text-gray-900">{(estadisticas.totalTickets || 0).toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {estadisticas.ticketsResueltos || 0} resueltos • {estadisticas.ticketsPendientes || 0} pendientes
+                    {estadisticas.ticketsResueltos || 0} {t("reports.resolved")} • {estadisticas.ticketsPendientes || 0} {t("reports.pending")}
                   </p>
                 </div>
             </div>
@@ -239,10 +241,10 @@ const Reports: React.FC = () => {
                   <Clock className="w-6 h-6 text-green-600" />
               </div>
               <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Tiempo Promedio</p>
-                  <p className="text-2xl font-bold text-gray-900">{estadisticas.tiempoPromedioResolucion || 0} días</p>
+                  <p className="text-sm font-medium text-gray-600">{t("reports.average_time")}</p>
+                  <p className="text-2xl font-bold text-gray-900">{estadisticas.tiempoPromedioResolucion || 0} {t("reports.resolution_days")}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Resolución de tickets
+                    {t("reports.ticket_resolution")}
                   </p>
                 </div>
             </div>
@@ -256,10 +258,10 @@ const Reports: React.FC = () => {
                   <TrendingUp className="w-6 h-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Satisfacción</p>
+                  <p className="text-sm font-medium text-gray-600">{t("reports.satisfaction")}</p>
                   <p className="text-2xl font-bold text-gray-900">{estadisticas.satisfaccionPromedio || 0}/5</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Promedio de calificación
+                    {t("reports.average_rating")}
                   </p>
                 </div>
             </div>
@@ -273,12 +275,12 @@ const Reports: React.FC = () => {
         <CardContent className="p-6">
           <div className="filters-grid">
             <div className="filter-group">
-              <Label htmlFor="busqueda">Buscar</Label>
+              <Label htmlFor="busqueda">{t("reports.search")}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   id="busqueda"
-                  placeholder="Buscar reportes..."
+                  placeholder={t("reports.search_placeholder")}
                   value={filtros.busqueda}
                   onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
                   className="pl-10"
@@ -287,20 +289,20 @@ const Reports: React.FC = () => {
             </div>
             
             <div className="filter-group">
-              <Label htmlFor="tipo">Tipo</Label>
+              <Label htmlFor="tipo">{t("reports.type")}</Label>
               <Select
                 value={filtros.tipo}
                 onValueChange={(value) => setFiltros({ ...filtros, tipo: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Todos los tipos" />
+                  <SelectValue placeholder={t("reports.all_types")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="Mensual">Mensual</SelectItem>
-                  <SelectItem value="Satisfacción">Satisfacción</SelectItem>
-                  <SelectItem value="Rendimiento">Rendimiento</SelectItem>
-                  <SelectItem value="Categorías">Categorías</SelectItem>
+                  <SelectItem value="all">{t("reports.all_types")}</SelectItem>
+                  <SelectItem value="Mensual">{t("reports.monthly")}</SelectItem>
+                  <SelectItem value="Satisfacción">{t("reports.satisfaction_report")}</SelectItem>
+                  <SelectItem value="Rendimiento">{t("reports.performance_report")}</SelectItem>
+                  <SelectItem value="Categorías">{t("reports.categories_report")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -310,22 +312,20 @@ const Reports: React.FC = () => {
 
       {/* Reportes Mensuales */}
       <div className="reports-section">
-        <h2 className="section-title">Reportes Mensuales</h2>
+        <h2 className="section-title">{t("reports.monthly_reports")}</h2>
         <div className="reports-grid">
           {reportesMensualesFiltrados.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No hay reportes disponibles</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t("reports.no_reports_available")}</h3>
               <p className="text-gray-500 mb-4">
-                Los reportes se generan automáticamente cada 30 días. 
-                <br />
-                El primer reporte estará disponible después de un mes de actividad.
+                {t("reports.no_reports_description")}
               </p>
               <div className="text-sm text-gray-400">
-                <p>• Reporte Mensual: Día 1 de cada mes a las 09:00</p>
-                <p>• Reporte de Satisfacción: Día 5 de cada mes a las 10:00</p>
-                <p>• Reporte de Rendimiento: Día 10 de cada mes a las 11:00</p>
-                <p>• Reporte por Categoría: Día 15 de cada mes a las 12:00</p>
+                <p>• {t("reports.monthly_schedule")}</p>
+                <p>• {t("reports.satisfaction_schedule")}</p>
+                <p>• {t("reports.performance_schedule")}</p>
+                <p>• {t("reports.categories_schedule")}</p>
               </div>
             </div>
           ) : (
@@ -336,14 +336,14 @@ const Reports: React.FC = () => {
                   <div className="flex items-center space-x-3">
                     <Calendar className="w-5 h-5 text-blue-500" />
                     <div>
-                      <CardTitle className="text-lg">Reporte {reporte.mes} {reporte.año}</CardTitle>
+                      <CardTitle className="text-lg">{t("reports.report_title", { month: reporte.mes, year: reporte.año })}</CardTitle>
                       <p className="text-sm text-gray-600 mt-1">
-                        Análisis completo del mes de {reporte.mes}
+                        {t("reports.complete_analysis", { month: reporte.mes })}
                       </p>
                     </div>
                   </div>
                   <Badge className="bg-blue-100 text-blue-800">
-                    Mensual
+                    {t("reports.monthly")}
                   </Badge>
                 </div>
               </CardHeader>
@@ -354,29 +354,29 @@ const Reports: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-gray-600">Resueltos:</span>
+                      <span className="text-gray-600">{t("reports.resolved_tickets")}</span>
                       <span className="font-semibold">{reporte.ticketsResueltos || 0}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <XCircle className="w-4 h-4 text-red-500" />
-                      <span className="text-gray-600">Pendientes:</span>
+                      <span className="text-gray-600">{t("reports.pending_tickets")}</span>
                       <span className="font-semibold">{reporte.ticketsPendientes || 0}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-blue-500" />
-                      <span className="text-gray-600">Tiempo Prom:</span>
+                      <span className="text-gray-600">{t("reports.average_time_short")}</span>
                       <span className="font-semibold">{reporte.tiempoPromedioResolucion || 0}d</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <TrendingUp className="w-4 h-4 text-purple-500" />
-                      <span className="text-gray-600">Satisfacción:</span>
+                      <span className="text-gray-600">{t("reports.satisfaction_short")}</span>
                       <span className="font-semibold">{reporte.satisfaccionPromedio || 0}/5</span>
                     </div>
                   </div>
 
                   {/* Top categorías */}
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700">Top Categorías:</p>
+                    <p className="text-sm font-medium text-gray-700">{t("reports.top_categories")}</p>
                     <div className="space-y-1">
                       {(reporte.topCategorias || []).slice(0, 3).map((cat, index) => (
                         <div key={index} className="flex justify-between text-xs">
@@ -405,7 +405,7 @@ const Reports: React.FC = () => {
                       onClick={() => descargarReporteMensual(reporte)}
                     >
                       <Download className="w-4 h-4 mr-1" />
-                      Descargar
+                      {t("reports.download")}
                     </Button>
                   </div>
                 </div>
@@ -419,7 +419,7 @@ const Reports: React.FC = () => {
       {/* Otros Reportes */}
       {reportesFiltrados.length > 0 && (
         <div className="reports-section">
-          <h2 className="section-title">Otros Reportes</h2>
+          <h2 className="section-title">{t("reports.other_reports")}</h2>
       <div className="reports-grid">
         {reportesFiltrados.map(reporte => (
           <Card key={reporte.id} className="report-card">

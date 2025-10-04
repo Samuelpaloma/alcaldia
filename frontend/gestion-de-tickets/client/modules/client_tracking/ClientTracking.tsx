@@ -602,33 +602,33 @@ export default function ClientTracking() {
                     className="flex items-center gap-2"
                   >
                     <Paperclip className="w-4 h-4" />
-                    Evidencia
+                    {t("client.tracking.evidence")}
                   </Button>
                 </div>
             </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">ID:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.id")}</span>
                     <span className="text-sm font-mono">#{ticket.id}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Asunto:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.subject")}</span>
                     <span className="text-sm max-w-[200px] truncate" title={ticket.message}>
                       {ticket.message}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Prioridad:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.priority")}</span>
                     <Badge className={getPriorityColor(ticket.priority)}>
                       {ticket.priority.toUpperCase()}
                     </Badge>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Estado:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.status")}</span>
                     <Badge className={`${getStatusColor(trackingData?.estado || ticket.status)} flex items-center gap-1`}>
                       {getStatusIcon(trackingData?.estado || ticket.status)}
                       {(trackingData?.estado || ticket.status).toUpperCase()}
@@ -636,12 +636,12 @@ export default function ClientTracking() {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Técnico:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.technician")}</span>
                     <span className="text-sm">{trackingData?.tecnicoNombre || trackingData?.tecnicoEmail || 'Sin asignar'}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Ubicación:</span>
+                    <span className="text-sm font-medium text-muted-foreground">{t("client.tracking.location")}</span>
                     <span className="text-sm">{ticket.location}</span>
                 </div>
                 </div>
@@ -662,7 +662,7 @@ export default function ClientTracking() {
                   <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                     <div className="flex-1">
-                      <div className="text-sm font-medium text-blue-900">Ticket creado</div>
+                      <div className="text-sm font-medium text-blue-900">{t("client.tracking.ticket_created")}</div>
                       <div className="text-xs text-blue-600">{formatTimestamp(ticket.createdAt)}</div>
                     </div>
                   </div>
@@ -673,7 +673,7 @@ export default function ClientTracking() {
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-green-900">
-                        Asignado a {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
+                        {t("client.tracking.assigned_to")} {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
                       </div>
                       <div className="text-xs text-green-600">
                         {formatTimestamp(trackingData.fechaCreacion)}
@@ -711,7 +711,7 @@ export default function ClientTracking() {
                       className="flex items-center gap-2"
                     >
                       <ChevronDown className="w-4 h-4" />
-                      Ver más historial
+                      {t("client.tracking.view_more_history")}
                     </Button>
                   </div>
                 </div>
@@ -765,7 +765,7 @@ export default function ClientTracking() {
                 <Clock className="w-6 h-6 text-blue-600" />
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Historial Completo del Ticket
+                    {t("client.tracking.complete_history_title")}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Ticket #{ticket?.id} • {ticket?.message}
@@ -789,7 +789,7 @@ export default function ClientTracking() {
                 <div className="flex items-center gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-blue-900 dark:text-blue-100">Ticket creado</div>
+                    <div className="text-sm font-medium text-blue-900 dark:text-blue-100">{t("client.tracking.ticket_created")}</div>
                     <div className="text-xs text-blue-600 dark:text-blue-300">{formatTimestamp(ticket?.createdAt || '')}</div>
                   </div>
                 </div>
@@ -800,7 +800,7 @@ export default function ClientTracking() {
                     <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-green-900 dark:text-green-100">
-                        Asignado a {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
+                        {t("client.tracking.assigned_to")} {trackingData.tecnicoNombre || trackingData.tecnicoAsignado || trackingData.tecnicoEmail}
                       </div>
                       <div className="text-xs text-green-600 dark:text-green-300">
                         {formatTimestamp(trackingData.fechaCreacion)}
@@ -818,7 +818,7 @@ export default function ClientTracking() {
                       <div className="w-3 h-3 bg-orange-500 rounded-full flex-shrink-0"></div>
                       <div className="flex-1">
                         <div className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                          Escalado a {escalacion.tecnicoNombre}
+                          {t("client.tracking.escalated_to")} {escalacion.tecnicoNombre}
                         </div>
                         <div className="text-xs text-orange-600 dark:text-orange-300">
                           {formatTimestamp(escalacion.fechaAsignacion)}
@@ -833,7 +833,7 @@ export default function ClientTracking() {
                     <div className="w-3 h-3 bg-purple-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                        Reasignado a {asignacion.tecnicoNombre}
+                        {t("client.tracking.reassigned_to")} {asignacion.tecnicoNombre}
                       </div>
                       <div className="text-xs text-purple-600 dark:text-purple-300">{formatTimestamp(asignacion.fechaAsignacion)}</div>
                     </div>
@@ -854,7 +854,7 @@ export default function ClientTracking() {
                     <div className="w-3 h-3 bg-gray-500 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        Estado actual: {trackingData.estado}
+                        {t("client.tracking.current_status")}: {trackingData.estado}
                       </div>
                       <div className="text-xs text-gray-600 dark:text-gray-300">{formatTimestamp(trackingData.fechaActualizacion)}</div>
                     </div>
@@ -866,7 +866,7 @@ export default function ClientTracking() {
             {/* Footer del Modal */}
             <div className="flex items-center justify-between p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                Mostrando {1 + (trackingData?.tecnicoEmail ? 1 : 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'ESCALAMIENTO').length || 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'REASIGNAR').length || 0) + (trackingData?.fechaActualizacion && trackingData.fechaActualizacion !== trackingData.fechaCreacion ? 1 : 0)} eventos del historial
+                {t("client.tracking.showing_events")} {1 + (trackingData?.tecnicoEmail ? 1 : 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'ESCALAMIENTO').length || 0) + (trackingData?.historialAsignaciones?.filter(a => a.tipoOperacion === 'REASIGNAR').length || 0) + (trackingData?.fechaActualizacion && trackingData.fechaActualizacion !== trackingData.fechaCreacion ? 1 : 0)} {t("client.tracking.history_events")}
               </div>
               <div className="flex gap-2">
                 <Button 
@@ -874,7 +874,7 @@ export default function ClientTracking() {
                   size="sm" 
                   onClick={() => setShowHistoryModal(false)}
                 >
-                  Cerrar
+                  {t("client.tracking.close")}
                 </Button>
               </div>
             </div>
@@ -892,7 +892,7 @@ export default function ClientTracking() {
                 <Paperclip className="w-6 h-6 text-blue-600" />
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Archivos y Evidencias
+                    {t("client.evidence.title")}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Ticket #{ticket?.id} • {ticket?.message}
@@ -929,7 +929,7 @@ export default function ClientTracking() {
                 size="sm" 
                 onClick={() => setShowEvidenceModal(false)}
               >
-                Cerrar
+                {t("client.evidence.close")}
               </Button>
             </div>
           </div>

@@ -17,6 +17,7 @@ import {
   Play
 } from "lucide-react";
 import { api, ArchivoTicketInfo } from "@shared/api";
+import { useI18n } from "@/i18n";
 
 interface ArchivosConversacionProps {
   ticketId: number;
@@ -24,6 +25,7 @@ interface ArchivosConversacionProps {
 }
 
 export default function ArchivosConversacion({ ticketId, onArchivoSubido }: ArchivosConversacionProps) {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [archivos, setArchivos] = useState<ArchivoTicketInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -243,7 +245,7 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <Paperclip className="h-5 w-5" />
-          Archivos del Ticket
+          {t("client.evidence.ticket_files")}
         </h3>
         <Button 
           onClick={() => setShowUploadDialog(true)}
@@ -251,7 +253,7 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
           className="flex items-center gap-2"
         >
           <Upload className="h-4 w-4" />
-          Subir Archivo
+          {t("client.evidence.upload_file")}
         </Button>
       </div>
 
@@ -263,9 +265,9 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
       ) : archivos.length === 0 ? (
         <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
           <File className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500 mb-2">No hay archivos adjuntos</p>
+          <p className="text-gray-500 mb-2">{t("client.evidence.no_files")}</p>
           <p className="text-sm text-gray-400 mb-4">
-            Sube archivos para compartir información adicional sobre este ticket
+            {t("client.evidence.upload_description")}
           </p>
           <Button 
             onClick={() => setShowUploadDialog(true)}
@@ -273,14 +275,14 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
             className="flex items-center gap-2"
           >
             <Upload className="h-4 w-4" />
-            Subir Primer Archivo
+            {t("client.evidence.upload_first_file")}
           </Button>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <File className="h-4 w-4" />
-            <span>Archivos adjuntos ({archivos.length})</span>
+            <span>{t("client.evidence.attached_files")} ({archivos.length})</span>
           </div>
           
           <div className="space-y-2">
@@ -305,7 +307,7 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
                         size="sm"
                         variant="outline"
                         className="h-8 w-8 p-0"
-                        title="Previsualizar archivo"
+                        title={t("client.evidence.preview_file")}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -315,14 +317,14 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
                       size="sm"
                       variant="outline"
                       className="h-8 w-8 p-0"
-                      title="Descargar archivo"
+                      title={t("client.evidence.download_file")}
                     >
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
                 <div className="mt-2 text-xs text-gray-500">
-                  Subido por {archivo.subidoPor} • {formatDate(archivo.fechaSubida)}
+                  {t("client.evidence.uploaded_by")} {archivo.subidoPor} • {formatDate(archivo.fechaSubida)}
                 </div>
               </div>
             ))}
@@ -336,7 +338,7 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
           <Card className="w-full max-w-md mx-4">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
-                Subir Archivo
+                {t("client.evidence.upload_file")}
                 <Button
                   onClick={() => setShowUploadDialog(false)}
                   variant="ghost"
@@ -350,7 +352,7 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
             <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Seleccionar Archivo
+                  {t("client.evidence.select_file")}
                 </label>
                 <Input
                   type="file"
@@ -370,19 +372,19 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Comentario (opcional)
+                  {t("client.evidence.comment_optional")}
                 </label>
                 <Input
                   type="text"
                   value={comentario}
                   onChange={(e) => setComentario(e.target.value)}
-                  placeholder="Describe el archivo..."
+                  placeholder={t("client.evidence.describe_file")}
                 />
               </div>
 
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <AlertCircle className="h-4 w-4" />
-                <span>Máximo 10MB. Tipos permitidos: imágenes, documentos, videos, audio, comprimidos</span>
+                <span>{t("client.evidence.file_restrictions")}</span>
               </div>
 
               <div className="flex justify-end gap-2">
@@ -391,13 +393,13 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
                   variant="outline"
                   disabled={isUploading}
                 >
-                  Cancelar
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   onClick={handleUpload}
                   disabled={!selectedFile || isUploading}
                 >
-                  {isUploading ? 'Subiendo...' : 'Subir'}
+                  {isUploading ? t("client.evidence.uploading") : t("client.evidence.upload")}
                 </Button>
               </div>
             </CardContent>
@@ -430,7 +432,7 @@ export default function ArchivosConversacion({ ticketId, onArchivoSubido }: Arch
                   className="flex items-center gap-2"
                 >
                   <Download className="h-4 w-4" />
-                  Descargar
+                  {t("common.download")}
                 </Button>
                 <Button
                   onClick={closePreview}

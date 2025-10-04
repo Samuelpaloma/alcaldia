@@ -529,59 +529,59 @@ const AutomationRules: React.FC = () => {
         <div className="modal-overlay" onClick={() => setMostrarModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>{modoEdicion ? 'Editar Regla' : 'Nueva Regla'}</h2>
+              <h2>{modoEdicion ? t("automation_rules.edit_rule") : t("automation_rules.new_rule")}</h2>
               <button onClick={() => setMostrarModal(false)} className="modal-close">×</button>
             </div>
             
             <div className="modal-body">
               <div className="space-y-4">
                 <div className="form-group">
-                  <Label htmlFor="nombre">Nombre de la Regla</Label>
+                  <Label htmlFor="nombre">{t("automation_rules.form.rule_name")}</Label>
                   <Input
                     id="nombre"
                     value={formulario.nombre}
                     onChange={(e) => setFormulario({ ...formulario, nombre: e.target.value })}
-                    placeholder="Ej: Asignación automática por categoría"
+                    placeholder={t("automation_rules.form.rule_name_placeholder")}
                   />
                 </div>
                 
                 <div className="form-group">
-                  <Label htmlFor="descripcion">Descripción</Label>
+                  <Label htmlFor="descripcion">{t("automation_rules.form.description")}</Label>
                   <Textarea
                     id="descripcion"
                     value={formulario.descripcion}
                     onChange={(e) => setFormulario({ ...formulario, descripcion: e.target.value })}
-                    placeholder="Describe qué hace esta regla..."
+                    placeholder={t("automation_rules.form.description_placeholder")}
                     rows={3}
                   />
                 </div>
 
                 <div className="form-group">
-                  <Label htmlFor="condicion">Condición</Label>
+                  <Label htmlFor="condicion">{t("automation_rules.form.condition")}</Label>
                   <Textarea
                     id="condicion"
                     value={formulario.condicion}
                     onChange={(e) => setFormulario({ ...formulario, condicion: e.target.value })}
-                    placeholder="Ej: categoria == 'Redes' AND prioridad == 'high'"
+                    placeholder={t("automation_rules.form.condition_placeholder")}
                     rows={2}
                     className="font-mono"
                   />
                 </div>
 
                 <div className="form-group">
-                  <Label htmlFor="accion">Acción</Label>
+                  <Label htmlFor="accion">{t("automation_rules.form.action")}</Label>
                   <Textarea
                     id="accion"
                     value={formulario.accion}
                     onChange={(e) => setFormulario({ ...formulario, accion: e.target.value })}
-                    placeholder="Ej: Asignar a técnico especializado en redes"
+                    placeholder={t("automation_rules.form.action_placeholder")}
                     rows={2}
                   />
                 </div>
 
 
                 <div className="form-group">
-                  <Label htmlFor="prioridad">Prioridad</Label>
+                  <Label htmlFor="prioridad">{t("automation_rules.form.priority")}</Label>
                   <Select
                     value={formulario.prioridad?.toString() || '2'}
                     onValueChange={(value) => setFormulario({ ...formulario, prioridad: parseInt(value) })}
@@ -590,10 +590,10 @@ const AutomationRules: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">Baja</SelectItem>
-                      <SelectItem value="2">Media</SelectItem>
-                      <SelectItem value="3">Alta</SelectItem>
-                      <SelectItem value="4">Crítica</SelectItem>
+                      <SelectItem value="1">{t("automation_rules.form.priority.low")}</SelectItem>
+                      <SelectItem value="2">{t("automation_rules.form.priority.medium")}</SelectItem>
+                      <SelectItem value="3">{t("automation_rules.form.priority.high")}</SelectItem>
+                      <SelectItem value="4">{t("automation_rules.form.priority.critical")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -605,7 +605,7 @@ const AutomationRules: React.FC = () => {
                       checked={formulario.activa}
                       onCheckedChange={(checked) => setFormulario({ ...formulario, activa: checked })}
                     />
-                    <Label htmlFor="activa">Regla activa</Label>
+                    <Label htmlFor="activa">{t("automation_rules.form.active_rule")}</Label>
                   </div>
                 </div>
               </div>
@@ -613,10 +613,10 @@ const AutomationRules: React.FC = () => {
             
             <div className="modal-footer">
               <Button variant="outline" onClick={() => setMostrarModal(false)}>
-                Cancelar
+                {t("automation_rules.form.cancel")}
               </Button>
               <Button onClick={guardarRegla}>
-                {modoEdicion ? 'Actualizar Regla' : 'Crear Regla'}
+                {modoEdicion ? t("automation_rules.update_rule") : t("automation_rules.create_rule")}
               </Button>
             </div>
           </div>
