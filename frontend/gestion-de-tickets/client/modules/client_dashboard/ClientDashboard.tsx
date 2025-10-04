@@ -159,7 +159,7 @@ export default function ClientDashboard() {
       if (isRecent) {
         // Actividad de creación de ticket
         activities.push({
-          title: `Ticket creado: ${ticket.message?.substring(0, 30)}${ticket.message && ticket.message.length > 30 ? '...' : ''}`,
+          title: `${t("client.dashboard.ticket_created")} ${ticket.message?.substring(0, 30)}${ticket.message && ticket.message.length > 30 ? '...' : ''}`,
           time: formatTimeAgo(ticket.createdAt),
           color: '#3B82F6', // Azul
           ticketId: ticket.id
@@ -206,7 +206,7 @@ export default function ClientDashboard() {
         // Actividad de asignación de técnico
         if (ticket.technician && ticket.technician !== 'Sin asignar') {
           activities.push({
-            title: `Técnico asignado: ${ticket.technician}`,
+            title: `${t("client.dashboard.technician_assigned")} ${ticket.technician}`,
             time: formatTimeAgo(ticket.updatedAt || ticket.createdAt),
             color: '#8B5CF6', // Púrpura
             ticketId: ticket.id
@@ -245,15 +245,15 @@ export default function ClientDashboard() {
     <div className="section grid gap-6">
       {/* Header */}
       <div>
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Resumen de tus tickets y actividad</p>
+        <h1 className="page-title">{t("client.dashboard.title")}</h1>
+        <p className="page-subtitle">{t("client.dashboard.subtitle")}</p>
       </div>
 
       {/* Acciones rápidas */}
       <div className="flex justify-end">
         <Button onClick={() => navigate('/client/crear')} className="flex items-center gap-2">
           <TicketIcon className="w-4 h-4" />
-          Nuevo Ticket
+          {t("client.dashboard.new_ticket")}
         </Button>
       </div>
 
@@ -267,7 +267,7 @@ export default function ClientDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.recentActivity} {locale === 'en' ? 'created this week' : 'creados esta semana'}
+              {stats.recentActivity} {t("client.dashboard.created_this_week")}
             </p>
           </CardContent>
         </Card>
@@ -280,7 +280,7 @@ export default function ClientDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.inProgressTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.openTickets} {locale === 'en' ? 'pending' : 'pendientes'}
+              {stats.openTickets} {t("client.dashboard.pending")}
             </p>
           </CardContent>
         </Card>
@@ -293,7 +293,7 @@ export default function ClientDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.resolvedTickets}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.closedTickets} {locale === 'en' ? 'closed' : 'cerrados'}
+              {stats.closedTickets} {t("client.dashboard.closed")}
             </p>
           </CardContent>
         </Card>
@@ -306,7 +306,7 @@ export default function ClientDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.averageResolutionTime}</div>
             <p className="text-xs text-muted-foreground">
-              de resolución
+              {t("client.dashboard.resolution_time")}
             </p>
           </CardContent>
         </Card>
@@ -326,13 +326,13 @@ export default function ClientDashboard() {
               {recentTickets.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
                   <TicketIcon className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p>No tienes tickets aún</p>
+                  <p>{t("client.dashboard.no_tickets")}</p>
                   <Button 
                     onClick={() => navigate('/client/crear')} 
                     className="mt-2"
                     size="sm"
                   >
-                    Crear tu primer ticket
+                    {t("client.dashboard.create_first_ticket")}
                   </Button>
                 </div>
               ) : (
@@ -388,7 +388,7 @@ export default function ClientDashboard() {
               {generateRecentActivity().length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
                   <TrendingUp className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                  <p>No hay actividad reciente</p>
+                  <p>{t("client.dashboard.no_recent_activity")}</p>
                 </div>
               ) : (
                 generateRecentActivity().map((activity, index) => (
