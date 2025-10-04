@@ -554,35 +554,44 @@ export default function CreateTicket() {
             </label>
             <label className="grid gap-1">
               <span className="label text-sm">{t("client.form.attach")}</span>
-              <input 
-                type="file" 
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    // Validar tamaño (10MB)
-                    if (file.size > 10 * 1024 * 1024) {
-                      toast({
-                        title: "Error",
-                        description: "El archivo no puede ser mayor a 10MB",
-                        variant: "destructive",
-                      });
-                      return;
+              <div className="relative">
+                <input 
+                  type="file" 
+                  id="file-input"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Validar tamaño (10MB)
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast({
+                          title: "Error",
+                          description: "El archivo no puede ser mayor a 10MB",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      setSelectedFile(file);
+                      setFileName(file.name);
+                    } else {
+                      setSelectedFile(null);
+                      setFileName(undefined);
                     }
-                    setSelectedFile(file);
-                    setFileName(file.name);
-                  } else {
-                    setSelectedFile(null);
-                    setFileName(undefined);
-                  }
-                }}
-                accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.zip,.rar,.7z,.mp4,.avi,.mov,.wmv,.mp3,.wav,.ogg"
-                className="bg-background border-input text-foreground rounded-md px-3 py-2" 
-              />
-              {fileName && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <FileText className="h-4 w-4" />
-                  <span>{fileName}</span>
-                  <span className="text-green-600">✓</span>
+                  }}
+                  accept=".jpg,.jpeg,.png,.gif,.bmp,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.rtf,.zip,.rar,.7z,.mp4,.avi,.mov,.wmv,.mp3,.wav,.ogg"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                />
+                <div className="bg-background border-input text-foreground rounded-md px-3 py-2 border flex items-center justify-between">
+                  <span className="text-sm">
+                    {fileName ? fileName : t("client.select_file")}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {fileName ? "✓" : "📁"}
+                  </span>
+                </div>
+              </div>
+              {!fileName && (
+                <div className="text-xs text-muted-foreground">
+                  {t("client.no_files_selected")}
                 </div>
               )}
             </label>

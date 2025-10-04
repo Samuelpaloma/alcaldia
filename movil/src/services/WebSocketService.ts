@@ -77,8 +77,10 @@ class WebSocketService {
     try {
       console.log('🔌 [WebSocket] Conectando al servidor...');
       
-      // URL del WebSocket (ajustar según tu configuración)
-      const wsUrl = `ws://localhost:8080/ws?token=${encodeURIComponent(token)}&email=${encodeURIComponent(userEmail)}`;
+      // URL del WebSocket usando las utilidades de red
+      const { getNetworkConfig } = await import('../utils/networkUtils');
+      const networkConfig = getNetworkConfig();
+      const wsUrl = `${networkConfig.wsUrl}/ws?token=${encodeURIComponent(token)}&email=${encodeURIComponent(userEmail)}`;
       
       this.ws = new WebSocket(wsUrl);
 

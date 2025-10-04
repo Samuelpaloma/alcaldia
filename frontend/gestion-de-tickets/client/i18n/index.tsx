@@ -30,7 +30,10 @@ const loadTranslations = async (locale: Locale): Promise<Dict> => {
       'client.fill_form': translations['client.fill_form'],
       'client.chat.title': translations['client.chat.title'],
       'client.form.name': translations['client.form.name'],
-      'client.form.location': translations['client.form.location']
+      'client.form.location': translations['client.form.location'],
+      'client.chat.summary': translations['client.chat.summary'],
+      'client.chat.selected_category': translations['client.chat.selected_category'],
+      'client.chat.reset': translations['client.chat.reset']
     });
     return translations;
   } catch (error) {

@@ -29,6 +29,21 @@ class AuthService {
       return response;
     } catch (error) {
       clearTimeout(timeoutId);
+      
+      // Manejo específico de AbortError
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Tiempo de espera agotado. Verifica tu conexión a internet y que el servidor esté funcionando.');
+      }
+      
+      // Manejo de errores de red
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('Failed to fetch') || 
+          errorMessage.includes('Network request failed') ||
+          errorMessage.includes('Network Error') ||
+          errorMessage.includes('fetch failed')) {
+        throw new Error('Error de conexión. Verifica que el servidor esté funcionando y tu conexión a internet.');
+      }
+      
       throw error;
     }
   }

@@ -107,8 +107,9 @@ export default function App() {
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (token) {
-        // Verificar si el token sigue válido
-        const response = await fetch('http://localhost:8080/api/auth/verify', {
+        // Verificar si el token sigue válido usando la configuración de API
+        const { API_CONFIG } = await import('./src/config/api');
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

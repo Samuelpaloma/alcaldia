@@ -1,15 +1,11 @@
-import { Platform } from 'react-native';
+import { getNetworkConfig, logNetworkInfo } from '../utils/networkUtils';
 
-// Configuración de la API
-// Detectar si estamos en emulador Android o dispositivo físico
-const isAndroidEmulator = __DEV__ && Platform.OS === 'android';
-const BASE_URL = isAndroidEmulator 
-  ? 'http://10.0.2.2:8080'  // Para emulador Android
-  : 'http://10.3.234.28:8080'; // Para dispositivo físico
+// Configuración de la API usando las utilidades de red
+const networkConfig = getNetworkConfig();
+const BASE_URL = networkConfig.baseUrl;
 
-console.log('🔍 [API CONFIG] Platform:', Platform.OS);
-console.log('🔍 [API CONFIG] Is Android Emulator:', isAndroidEmulator);
-console.log('🔍 [API CONFIG] Base URL:', BASE_URL);
+// Log de información de red para debugging
+logNetworkInfo();
 
 export const API_CONFIG = {
   BASE_URL: BASE_URL,
@@ -56,7 +52,7 @@ export const API_CONFIG = {
       THEME_PREFERENCES: '/api/usuario/preferencias-tema'
     }
   },
-  TIMEOUT: 10000, // 10 segundos
+  TIMEOUT: networkConfig.timeout, // Usar timeout de la configuración de red
   HEADERS: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -189,6 +185,21 @@ const makeRequest = async (url: string, options: RequestInit = {}): Promise<Resp
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
+    
+    // Manejo específico de AbortError
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Tiempo de espera agotado. Verifica tu conexión a internet y que el servidor esté funcionando.');
+    }
+    
+    // Manejo de errores de red
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Failed to fetch') || 
+        errorMessage.includes('Network request failed') ||
+        errorMessage.includes('Network Error') ||
+        errorMessage.includes('fetch failed')) {
+      throw new Error('Error de conexión. Verifica que el servidor esté funcionando y tu conexión a internet.');
+    }
+    
     throw error;
   }
 };
