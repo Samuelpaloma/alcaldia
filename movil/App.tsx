@@ -19,6 +19,8 @@ import ChatScreen from './src/screens/ChatScreen';
 import TicketTrackingScreen from './src/screens/TicketTrackingScreen';
 import ConfiguracionesScreen from './src/screens/ConfiguracionesScreen';
 import HistorialPorAreaScreen from './src/screens/HistorialPorAreaScreen';
+import MisTicketsScreen from './src/screens/MisTicketsScreen';
+import MisEvidenciasScreen from './src/screens/MisEvidenciasScreen';
 import { ThemeProvider } from './src/components/ThemeProvider';
 
 type RootStackParamList = {
@@ -34,6 +36,8 @@ type RootStackParamList = {
   ResetPasswordScreen: { email: string };
   Chat: { ticketId: number };
   TicketTracking: { ticketId: number };
+  MisTickets: undefined;
+  MisEvidencias: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -216,6 +220,16 @@ export default function App() {
           name="TicketTracking"
           component={TicketTrackingScreen}
           options={{ headerShown: false }}
+        />
+        <Stack.Screen 
+          name="MisTickets"
+          component={MisTicketsScreen}
+          options={{ title: 'Mis Tickets' }}
+        />
+        <Stack.Screen 
+          name="MisEvidencias"
+          component={MisEvidenciasScreen}
+          options={{ title: 'Mis Evidencias' }}
         />
         </Stack.Navigator>
       </NavigationContainer>

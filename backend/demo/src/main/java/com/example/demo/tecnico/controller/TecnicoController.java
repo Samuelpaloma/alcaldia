@@ -49,25 +49,96 @@ public class TecnicoController {
     // @PreAuthorize("hasRole('TECNICO')") // Temporalmente deshabilitado
     public ResponseEntity<?> obtenerTicketsAsignados(Authentication authentication) {
         try {
-            log.info("Obteniendo tickets asignados para técnico");
+            log.info("🔍 [CONTROLLER] Obteniendo tickets asignados para técnico");
             
             String emailTecnico;
             if (authentication != null && authentication.getPrincipal() instanceof CustomUserDetails) {
                 CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
                 emailTecnico = userDetails.getEmail();
+                log.info("🔍 [CONTROLLER] Usando email autenticado: {}", emailTecnico);
             } else {
                 // Usar email por defecto para testing
                 emailTecnico = "admin@test.com";
-                log.info("No hay autenticación, usando email por defecto: {}", emailTecnico);
+                log.info("🔍 [CONTROLLER] No hay autenticación, usando email por defecto: {}", emailTecnico);
             }
+            
+            log.info("🔍 [CONTROLLER] Llamando a tecnicoService.obtenerTicketsAsignados con email: {}", emailTecnico);
+            List<TicketTecnicoResponseDTO> tickets = tecnicoService.obtenerTicketsAsignados(emailTecnico);
+            
+            log.info("🔍 [CONTROLLER] Tickets obtenidos: {} tickets", tickets.size());
+            return ResponseEntity.ok(ApiResponse.success("Tickets obtenidos exitosamente", tickets));
+        } catch (Exception e) {
+            log.error("❌ [CONTROLLER] Error obteniendo tickets asignados", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al obtener tickets: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Endpoint de prueba para debug
+     * GET /api/tecnico/debug/tickets
+     */
+    @GetMapping("/debug/tickets")
+    public ResponseEntity<?> debugTickets(@RequestParam(required = false) String email) {
+        try {
+            log.info("🔍 [DEBUG] Endpoint de debug - email: {}", email);
+            
+            String emailTecnico = email != null ? email : "admin@test.com";
+            log.info("🔍 [DEBUG] Usando email: {}", emailTecnico);
             
             List<TicketTecnicoResponseDTO> tickets = tecnicoService.obtenerTicketsAsignados(emailTecnico);
             
-            return ResponseEntity.ok(ApiResponse.success("Tickets obtenidos exitosamente", tickets));
+            log.info("🔍 [DEBUG] Tickets obtenidos: {} tickets", tickets.size());
+            return ResponseEntity.ok(ApiResponse.success("Debug - Tickets obtenidos exitosamente", tickets));
         } catch (Exception e) {
-            log.error("Error obteniendo tickets asignados", e);
+            log.error("❌ [DEBUG] Error en debug", e);
             return ResponseEntity.badRequest().body(
-                ApiResponse.error("Error al obtener tickets: " + e.getMessage())
+                ApiResponse.error("Error en debug: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Endpoint de debug para probar ticket específico
+     * GET /api/tecnico/debug/tickets/{ticketId}
+     */
+    @GetMapping("/debug/tickets/{ticketId}")
+    public ResponseEntity<?> debugTicket(@PathVariable Long ticketId, @RequestParam(required = false) String email) {
+        try {
+            log.info("🔍 [DEBUG TICKET] Probando ticket {} con email: {}", ticketId, email);
+            
+            String emailTecnico = email != null ? email : "roberrodrigues300@gmail.com";
+            log.info("🔍 [DEBUG TICKET] Usando email: {}", emailTecnico);
+            
+            TicketTecnicoResponseDTO ticket = tecnicoService.obtenerTicketDetallado(ticketId, emailTecnico);
+            
+            log.info("🔍 [DEBUG TICKET] Ticket obtenido exitosamente: {}", ticketId);
+            return ResponseEntity.ok(ApiResponse.success("Debug - Ticket obtenido exitosamente", ticket));
+        } catch (Exception e) {
+            log.error("❌ [DEBUG TICKET] Error obteniendo ticket {}: {}", ticketId, e.getMessage());
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error obteniendo ticket: " + e.getMessage())
+            );
+        }
+    }
+    
+    @GetMapping("/debug/historial")
+    public ResponseEntity<?> debugHistorial(@RequestParam(required = false) String email) {
+        try {
+            log.info("🔍 [DEBUG HISTORIAL] Endpoint de debug historial - email: {}", email);
+            
+            String emailTecnico = email != null ? email : "roberrodrigues300@gmail.com";
+            log.info("🔍 [DEBUG HISTORIAL] Usando email: {}", emailTecnico);
+            
+            List<TicketTecnicoResponseDTO> tickets = tecnicoService.obtenerHistorialTickets(emailTecnico);
+            
+            log.info("🔍 [DEBUG HISTORIAL] Tickets obtenidos: {} tickets", tickets.size());
+            return ResponseEntity.ok(ApiResponse.success("Debug - Historial obtenido exitosamente", tickets));
+        } catch (Exception e) {
+            log.error("❌ [DEBUG HISTORIAL] Error obteniendo historial: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error obteniendo historial: " + e.getMessage())
             );
         }
     }

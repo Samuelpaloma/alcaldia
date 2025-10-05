@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configuración de la API
 // Detectar si estamos en emulador Android o dispositivo físico
-const isAndroidEmulator = __DEV__ && Platform.OS === 'android' && Platform.constants?.systemName === 'Android';
+const isAndroidEmulator = __DEV__ && Platform.OS === 'android';
 const isWeb = Platform.OS === 'web';
 
 // Configuración simple y confiable
@@ -47,6 +47,7 @@ export const API_CONFIG = {
     TECNICO: {
       DASHBOARD: '/api/tecnico/dashboard',
       TICKETS: '/api/tecnico/tickets',
+      TICKETS_HISTORIAL: '/api/tecnico/historial',
       TICKET_DETAIL: '/api/tecnico/tickets',
       ACCEPT_TICKET: '/api/tecnico/tickets',
       FINALIZE_TICKET: '/api/tecnico/tickets',
@@ -148,6 +149,10 @@ export interface Ticket {
   fechaCreacion: string;
   fechaActualizacion: string;
   consulta?: string; // Para compatibilidad con el código existente
+  categoria?: string;
+  ubicacion?: string;
+  creadorNombre?: string;
+  creadorEmail?: string;
   usuario: {
     nombre: string;
     apellido: string;
@@ -157,6 +162,13 @@ export interface Ticket {
     nombre: string;
     apellido: string;
   };
+  // Campos del backend para información del técnico
+  tecnicoId?: number;
+  tecnicoNombre?: string;
+  tecnicoEmail?: string;
+  puedeCambiarEstado?: boolean;
+  esTecnicoEscalado?: boolean;
+  rolTecnico?: string; // "ASIGNADO", "ESCALADO", "ORIGINAL"
 }
 
 export interface Comment {
@@ -510,7 +522,7 @@ export const tecnicoAPI = {
     return data;
   },
 
-  // Obtener tickets
+  // Obtener tickets (asignados activos)
   async getTickets(): Promise<{message: string, success: boolean, data: Ticket[]}> {
     const headers = await getAuthHeaders();
     const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.TICKETS}`, {
@@ -522,6 +534,23 @@ export const tecnicoAPI = {
     
     if (!response.ok) {
       throw new Error(data.message || 'Error obteniendo tickets');
+    }
+
+    return data;
+  },
+
+  // Obtener historial completo de tickets (activos + inactivos)
+  async getTicketsHistorial(): Promise<Ticket[]> {
+    const headers = await getAuthHeaders();
+    const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.TICKETS_HISTORIAL}`, {
+      method: 'GET',
+      headers
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error obteniendo historial de tickets');
     }
 
     return data;
@@ -700,7 +729,8 @@ export const evidenciasAPI = {
       throw new Error(data.message || 'Error obteniendo evidencias');
     }
 
-    return data;
+    // El endpoint devuelve {data: [...]}, extraer el array
+    return data.data || data;
   },
 
   // Descargar evidencia

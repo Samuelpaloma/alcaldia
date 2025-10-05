@@ -33,12 +33,18 @@ class EvidenceService {
     return API_CONFIG.BASE_URL;
   }
 
-  private async getAuthHeaders() {
+  private async getAuthHeaders(includeContentType: boolean = false) {
     const token = await AsyncStorage.getItem('authToken');
-    return {
+    const headers: Record<string, string> = {
       'Authorization': `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data',
     };
+    
+    // Solo incluir Content-Type para JSON, no para FormData
+    if (includeContentType) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
+    return headers;
   }
 
   /**
@@ -57,7 +63,7 @@ class EvidenceService {
         const healthResponse = await fetch(`${baseUrl.replace('/api', '')}/actuator/health`);
         console.log('🧪 Health check status:', healthResponse.status);
       } catch (healthError) {
-        console.log('🧪 Health check falló:', healthError.message);
+        console.log('🧪 Health check falló:', (healthError as Error).message);
       }
       
       const token = await AsyncStorage.getItem('authToken');
@@ -133,45 +139,64 @@ class EvidenceService {
       console.log(`📎 Subiendo ${tipoTexto} para ticket:`, evidenceData.ticketId);
       
       const token = await AsyncStorage.getItem('authToken');
+      console.log('📎 Token presente:', token ? 'Sí' : 'No');
+      console.log('📎 Token length:', token ? token.length : 0);
+      
+      if (!token) {
+        throw new Error('Token de autenticación no encontrado');
+      }
       
       // Usar endpoint específico según el tipo de evidencia
       const baseUrl = this.getBaseUrl();
       const endpoint = isFinalEvidence 
-        ? `${baseUrl}/evidencias/subir`        // Tabla evidencias - evidencias finales (FormData)
-        : `${baseUrl}/archivos-ticket/subir`;  // Tabla archivos_ticket - archivos del chat (JSON + Base64)
+        ? `${baseUrl}/api/evidencias/subir`        // Tabla evidencias - evidencias finales (FormData)
+        : `${baseUrl}/api/archivos-ticket/subir`;  // Tabla archivos_ticket - archivos del chat (JSON + Base64)
 
       console.log('📎 Endpoint:', endpoint);
+      console.log('📎 Base URL:', baseUrl);
 
       let response: Response;
 
       if (isFinalEvidence) {
-        // Evidencias finales: usar FormData
+        // Evidencias finales: usar FormData con archivo real
         const formData = new FormData();
         formData.append('ticketId', evidenceData.ticketId.toString());
         formData.append('descripcion', evidenceData.descripcion);
         
-        // Para React Native, usar el formato correcto
-        formData.append('archivo', {
-          uri: evidenceData.archivo.uri,
-          type: evidenceData.archivo.type,
-          name: evidenceData.archivo.name,
-        } as any);
+        // Usar el archivo real seleccionado
+        let fileBlob: Blob;
+        try {
+          if (evidenceData.archivo.uri.startsWith('blob:') || evidenceData.archivo.uri.startsWith('data:')) {
+            // Si es una URI blob o data, convertir a Blob
+            const response = await fetch(evidenceData.archivo.uri);
+            if (!response.ok) {
+              throw new Error(`Error obteniendo archivo: ${response.statusText}`);
+            }
+            fileBlob = await response.blob();
+          } else {
+            // Si es una URI de archivo local (React Native), crear un Blob
+            // En React Native, esto debería manejarse de manera diferente
+            throw new Error('URI de archivo no soportada para web. Use blob: o data: URIs.');
+          }
+        } catch (error) {
+          console.error('Error procesando archivo:', error);
+          throw new Error(`Error procesando archivo: ${(error as Error).message}`);
+        }
+        
+        formData.append('archivo', fileBlob, evidenceData.archivo.name);
 
         console.log('📎 Enviando FormData para evidencia final');
         console.log('📎 FormData ticketId:', evidenceData.ticketId);
         console.log('📎 FormData descripcion:', evidenceData.descripcion);
         console.log('📎 FormData archivo:', {
-          uri: evidenceData.archivo.uri,
-          type: evidenceData.archivo.type,
           name: evidenceData.archivo.name,
+          type: evidenceData.archivo.type,
+          size: fileBlob.size
         });
 
         response = await fetch(endpoint, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            // No especificar Content-Type para FormData - el navegador lo establece automáticamente
-          },
+          headers: await this.getAuthHeaders(false), // No incluir Content-Type para FormData
           body: formData,
         });
       } else {
@@ -179,13 +204,21 @@ class EvidenceService {
         // Convertir archivo a Base64
         let contenidoBase64 = '';
         
-        if (evidenceData.archivo.uri.startsWith('blob:')) {
-          const blobResponse = await fetch(evidenceData.archivo.uri);
-          const blob = await blobResponse.blob();
-          contenidoBase64 = await this.blobToBase64(blob);
-        } else {
-          // Móvil nativo
-          contenidoBase64 = evidenceData.archivo.uri;
+        try {
+          if (evidenceData.archivo.uri.startsWith('blob:') || evidenceData.archivo.uri.startsWith('data:')) {
+            const blobResponse = await fetch(evidenceData.archivo.uri);
+            if (!blobResponse.ok) {
+              throw new Error(`Error obteniendo archivo: ${blobResponse.statusText}`);
+            }
+            const blob = await blobResponse.blob();
+            contenidoBase64 = await this.blobToBase64(blob);
+          } else {
+            // Móvil nativo - asumir que ya es Base64
+            contenidoBase64 = evidenceData.archivo.uri;
+          }
+        } catch (error) {
+          console.error('Error convirtiendo archivo a Base64:', error);
+          throw new Error(`Error convirtiendo archivo a Base64: ${(error as Error).message}`);
         }
 
         // Extraer extensión del nombre del archivo
@@ -195,7 +228,7 @@ class EvidenceService {
           ticketId: evidenceData.ticketId,
           nombreArchivo: evidenceData.archivo.name,
           tipoMime: evidenceData.archivo.type,
-          tamañoArchivo: evidenceData.archivo.size || 0,
+          tamañoArchivo: (evidenceData.archivo as any).size || 0,
           extension: extension,
           contenidoArchivo: contenidoBase64,
           comentario: evidenceData.descripcion
@@ -213,21 +246,34 @@ class EvidenceService {
 
         response = await fetch(endpoint, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+          headers: await this.getAuthHeaders(true), // Incluir Content-Type para JSON
           body: JSON.stringify(requestBody),
         });
       }
 
       console.log('📎 Response status:', response.status);
       console.log('📎 Response ok:', response.ok);
+      console.log('📎 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Error response:', errorText);
-        throw new Error(`Error ${response.status}: ${response.statusText} - ${errorText}`);
+        console.error('❌ Error status:', response.status);
+        console.error('❌ Error statusText:', response.statusText);
+        
+        // Intentar parsear el error como JSON si es posible
+        let errorMessage = `Error ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // Si no se puede parsear como JSON, usar el texto tal como está
+          if (errorText) {
+            errorMessage += ` - ${errorText}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -261,14 +307,11 @@ class EvidenceService {
    */
   async obtenerEvidencias(ticketId: number): Promise<EvidenceResponse[]> {
     try {
-      const headers = await this.getAuthHeaders();
+      const headers = await this.getAuthHeaders(true);
       const baseUrl = this.getBaseUrl();
-      const response = await fetch(`${baseUrl}/evidencias/movil/ticket/${ticketId}`, {
+      const response = await fetch(`${baseUrl}${API_CONFIG.ENDPOINTS.EVIDENCIAS.GET_EVIDENCES}/${ticketId}`, {
         method: 'GET',
-        headers: {
-          'Authorization': headers.Authorization,
-          'Content-Type': 'application/json',
-        },
+        headers,
       });
 
       if (!response.ok) {

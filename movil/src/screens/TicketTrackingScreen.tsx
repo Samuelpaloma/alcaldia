@@ -37,6 +37,7 @@ interface TicketInfo {
   tecnicoAsignado?: string;
   tecnicoNombre?: string;
   tecnicoEmail?: string;
+  tecnicoEscalado?: string;
   fechaCreacion: string;
   fechaActualizacion: string;
   creadorEmail?: string;
@@ -350,9 +351,10 @@ export default function TicketTrackingScreen() {
         categoria: data.categoria || 'Sin categoría',
         estado: data.estado || 'PENDIENTE',
         prioridad: data.prioridad || 'MEDIA',
-        tecnicoAsignado: data.tecnico?.nombre || 'Sin asignar',
-        tecnicoNombre: data.tecnico?.nombre,
-        creadorNombre: data.usuario?.nombre,
+        tecnicoAsignado: data.tecnicoNombre || 'Sin asignar',
+        tecnicoNombre: data.tecnicoNombre,
+        tecnicoEscalado: data.tecnicoEscalado?.nombre || null,
+        creadorNombre: data.creadorNombre,
         fechaCreacion: data.fechaCreacion || new Date().toISOString(),
         fechaActualizacion: data.fechaActualizacion || new Date().toISOString(),
         ubicacion: data.ubicacion || 'Sin ubicación',
@@ -360,10 +362,10 @@ export default function TicketTrackingScreen() {
         evidencias: [],
         historial: [],
         historialEstados: [],
-        // Permisos del técnico actual
-        puedeCambiarEstado: true,
-        esTecnicoEscalado: false,
-        rolTecnico: 'ASIGNADO'
+        // Usar los campos del backend directamente
+        puedeCambiarEstado: data.puedeCambiarEstado ?? true,
+        esTecnicoEscalado: data.esTecnicoEscalado ?? false,
+        rolTecnico: data.rolTecnico || 'ASIGNADO'
       };
       
       setTicketInfo(ticketInfo);
@@ -629,20 +631,26 @@ export default function TicketTrackingScreen() {
       let evidenciasDelChat: any[] = [];
       try {
         console.log('💬 [EVIDENCIAS CHAT] Cargando archivos del chat...');
-        evidenciasDelChat = await evidenciasAPI.getChatFiles(ticketId);
+        const chatResponse = await evidenciasAPI.getChatFiles(ticketId);
+        evidenciasDelChat = Array.isArray(chatResponse) ? chatResponse : [];
         console.log('✅ [EVIDENCIAS CHAT] Archivos de chat encontrados:', evidenciasDelChat.length);
+        console.log('💬 [EVIDENCIAS CHAT] Datos:', evidenciasDelChat);
       } catch (err) {
-        console.log('⚠️ [EVIDENCIAS CHAT] No se pudieron cargar archivos del chat:', err);
+        console.error('⚠️ [EVIDENCIAS CHAT] Error cargando archivos del chat:', err);
+        evidenciasDelChat = [];
       }
       
       // Cargar evidencias finales (tabla evidencias)
       let evidenciasFinalesData: any[] = [];
       try {
         console.log('📋 [EVIDENCIAS FINALES] Cargando evidencias finales...');
-        evidenciasFinalesData = await evidenciasAPI.getEvidences(ticketId);
+        const finalesResponse = await evidenciasAPI.getEvidences(ticketId);
+        evidenciasFinalesData = Array.isArray(finalesResponse) ? finalesResponse : [];
         console.log('✅ [EVIDENCIAS FINALES] Evidencias finales encontradas:', evidenciasFinalesData.length);
+        console.log('📋 [EVIDENCIAS FINALES] Datos:', evidenciasFinalesData);
       } catch (err) {
-        console.log('⚠️ [EVIDENCIAS FINALES] No se pudieron cargar evidencias finales:', err);
+        console.error('⚠️ [EVIDENCIAS FINALES] Error cargando evidencias finales:', err);
+        evidenciasFinalesData = [];
       }
       
       // Actualizar estados
@@ -656,6 +664,7 @@ export default function TicketTrackingScreen() {
       console.log('📎 [EVIDENCIAS] Total evidencias de chat:', evidenciasDelChat.length);
       console.log('📎 [EVIDENCIAS] Total evidencias finales:', evidenciasFinalesData.length);
       console.log('📎 [EVIDENCIAS] Total combinadas:', todasLasEvidencias.length);
+      console.log('📎 [EVIDENCIAS] Estado actualizado correctamente');
       
     } catch (error) {
       console.error('❌ [EVIDENCIAS] Error general cargando evidencias:', error);
@@ -785,6 +794,25 @@ export default function TicketTrackingScreen() {
       console.log('🔄 [CAMBIO ESTADO] Estado anterior:', ticketInfo?.estado);
       console.log('🔄 [CAMBIO ESTADO] Estado nuevo:', nuevoEstado);
       
+      // Validar que no se pueda resolver sin evidencias
+      if (nuevoEstado === 'RESUELTO') {
+        // Contar evidencias finales (las que cuentan para resolver)
+        const evidenciasFinalesCount = evidenciasFinales?.length || 0;
+        console.log('🔍 [VALIDACIÓN] Evidencias finales encontradas:', evidenciasFinalesCount);
+        console.log('🔍 [VALIDACIÓN] Estado evidenciasFinales:', evidenciasFinales);
+        
+        if (evidenciasFinalesCount === 0) {
+          Alert.alert(
+            '⚠️ Evidencias Requeridas',
+            'No puedes resolver este ticket sin subir al menos una evidencia final.\n\nPor favor, sube las evidencias necesarias antes de marcar como resuelto.',
+            [{ text: 'Entendido', style: 'default' }]
+          );
+          return;
+        }
+        
+        console.log('✅ [VALIDACIÓN] Evidencias suficientes para resolver');
+      }
+      
       await tecnicoAPI.changeTicketState(ticketId, nuevoEstado, `Estado cambiado a ${nuevoEstado}`);
       
       console.log('✅ [CAMBIO ESTADO] Estado cambiado exitosamente');
@@ -865,42 +893,27 @@ export default function TicketTrackingScreen() {
               </View>
             </View>
             
-            <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>{t('ticket_detail.assigned_technician')}:</Text>
-              <Text style={styles.infoValue}>{ticketInfo.tecnicoAsignado || 'Sin asignar'}</Text>
-            </View>
-            
-            {/* Mostrar técnico escalado si hay escalación */}
-            {ticketInfo.estado === 'ESCALADO' && ticketInfo.rolTecnico === 'ESCALADO' && (
-              <View style={[styles.infoCard, styles.escaladoCard]}>
-                <Text style={styles.infoLabel}>{t('ticket_detail.escalated_technician')}:</Text>
-                <Text style={[styles.infoValue, styles.escaladoText]}>
-                  {ticketInfo.tecnicoAsignado || 'Técnico actual'}
-                </Text>
-              </View>
-            )}
-            
-            {/* Indicador de rol del técnico actual */}
-            {ticketInfo.rolTecnico && (
-              <View style={[
-                styles.infoCard, 
-                ticketInfo.rolTecnico === 'ESCALADO' ? styles.escaladoCard : 
-                ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalCard : 
-                styles.asignadoCard
+            {/* Información del técnico */}
+            <View style={[
+              styles.infoCard, 
+              ticketInfo.rolTecnico === 'ESCALADO' ? styles.escaladoCard : 
+              ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalCard : 
+              styles.asignadoCard
+            ]}>
+              <Text style={styles.infoLabel}>
+                {ticketInfo.rolTecnico === 'ESCALADO' ? 'Técnico Escalado:' :
+                 ticketInfo.rolTecnico === 'ORIGINAL' ? 'Técnico Original:' :
+                 'Técnico Asignado:'}
+              </Text>
+              <Text style={[
+                styles.infoValue,
+                ticketInfo.rolTecnico === 'ESCALADO' ? styles.escaladoText :
+                ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalText :
+                styles.asignadoText
               ]}>
-                <Text style={styles.infoLabel}>{t('ticket_detail.your_role')}:</Text>
-                <Text style={[
-                  styles.infoValue,
-                  ticketInfo.rolTecnico === 'ESCALADO' ? styles.escaladoText :
-                  ticketInfo.rolTecnico === 'ORIGINAL' ? styles.originalText :
-                  styles.asignadoText
-                ]}>
-                  {ticketInfo.rolTecnico === 'ESCALADO' ? `🔧 ${t('ticket_detail.escalated_technician_role')} (${t('ticket_detail.can_change_status')})` :
-                   ticketInfo.rolTecnico === 'ORIGINAL' ? `👤 ${t('ticket_detail.original_technician_role')} (${t('ticket_detail.read_only')})` :
-                   `🔧 ${t('ticket_detail.assigned_technician_role')} (${t('ticket_detail.can_change_status')})`}
-                </Text>
-              </View>
-            )}
+                {ticketInfo.tecnicoNombre || 'Sin asignar'}
+              </Text>
+            </View>
             
             <View style={styles.infoCard}>
               <Text style={styles.infoLabel}>{t('ticket_detail.location')}:</Text>
@@ -1711,8 +1724,10 @@ export default function TicketTrackingScreen() {
               </View>
               
               <View style={styles.resolvedInfoRow}>
-                <Text style={styles.resolvedInfoLabel}>Técnico:</Text>
-                <Text style={styles.resolvedInfoValue}>{ticketInfo.tecnicoAsignado || 'Sin asignar'}</Text>
+                <Text style={styles.resolvedInfoLabel}>
+                  {ticketInfo.rolTecnico === 'ESCALADO' ? 'Técnico Escalado:' : 'Técnico:'}
+                </Text>
+                <Text style={styles.resolvedInfoValue}>{ticketInfo.tecnicoNombre || 'Sin asignar'}</Text>
               </View>
               
               <View style={styles.resolvedInfoRow}>

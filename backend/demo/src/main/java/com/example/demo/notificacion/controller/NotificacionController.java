@@ -4,20 +4,18 @@ import com.example.demo.notificacion.dto.request.CreateNotificacionRequest;
 import com.example.demo.notificacion.dto.PreferenciasNotificacionDTO;
 import com.example.demo.notificacion.model.Notificacion;
 import com.example.demo.notificacion.service.NotificacionService;
+import com.example.demo.notificacion.repository.NotificationRepository;
+import com.example.demo.notificacion.model.Notification;
 import com.example.demo.security.CustomUserDetails;
 import com.example.demo.shared.dto.ApiResponse;
-import com.example.demo.shared.dto.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/notificaciones")
@@ -27,6 +25,7 @@ import java.util.List;
 public class NotificacionController {
     
     private final NotificacionService notificacionService;
+    private final NotificationRepository notificationRepository;
     
     
     
@@ -44,17 +43,39 @@ public class NotificacionController {
         try {
             log.info("Obteniendo notificaciones - página: {}, tamaño: {}, leída: {}", page, size, leida);
             
-            // Temporalmente sin autenticación para testing
-            String emailUsuario = "admin@test.com";
+            // Usar directamente NotificationRepository como hace NotificationRoleController
+            List<Notification> todasLasNotificaciones = notificationRepository.findAll();
             
-            Sort.Direction direction = "desc".equalsIgnoreCase(sortDir) 
-                ? Sort.Direction.DESC : Sort.Direction.ASC;
-            Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+            // Filtrar notificaciones para administradores
+            List<Map<String, Object>> notificacionesFiltradas = new ArrayList<>();
             
-            PageResponse<Notificacion> notificaciones = notificacionService
-                .obtenerNotificacionesPorUsuario(emailUsuario, pageable, leida);
+            for (Notification notif : todasLasNotificaciones) {
+                if (notif.getRecipients() != null && notif.getRecipients().contains("rol:administrador")) {
+                    Map<String, Object> notificacionResponse = new HashMap<>();
+                    notificacionResponse.put("id", notif.getId());
+                    notificacionResponse.put("titulo", "Notificación");
+                    notificacionResponse.put("mensaje", notif.getMessage());
+                    notificacionResponse.put("tipo", notif.getType());
+                    notificacionResponse.put("leida", notif.getRead());
+                    notificacionResponse.put("fechaCreacion", notif.getCreatedAt());
+                    notificacionResponse.put("fechaLectura", notif.getReadAt());
+                    notificacionResponse.put("ticketId", notif.getTicketId());
+                    notificacionResponse.put("prioridad", notif.getPriority());
+                    notificacionesFiltradas.add(notificacionResponse);
+                }
+            }
             
-            return ResponseEntity.ok(notificaciones);
+            // Crear respuesta compatible con PageResponse
+            Map<String, Object> response = new HashMap<>();
+            response.put("content", notificacionesFiltradas);
+            response.put("totalElements", notificacionesFiltradas.size());
+            response.put("totalPages", 1);
+            response.put("currentPage", page);
+            response.put("size", size);
+            response.put("first", page == 0);
+            response.put("last", true);
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Error obteniendo notificaciones", e);
             return ResponseEntity.badRequest().body(

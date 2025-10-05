@@ -164,16 +164,20 @@ public class AsignacionService {
             throw new RuntimeException("No se puede escalar un ticket al mismo técnico que ya está asignado: " + ticket.getAssignedTechnician().getEmail());
         }
         
-        // NO desactivar la asignación anterior - mantenerla como historial
-        // Solo verificar que existe para logging
+        // DESACTIVAR la asignación anterior para evitar duplicados
         Optional<AsignacionTicket> asignacionAnterior = asignacionTicketRepository
             .findAsignacionActivaMasReciente(ticketId);
         
         if (asignacionAnterior.isPresent()) {
             AsignacionTicket anterior = asignacionAnterior.get();
-            log.info("📋 [ESCALACION] Asignación anterior encontrada - Técnico ID: {} (se mantiene como historial)", 
+            log.info("📋 [ESCALACION] Desactivando asignación anterior - Técnico ID: {}", 
                 anterior.getTecnicoId());
-            // NO desactivar - mantener la relación del técnico original
+            
+            // DESACTIVAR la asignación anterior para evitar conflictos
+            anterior.setActiva(false);
+            asignacionTicketRepository.save(anterior);
+            
+            log.info("✅ [ESCALACION] Asignación anterior desactivada correctamente");
         }
         
         AsignacionTicket escalacion = new AsignacionTicket();
@@ -191,13 +195,13 @@ public class AsignacionService {
         // Obtener estado anterior antes de cambiarlo
         String estadoAnterior = ticket.getStatus();
         
-        // NO cambiar el técnico asignado del ticket - solo crear registro de escalación
-        log.info("🔄 [ESCALACION] Manteniendo técnico asignado original: {} (NO cambiar)", 
-            ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null");
+        // ASIGNAR el ticket al técnico escalado
+        log.info("🔄 [ESCALACION] Asignando ticket al técnico escalado: {} (cambiar)", 
+            tecnico.getEmail());
         
-        // NO cambiar el técnico asignado - mantener el original
-        // ticket.setAssignedTechnician(tecnico);
-        // ticket.setAssignedTechnicianEmail(tecnico.getEmail());
+        // CAMBIAR el técnico asignado al técnico escalado
+        ticket.setAssignedTechnician(tecnico);
+        ticket.setAssignedTechnicianEmail(tecnico.getEmail());
         
         // Cambiar estado a ESCALADO cuando se hace una escalación
         String nuevoEstado = "ESCALADO";
@@ -213,7 +217,7 @@ public class AsignacionService {
         // Verificar que se guardó correctamente
         Ticket ticketVerificado = ticketRepository.findById(ticketId).orElse(null);
         if (ticketVerificado != null) {
-            log.info("✅ [ESCALACION] Verificación - Ticket {} guardado con técnico original: {} y estado: {}", 
+            log.info("✅ [ESCALACION] Verificación - Ticket {} guardado con técnico escalado: {} y estado: {}", 
                 ticketId, 
                 ticketVerificado.getAssignedTechnicianEmail(), 
                 ticketVerificado.getStatus());

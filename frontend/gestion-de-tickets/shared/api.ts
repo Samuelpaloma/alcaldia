@@ -1208,7 +1208,7 @@ class ApiClient {
 
   // ========== NOTIFICACIONES POR ROLES ==========
   
-  async getRoleNotifications(userEmail: string, page: number = 0, size: number = 20): Promise<any> {
+  async getRoleNotifications(userEmail: string, page: number = 0, size: number = 100): Promise<any> {
     return this.request(`/notifications/role-based/user/${userEmail}?page=${page}&size=${size}`);
   }
 

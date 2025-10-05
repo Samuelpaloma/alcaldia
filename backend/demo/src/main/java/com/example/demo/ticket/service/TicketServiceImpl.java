@@ -39,8 +39,11 @@ import com.example.demo.asignacion.model.HistorialAsignacion;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
 import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
+import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
 
 @Service
+@Slf4j
 public class TicketServiceImpl implements TicketService {
     
     @Autowired
@@ -246,7 +249,7 @@ public class TicketServiceImpl implements TicketService {
         System.out.println("🔍 [DEBUG] Creador: " + (ticket.getCreator() != null ? ticket.getCreator().getEmail() : "null"));
         System.out.println("🔍 [DEBUG] Técnico asignado: " + (ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null"));
         
-        // Verificar que el usuario tenga acceso al ticket (creador o técnico asignado)
+        // Verificar que el usuario tenga acceso al ticket (creador, técnico asignado o técnico escalado)
         boolean tieneAcceso = false;
         
         // Verificar si es el creador
@@ -255,10 +258,35 @@ public class TicketServiceImpl implements TicketService {
             tieneAcceso = true;
         }
         
-        // Verificar si es el técnico asignado
+        // Verificar si es el técnico asignado actual
         if (ticket.getAssignedTechnician() != null && ticket.getAssignedTechnician().getEmail().equals(emailUsuario)) {
             System.out.println("✅ [DEBUG] Usuario es el técnico asignado del ticket");
             tieneAcceso = true;
+        }
+        
+        // Si el ticket está escalado, verificar si el usuario es el técnico escalado
+        if (!tieneAcceso && "ESCALADO".equals(ticket.getStatus())) {
+            System.out.println("🔍 [DEBUG] Ticket escalado, verificando técnico escalado...");
+            
+            // Buscar en el historial de asignaciones si este usuario fue escalado
+            List<HistorialAsignacion> historialEscalamiento = historialAsignacionRepository
+                .findByTicketIdOrderByFechaOperacionAsc(ticket.getId());
+            
+            // Filtrar solo los escalamientos
+            List<HistorialAsignacion> escalamientos = historialEscalamiento.stream()
+                .filter(h -> "ESCALAMIENTO".equals(h.getTipoOperacion()))
+                .sorted((h1, h2) -> h2.getFechaOperacion().compareTo(h1.getFechaOperacion()))
+                .collect(Collectors.toList());
+            
+            if (!escalamientos.isEmpty()) {
+                HistorialAsignacion ultimoEscalamiento = escalamientos.get(0);
+                // Obtener el técnico desde la base de datos usando el ID
+                Usuario tecnicoEscalado = usuarioRepository.findById(ultimoEscalamiento.getTecnicoId()).orElse(null);
+                if (tecnicoEscalado != null && tecnicoEscalado.getEmail().equals(emailUsuario)) {
+                    tieneAcceso = true;
+                    System.out.println("✅ [DEBUG] Usuario es el técnico escalado - acceso concedido");
+                }
+            }
         }
         
         System.out.println("🔍 [DEBUG] ¿Tiene acceso? " + tieneAcceso);
@@ -589,6 +617,43 @@ public class TicketServiceImpl implements TicketService {
                 return "audio/ogg";
             default:
                 return "application/octet-stream";
+        }
+    }
+
+    /**
+     * Responder a una resolución de ticket (para clientes)
+     */
+    @Transactional
+    public void responderResolucionTicket(Long ticketId, String accion, String comentario) {
+        log.info("Procesando respuesta del cliente para ticket {} - Acción: {}", ticketId, accion);
+        
+        Ticket ticket = ticketRepository.findById(ticketId)
+            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        
+        if ("CONFIRMAR".equals(accion)) {
+            // Cliente confirma la resolución - cerrar ticket
+            ticket.setStatus("CERRADO");
+            ticket.setUpdatedAt(LocalDateTime.now());
+            ticketRepository.save(ticket);
+            
+            log.info("Ticket {} cerrado por confirmación del cliente", ticketId);
+            
+            // Notificar a técnicos y administradores sobre la confirmación del cliente
+            // TODO: Agregar notificación cuando esté disponible el servicio
+            
+        } else if ("RECHAZAR".equals(accion)) {
+            // Cliente rechaza la resolución - reabrir como PENDIENTE para escalamiento
+            ticket.setStatus("PENDIENTE");
+            ticket.setUpdatedAt(LocalDateTime.now());
+            ticketRepository.save(ticket);
+            
+            log.info("Ticket {} reabierto por rechazo del cliente - pendiente de escalamiento", ticketId);
+            
+            // Notificar a administradores sobre el rechazo del cliente
+            // TODO: Agregar notificación cuando esté disponible el servicio
+            
+        } else {
+            throw new RuntimeException("Acción no válida: " + accion);
         }
     }
 }

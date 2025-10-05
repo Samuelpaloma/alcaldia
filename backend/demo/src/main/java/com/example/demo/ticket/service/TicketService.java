@@ -31,4 +31,7 @@ public interface TicketService {
     // Obtener nombre del usuario
     String obtenerNombreUsuario(String emailUsuario);
     
+    // Responder a resolución de ticket (para clientes)
+    void responderResolucionTicket(Long ticketId, String accion, String comentario);
+    
 }

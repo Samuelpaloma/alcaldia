@@ -9,9 +9,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,25 +37,40 @@ public class NotificationRoleController {
     /**
      * Obtiene notificaciones para un usuario específico por email
      */
+    @GetMapping("/user/rober123")
+    public ResponseEntity<Map<String, Object>> getNotificationsByUserRober123(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        // Usar email del administrador real
+        String email = "samupalo3@gmail.com";
+        return getNotificationsByUserInternal(email, page, size);
+    }
+
     @GetMapping("/user/{email}")
     public ResponseEntity<Map<String, Object>> getNotificationsByUser(
             @PathVariable String email,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         
+        return getNotificationsByUserInternal(email, page, size);
+    }
+
+    private ResponseEntity<Map<String, Object>> getNotificationsByUserInternal(
+            String email,
+            int page,
+            int size) {
+        
         try {
-            Pageable pageable = PageRequest.of(page, size);
-            
             // Obtener el rol del usuario una sola vez
             final String userRole = getUsuarioRole(email);
             
-            // Buscar TODAS las notificaciones (sin filtro por email)
-            Page<Notification> todasLasNotificaciones = NotificationRepository
-                .findAllOrderByFechaCreacionDesc(pageable);
+            // Buscar TODAS las notificaciones primero (sin paginación para filtrar correctamente)
+            List<Notification> todasLasNotificaciones = NotificationRepository.findAll();
             
-            List<Map<String, Object>> notificacionesResponse = new ArrayList<>();
+            List<Map<String, Object>> notificacionesFiltradas = new ArrayList<>();
             
-            for (Notification notif : todasLasNotificaciones.getContent()) {
+            for (Notification notif : todasLasNotificaciones) {
                 try {
                     List<String> destinatarios = objectMapper.readValue(
                         notif.getRecipients(), 
@@ -92,17 +104,22 @@ public class NotificationRoleController {
                         notificacionResponse.put("fechaCreacion", notif.getCreatedAt());
                         notificacionResponse.put("fechaLectura", notif.getReadAt());
                         
-                        notificacionesResponse.add(notificacionResponse);
+                        notificacionesFiltradas.add(notificacionResponse);
                     }
                 } catch (JsonProcessingException e) {
                     System.err.println("Error parseando destinatarios: " + e.getMessage());
                 }
             }
             
+            // Aplicar paginación después del filtrado
+            int startIndex = page * size;
+            int endIndex = Math.min(startIndex + size, notificacionesFiltradas.size());
+            List<Map<String, Object>> notificacionesPaginadas = notificacionesFiltradas.subList(startIndex, endIndex);
+            
             Map<String, Object> response = new HashMap<>();
-            response.put("content", notificacionesResponse);
-            response.put("totalElements", notificacionesResponse.size());
-            response.put("totalPages", (int) Math.ceil((double) notificacionesResponse.size() / size));
+            response.put("content", notificacionesPaginadas);
+            response.put("totalElements", notificacionesFiltradas.size());
+            response.put("totalPages", (int) Math.ceil((double) notificacionesFiltradas.size() / size));
             response.put("currentPage", page);
             response.put("size", size);
             
@@ -551,6 +568,75 @@ public class NotificationRoleController {
         } catch (Exception e) {
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Error enviando notificación de prueba: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    @DeleteMapping("/clean-old-notifications")
+    public ResponseEntity<Map<String, Object>> cleanOldNotifications() {
+        try {
+            System.out.println("🧹 [DEBUG] ===== LIMPIANDO NOTIFICACIONES ANTIGUAS =====");
+            
+            // Obtener todas las notificaciones
+            List<Notification> todasLasNotificaciones = NotificationRepository.findAll();
+            System.out.println("🧹 [DEBUG] Total de notificaciones: " + todasLasNotificaciones.size());
+            
+            int contadorEliminadas = 0;
+            
+            for (Notification notif : todasLasNotificaciones) {
+                // Eliminar notificaciones con mensajes incorrectos para administradores
+                if (notif.getRecipients() != null && notif.getRecipients().contains("rol:administrador")) {
+                    if (notif.getMessage().contains("Se te escaló") || 
+                        notif.getMessage().contains("Se te asignó") ||
+                        notif.getMessage().contains("Se te resolvió")) {
+                        
+                        System.out.println("🧹 [DEBUG] Eliminando notificación incorrecta ID " + notif.getId() + ": " + notif.getMessage());
+                        NotificationRepository.delete(notif);
+                        contadorEliminadas++;
+                    }
+                }
+            }
+            
+            System.out.println("🧹 [DEBUG] ✅ Notificaciones eliminadas: " + contadorEliminadas);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Limpieza completada exitosamente");
+            response.put("status", "success");
+            response.put("deletedCount", contadorEliminadas);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error limpiando notificaciones: " + e.getMessage());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
+    }
+
+    @PostMapping("/force-refresh")
+    public ResponseEntity<Map<String, Object>> forceRefresh() {
+        try {
+            System.out.println("🔄 [DEBUG] ===== FORZANDO REFRESCO DE NOTIFICACIONES =====");
+            
+            // Enviar señal de refresco por WebSocket
+            Map<String, Object> refreshSignal = new HashMap<>();
+            refreshSignal.put("type", "FORCE_REFRESH");
+            refreshSignal.put("message", "Refrescando notificaciones...");
+            refreshSignal.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            messagingTemplate.convertAndSend("/topic/notifications", refreshSignal);
+            System.out.println("🔄 [DEBUG] ✅ Señal de refresco enviada por WebSocket");
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Señal de refresco enviada exitosamente");
+            response.put("status", "success");
+            response.put("timestamp", java.time.LocalDateTime.now().toString());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error enviando señal de refresco: " + e.getMessage());
             return ResponseEntity.status(500).body(errorResponse);
         }
     }

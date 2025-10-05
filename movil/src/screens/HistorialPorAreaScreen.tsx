@@ -60,8 +60,7 @@ export default function HistorialPorAreaScreen() {
 
       console.log('📊 [HISTORIAL] Obteniendo tickets...');
       
-      const response = await tecnicoAPI.getTickets();
-      const tickets = response.data || [];
+      const tickets = await tecnicoAPI.getTicketsHistorial();
       console.log('📊 [HISTORIAL] Tickets recibidos:', tickets.length);
       console.log('📊 [HISTORIAL] Estructura del primer ticket:', tickets[0]);
       

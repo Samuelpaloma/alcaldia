@@ -142,7 +142,8 @@ public class EvidenciaController {
                 );
             }
             
-            if (archivo.getOriginalFilename() == null || archivo.getOriginalFilename().trim().isEmpty()) {
+            String nombreArchivo = archivo.getOriginalFilename();
+            if (nombreArchivo == null || nombreArchivo.trim().isEmpty()) {
                 log.error("❌ [EVIDENCIA] Nombre de archivo inválido");
                 return ResponseEntity.status(400).body(
                     ApiResponse.error("Nombre de archivo requerido")
@@ -158,7 +159,21 @@ public class EvidenciaController {
             Evidencia evidencia = evidenciaService.subirEvidencia(ticketId, archivo, descripcion, emailUsuario);
             
             log.info("✅ [EVIDENCIA] Evidencia guardada exitosamente con ID: {}", evidencia.getIdEvidencia());
-            return ResponseEntity.ok(evidencia);
+            
+            // Crear DTO para evitar problemas de serialización con Hibernate
+            Map<String, Object> response = new HashMap<>();
+            response.put("idEvidencia", evidencia.getIdEvidencia());
+            response.put("ticketId", evidencia.getTicket().getId());
+            response.put("descripcion", evidencia.getDescripcion());
+            response.put("nombreArchivo", evidencia.getNombreArchivo());
+            response.put("extensionArchivo", evidencia.getExtensionArchivo());
+            response.put("tamanioArchivo", evidencia.getTamanioArchivo());
+            response.put("tipoEvidencia", evidencia.getTipoEvidencia());
+            response.put("fechaSubida", evidencia.getFechaSubida());
+            response.put("subidoPor", evidencia.getSubidoPor().getFirstName() + " " + evidencia.getSubidoPor().getLastName());
+            response.put("subidoPorEmail", evidencia.getSubidoPor().getEmail());
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("❌ [EVIDENCIA] Error subiendo evidencia", e);
             e.printStackTrace();

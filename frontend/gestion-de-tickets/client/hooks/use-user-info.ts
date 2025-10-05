@@ -7,6 +7,7 @@ interface UserInfo {
   ubicacion: string;
   departamento: string;
   cargo: string;
+  tipoUsuario: string;
 }
 
 export function useUserInfo() {
