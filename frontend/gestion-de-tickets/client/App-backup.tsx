@@ -27,7 +27,8 @@ import ResetPassword from "./modules/auth/ResetPassword";
 import RootRedirect from "./modules/auth/RootRedirect";
 import AdminDashboard from "./modules/admin/AdminDashboard";
 import UnifiedDashboard from "./modules/admin/UnifiedDashboard";
-import SuperAdminDashboard from "./modules/superadmin/SuperAdminDashboard";
+// import SuperAdminDashboard from "./modules/superadmin/SuperAdminDashboard";
+import TempSuperAdmin from "./components/TempSuperAdmin";
 import SuperAdminLayout from "./modules/_shared/SuperAdminLayout";
 import { I18nProvider } from "./i18n";
 import RoleRoute from "./modules/auth/RoleRoute";
@@ -131,9 +132,9 @@ const App = () => (
 
             {/* SuperAdmin section (role-restricted) */}
             <Route element={<SuperAdminLayout />}>
-              <Route path="/superadmin" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
-              <Route path="/superadmin/administradores" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
-              <Route path="/superadmin/configuraciones" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin" element={<TempSuperAdmin userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/administradores" element={<TempSuperAdmin userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/configuraciones" element={<TempSuperAdmin userRole="SUPERADMIN" />} />
               <Route path="/superadmin/categories" element={<CategoriesManagement userRole="SUPERADMIN" />} />
             </Route>
 

@@ -535,6 +535,12 @@ export interface ConfiguracionRequestDTO {
   nombreApp?: string;
 }
 
+export interface ColoresRequestDTO {
+  colorPrimario?: string;
+  colorSecundario?: string;
+  colorFondo?: string;
+}
+
 // ========== TIPOS LEGACY (para compatibilidad) ==========
 
 export interface User {
@@ -1584,7 +1590,7 @@ class ApiClient {
     return this.request(`/superadmin/configuraciones/${categoria}`);
   }
 
-  async actualizarColores(data: ConfiguracionRequestDTO): Promise<ApiResponse> {
+  async actualizarColores(data: ColoresRequestDTO): Promise<ApiResponse> {
     return this.request('/superadmin/configuraciones/colores', {
       method: 'PUT',
       body: JSON.stringify(data),

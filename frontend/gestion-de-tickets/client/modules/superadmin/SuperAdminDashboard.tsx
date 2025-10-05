@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api, UsuarioDTO, ConfiguracionRequestDTO } from '../../../shared/api';
+// import { useGlobalColors } from '../../../hooks/use-global-colors';
 import './SuperAdminDashboard.css';
 
 interface SuperAdminDashboardProps {
@@ -9,6 +10,14 @@ interface SuperAdminDashboardProps {
 
 const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) => {
   const location = useLocation();
+  
+  // Estados para colores del sistema
+  const [colors, setColors] = useState({
+    colorPrimario: '#007bff',
+    colorSecundario: '#6c757d',
+    colorFondo: '#ffffff'
+  });
+  
   const [administradores, setAdministradores] = useState<UsuarioDTO[]>([]);
   const [configuraciones, setConfiguraciones] = useState<Record<string, Record<string, string>>>({});
   const [loading, setLoading] = useState(true);
@@ -38,6 +47,28 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
       
       setAdministradores(administradoresData);
       setConfiguraciones(configuracionesData);
+      
+      // Cargar colores del sistema
+      if (configuracionesData.colores) {
+        const systemColors = {
+          colorPrimario: configuracionesData.colores.color_primario || '#007bff',
+          colorSecundario: configuracionesData.colores.color_secundario || '#6c757d',
+          colorFondo: configuracionesData.colores.color_fondo || '#ffffff'
+        };
+        setColors(systemColors);
+        
+        // Aplicar colores globalmente
+        const root = document.documentElement;
+        root.style.setProperty('--system-primary', systemColors.colorPrimario);
+        root.style.setProperty('--system-secondary', systemColors.colorSecundario);
+        root.style.setProperty('--system-background', systemColors.colorFondo);
+        root.style.setProperty('--primary', systemColors.colorPrimario);
+        root.style.setProperty('--secondary', systemColors.colorSecundario);
+        root.style.setProperty('--background', systemColors.colorFondo);
+        
+        // Aplicar colores a elementos existentes
+        applyColorsToExistingElements(systemColors);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar datos');
       console.error('Error cargando datos:', err);
@@ -91,18 +122,66 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
     }
   };
 
-  // Actualizar colores
-  const updateColors = async () => {
+  // Actualizar colores del sistema
+  const handleUpdateColors = async () => {
     try {
-      await api.actualizarColores(
-        configuraciones.apariencia?.colorPrimario || '#007bff',
-        configuraciones.apariencia?.colorSecundario || '#6c757d',
-        configuraciones.apariencia?.colorFondo || '#ffffff'
-      );
-      loadData(); // Recargar datos
+      const newColors = {
+        colorPrimario: configuraciones.apariencia?.colorPrimario || colors.colorPrimario,
+        colorSecundario: configuraciones.apariencia?.colorSecundario || colors.colorSecundario,
+        colorFondo: configuraciones.apariencia?.colorFondo || colors.colorFondo
+      };
+      
+      // Actualizar colores en la API
+      await api.actualizarColores(newColors);
+      
+      // Actualizar estado local
+      setColors(newColors);
+      
+      // Aplicar colores globalmente
+      const root = document.documentElement;
+      root.style.setProperty('--system-primary', newColors.colorPrimario);
+      root.style.setProperty('--system-secondary', newColors.colorSecundario);
+      root.style.setProperty('--system-background', newColors.colorFondo);
+      root.style.setProperty('--primary', newColors.colorPrimario);
+      root.style.setProperty('--secondary', newColors.colorSecundario);
+      root.style.setProperty('--background', newColors.colorFondo);
+      
+      // Aplicar colores a elementos existentes
+      applyColorsToExistingElements(newColors);
+      
+      await loadData(); // Recargar datos
     } catch (err) {
       console.error('Error actualizando colores:', err);
     }
+  };
+
+  // Función para aplicar colores a elementos existentes
+  const applyColorsToExistingElements = (newColors: typeof colors) => {
+    // Aplicar colores a botones primarios
+    const primaryButtons = document.querySelectorAll('.bg-blue-600, .bg-blue-500, [class*="bg-blue-"], .btn-primary');
+    primaryButtons.forEach(button => {
+      if (button instanceof HTMLElement) {
+        button.style.backgroundColor = newColors.colorPrimario;
+        button.style.borderColor = newColors.colorPrimario;
+      }
+    });
+
+    // Aplicar colores a botones secundarios
+    const secondaryButtons = document.querySelectorAll('.bg-gray-600, .bg-gray-500, [class*="bg-gray-"], .btn-secondary');
+    secondaryButtons.forEach(button => {
+      if (button instanceof HTMLElement) {
+        button.style.backgroundColor = newColors.colorSecundario;
+        button.style.borderColor = newColors.colorSecundario;
+      }
+    });
+
+    // Aplicar colores a la sidebar
+    const sidebar = document.querySelector('.sidebar, [class*="sidebar"], .bg-blue-900, .bg-gray-900');
+    if (sidebar instanceof HTMLElement) {
+      sidebar.style.backgroundColor = newColors.colorPrimario;
+    }
+
+    console.log('🎨 Colores aplicados a elementos existentes:', newColors);
   };
 
   if (loading) {
@@ -281,7 +360,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
-                      value={configuraciones.apariencia?.colorPrimario || '#007bff'}
+                      value={configuraciones.apariencia?.colorPrimario || colors.colorPrimario}
                       onChange={(e) => {
                         const newConfigs = { ...configuraciones };
                         if (!newConfigs.apariencia) newConfigs.apariencia = {};
@@ -291,7 +370,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                       className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
                     />
                     <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorPrimario || '#007bff'}
+                      {configuraciones.apariencia?.colorPrimario || colors.colorPrimario}
                     </span>
                   </div>
                 </div>
@@ -301,7 +380,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
-                      value={configuraciones.apariencia?.colorSecundario || '#6c757d'}
+                      value={configuraciones.apariencia?.colorSecundario || colors.colorSecundario}
                       onChange={(e) => {
                         const newConfigs = { ...configuraciones };
                         if (!newConfigs.apariencia) newConfigs.apariencia = {};
@@ -311,7 +390,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                       className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
                     />
                     <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorSecundario || '#6c757d'}
+                      {configuraciones.apariencia?.colorSecundario || colors.colorSecundario}
                     </span>
                   </div>
                 </div>
@@ -321,7 +400,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
-                      value={configuraciones.apariencia?.colorFondo || '#ffffff'}
+                      value={configuraciones.apariencia?.colorFondo || colors.colorFondo}
                       onChange={(e) => {
                         const newConfigs = { ...configuraciones };
                         if (!newConfigs.apariencia) newConfigs.apariencia = {};
@@ -331,7 +410,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                       className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
                     />
                     <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorFondo || '#ffffff'}
+                      {configuraciones.apariencia?.colorFondo || colors.colorFondo}
                     </span>
                   </div>
                 </div>
@@ -339,7 +418,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
 
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <button 
-                  onClick={updateColors}
+                  onClick={handleUpdateColors}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                 >
                   <i className="fas fa-save"></i>
@@ -350,36 +429,36 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
 
             {/* Vista previa */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa</h2>
-              
-              <div className="flex justify-center">
-                <div 
-                  className="w-full max-w-sm rounded-lg overflow-hidden shadow-lg"
-                  style={{
-                    backgroundColor: configuraciones.apariencia?.colorFondo || '#ffffff',
-                    borderColor: configuraciones.apariencia?.colorPrimario || '#007bff'
-                  }}
-                >
-                  <div 
-                    className="px-4 py-3 text-white"
-                    style={{ backgroundColor: configuraciones.apariencia?.colorPrimario || '#007bff' }}
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa</h3>
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.colorFondo }}>
+                  <h4 className="font-semibold" style={{ color: colors.colorPrimario }}>
+                    Texto Primario
+                  </h4>
+                  <p className="text-sm" style={{ color: colors.colorSecundario }}>
+                    Texto Secundario
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button 
+                    className="px-4 py-2 rounded text-white font-medium"
+                    style={{ backgroundColor: colors.colorPrimario }}
                   >
-                    <h3 className="font-semibold">Ejemplo de Tarjeta</h3>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-gray-600 text-sm mb-3">
-                      Este es un ejemplo de cómo se verán los colores en el sistema.
-                    </p>
-                    <button 
-                      className="px-4 py-2 rounded text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: configuraciones.apariencia?.colorSecundario || '#6c757d',
-                        color: configuraciones.apariencia?.colorFondo || '#ffffff'
-                      }}
-                    >
-                      Botón de Ejemplo
-                    </button>
-                  </div>
+                    Botón Primario
+                  </button>
+                  <button 
+                    className="px-4 py-2 rounded text-white font-medium"
+                    style={{ backgroundColor: colors.colorSecundario }}
+                  >
+                    Botón Secundario
+                  </button>
+                </div>
+                
+                <div className="text-xs text-gray-500">
+                  <p>Primario: {colors.colorPrimario}</p>
+                  <p>Secundario: {colors.colorSecundario}</p>
+                  <p>Fondo: {colors.colorFondo}</p>
                 </div>
               </div>
             </div>

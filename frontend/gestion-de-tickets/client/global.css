@@ -24,6 +24,11 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+    
+    /* Variables del sistema - se actualizan dinámicamente */
+    --system-primary: #007bff;
+    --system-secondary: #6c757d;
+    --system-background: #ffffff;
   }
 
   .dark {
@@ -81,6 +86,80 @@
 
 .compact-mode .space-y-4 > * + * {
   margin-top: var(--spacing-unit);
+}
+
+/* Estilos que usan las variables del sistema */
+.system-primary {
+  background-color: var(--system-primary);
+  color: white;
+}
+
+.system-primary-text {
+  color: var(--system-primary);
+}
+
+.system-secondary {
+  background-color: var(--system-secondary);
+  color: white;
+}
+
+.system-secondary-text {
+  color: var(--system-secondary);
+}
+
+.system-background {
+  background-color: var(--system-background);
+}
+
+/* Aplicar colores del sistema a elementos específicos */
+.btn-primary {
+  background-color: var(--system-primary) !important;
+  border-color: var(--system-primary) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--system-primary) !important;
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: var(--system-secondary) !important;
+  border-color: var(--system-secondary) !important;
+}
+
+.btn-secondary:hover {
+  background-color: var(--system-secondary) !important;
+  opacity: 0.9;
+}
+
+/* Aplicar colores del sistema a elementos de Tailwind */
+.bg-blue-600 {
+  background-color: var(--system-primary) !important;
+}
+
+.bg-blue-500 {
+  background-color: var(--system-primary) !important;
+}
+
+.bg-gray-600 {
+  background-color: var(--system-secondary) !important;
+}
+
+.text-blue-600 {
+  color: var(--system-primary) !important;
+}
+
+.text-gray-600 {
+  color: var(--system-secondary) !important;
+}
+
+/* Aplicar colores a elementos de la sidebar */
+.sidebar-primary {
+  background-color: var(--system-primary) !important;
+}
+
+.sidebar-secondary {
+  background-color: var(--system-secondary) !important;
 }
 
 .compact-mode .space-y-6 > * + * {

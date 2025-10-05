@@ -1,6 +1,7 @@
 package com.example.demo.superadmin.controller;
 
 import com.example.demo.superadmin.dto.request.ConfiguracionRequestDTO;
+import com.example.demo.superadmin.dto.request.ColoresRequestDTO;
 import com.example.demo.superadmin.dto.response.ConfiguracionResponseDTO;
 import com.example.demo.superadmin.service.ConfiguracionService;
 import com.example.demo.superadmin.service.SuperAdminService;
@@ -159,7 +160,7 @@ public class SuperAdminController {
      */
     @PutMapping("/configuraciones/colores")
     @PreAuthorize("hasRole('SUPERADMIN')")
-    public ResponseEntity<?> actualizarColores(@RequestBody ConfiguracionRequestDTO request) {
+    public ResponseEntity<?> actualizarColores(@RequestBody ColoresRequestDTO request) {
         try {
             log.info("Actualizando colores del sistema");
             configuracionService.actualizarColores(
