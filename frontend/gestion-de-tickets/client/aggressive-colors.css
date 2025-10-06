@@ -1,0 +1,171 @@
+/* CSS ULTRA AGRESIVO para evitar flash blanco y forzar colores */
+
+/* Aplicar INMEDIATAMENTE al cargar la página - SOLO al área principal */
+html, body {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+/* Aplicar SOLO al área principal, NO a contenedores */
+main,
+.main-content,
+.content-area,
+.dashboard-container,
+.dashboard-content {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+/* NO aplicar fondo a TODOS los elementos - solo al área principal */
+
+/* FORZAR contenedores principales INMEDIATAMENTE */
+.card,
+[class*="card"],
+.bg-card,
+.bg-white,
+.bg-gray-50,
+.bg-slate-50,
+.container,
+.container-fluid,
+[class*="bg-white"],
+[class*="bg-gray-50"],
+[class*="bg-slate-50"],
+.metric-card,
+.ticket-item,
+.tickets-list .ticket-item,
+.empty-state,
+.ticket-info,
+.ticket-header,
+.ticket-subject,
+.ticket-technician,
+.metric-label,
+.metric-value,
+.metric-details,
+.detail-item,
+.ticket-meta,
+.status-badge,
+.ticket-priority,
+.ticket-date {
+  background-color: var(--system-container) !important;
+  color: var(--system-text) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* FORZAR contenedores secundarios INMEDIATAMENTE */
+.bg-gray-100,
+.bg-slate-100,
+.secondary-container,
+.sub-container,
+.panel,
+.widget,
+[class*="bg-gray-100"],
+[class*="bg-slate-100"],
+.metric-details,
+.ticket-meta,
+.ticket-technician,
+.detail-item {
+  background-color: var(--system-container-secondary) !important;
+  color: var(--system-text) !important;
+}
+
+/* Rectángulos de tickets - usar colorContenedorSecundario */
+.bg-card,
+[class*="bg-card"],
+.border,
+.rounded-lg,
+.hover\:shadow-lg,
+.hover\:shadow-xl,
+.group,
+.ticket-item,
+.tickets-list .ticket-item,
+.ticket-info,
+.ticket-header,
+.ticket-subject,
+.ticket-technician,
+.ticket-meta,
+.ticket-priority,
+.ticket-date,
+.status-badge,
+.priority-badge,
+.category-badge {
+  background-color: var(--system-container-secondary) !important;
+  color: var(--system-text) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* FORZAR sidebar INMEDIATAMENTE */
+aside,
+.sidebar,
+.nav-container,
+.left-sidebar,
+[class*="sidebar"] {
+  background-color: var(--system-primary) !important;
+  color: #ffffff !important;
+}
+
+/* FORZAR header INMEDIATAMENTE */
+header,
+.header,
+.top-navbar,
+.navbar,
+[class*="header"] {
+  background-color: var(--system-secondary) !important;
+  color: var(--system-text) !important;
+}
+
+/* FORZAR botones INMEDIATAMENTE */
+button,
+.btn,
+[class*="btn"],
+[class*="button"],
+.new-ticket-button {
+  background-color: var(--system-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--system-primary) !important;
+}
+
+/* Botones secundarios */
+button.btn-secondary,
+.bg-secondary,
+[class*="btn-secondary"] {
+  background-color: var(--system-secondary) !important;
+  color: #ffffff !important;
+  border-color: var(--system-secondary) !important;
+}
+
+/* Prevenir que Tailwind sobrescriba */
+.bg-white {
+  background-color: var(--system-container) !important;
+}
+
+.bg-gray-50 {
+  background-color: var(--system-container) !important;
+}
+
+.bg-slate-50 {
+  background-color: var(--system-container) !important;
+}
+
+.bg-gray-100 {
+  background-color: var(--system-container-secondary) !important;
+}
+
+.bg-slate-100 {
+  background-color: var(--system-container-secondary) !important;
+}
+
+/* Forzar aplicación inmediata */
+.app-container {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+.main-content {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+.content-area {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}

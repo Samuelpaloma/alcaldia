@@ -41,24 +41,31 @@ export const useGlobalSystemColors = () => {
       // Cargar colores del sistema
       const colorsResponse = await api.getColoresSistema();
       console.log('📡 Respuesta de colores:', colorsResponse);
+      console.log('📡 Datos de colores:', colorsResponse.data);
       
       if (colorsResponse.success && colorsResponse.data) {
         const systemColors = {
           colorPrimario: colorsResponse.data.colorPrimario || '#007bff',
           colorSecundario: colorsResponse.data.colorSecundario || '#6c757d',
           colorFondo: colorsResponse.data.colorFondo || '#ffffff',
-          colorTexto: colorsResponse.data.colorTexto || '#000000'
+          colorTexto: colorsResponse.data.colorTexto || '#000000',
+          colorContenedor: colorsResponse.data.colorContenedor || '#ffffff',
+          colorContenedorSecundario: colorsResponse.data.colorContenedorSecundario || '#f8f9fa'
         };
         console.log('🎨 Colores del sistema cargados:', systemColors);
+        console.log('🎨 Aplicando colores globalmente...');
         setColors(systemColors);
         applyGlobalColors(systemColors);
+        console.log('✅ Colores aplicados exitosamente');
       } else {
         console.log('⚠️ No se encontraron colores en la respuesta, usando colores por defecto');
         const defaultColors = {
           colorPrimario: '#007bff',
           colorSecundario: '#6c757d',
           colorFondo: '#ffffff',
-          colorTexto: '#000000'
+          colorTexto: '#000000',
+          colorContenedor: '#ffffff',
+          colorContenedorSecundario: '#f8f9fa'
         };
         setColors(defaultColors);
         applyGlobalColors(defaultColors);
@@ -119,24 +126,8 @@ export const useGlobalSystemColors = () => {
       });
     });
 
-    // Aplicar a todos los botones secundarios
-    const secondarySelectors = [
-      '.btn-secondary', '.bg-gray-600', '.bg-gray-500',
-      '[class*="bg-gray-"]:not([class*="bg-gray-50"]):not([class*="bg-gray-100"])',
-      'button[class*="secondary"]', 'button[class*="gray"]',
-      '.bg-secondary', '[data-color="secondary"]'
-    ];
-    
-    secondarySelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.style.backgroundColor = newColors.colorSecundario;
-          element.style.borderColor = newColors.colorSecundario;
-          element.style.color = '#ffffff';
-        }
-      });
-    });
+    // NO APLICAR color secundario a nada - se mantiene el color original
+    // El color secundario no debe afectar ningún elemento
 
     // Aplicar a sidebar y navegación (más selectores)
     const sidebarSelectors = [
@@ -154,17 +145,39 @@ export const useGlobalSystemColors = () => {
       });
     });
 
-    // Aplicar color de texto a elementos específicos
+    // Aplicar color de texto SOLO a elementos de texto, NO a contenedores
     const textSelectors = [
-      'p', 'span', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      '.text-content', '.content', '[data-text="content"]'
+      'p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'label', 'a', 'strong', 'em', 'small', 'b', 'i',
+      '.text-content', '.text', '[data-text="content"]',
+      // Excluir contenedores específicos
+      'div:not([class*="container"]):not([class*="card"]):not([class*="panel"]):not([class*="box"])'
     ];
     
     textSelectors.forEach(selector => {
       const elements = document.querySelectorAll(selector);
       elements.forEach(element => {
         if (element instanceof HTMLElement) {
-          element.style.color = newColors.colorTexto;
+          // Solo aplicar si es realmente texto, no un contenedor
+          const isTextElement = element.tagName === 'P' || 
+                               element.tagName === 'SPAN' || 
+                               element.tagName === 'H1' || 
+                               element.tagName === 'H2' || 
+                               element.tagName === 'H3' || 
+                               element.tagName === 'H4' || 
+                               element.tagName === 'H5' || 
+                               element.tagName === 'H6' ||
+                               element.tagName === 'LABEL' ||
+                               element.tagName === 'A' ||
+                               element.tagName === 'STRONG' ||
+                               element.tagName === 'EM' ||
+                               element.tagName === 'SMALL' ||
+                               element.tagName === 'B' ||
+                               element.tagName === 'I';
+          
+          if (isTextElement) {
+            element.style.color = newColors.colorTexto;
+          }
         }
       });
     });

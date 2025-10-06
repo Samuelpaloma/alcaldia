@@ -182,7 +182,10 @@ public class SuperAdminController {
             configuracionService.actualizarColores(
                 request.getColorPrimario(),
                 request.getColorSecundario(),
-                request.getColorFondo()
+                request.getColorFondo(),
+                request.getColorTexto(),
+                request.getColorContenedor(),
+                request.getColorContenedorSecundario()
             );
             return ResponseEntity.ok(ApiResponse.success("Colores actualizados exitosamente"));
         } catch (Exception e) {

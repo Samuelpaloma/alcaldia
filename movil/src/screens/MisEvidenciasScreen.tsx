@@ -76,27 +76,14 @@ export default function MisEvidenciasScreen() {
     try {
       console.log('📱 [EVIDENCIA] Descargando evidencia:', nombreArchivo, 'del ticket:', ticketId);
       
-      const blob = await evidenciasAPI.downloadEvidence(ticketId, nombreArchivo);
+      // En React Native, usar Linking para abrir la URL de descarga
+      const downloadUrl = `${API_CONFIG.BASE_URL}/api/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`;
       
-      // Crear URL temporal para el archivo
-      const url = window.URL.createObjectURL(blob);
+      const { Linking } = require('react-native');
+      await Linking.openURL(downloadUrl);
       
-      // Crear elemento de descarga
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = nombreArchivo; // Nombre del archivo
-      link.style.display = 'none';
-      
-      // Agregar al DOM, hacer click y remover
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Limpiar la URL temporal
-      window.URL.revokeObjectURL(url);
-      
-      console.log('✅ [EVIDENCIA] Descarga exitosa');
-      Alert.alert('Éxito', `Archivo ${nombreArchivo} descargado exitosamente`);
+      console.log('✅ [EVIDENCIA] Descarga iniciada');
+      Alert.alert('Éxito', `Descarga de ${nombreArchivo} iniciada`);
     } catch (error) {
       console.error('❌ [EVIDENCIA] Error descargando archivo:', error);
       const errorMessage = (error as Error).message || 'Error de conexión al descargar';

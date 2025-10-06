@@ -148,16 +148,16 @@ class EvidenceService {
       
       // Usar endpoint específico según el tipo de evidencia
       const baseUrl = this.getBaseUrl();
-      const endpoint = isFinalEvidence 
-        ? `${baseUrl}/api/evidencias/subir`        // Tabla evidencias - evidencias finales (FormData)
-        : `${baseUrl}/api/archivos-ticket/subir`;  // Tabla archivos_ticket - archivos del chat (JSON + Base64)
+      // En React Native, siempre usar el endpoint de archivos-ticket que acepta JSON + Base64
+      const endpoint = `${baseUrl}/api/archivos-ticket/subir`;  // Siempre usar JSON + Base64
 
       console.log('📎 Endpoint:', endpoint);
       console.log('📎 Base URL:', baseUrl);
 
       let response: Response;
 
-      if (isFinalEvidence) {
+      // En React Native, siempre usar JSON + Base64 para evitar problemas con FormData
+      if (isFinalEvidence && false) { // Forzar false para usar siempre JSON + Base64
         // Evidencias finales: usar FormData con archivo real
         const formData = new FormData();
         formData.append('ticketId', evidenceData.ticketId.toString());
@@ -213,8 +213,9 @@ class EvidenceService {
             const blob = await blobResponse.blob();
             contenidoBase64 = await this.blobToBase64(blob);
           } else {
-            // Móvil nativo - asumir que ya es Base64
-            contenidoBase64 = evidenceData.archivo.uri;
+            // Móvil nativo - convertir URI a Base64
+            console.log('📎 Convirtiendo URI nativa a Base64:', evidenceData.archivo.uri);
+            contenidoBase64 = await this.uriToBase64(evidenceData.archivo.uri);
           }
         } catch (error) {
           console.error('Error convirtiendo archivo a Base64:', error);
@@ -234,7 +235,7 @@ class EvidenceService {
           comentario: evidenceData.descripcion
         };
 
-        console.log('📎 Enviando JSON con Base64 para archivo del chat:', {
+        console.log('📎 Enviando JSON con Base64:', {
           ticketId: requestBody.ticketId,
           nombreArchivo: requestBody.nombreArchivo,
           tipoMime: requestBody.tipoMime,
@@ -300,6 +301,30 @@ class EvidenceService {
       reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+  }
+
+  /**
+   * Convertir URI nativa de React Native a Base64
+   */
+  private async uriToBase64(uri: string): Promise<string> {
+    try {
+      console.log('📎 Convirtiendo URI a Base64:', uri);
+      
+      // Para React Native, usar fetch para obtener el archivo
+      const response = await fetch(uri);
+      if (!response.ok) {
+        throw new Error(`Error obteniendo archivo: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const base64 = await this.blobToBase64(blob);
+      
+      console.log('📎 Conversión exitosa, longitud Base64:', base64.length);
+      return base64;
+    } catch (error) {
+      console.error('❌ Error convirtiendo URI a Base64:', error);
+      throw new Error(`Error convirtiendo URI a Base64: ${(error as Error).message}`);
+    }
   }
 
   /**

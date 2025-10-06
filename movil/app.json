@@ -39,6 +39,9 @@
         "projectId": "your-project-id"
       }
     },
+    "developmentClient": {
+      "silentLaunch": true
+    },
     "packagerOpts": {
       "config": "metro.config.js"
     }

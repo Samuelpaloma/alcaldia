@@ -41,7 +41,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     "http://localhost:4173",
                     "http://127.0.0.1:4173",
                     "http://localhost:8081",
-                    "http://127.0.0.1:8081"
+                    "http://127.0.0.1:8081",
+                    "http://10.0.2.2:8080",
+                    "http://10.0.2.2:3000",
+                    "http://10.0.2.2:5173",
+                    "http://10.0.2.2:4173",
+                    "http://10.0.2.2:8081",
+                    "http://192.168.1.10:3000",
+                    "http://192.168.1.10:5173",
+                    "http://192.168.1.10:4173",
+                    "http://192.168.1.10:8081",
+                    "exp://192.168.1.10:8081",
+                    "exp://192.168.1.10:19000"
                 )
                 .withSockJS();
         System.out.println("🔥🔥🔥 [WEBSOCKET CONFIG] Endpoint registrado exitosamente");

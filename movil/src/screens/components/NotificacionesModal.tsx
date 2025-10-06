@@ -51,7 +51,7 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
   };
 
   const marcarComoLeida = async (notificacion: Notificacion) => {
-    if (notificacion.leida) return;
+    if (notificacion.read) return;
 
     try {
       await NotificacionService.marcarComoLeida(notificacion.id);
@@ -60,7 +60,7 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
       setNotificaciones(prev => 
         prev.map(n => 
           n.id === notificacion.id 
-            ? { ...n, leida: true, fechaLectura: new Date().toISOString() }
+            ? { ...n, read: true, readAt: new Date().toISOString() }
             : n
         )
       );
@@ -71,16 +71,16 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
   };
 
   const renderNotificacion = (notificacion: Notificacion) => {
-    const icono = NotificacionService.getIconoNotificacion(notificacion.tipo);
-    const colorPrioridad = NotificacionService.getColorPrioridad(notificacion.prioridad);
-    const fechaFormateada = NotificacionService.formatearFecha(notificacion.fechaCreacion);
+    const icono = NotificacionService.getIconoNotificacion(notificacion.type);
+    const colorPrioridad = NotificacionService.getColorPrioridad(notificacion.priority);
+    const fechaFormateada = NotificacionService.formatearFecha(notificacion.createdAt);
 
     return (
       <TouchableOpacity
         key={notificacion.id}
         style={[
           styles.notificacionItem,
-          !notificacion.leida && styles.notificacionNoLeida
+          !notificacion.read && styles.notificacionNoLeida
         ]}
         onPress={() => marcarComoLeida(notificacion)}
       >
@@ -89,27 +89,27 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
           <View style={styles.notificacionInfo}>
             <Text style={[
               styles.notificacionMensaje,
-              !notificacion.leida && styles.notificacionMensajeNoLeida
+              !notificacion.read && styles.notificacionMensajeNoLeida
             ]}>
-              {notificacion.mensaje}
+              {notificacion.message}
             </Text>
             <View style={styles.notificacionMeta}>
               <Text style={styles.notificacionFecha}>{fechaFormateada}</Text>
-              {notificacion.prioridad !== 'normal' && (
+              {notificacion.priority !== 'normal' && (
                 <View style={[styles.prioridadBadge, { backgroundColor: colorPrioridad }]}>
                   <Text style={styles.prioridadText}>
-                    {notificacion.prioridad.toUpperCase()}
+                    {notificacion.priority.toUpperCase()}
                   </Text>
                 </View>
               )}
             </View>
           </View>
-          {!notificacion.leida && <View style={styles.puntoNoLeida} />}
+          {!notificacion.read && <View style={styles.puntoNoLeida} />}
         </View>
         
-        {notificacion.usuarioActorNombre && (
+        {notificacion.actorUserName && (
           <Text style={styles.notificacionActor}>
-            Por: {notificacion.usuarioActorNombre}
+            Por: {notificacion.actorUserName}
           </Text>
         )}
       </TouchableOpacity>

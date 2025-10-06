@@ -533,13 +533,28 @@ export default function CreateTicket() {
                 {/* Reset Button */}
                 {(chatHistory.length > 0 || message || showFreeText) && (
                   <div className="mt-4 text-center">
-                    <button
-                      type="button"
+                    <span
                       onClick={resetChat}
-                      className="text-sm text-primary hover:text-primary/80 underline"
+                      className="text-sm underline cursor-pointer"
+                      style={{ 
+                        color: '#007bff',
+                        backgroundColor: 'transparent', 
+                        border: 'none', 
+                        padding: 0,
+                        outline: 'none',
+                        boxShadow: 'none',
+                        background: 'none',
+                        backgroundImage: 'none',
+                        backgroundSize: 'none',
+                        backgroundPosition: 'none',
+                        backgroundRepeat: 'none',
+                        display: 'inline-block'
+                      }}
+                      onMouseEnter={(e) => e.target.style.color = '#0056b3'}
+                      onMouseLeave={(e) => e.target.style.color = '#007bff'}
                     >
                       {t("client.chat.reset")}
-                    </button>
+                    </span>
                   </div>
                 )}
               </div>

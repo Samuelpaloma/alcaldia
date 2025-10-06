@@ -79,21 +79,8 @@ export const useSystemColors = () => {
       }
     });
 
-    // Aplicar a botones secundarios
-    const secondaryButtons = document.querySelectorAll(
-      'button, .btn, [class*="bg-gray-"], [class*="bg-secondary"], [data-color="secondary"]'
-    );
-    secondaryButtons.forEach(button => {
-      if (button instanceof HTMLElement) {
-        const classList = button.className;
-        if (classList.includes('bg-gray-') || classList.includes('bg-secondary') || 
-            classList.includes('btn-secondary') || button.getAttribute('data-color') === 'secondary') {
-          button.style.backgroundColor = newColors.colorSecundario;
-          button.style.borderColor = newColors.colorSecundario;
-          button.style.color = '#ffffff';
-        }
-      }
-    });
+    // NO APLICAR color secundario a nada - se mantiene el color original
+    // El color secundario no debe afectar ningún elemento
 
     // Aplicar a sidebar
     const sidebarElements = document.querySelectorAll(
@@ -105,13 +92,32 @@ export const useSystemColors = () => {
       }
     });
 
-    // Aplicar color de texto
+    // Aplicar color de texto SOLO a elementos de texto, NO a contenedores
     const textElements = document.querySelectorAll(
-      'p, span, div, h1, h2, h3, h4, h5, h6, .text-content, .content'
+      'p, span, h1, h2, h3, h4, h5, h6, label, a, strong, em, small, b, i, .text-content, .text'
     );
     textElements.forEach(element => {
       if (element instanceof HTMLElement) {
-        element.style.color = newColors.colorTexto;
+        // Solo aplicar si es realmente texto, no un contenedor
+        const isTextElement = element.tagName === 'P' || 
+                             element.tagName === 'SPAN' || 
+                             element.tagName === 'H1' || 
+                             element.tagName === 'H2' || 
+                             element.tagName === 'H3' || 
+                             element.tagName === 'H4' || 
+                             element.tagName === 'H5' || 
+                             element.tagName === 'H6' ||
+                             element.tagName === 'LABEL' ||
+                             element.tagName === 'A' ||
+                             element.tagName === 'STRONG' ||
+                             element.tagName === 'EM' ||
+                             element.tagName === 'SMALL' ||
+                             element.tagName === 'B' ||
+                             element.tagName === 'I';
+        
+        if (isTextElement) {
+          element.style.color = newColors.colorTexto;
+        }
       }
     });
 

@@ -10,6 +10,7 @@ import LogoutModal from "../auth/LogoutModal";
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
+import { useForceColorApplication } from "../../hooks/useForceColorApplication";
 import "./AppLayout.css";
 
 export default function AdminLayout() {
@@ -18,6 +19,9 @@ export default function AdminLayout() {
   const { userInfo } = useUserInfo();
   const userEmail = userInfo?.email || 'samupalo3@gmail.com'; // Fallback para admin
   const userRole = userInfo?.tipoUsuario?.toLowerCase() || 'administrador'; // Fallback para admin
+  
+  // Forzar aplicación de colores del sistema
+  useForceColorApplication();
   
   console.log('🔔 AdminLayout: ===== INFORMACIÓN DEL USUARIO =====');
   console.log('🔔 AdminLayout: userInfo completo:', userInfo);

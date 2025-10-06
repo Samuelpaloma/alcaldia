@@ -33,56 +33,112 @@ export default function EvidenceModal({ visible, onClose, ticketId, onEvidenceUp
     try {
       console.log('📁 Iniciando selección de archivo...');
       
-      // Crear input file para web - solo imágenes y videos
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*,video/*';
-      input.style.display = 'none';
-      
-      // Agregar al DOM temporalmente
-      document.body.appendChild(input);
-      
-      // Crear promesa para manejar la selección
-      const filePromise = new Promise((resolve, reject) => {
-        input.onchange = (e) => {
-          const file = (e.target as HTMLInputElement).files?.[0];
-          if (file) {
-            resolve(file);
-          } else {
-            reject(new Error('No se seleccionó ningún archivo'));
-          }
-          // Limpiar el input
-          document.body.removeChild(input);
-        };
-        
-        input.oncancel = () => {
-          reject(new Error('Selección cancelada'));
-          document.body.removeChild(input);
-        };
-      });
-      
-      // Abrir el selector de archivos
-      input.click();
-      
-      // Esperar a que el usuario seleccione un archivo
-      const file = await filePromise as File;
-      
-      console.log('📁 Archivo seleccionado:', file);
-      
-      // Convertir a formato compatible
-      const archivoSeleccionado = {
-        uri: URL.createObjectURL(file),
-        type: file.type || 'application/octet-stream',
-        name: file.name || `evidencia_${Date.now()}`,
-        size: file.size,
-      };
-      
-      console.log('📁 Archivo procesado:', archivoSeleccionado);
-      setArchivo(archivoSeleccionado);
+      // Mostrar opciones de selección
+      Alert.alert(
+        'Seleccionar archivo',
+        '¿Qué tipo de archivo quieres subir?',
+        [
+          {
+            text: 'Cámara',
+            onPress: () => seleccionarDesdeCamara(),
+          },
+          {
+            text: 'Galería',
+            onPress: () => seleccionarDesdeGaleria(),
+          },
+          {
+            text: 'Documento',
+            onPress: () => seleccionarDocumento(),
+          },
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+        ]
+      );
       
     } catch (error) {
       console.error('❌ Error seleccionando archivo:', error);
-      Alert.alert('Error', 'No se pudo seleccionar el archivo: ' + error.message);
+      Alert.alert('Error', 'No se pudo seleccionar el archivo');
+    }
+  };
+
+  const seleccionarDesdeCamara = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const archivoSeleccionado = {
+          uri: asset.uri,
+          type: asset.type || 'image/jpeg',
+          name: `evidencia_${Date.now()}.${asset.type?.includes('video') ? 'mp4' : 'jpg'}`,
+          size: asset.fileSize || 0,
+        };
+        
+        console.log('📁 Archivo desde cámara:', archivoSeleccionado);
+        setArchivo(archivoSeleccionado);
+      }
+    } catch (error) {
+      console.error('❌ Error desde cámara:', error);
+      Alert.alert('Error', 'No se pudo acceder a la cámara');
+    }
+  };
+
+  const seleccionarDesdeGaleria = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const archivoSeleccionado = {
+          uri: asset.uri,
+          type: asset.type || 'image/jpeg',
+          name: `evidencia_${Date.now()}.${asset.type?.includes('video') ? 'mp4' : 'jpg'}`,
+          size: asset.fileSize || 0,
+        };
+        
+        console.log('📁 Archivo desde galería:', archivoSeleccionado);
+        setArchivo(archivoSeleccionado);
+      }
+    } catch (error) {
+      console.error('❌ Error desde galería:', error);
+      Alert.alert('Error', 'No se pudo acceder a la galería');
+    }
+  };
+
+  const seleccionarDocumento = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const archivoSeleccionado = {
+          uri: asset.uri,
+          type: asset.mimeType || 'application/octet-stream',
+          name: asset.name || `evidencia_${Date.now()}`,
+          size: asset.size || 0,
+        };
+        
+        console.log('📁 Documento seleccionado:', archivoSeleccionado);
+        setArchivo(archivoSeleccionado);
+      }
+    } catch (error) {
+      console.error('❌ Error seleccionando documento:', error);
+      Alert.alert('Error', 'No se pudo seleccionar el documento');
     }
   };
 

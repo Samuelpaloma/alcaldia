@@ -1,0 +1,181 @@
+/* Variables CSS globales para colores del sistema */
+:root {
+  --system-primary: #007bff;
+  --system-secondary: #6c757d;
+  --system-background: #ffffff;
+  --system-text: #000000;
+  --system-container: #ffffff;
+  --system-container-secondary: #f8f9fa;
+}
+
+/* Aplicar colores del sistema globalmente - SOLO al fondo principal */
+html, body {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+/* Aplicar colores del sistema SOLO al área principal, NO a contenedores específicos */
+main:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]),
+.main-content:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]),
+.content-area:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]),
+.dashboard-container:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]),
+.dashboard-content:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]) {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+/* NO aplicar fondo a contenedores específicos - mantener sus colores originales */
+.card,
+.bg-white,
+.bg-gray-50,
+.bg-slate-50,
+.bg-gray-100,
+.bg-slate-100,
+[class*="bg-white"],
+[class*="bg-gray-50"],
+[class*="bg-slate-50"],
+[class*="bg-gray-100"],
+[class*="bg-slate-100"] {
+  /* Mantener colores originales de contenedores */
+  background-color: var(--system-container) !important;
+}
+
+/* Contenedores secundarios */
+.bg-gray-100,
+.bg-slate-100,
+[class*="bg-gray-100"],
+[class*="bg-slate-100"] {
+  background-color: var(--system-container-secondary) !important;
+}
+
+/* Aplicar colores a elementos específicos usando las variables CSS */
+.bg-system-primary {
+  background-color: var(--system-primary) !important;
+}
+
+.bg-system-secondary {
+  background-color: var(--system-secondary) !important;
+}
+
+.bg-system-background {
+  background-color: var(--system-background) !important;
+}
+
+.bg-system-container {
+  background-color: var(--system-container) !important;
+}
+
+.bg-system-container-secondary {
+  background-color: var(--system-container-secondary) !important;
+}
+
+.text-system-primary {
+  color: var(--system-primary) !important;
+}
+
+.text-system-secondary {
+  color: var(--system-secondary) !important;
+}
+
+/* FORZAR colores de contenedores específicos del dashboard */
+.card,
+.bg-card,
+.bg-white,
+.bg-gray-50,
+.bg-slate-50,
+.container,
+.container-fluid,
+[class*="bg-white"],
+[class*="bg-gray-50"],
+[class*="bg-slate-50"],
+.metric-card,
+.ticket-item,
+.tickets-list .ticket-item,
+.empty-state,
+.ticket-info,
+.ticket-header,
+.ticket-subject {
+  background-color: var(--system-container) !important;
+  color: var(--system-text) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Contenedores secundarios específicos */
+.bg-gray-100,
+.bg-slate-100,
+.secondary-container,
+.sub-container,
+.panel,
+.widget,
+[class*="bg-gray-100"],
+[class*="bg-slate-100"],
+.metric-details,
+.ticket-meta,
+.ticket-technician {
+  background-color: var(--system-container-secondary) !important;
+  color: var(--system-text) !important;
+}
+
+/* Rectángulos de tickets - usar colorContenedorSecundario */
+.bg-card,
+[class*="bg-card"],
+.border,
+.rounded-lg,
+.hover\:shadow-lg,
+.hover\:shadow-xl,
+.group,
+.ticket-item,
+.tickets-list .ticket-item,
+.ticket-info,
+.ticket-header,
+.ticket-subject,
+.ticket-technician,
+.ticket-meta,
+.ticket-priority,
+.ticket-date,
+.status-badge,
+.priority-badge,
+.category-badge {
+  background-color: var(--system-container-secondary) !important;
+  color: var(--system-text) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.text-system-text {
+  color: var(--system-text) !important;
+}
+
+.border-system-primary {
+  border-color: var(--system-primary) !important;
+}
+
+.border-system-secondary {
+  border-color: var(--system-secondary) !important;
+}
+
+/* Botones con colores del sistema */
+.btn-primary {
+  background-color: var(--system-primary) !important;
+  border-color: var(--system-primary) !important;
+  color: white !important;
+}
+
+.btn-secondary {
+  background-color: var(--system-secondary) !important;
+  border-color: var(--system-secondary) !important;
+  color: white !important;
+}
+
+/* Sidebar y navegación */
+.sidebar,
+.nav-container,
+aside,
+nav {
+  background-color: var(--system-primary) !important;
+  color: white !important;
+}
+
+/* Texto en elementos */
+p, span, div, h1, h2, h3, h4, h5, h6, .text-content, .content {
+  color: var(--system-text);
+}

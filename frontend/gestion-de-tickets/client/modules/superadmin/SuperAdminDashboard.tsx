@@ -103,7 +103,9 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
         colorPrimario: configuraciones.apariencia?.colorPrimario || colors.colorPrimario,
         colorSecundario: configuraciones.apariencia?.colorSecundario || colors.colorSecundario,
         colorFondo: configuraciones.apariencia?.colorFondo || colors.colorFondo,
-        colorTexto: configuraciones.apariencia?.colorTexto || colors.colorTexto || '#000000'
+        colorTexto: configuraciones.apariencia?.colorTexto || colors.colorTexto || '#000000',
+        colorContenedor: configuraciones.apariencia?.colorContenedor || colors.colorContenedor || '#ffffff',
+        colorContenedorSecundario: configuraciones.apariencia?.colorContenedorSecundario || colors.colorContenedorSecundario || '#f8f9fa'
       };
       
       // Usar el sistema global para actualizar colores
@@ -350,6 +352,46 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                     />
                     <span className="font-mono text-sm text-gray-600">
                       {configuraciones.apariencia?.colorFondo || colors.colorFondo}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Contenedores</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={configuraciones.apariencia?.colorContenedor || colors.colorContenedor || '#ffffff'}
+                      onChange={(e) => {
+                        const newConfigs = { ...configuraciones };
+                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
+                        newConfigs.apariencia.colorContenedor = e.target.value;
+                        setConfiguraciones(newConfigs);
+                      }}
+                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
+                    />
+                    <span className="font-mono text-sm text-gray-600">
+                      {configuraciones.apariencia?.colorContenedor || colors.colorContenedor || '#ffffff'}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Contenedores Secundarios</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={configuraciones.apariencia?.colorContenedorSecundario || colors.colorContenedorSecundario || '#f8f9fa'}
+                      onChange={(e) => {
+                        const newConfigs = { ...configuraciones };
+                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
+                        newConfigs.apariencia.colorContenedorSecundario = e.target.value;
+                        setConfiguraciones(newConfigs);
+                      }}
+                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
+                    />
+                    <span className="font-mono text-sm text-gray-600">
+                      {configuraciones.apariencia?.colorContenedorSecundario || colors.colorContenedorSecundario || '#f8f9fa'}
                     </span>
                   </div>
                 </div>

@@ -108,7 +108,8 @@ public class ConfiguracionService {
     /**
      * Actualizar colores del sistema
      */
-    public void actualizarColores(String colorPrimario, String colorSecundario, String colorFondo) {
+    public void actualizarColores(String colorPrimario, String colorSecundario, String colorFondo, 
+                                 String colorTexto, String colorContenedor, String colorContenedorSecundario) {
         log.info("Actualizando colores del sistema");
         
         if (colorPrimario != null) {
@@ -135,6 +136,33 @@ public class ConfiguracionService {
                 .valor(colorFondo)
                 .categoria("colores")
                 .descripcion("Color de fondo del sistema")
+                .build());
+        }
+        
+        if (colorTexto != null) {
+            crearOActualizarConfiguracion(ConfiguracionRequestDTO.builder()
+                .clave("color_texto")
+                .valor(colorTexto)
+                .categoria("colores")
+                .descripcion("Color de texto del sistema")
+                .build());
+        }
+        
+        if (colorContenedor != null) {
+            crearOActualizarConfiguracion(ConfiguracionRequestDTO.builder()
+                .clave("color_contenedor")
+                .valor(colorContenedor)
+                .categoria("colores")
+                .descripcion("Color de contenedores del sistema")
+                .build());
+        }
+        
+        if (colorContenedorSecundario != null) {
+            crearOActualizarConfiguracion(ConfiguracionRequestDTO.builder()
+                .clave("color_contenedor_secundario")
+                .valor(colorContenedorSecundario)
+                .categoria("colores")
+                .descripcion("Color de contenedores secundarios del sistema")
                 .build());
         }
     }
@@ -185,7 +213,7 @@ public class ConfiguracionService {
         log.info("Creando configuraciones por defecto");
         
         // Colores por defecto
-        actualizarColores("#1976d2", "#dc004e", "#f5f5f5");
+        actualizarColores("#1976d2", "#dc004e", "#f5f5f5", "#000000", "#ffffff", "#f8f9fa");
         
         // Logo por defecto
         actualizarLogo("/images/logo-sena.png", "Sistema de Gestión de Tickets");
@@ -244,6 +272,26 @@ public class ConfiguracionService {
             colores.put("colorTexto", colorTexto.getValor());
         } else {
             colores.put("colorTexto", "#000000"); // Valor por defecto
+        }
+        
+        // Obtener color de contenedor
+        ConfiguracionSistema colorContenedor = configuracionRepository.findByClave("color_contenedor")
+            .filter(ConfiguracionSistema::getActiva)
+            .orElse(null);
+        if (colorContenedor != null) {
+            colores.put("colorContenedor", colorContenedor.getValor());
+        } else {
+            colores.put("colorContenedor", "#ffffff"); // Valor por defecto
+        }
+        
+        // Obtener color de contenedor secundario
+        ConfiguracionSistema colorContenedorSecundario = configuracionRepository.findByClave("color_contenedor_secundario")
+            .filter(ConfiguracionSistema::getActiva)
+            .orElse(null);
+        if (colorContenedorSecundario != null) {
+            colores.put("colorContenedorSecundario", colorContenedorSecundario.getValor());
+        } else {
+            colores.put("colorContenedorSecundario", "#f8f9fa"); // Valor por defecto
         }
         
         log.info("Colores obtenidos: {}", colores);

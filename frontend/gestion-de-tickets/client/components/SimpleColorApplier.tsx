@@ -1,15 +1,20 @@
 import React, { useEffect } from 'react';
 import { useGlobalSystem } from './GlobalSystemProvider';
 
-const GlobalColorApplier: React.FC = () => {
+/**
+ * Componente simple que aplica colores de manera controlada
+ * Solo aplica el fondo principal y deja que los contenedores mantengan sus colores
+ */
+const SimpleColorApplier: React.FC = () => {
   const { colors } = useGlobalSystem();
 
   useEffect(() => {
     if (!colors) return;
 
-    console.log('🎨 [GlobalColorApplier] Aplicando colores globales:', colors);
+    console.log('🎨 [SimpleColorApplier] Aplicando colores de manera controlada...');
 
     const applyColors = () => {
+      // 1. Aplicar a variables CSS globales
       const root = document.documentElement;
       root.style.setProperty('--system-primary', colors.colorPrimario);
       root.style.setProperty('--system-secondary', colors.colorSecundario);
@@ -18,45 +23,53 @@ const GlobalColorApplier: React.FC = () => {
       root.style.setProperty('--system-container', colors.colorContenedor || '#ffffff');
       root.style.setProperty('--system-container-secondary', colors.colorContenedorSecundario || '#f8f9fa');
 
-      // Aplicar color de fondo global con !important a html y body
+      // 2. Aplicar SOLO al body y html (fondo principal)
       document.body.style.setProperty('background-color', colors.colorFondo, 'important');
       document.body.style.setProperty('color', colors.colorTexto, 'important');
       document.documentElement.style.setProperty('background-color', colors.colorFondo, 'important');
 
-      // Verificar si estamos en superadmin para no aplicar colores agresivos
-      const currentPath = window.location.pathname;
-      const isSuperAdmin = currentPath.includes('/superadmin');
-      
-      console.log('🔍 [GlobalColorApplier] Ruta actual:', currentPath, 'Es superadmin:', isSuperAdmin);
+      // 3. Aplicar a elementos principales SIN tocar contenedores
+      const mainSelectors = [
+        'main:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"])',
+        '.main-content:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"])',
+        '.content-area:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"])',
+        '.dashboard-container:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"])',
+        '.dashboard-content:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"])'
+      ];
 
-      // Aplicar SOLO al área principal, NO a contenedores específicos
-      const mainElements = document.querySelectorAll(
-        'main:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]), ' +
-        '.main-content:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]), ' +
-        '.content-area:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]), ' +
-        '.dashboard-container:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"])'
-      );
-      mainElements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.style.setProperty('background-color', colors.colorFondo, 'important');
-          element.style.setProperty('color', colors.colorTexto, 'important');
-        }
+      mainSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          if (element instanceof HTMLElement) {
+            // Verificar que NO sea un contenedor específico
+            const isContainer = element.classList.contains('card') ||
+                              element.classList.contains('bg-white') ||
+                              element.classList.contains('bg-gray-50') ||
+                              element.classList.contains('bg-slate-50') ||
+                              element.classList.contains('bg-gray-100') ||
+                              element.classList.contains('bg-slate-100') ||
+                              element.querySelector('.card, .bg-white, .bg-gray-50, .bg-slate-50, .bg-gray-100, .bg-slate-100');
+            
+            if (!isContainer) {
+              element.style.setProperty('background-color', colors.colorFondo, 'important');
+              element.style.setProperty('color', colors.colorTexto, 'important');
+            }
+          }
+        });
       });
 
-      // Aplicar a cards y contenedores principales
-      const cardSelectors = [
+      // 4. Aplicar a contenedores específicos (cards, etc.)
+      const containerSelectors = [
         '.card',
-        '.bg-card',
         '.bg-white',
         '.bg-gray-50',
         '.bg-slate-50',
-        '.container',
-        '.container-fluid',
         '[class*="bg-white"]',
         '[class*="bg-gray-50"]',
         '[class*="bg-slate-50"]'
       ];
-      cardSelectors.forEach(selector => {
+
+      containerSelectors.forEach(selector => {
         const elements = document.querySelectorAll(selector);
         elements.forEach(element => {
           if (element instanceof HTMLElement) {
@@ -66,17 +79,14 @@ const GlobalColorApplier: React.FC = () => {
         });
       });
 
-      // Aplicar a contenedores secundarios
+      // 5. Aplicar a contenedores secundarios
       const secondaryContainerSelectors = [
         '.bg-gray-100',
         '.bg-slate-100',
-        '.secondary-container',
-        '.sub-container',
-        '.panel',
-        '.widget',
         '[class*="bg-gray-100"]',
         '[class*="bg-slate-100"]'
       ];
+
       secondaryContainerSelectors.forEach(selector => {
         const elements = document.querySelectorAll(selector);
         elements.forEach(element => {
@@ -87,47 +97,26 @@ const GlobalColorApplier: React.FC = () => {
         });
       });
 
-      // Solo aplicar colores agresivos si NO estamos en superadmin
-      if (!isSuperAdmin) {
-        console.log('🎨 [GlobalColorApplier] Aplicando colores agresivos (NO superadmin)');
-        
-        // Aplicar a la barra lateral (sidebar)
-        const sidebarElements = document.querySelectorAll('aside, .sidebar, .nav-container, .left-sidebar');
-        sidebarElements.forEach(element => {
+      // 6. Aplicar a sidebar y navegación
+      const sidebarSelectors = [
+        'aside',
+        'nav',
+        '.sidebar',
+        '[class*="sidebar"]',
+        '[class*="nav"]'
+      ];
+
+      sidebarSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
           if (element instanceof HTMLElement) {
             element.style.setProperty('background-color', colors.colorPrimario, 'important');
             element.style.setProperty('color', '#ffffff', 'important');
           }
         });
+      });
 
-        // NO APLICAR color secundario a la barra superior - mantener color original
-        // El color secundario no debe afectar ningún elemento
-
-        // Aplicar a botones y elementos interactivos
-        const primaryButtons = document.querySelectorAll('button.btn-primary, .bg-primary, .text-primary, .new-ticket-button');
-        primaryButtons.forEach(element => {
-          if (element instanceof HTMLElement) {
-            element.style.setProperty('background-color', colors.colorPrimario, 'important');
-            element.style.setProperty('color', '#ffffff', 'important');
-          }
-        });
-
-        // NO APLICAR color secundario a botones secundarios - mantener color original
-        // El color secundario no debe afectar ningún elemento
-
-        // Asegurar que los enlaces dentro del sidebar tengan el color de texto correcto
-        const sidebarLinks = document.querySelectorAll('.sidebar a, .nav-container a, .left-sidebar a');
-        sidebarLinks.forEach(element => {
-          if (element instanceof HTMLElement) {
-            element.style.setProperty('color', '#ffffff', 'important');
-          }
-        });
-      } else {
-        console.log('🎨 [GlobalColorApplier] Saltando aplicación agresiva (ES superadmin)');
-      }
-
-      console.log('✅ [GlobalColorApplier] Colores aplicados con éxito.');
-      // Aplicar color de texto SOLO a elementos de texto reales
+      // 7. Aplicar color de texto SOLO a elementos de texto reales
       const textSelectors = [
         'p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
         'label', 'a', 'strong', 'em', 'small', 'b', 'i',
@@ -162,17 +151,19 @@ const GlobalColorApplier: React.FC = () => {
         });
       });
 
-      console.log('✅ [GlobalColorApplier] Colores aplicados globalmente');
+      console.log('✅ [SimpleColorApplier] Colores aplicados de manera controlada');
     };
 
-    // Aplicar inmediatamente y re-aplicar periódicamente para asegurar persistencia
+    // Aplicar inmediatamente
     applyColors();
-    const intervalId = setInterval(applyColors, 1000); // Re-apply every second
+
+    // Re-aplicar cada 3 segundos (menos frecuente)
+    const intervalId = setInterval(applyColors, 3000);
 
     return () => clearInterval(intervalId);
   }, [colors]);
 
-  return null;
+  return null; // Este componente no renderiza nada
 };
 
-export default GlobalColorApplier;
+export default SimpleColorApplier;

@@ -3,16 +3,16 @@ import { API_CONFIG } from '../config/api';
 
 export interface Notificacion {
   id: number;
-  tipo: string;
-  mensaje: string;
+  type: string;
+  message: string;
   ticketId?: number;
-  usuarioActorId?: number;
-  usuarioActorEmail?: string;
-  usuarioActorNombre?: string;
-  prioridad: string;
-  leida: boolean;
-  fechaCreacion: string;
-  fechaLectura?: string;
+  actorUserId?: number;
+  actorUserEmail?: string;
+  actorUserName?: string;
+  priority: string;
+  read: boolean;
+  createdAt: string;
+  readAt?: string;
 }
 
 export interface PreferenciasNotificacion {
@@ -75,7 +75,7 @@ class NotificacionService {
   // Obtener todas las notificaciones del usuario
   async getNotificaciones(): Promise<Notificacion[]> {
     try {
-      const response = await this.makeRequest('/notificaciones/movil');
+      const response = await this.makeRequest('/api/notificaciones/movil');
       return response.notificaciones || [];
     } catch (error) {
       console.error('Error obteniendo notificaciones:', error);
@@ -86,7 +86,7 @@ class NotificacionService {
   // Obtener notificaciones no leídas
   async getNotificacionesNoLeidas(): Promise<{ notificaciones: Notificacion[]; count: number }> {
     try {
-      const response = await this.makeRequest('/notificaciones/movil/no-leidas');
+      const response = await this.makeRequest('/api/notificaciones/movil/no-leidas');
       return {
         notificaciones: response.notificaciones || [],
         count: response.count || 0
@@ -100,7 +100,7 @@ class NotificacionService {
   // Marcar notificación como leída
   async marcarComoLeida(notificacionId: number): Promise<void> {
     try {
-      await this.makeRequest(`/notificaciones/movil/${notificacionId}/leer`, 'PUT');
+      await this.makeRequest(`/api/notificaciones/movil/${notificacionId}/leer`, 'PUT');
     } catch (error) {
       console.error('Error marcando notificación como leída:', error);
       throw error;
@@ -110,7 +110,7 @@ class NotificacionService {
   // Obtener preferencias de notificación
   async getPreferencias(): Promise<PreferenciasNotificacion> {
     try {
-      const response = await this.makeRequest('/notificaciones/movil/preferencias');
+      const response = await this.makeRequest('/api/notificaciones/movil/preferencias');
       return response.preferencias;
     } catch (error) {
       console.error('Error obteniendo preferencias:', error);
@@ -121,7 +121,7 @@ class NotificacionService {
   // Actualizar preferencias de notificación
   async actualizarPreferencias(preferencias: Partial<PreferenciasNotificacion>): Promise<PreferenciasNotificacion> {
     try {
-      const response = await this.makeRequest('/notificaciones/movil/preferencias', 'PUT', preferencias);
+      const response = await this.makeRequest('/api/notificaciones/movil/preferencias', 'PUT', preferencias);
       return response.preferencias;
     } catch (error) {
       console.error('Error actualizando preferencias:', error);
@@ -133,7 +133,7 @@ class NotificacionService {
   async getContadorNotificaciones(token: string, email: string): Promise<number> {
     console.log('🔔 [SERVICE] Obteniendo contador de notificaciones para:', email);
     try {
-      const response = await this.makeRequest(`/notificaciones/movil/contador?email=${encodeURIComponent(email)}`, 'GET', null, token);
+      const response = await this.makeRequest(`/api/notificaciones/movil/contador?email=${encodeURIComponent(email)}`, 'GET', null, token);
       console.log('🔔 [SERVICE] Contador de notificaciones recibido:', response);
       return response.count || 0;
     } catch (error) {

@@ -165,8 +165,8 @@
 
 /* ===== ESTILOS GLOBALES DEL SISTEMA ===== */
 
-/* Aplicar colores del sistema globalmente */
-body {
+/* Aplicar colores del sistema globalmente - MÁS AGRESIVO */
+html, body {
   background-color: var(--system-background) !important;
   color: var(--system-text) !important;
 }
@@ -177,17 +177,37 @@ body {
   --tw-text-opacity: 1;
 }
 
-/* Aplicar colores del sistema a todos los elementos */
-html {
-  background-color: var(--system-background) !important;
-}
-
-/* Forzar colores en elementos específicos */
-.app-container,
-.main-content,
-.content-wrapper {
+/* Aplicar colores del sistema SOLO al área principal, NO a contenedores específicos */
+main:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]),
+.main-content:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]),
+.content-area:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]),
+.app-container > div:first-child:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg-slate"]) {
   background-color: var(--system-background) !important;
   color: var(--system-text) !important;
+}
+
+/* NO aplicar fondo a contenedores específicos - mantener sus colores originales */
+.card,
+.bg-white,
+.bg-gray-50,
+.bg-slate-50,
+.bg-gray-100,
+.bg-slate-100,
+[class*="bg-white"],
+[class*="bg-gray-50"],
+[class*="bg-slate-50"],
+[class*="bg-gray-100"],
+[class*="bg-slate-100"] {
+  /* Mantener colores originales de contenedores */
+  background-color: var(--system-container) !important;
+}
+
+/* Contenedores secundarios */
+.bg-gray-100,
+.bg-slate-100,
+[class*="bg-gray-100"],
+[class*="bg-slate-100"] {
+  background-color: var(--system-container-secondary) !important;
 }
 
 /* Botones primarios globales */

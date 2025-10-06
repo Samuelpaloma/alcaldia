@@ -4,6 +4,7 @@ import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { logout } from "../auth/auth";
 import SystemColorLoader from "../../components/SystemColorLoader";
+import { useForceColorApplication } from "../../hooks/useForceColorApplication";
 import "./AppLayout.css";
 
 export default function SuperAdminLayout() {
@@ -11,6 +12,9 @@ export default function SuperAdminLayout() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const onLogout = () => { logout(); navigate("/login", { replace: true }); };
+  
+  // Forzar aplicación de colores del sistema
+  useForceColorApplication();
   
   return (
     <div className="app-container grid md:grid-cols-[240px_1fr]">

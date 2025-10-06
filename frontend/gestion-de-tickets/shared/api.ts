@@ -1584,12 +1584,71 @@ class ApiClient {
     return this.request('/superadmin/configuraciones');
   }
 
+  async getColoresSistema(): Promise<{ success: boolean; data?: any }> {
+    try {
+      console.log('🎨 Obteniendo colores del sistema...');
+      
+      // Usar el endpoint público para colores
+      const response = await this.request<{ success: boolean; data?: any }>('/superadmin/configuraciones/colores');
+      console.log('📡 Respuesta de colores:', response);
+      
+      if (response.success && response.data) {
+        const coloresSistema = {
+          colorPrimario: response.data.colorPrimario || '#007bff',
+          colorSecundario: response.data.colorSecundario || '#6c757d',
+          colorFondo: response.data.colorFondo || '#ffffff',
+          colorTexto: response.data.colorTexto || '#000000',
+          colorContenedor: response.data.colorContenedor || '#ffffff',
+          colorContenedorSecundario: response.data.colorContenedorSecundario || '#f8f9fa'
+        };
+        
+        console.log('✅ Colores del sistema cargados:', coloresSistema);
+        
+        return {
+          success: true,
+          data: coloresSistema
+        };
+      } else {
+        throw new Error('No se pudieron obtener colores del sistema');
+      }
+    } catch (error) {
+      console.error('❌ Error obteniendo colores del sistema:', error);
+      
+      // Retornar colores por defecto en caso de error
+      const coloresPorDefecto = {
+        colorPrimario: '#007bff',
+        colorSecundario: '#6c757d',
+        colorFondo: '#ffffff',
+        colorTexto: '#000000',
+        colorContenedor: '#ffffff',
+        colorContenedorSecundario: '#f8f9fa'
+      };
+      
+      console.log('⚠️ Usando colores por defecto:', coloresPorDefecto);
+      
+      return {
+        success: true, // Cambiado a true para que no falle la UI
+        data: coloresPorDefecto
+      };
+    }
+  }
+
   async getConfiguracionesPorCategoria(categoria: string): Promise<ConfiguracionResponseDTO[]> {
     return this.request(`/superadmin/configuraciones/${categoria}`);
   }
 
   async actualizarColores(data: ConfiguracionRequestDTO): Promise<ApiResponse> {
     return this.request('/superadmin/configuraciones/colores', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async actualizarColoresContenedores(data: {
+    colorContenedor?: string;
+    colorContenedorSecundario?: string;
+  }): Promise<ApiResponse> {
+    return this.request('/superadmin/configuraciones/colores-contenedores', {
       method: 'PUT',
       body: JSON.stringify(data),
     });

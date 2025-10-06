@@ -10,11 +10,9 @@ const isWeb = Platform.OS === 'web';
 let BASE_URL;
 if (isWeb) {
   BASE_URL = 'http://localhost:8080';
-} else if (isAndroidEmulator) {
-  BASE_URL = 'http://10.0.2.2:8080';
 } else {
-  // Para dispositivos físicos (tanto Android como iOS)
-  BASE_URL = 'http://10.3.234.28:8080';
+  // Para Expo Go y dispositivos físicos - usar tu IP real
+  BASE_URL = 'http://192.168.1.10:8080'; // Tu IP real
 }
 
 // Debug temporal para identificar el problema
@@ -69,11 +67,11 @@ export const API_CONFIG = {
       THEME_PREFERENCES: '/api/usuario/preferencias-tema'
     },
     WEBSOCKET: {
-      BASE_URL: 'ws://10.0.2.2:8080/ws', // Para emulador Android
-      PHYSICAL_DEVICE_URL: 'ws://10.3.234.28:8080/ws' // Para dispositivo físico
+      BASE_URL: 'ws://192.168.1.10:8080/ws', // Para Expo Go y dispositivos
+      PHYSICAL_DEVICE_URL: 'ws://192.168.1.10:8080/ws' // Para dispositivo físico
     }
   },
-  TIMEOUT: 10000, // 10 segundos
+  TIMEOUT: 30000, // 30 segundos
   HEADERS: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
@@ -209,9 +207,13 @@ export interface DashboardData {
 // Función auxiliar para hacer peticiones HTTP
 const makeRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+  const timeoutId = setTimeout(() => {
+    console.log('⏰ [TIMEOUT] Request timeout after', API_CONFIG.TIMEOUT, 'ms');
+    controller.abort();
+  }, API_CONFIG.TIMEOUT);
 
   try {
+    console.log('🌐 [REQUEST] Making request to:', url);
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
@@ -222,9 +224,11 @@ const makeRequest = async (url: string, options: RequestInit = {}): Promise<Resp
     });
     
     clearTimeout(timeoutId);
+    console.log('✅ [RESPONSE] Status:', response.status, 'for URL:', url);
     return response;
   } catch (error) {
     clearTimeout(timeoutId);
+    console.log('❌ [ERROR] Request failed for URL:', url, 'Error:', error);
     throw error;
   }
 };
@@ -775,6 +779,22 @@ export const evidenciasAPI = {
     return '';
   },
 
+  // Obtener URL de preview (función que se está llamando en el código)
+  async getPreviewUrl(ticketId: number, archivoId: string | number): Promise<string> {
+    try {
+      // En React Native, usar directamente la URL del endpoint
+      // El endpoint devuelve la imagen directamente
+      const previewUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVIDENCIAS.PREVIEW_FILE}/${ticketId}/${archivoId}`;
+      
+      console.log('👁️ [PREVIEW] URL de previsualización directa:', previewUrl);
+      return previewUrl;
+    } catch (error) {
+      console.error('Error obteniendo URL de preview:', error);
+      // Fallback: construir URL directa
+      return `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVIDENCIAS.PREVIEW_FILE}/${ticketId}/${archivoId}`;
+    }
+  },
+
   // Obtener URL de descarga de archivo
   getFileDownloadUrl(ticketId: number, evidence: Evidence): string {
     if (evidence.idArchivo) {
@@ -783,6 +803,20 @@ export const evidenciasAPI = {
       return `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVIDENCIAS.DOWNLOAD_FILE}/${ticketId}/${evidence.nombreCompletoArchivo}/descargar`;
     }
     return '';
+  },
+
+  // Obtener URL de descarga (función que se está llamando en el código)
+  async getDownloadUrl(ticketId: number, archivoId: string | number): Promise<string> {
+    try {
+      // Construir URL de descarga directa
+      const downloadUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVIDENCIAS.DOWNLOAD_FILE}/${ticketId}/${archivoId}`;
+      
+      console.log('📥 [DOWNLOAD] URL de descarga:', downloadUrl);
+      return downloadUrl;
+    } catch (error) {
+      console.error('Error obteniendo URL de descarga:', error);
+      throw error;
+    }
   }
 };
 

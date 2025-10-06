@@ -427,27 +427,14 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     try {
       console.log('📱 [EVIDENCIA] Descargando evidencia:', nombreArchivo, 'del ticket:', ticketId);
       
-      const blob = await evidenciasAPI.downloadEvidence(ticketId, nombreArchivo);
+      // En React Native, usar Linking para abrir la URL de descarga
+      const downloadUrl = `${API_CONFIG.BASE_URL}/api/evidencias/descargar/${ticketId}/${encodeURIComponent(nombreArchivo)}`;
       
-      // Crear URL temporal para el archivo
-      const url = window.URL.createObjectURL(blob);
+      const { Linking } = require('react-native');
+      await Linking.openURL(downloadUrl);
       
-      // Crear elemento de descarga
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = nombreArchivo; // Nombre del archivo
-      link.style.display = 'none';
-      
-      // Agregar al DOM, hacer click y remover
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Limpiar la URL temporal
-      window.URL.revokeObjectURL(url);
-      
-      console.log('✅ [EVIDENCIA] Descarga exitosa');
-      Alert.alert('Éxito', `Archivo ${nombreArchivo} descargado exitosamente`);
+      console.log('✅ [EVIDENCIA] Descarga iniciada');
+      Alert.alert('Éxito', `Descarga de ${nombreArchivo} iniciada`);
     } catch (error) {
       console.error('❌ [EVIDENCIA] Error descargando archivo:', error);
       const errorMessage = (error as Error).message || 'Error de conexión al descargar';
@@ -808,46 +795,91 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     const [descripcion, setDescripcion] = useState('');
 
     const seleccionarArchivo = () => {
-      // Crear un input de archivo oculto
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*,video/*'; // Solo imágenes y videos
-      input.style.display = 'none';
-      
-      input.onchange = (event: any) => {
-        const file = event.target.files[0];
-        if (file) {
-          // Validar que sea imagen o video
-          const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
-          
-          if (!isValidType) {
-            Alert.alert('Error', 'Solo se permiten archivos de imagen y video');
-            return;
-          }
+      // Mostrar opciones de selección
+      Alert.alert(
+        'Seleccionar evidencia',
+        '¿Qué tipo de archivo quieres subir?',
+        [
+          {
+            text: 'Cámara',
+            onPress: () => seleccionarDesdeCamara(),
+          },
+          {
+            text: 'Galería',
+            onPress: () => seleccionarDesdeGaleria(),
+          },
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+        ]
+      );
+    };
+
+    const seleccionarDesdeCamara = async () => {
+      try {
+        const result = await ImagePicker.launchCameraAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const asset = result.assets[0];
           
           // Validar tamaño (máximo 50MB)
           const maxSize = 50 * 1024 * 1024; // 50MB en bytes
-          if (file.size > maxSize) {
+          if ((asset.fileSize || 0) > maxSize) {
             Alert.alert('Error', 'El archivo es demasiado grande. Máximo 50MB');
             return;
           }
           
-          // Convertir el archivo a un formato compatible con FormData
           const fileData = {
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            uri: URL.createObjectURL(file), // Para web
-            file: file // Mantener la referencia al archivo original
+            name: `evidencia_${Date.now()}.${asset.type?.includes('video') ? 'mp4' : 'jpg'}`,
+            size: asset.fileSize || 0,
+            type: asset.type || 'image/jpeg',
+            uri: asset.uri,
           };
           setArchivoAdjunto(fileData);
         }
-      };
-      
-      // Simular click en el input
-      document.body.appendChild(input);
-      input.click();
-      document.body.removeChild(input);
+      } catch (error) {
+        console.error('❌ Error desde cámara:', error);
+        Alert.alert('Error', 'No se pudo acceder a la cámara');
+      }
+    };
+
+    const seleccionarDesdeGaleria = async () => {
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.All,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+          const asset = result.assets[0];
+          
+          // Validar tamaño (máximo 50MB)
+          const maxSize = 50 * 1024 * 1024; // 50MB en bytes
+          if ((asset.fileSize || 0) > maxSize) {
+            Alert.alert('Error', 'El archivo es demasiado grande. Máximo 50MB');
+            return;
+          }
+          
+          const fileData = {
+            name: `evidencia_${Date.now()}.${asset.type?.includes('video') ? 'mp4' : 'jpg'}`,
+            size: asset.fileSize || 0,
+            type: asset.type || 'image/jpeg',
+            uri: asset.uri,
+          };
+          setArchivoAdjunto(fileData);
+        }
+      } catch (error) {
+        console.error('❌ Error desde galería:', error);
+        Alert.alert('Error', 'No se pudo acceder a la galería');
+      }
     };
 
     const removerArchivo = () => {
@@ -1260,15 +1292,21 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             <TouchableOpacity 
               style={[styles.floatingButton, styles.floatingButtonLogout]}
               onPress={async () => {
-                const confirmado = window.confirm(t('auth.logout_confirm'));
-                if (confirmado) {
-                  if (onLogout) {
-                    await onLogout();
-                  } else {
-                    await AsyncStorage.removeItem('authToken');
-                    await AsyncStorage.removeItem('userInfo');
-                  }
-                }
+                Alert.alert(
+                  t('auth.logout_title'),
+                  t('auth.logout_confirm'),
+                  [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    { text: t('common.confirm'), onPress: async () => {
+                      if (onLogout) {
+                        await onLogout();
+                      } else {
+                        await AsyncStorage.removeItem('authToken');
+                        await AsyncStorage.removeItem('userInfo');
+                      }
+                    }}
+                  ]
+                );
               }}
             >
               <Text style={[styles.floatingButtonIcon, styles.logoutIcon]}>→</Text>

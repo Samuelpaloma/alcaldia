@@ -796,15 +796,25 @@ export default function TicketTrackingScreen() {
       
       // Validar que no se pueda resolver sin evidencias
       if (nuevoEstado === 'RESUELTO') {
-        // Contar evidencias finales (las que cuentan para resolver)
-        const evidenciasFinalesCount = evidenciasFinales?.length || 0;
-        console.log('🔍 [VALIDACIÓN] Evidencias finales encontradas:', evidenciasFinalesCount);
-        console.log('🔍 [VALIDACIÓN] Estado evidenciasFinales:', evidenciasFinales);
+        // Recargar evidencias antes de validar
+        console.log('🔄 [VALIDACIÓN] Recargando evidencias antes de validar...');
+        await loadEvidencias();
         
-        if (evidenciasFinalesCount === 0) {
+        // Contar todas las evidencias (finales + chat)
+        const evidenciasFinalesCount = evidenciasFinales?.length || 0;
+        const evidenciasChatCount = evidenciasChat?.length || 0;
+        const totalEvidencias = evidenciasFinalesCount + evidenciasChatCount;
+        
+        console.log('🔍 [VALIDACIÓN] Evidencias finales encontradas:', evidenciasFinalesCount);
+        console.log('🔍 [VALIDACIÓN] Evidencias de chat encontradas:', evidenciasChatCount);
+        console.log('🔍 [VALIDACIÓN] Total evidencias:', totalEvidencias);
+        console.log('🔍 [VALIDACIÓN] Estado evidenciasFinales:', evidenciasFinales);
+        console.log('🔍 [VALIDACIÓN] Estado evidenciasChat:', evidenciasChat);
+        
+        if (totalEvidencias === 0) {
           Alert.alert(
             '⚠️ Evidencias Requeridas',
-            'No puedes resolver este ticket sin subir al menos una evidencia final.\n\nPor favor, sube las evidencias necesarias antes de marcar como resuelto.',
+            'No puedes resolver este ticket sin subir al menos una evidencia.\n\nPor favor, sube las evidencias necesarias antes de marcar como resuelto.',
             [{ text: 'Entendido', style: 'default' }]
           );
           return;
@@ -1315,15 +1325,12 @@ export default function TicketTrackingScreen() {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           
-          if (response.ok) {
-            const blob = await response.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            console.log('✅ [PREVIEW] Blob URL creado para imagen:', blobUrl);
-            
-            setPreviewUrl(blobUrl);
-            setArchivoEnPreview(evidencia);
-            setShowPreviewModal(true);
-          }
+          // Usar directamente la URL en React Native
+          console.log('✅ [PREVIEW] Usando URL directa para imagen:', url);
+          
+          setPreviewUrl(url);
+          setArchivoEnPreview(evidencia);
+          setShowPreviewModal(true);
         } else if (esPDF) {
           // Para PDFs, cargar como blob y abrir en nueva pestaña
           console.log('📄 [PREVIEW] Cargando PDF como blob...');
@@ -1331,24 +1338,14 @@ export default function TicketTrackingScreen() {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           
-          if (response.ok) {
-            const arrayBuffer = await response.arrayBuffer();
-            // Crear blob con tipo MIME explícito para que el navegador lo muestre inline
-            const blob = new Blob([arrayBuffer], { type: 'application/pdf' });
-            const blobUrl = URL.createObjectURL(blob);
-            console.log('✅ [PREVIEW] PDF Blob creado con tipo application/pdf');
-            console.log('✅ [PREVIEW] Abriendo PDF en nueva pestaña:', blobUrl);
-            
-            // Abrir el blob URL en nueva pestaña - esto muestra el PDF inline
-            const newWindow = window.open(blobUrl, '_blank');
-            
-            if (!newWindow) {
-              Alert.alert('Error', 'Por favor permite ventanas emergentes para ver el PDF');
-            }
-          } else {
-            console.error('❌ [PREVIEW] Error cargando PDF:', response.status);
-            Alert.alert('Error', 'No se pudo cargar el PDF');
-          }
+          // En React Native, usar Linking para abrir PDF
+          const { Linking } = require('react-native');
+          console.log('📄 [PREVIEW] Abriendo PDF con Linking:', url);
+          
+          Linking.openURL(url).catch(err => {
+            console.error('Error abriendo PDF:', err);
+            Alert.alert('Error', 'No se pudo abrir el PDF');
+          });
         } else {
           // Otros tipos: descargar
           handleDownloadEvidencia(evidencia);
@@ -1382,9 +1379,13 @@ export default function TicketTrackingScreen() {
       
       console.log('📥 [DOWNLOAD] URL:', url);
       
-      // Abrir en nueva pestaña para ver/descargar
+      // En React Native, usar Linking para abrir/descargar
       if (url) {
-        window.open(url, '_blank');
+        const { Linking } = require('react-native');
+        Linking.openURL(url).catch(err => {
+          console.error('Error abriendo URL:', err);
+          Alert.alert('Error', 'No se pudo abrir el archivo');
+        });
       } else {
         Alert.alert('Error', 'No se pudo determinar la URL del archivo');
       }
