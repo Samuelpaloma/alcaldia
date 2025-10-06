@@ -10,7 +10,9 @@ import {
   RefreshControl,
   Modal,
   TextInput,
-  Image
+  Image,
+  ActivityIndicator,
+  Platform
 } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -89,8 +91,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     totalNotificaciones: 0
   });
 
-  // Estados para modales
-  const [misTicketsVisible, setMisTicketsVisible] = useState(false);
+  // Estados para modales (solo sidebar)
   const [notificacionesVisible, setNotificacionesVisible] = useState(false);
   const [preferenciasModalVisible, setPreferenciasModalVisible] = useState(false);
   const [evidenciasVisible, setEvidenciasVisible] = useState(false);
@@ -126,6 +127,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   // Estados para búsqueda
   const [searchText, setSearchText] = useState('');
   const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
+  
+  // Estados para modales
+  const [misTicketsVisible, setMisTicketsVisible] = useState(false);
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -209,17 +213,31 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const data = await tecnicoAPI.getDashboard();
-      console.log('📊 Estadísticas recibidas:', data);
+      // Usar el historial completo para calcular estadísticas
+      const tickets = await tecnicoAPI.getTicketsHistorial();
+      console.log('📊 Tickets del historial para estadísticas:', tickets.length);
+      
+      // Calcular estadísticas basadas en el historial completo
+      const total = tickets.length;
+      const pendientes = tickets.filter(t => t.estado === 'ASIGNADO' || t.estado === 'PENDIENTE').length;
+      const enProceso = tickets.filter(t => t.estado === 'EN_PROCESO' || t.estado === 'EN_EJECUCION').length;
+      const finalizados = tickets.filter(t => t.estado === 'RESUELTO' || t.estado === 'CERRADO' || t.estado === 'TERMINADO').length;
+      
+      // Contar evidencias de todos los tickets
+      const evidencias = tickets.reduce((total, ticket) => {
+        return total + ((ticket as any).evidencias ? (ticket as any).evidencias.length : 0);
+      }, 0);
+      
+      console.log('📊 Estadísticas calculadas:', { total, pendientes, enProceso, finalizados, evidencias });
       
       setStats({
-        total: data.ticketsTotal || 0,
-        pendientes: data.ticketsPendientes || 0,
-        enProceso: data.ticketsEnProceso || 0,
-        finalizados: data.ticketsCompletados || 0,
-        evidencias: 0, // No disponible en la respuesta del dashboard
+        total,
+        pendientes,
+        enProceso,
+        finalizados,
+        evidencias,
         notificaciones: 0, // No disponible en la respuesta del dashboard
-        totalEvidencias: 0,
+        totalEvidencias: evidencias,
         totalNotificaciones: 0
       });
     } catch (error) {
@@ -277,18 +295,39 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     try {
       console.log('🎫 [FRONTEND] Obteniendo tickets...');
       
-      const data = await tecnicoAPI.getTickets();
-      console.log('🎫 [DEBUG] Tickets recibidos:', data);
-      console.log('🎫 [DEBUG] Cantidad de tickets:', data?.length || 0);
+      // Agregar timeout para evitar congelamiento
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout: La solicitud tardó demasiado')), 10000)
+      );
       
-      if (data && data.length > 0) {
-        console.log('🎫 [DEBUG] Primer ticket:', data[0]);
-        console.log('🎫 [DEBUG] Campos del primer ticket:', Object.keys(data[0]));
+      const response = await Promise.race([
+        tecnicoAPI.getTicketsHistorial(),
+        timeoutPromise
+      ]) as any;
+      
+      console.log('🎫 [DEBUG] Respuesta completa recibida:', response);
+      
+      // Extraer el array de tickets de la respuesta (el endpoint de historial devuelve directamente el array)
+      const ticketsData = Array.isArray(response) ? response : (response.data || []);
+      console.log('🎫 [DEBUG] Tickets extraídos:', ticketsData);
+      console.log('🎫 [DEBUG] Cantidad de tickets:', ticketsData.length);
+      
+      if (ticketsData.length > 0) {
+        console.log('🎫 [DEBUG] Primer ticket:', ticketsData[0]);
+        console.log('🎫 [DEBUG] Campos del primer ticket:', Object.keys(ticketsData[0]));
       }
       
-      setTickets(data);
+      setTickets(ticketsData);
     } catch (error) {
       console.error('Error cargando tickets:', error);
+      // Mostrar mensaje de error al usuario
+      Alert.alert(
+        'Error de conexión',
+        'No se pudieron cargar los tickets. Verifica tu conexión a internet.',
+        [{ text: 'Reintentar', onPress: () => loadTickets() }]
+      );
+      // Limpiar tickets en caso de error
+      setTickets([]);
     } finally {
       setTicketsLoading(false);
     }
@@ -424,7 +463,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
       console.log('📱 [EVIDENCIA] Cargando todas las evidencias del técnico...');
       
       // Obtener todos los tickets del técnico
-      const tickets = await tecnicoAPI.getTickets();
+      const ticketsResponse = await tecnicoAPI.getTickets();
+      const tickets = ticketsResponse.data || [];
       
       console.log('📱 [EVIDENCIA] Tickets encontrados:', tickets.length);
       
@@ -472,18 +512,42 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   }, []);
 
   // Componente Modal Mis Tickets
-  const MisTicketsModal = () => (
-    <Modal visible={misTicketsVisible} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{t('tickets.title')}</Text>
-            <TouchableOpacity onPress={() => setMisTicketsVisible(false)}>
-              <Text style={styles.closeButton}>×</Text>
-            </TouchableOpacity>
-          </View>
+  const MisTicketsModal = () => {
+    console.log('🎫 [MODAL] MisTicketsModal renderizando, visible:', misTicketsVisible);
+    console.log('🎫 [MODAL] Platform.OS:', Platform.OS);
+    console.log('🎫 [MODAL] tickets.length:', tickets.length);
+    console.log('🎫 [MODAL] filteredTickets.length:', filteredTickets.length);
+    
+    return (
+      <Modal 
+        visible={misTicketsVisible} 
+        animationType="slide" 
+        presentationStyle="fullScreen"
+        statusBarTranslucent={false}
+      >
+          <SafeAreaView style={styles.modalContainer}>
+        {/* Header */}
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>{t('tickets.title')}</Text>
+          <TouchableOpacity 
+            style={styles.closeButtonContainer}
+            onPress={() => {
+              console.log('🎫 [MODAL] Cerrando modal desde botón X');
+              setMisTicketsVisible(false);
+            }}
+          >
+            <Text style={styles.closeButton}>×</Text>
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.modalSubtitle}>{t('tickets.subtitle')}</Text>
+        
+        {/* Indicador visual para iOS */}
+        {Platform.OS === 'ios' && (
+          <View style={styles.iosIndicator}>
+            <Text style={styles.iosIndicatorText}>📱 Modal activo - iOS</Text>
+          </View>
+        )}
 
         {/* Barra de búsqueda */}
         <View style={styles.searchSection}>
@@ -502,7 +566,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         <ScrollView style={styles.modalContent}>
           {ticketsLoading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>{t('tickets.loading')}</Text>
+              <ActivityIndicator size="large" color="#4CAF50" />
+              <Text style={styles.loadingText}>Cargando tickets...</Text>
+              <Text style={styles.loadingSubtext}>Por favor espera...</Text>
             </View>
           ) : filteredTickets.length > 0 ? (
             filteredTickets.map((ticket, index) => (
@@ -550,6 +616,16 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                     <Text style={styles.tagText}>{t('tickets.area')}: {ticket.categoria || t('tickets.default_area')}</Text>
                   </View>
                 </View>
+
+                {/* Información del técnico */}
+                {(ticket as any).tecnicoNombre && (
+                  <View style={styles.technicianInfo}>
+                    <Text style={styles.technicianLabel}>
+                      {ticket.estado === 'ESCALADO' ? 'Técnico Escalado:' : 'Técnico Asignado:'}
+                    </Text>
+                    <Text style={styles.technicianName}>{(ticket as any).tecnicoNombre}</Text>
+                  </View>
+                )}
 
                 {/* Estado actual */}
                 <View style={styles.currentStatusContainer}>
@@ -613,7 +689,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         </ScrollView>
       </SafeAreaView>
     </Modal>
-  );
+    );
+  };
 
   // Función para abrir preferencias de notificaciones
   const abrirPreferenciasNotificaciones = () => {
@@ -1129,10 +1206,8 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                 style={styles.openSectionButton}
                 onPress={() => {
                   console.log('🎫 [FRONTEND] Botón "Mis Tickets" presionado');
-                  console.log('🎫 [FRONTEND] Llamando a loadTickets()');
-                  loadTickets();
-                  console.log('🎫 [FRONTEND] Abriendo modal Mis Tickets');
-                  setMisTicketsVisible(true);
+                  console.log('🎫 [FRONTEND] Navegando a MisTicketsScreen');
+                  navigation.navigate('MisTickets');
                 }}
               >
                 <Text style={styles.openSectionButtonText}>{t('common.open')}</Text>
@@ -1202,7 +1277,6 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         </ScrollView>
 
         {/* Modales */}
-        <MisTicketsModal />
         <NotificacionesModal 
           visible={notificacionesVisible} 
           onClose={() => setNotificacionesVisible(false)}
@@ -1235,7 +1309,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   style={styles.sidebarMenuItem}
                   onPress={() => {
                     setSidebarVisible(false);
-                    setMisTicketsVisible(true);
+                    navigation.navigate('MisTickets');
                   }}
                 >
                   <Text style={styles.sidebarMenuIcon}>🎫</Text>
@@ -1437,6 +1511,12 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: '#9ca3af',
     fontStyle: 'italic',
   },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 5,
+    textAlign: 'center',
+  },
   buttonsContainer: {
     paddingHorizontal: 20,
     gap: 16,
@@ -1473,6 +1553,7 @@ const createStyles = (theme: any) => StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: '#0a0a0a',
+    paddingTop: Platform.OS === 'ios' ? 50 : 0, // Espacio extra para iOS
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1488,15 +1569,36 @@ const createStyles = (theme: any) => StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffffff',
   },
+  closeButtonContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#374151',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   closeButton: {
     fontSize: 24,
-    color: '#9ca3af',
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
   modalSubtitle: {
     fontSize: 14,
     color: '#9ca3af',
     padding: 20,
     paddingTop: 10,
+  },
+  iosIndicator: {
+    backgroundColor: '#1e40af',
+    padding: 10,
+    marginHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  iosIndicatorText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   modalContent: {
     flex: 1,
@@ -2522,5 +2624,20 @@ const createStyles = (theme: any) => StyleSheet.create({
     color: '#fff',
     fontSize: 8,
     fontWeight: 'bold',
+  },
+  technicianInfo: {
+    marginVertical: 8,
+    paddingHorizontal: 4,
+  },
+  technicianLabel: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  technicianName: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '600',
   },
 });

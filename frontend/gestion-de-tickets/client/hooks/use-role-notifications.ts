@@ -39,42 +39,75 @@ export const useRoleNotifications = (userEmail: string, userRole?: string) => {
       setLoading(true);
       setError(null);
       
-      console.log('🔔 Hook: Cargando notificaciones por roles desde API...');
+      console.log('🔔 Hook: ===== INICIANDO CARGA DE NOTIFICACIONES =====');
+      console.log('🔔 Hook: userEmail:', userEmail);
+      console.log('🔔 Hook: userRole:', userRole);
+      console.log('🔔 Hook: URL que se va a llamar:', `/notifications/role-based/user/samupalo3@gmail.com?page=0&size=100`);
+      
       const response = await api.getRoleNotifications(userEmail);
-      console.log('🔔 Hook: Respuesta de notificaciones por roles:', response);
+      console.log('🔔 Hook: ===== RESPUESTA COMPLETA DE LA API =====');
+      console.log('🔔 Hook: Tipo de respuesta:', typeof response);
+      console.log('🔔 Hook: Respuesta completa:', JSON.stringify(response, null, 2));
       
       if (response && response.content) {
+        console.log('🔔 Hook: ===== PROCESANDO NOTIFICACIONES =====');
+        console.log('🔔 Hook: Total notificaciones recibidas:', response.content.length);
+        console.log('🔔 Hook: Notificaciones antes del filtrado:', response.content);
+        
         const notificacionesData = response.content
-          .map((notif: any) => ({
-            id: notif.id,
-            tipo: notif.tipo,
-            mensaje: notif.mensaje,
-            destinatarios: notif.destinatarios || [],
-            ticketId: notif.ticketId,
-            usuarioActorNombre: notif.usuarioActorNombre,
-            prioridad: notif.prioridad || 'normal',
-            leida: notif.leida,
-            fechaCreacion: notif.fechaCreacion,
-            fechaLectura: notif.fechaLectura
-          }))
+          .map((notif: any) => {
+            console.log('🔔 Hook: Procesando notificación ID', notif.id, ':', notif.mensaje);
+            console.log('🔔 Hook: Destinatarios:', notif.destinatarios);
+            return {
+              id: notif.id,
+              tipo: notif.tipo,
+              mensaje: notif.mensaje,
+              destinatarios: notif.destinatarios || [],
+              ticketId: notif.ticketId,
+              usuarioActorNombre: notif.usuarioActorNombre,
+              prioridad: notif.prioridad || 'normal',
+              leida: notif.leida,
+              fechaCreacion: notif.fechaCreacion,
+              fechaLectura: notif.fechaLectura
+            };
+          })
           .filter((notif: RoleNotification) => {
-            // FILTRO CORREGIDO: Solo mostrar notificaciones destinadas específicamente a este usuario
-            return notif.destinatarios.some(dest => {
+            console.log('🔔 Hook: ===== APLICANDO FILTRO =====');
+            console.log('🔔 Hook: userEmail para filtrar:', userEmail);
+            console.log('🔔 Hook: userRole para filtrar:', userRole);
+            console.log('🔔 Hook: Destinatarios de la notificación:', notif.destinatarios);
+            
+            const pasaFiltro = notif.destinatarios.some(dest => {
+              console.log('🔔 Hook: Verificando destinatario:', dest);
+              
               // Verificar por email específico (formato: "rol:email@domain.com")
               if (dest.endsWith(":" + userEmail)) {
+                console.log('🔔 Hook: ✅ Coincide por email específico');
                 return true;
               }
               
               // Verificar por rol específico (formato: "rol:administrador")
               if (userRole && dest === "rol:" + userRole) {
+                console.log('🔔 Hook: ✅ Coincide por rol específico');
                 return true;
               }
               
+              console.log('🔔 Hook: ❌ No coincide');
               return false;
             });
+            
+            console.log('🔔 Hook: Notificación ID', notif.id, 'pasa filtro:', pasaFiltro);
+            return pasaFiltro;
           });
+          
+        console.log('🔔 Hook: ===== RESULTADO FINAL =====');
+        console.log('🔔 Hook: Total notificaciones después del filtrado:', notificacionesData.length);
+        console.log('🔔 Hook: Notificaciones finales:', notificacionesData);
+        
         setNotifications(notificacionesData);
       } else {
+        console.log('🔔 Hook: ❌ No hay respuesta o content vacío');
+        console.log('🔔 Hook: response:', response);
         setNotifications([]);
       }
     } catch (err) {

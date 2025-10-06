@@ -14,4 +14,8 @@ export type RootStackParamList = {
   Chat: { ticketId: number };
   TicketTracking: { ticketId: number };
   HistorialPorArea: undefined;
+  MisTickets: undefined;
+  MisEvidencias: undefined;
+};
+
 };

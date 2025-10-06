@@ -10,16 +10,21 @@ import LogoutModal from "../auth/LogoutModal";
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
-import SystemColorLoader from "../../components/SystemColorLoader";
 import "./AppLayout.css";
 
 export default function AdminLayout() {
   const { t, locale, setLocale } = useI18n();
   const navigate = useNavigate();
   const { userInfo } = useUserInfo();
-  const userEmail = userInfo?.email || '';
-  const userRole = userInfo?.tipoUsuario?.toLowerCase() || '';
-  const { unreadCount } = useRoleNotifications(userEmail, userRole);
+  const userEmail = userInfo?.email || 'samupalo3@gmail.com'; // Fallback para admin
+  const userRole = userInfo?.tipoUsuario?.toLowerCase() || 'administrador'; // Fallback para admin
+  
+  console.log('🔔 AdminLayout: ===== INFORMACIÓN DEL USUARIO =====');
+  console.log('🔔 AdminLayout: userInfo completo:', userInfo);
+  console.log('🔔 AdminLayout: userEmail final:', userEmail);
+  console.log('🔔 AdminLayout: userRole final:', userRole);
+  
+  const { unreadCount } = useRoleNotifications(userEmail, userRole); // Usar sistema por roles
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -177,7 +182,6 @@ export default function AdminLayout() {
       />
       
       {/* Sistema de notificaciones toast en tiempo real - Integrado en GlobalWebSocket */}
-      <SystemColorLoader />
     </div>
   );
 }

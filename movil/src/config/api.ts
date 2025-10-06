@@ -4,13 +4,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Configuración de la API
 // Detectar si estamos en emulador Android o dispositivo físico
 const isAndroidEmulator = __DEV__ && Platform.OS === 'android';
-const BASE_URL = isAndroidEmulator 
-  ? 'http://10.0.2.2:8080'  // Para emulador Android
-  : 'http://10.3.234.28:8080'; // Para dispositivo físico
+const isWeb = Platform.OS === 'web';
 
-console.log('🔍 [API CONFIG] Platform:', Platform.OS);
-console.log('🔍 [API CONFIG] Is Android Emulator:', isAndroidEmulator);
-console.log('🔍 [API CONFIG] Base URL:', BASE_URL);
+// Configuración simple y confiable
+let BASE_URL;
+if (isWeb) {
+  BASE_URL = 'http://localhost:8080';
+} else if (isAndroidEmulator) {
+  BASE_URL = 'http://10.0.2.2:8080';
+} else {
+  // Para dispositivos físicos (tanto Android como iOS)
+  BASE_URL = 'http://10.3.234.28:8080';
+}
+
+// Debug temporal para identificar el problema
+console.log('🔍 [DEBUG] Platform.OS:', Platform.OS);
+console.log('🔍 [DEBUG] isAndroidEmulator:', isAndroidEmulator);
+console.log('🔍 [DEBUG] isWeb:', isWeb);
+console.log('🔍 [DEBUG] BASE_URL:', BASE_URL);
 
 export const API_CONFIG = {
   BASE_URL: BASE_URL,
@@ -36,6 +47,7 @@ export const API_CONFIG = {
     TECNICO: {
       DASHBOARD: '/api/tecnico/dashboard',
       TICKETS: '/api/tecnico/tickets',
+      TICKETS_HISTORIAL: '/api/tecnico/historial',
       TICKET_DETAIL: '/api/tecnico/tickets',
       ACCEPT_TICKET: '/api/tecnico/tickets',
       FINALIZE_TICKET: '/api/tecnico/tickets',
@@ -137,6 +149,10 @@ export interface Ticket {
   fechaCreacion: string;
   fechaActualizacion: string;
   consulta?: string; // Para compatibilidad con el código existente
+  categoria?: string;
+  ubicacion?: string;
+  creadorNombre?: string;
+  creadorEmail?: string;
   usuario: {
     nombre: string;
     apellido: string;
@@ -146,16 +162,31 @@ export interface Ticket {
     nombre: string;
     apellido: string;
   };
+  // Campos del backend para información del técnico
+  tecnicoId?: number;
+  tecnicoNombre?: string;
+  tecnicoEmail?: string;
+  puedeCambiarEstado?: boolean;
+  esTecnicoEscalado?: boolean;
+  rolTecnico?: string; // "ASIGNADO", "ESCALADO", "ORIGINAL"
 }
 
 export interface Comment {
   id: number;
   contenido: string;
   fechaCreacion: string;
-  usuario: {
+  usuario?: {
     nombre: string;
     apellido: string;
+    email?: string;
+    tipoUsuario?: string;
   };
+  // Campos adicionales que el backend puede devolver
+  autor?: string;
+  mensaje?: string;
+  tipoAutor?: string;
+  esTecnico?: boolean;
+  autorEmail?: string;
 }
 
 export interface Evidence {
@@ -304,7 +335,7 @@ export const authAPI = {
         headers
       });
     } catch (error) {
-      console.log('Error notificando logout al servidor:', error);
+      // Error notificando logout al servidor (log removido)
     }
   },
 
@@ -475,7 +506,7 @@ export const authAPI = {
 
 export const tecnicoAPI = {
   // Obtener dashboard
-  async getDashboard(): Promise<DashboardData> {
+  async getDashboard(): Promise<{message: string, success: boolean, data: DashboardData}> {
     const headers = await getAuthHeaders();
     const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.DASHBOARD}`, {
       method: 'GET',
@@ -491,8 +522,8 @@ export const tecnicoAPI = {
     return data;
   },
 
-  // Obtener tickets
-  async getTickets(): Promise<Ticket[]> {
+  // Obtener tickets (asignados activos)
+  async getTickets(): Promise<{message: string, success: boolean, data: Ticket[]}> {
     const headers = await getAuthHeaders();
     const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.TICKETS}`, {
       method: 'GET',
@@ -503,6 +534,23 @@ export const tecnicoAPI = {
     
     if (!response.ok) {
       throw new Error(data.message || 'Error obteniendo tickets');
+    }
+
+    return data;
+  },
+
+  // Obtener historial completo de tickets (activos + inactivos)
+  async getTicketsHistorial(): Promise<Ticket[]> {
+    const headers = await getAuthHeaders();
+    const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.TICKETS_HISTORIAL}`, {
+      method: 'GET',
+      headers
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Error obteniendo historial de tickets');
     }
 
     return data;
@@ -546,26 +594,16 @@ export const tecnicoAPI = {
   async finalizeTicket(ticketId: number, descripcion: string, archivos: any[]): Promise<ApiResponse> {
     const headers = await getAuthHeaders();
     
-    const formData = new FormData();
-    formData.append('descripcion', descripcion);
-    
-    if (archivos && archivos.length > 0) {
-      archivos.forEach((archivo, index) => {
-        formData.append('archivos', {
-          uri: archivo.uri,
-          type: archivo.type,
-          name: archivo.name,
-        } as any);
-      });
-    }
+    // Para web, enviar como JSON en lugar de FormData
+    const requestBody = {
+      descripcion,
+      archivos: archivos || []
+    };
 
     const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.FINALIZE_TICKET}/${ticketId}/finalizar`, {
       method: 'POST',
-      headers: {
-        ...headers,
-        'Content-Type': 'multipart/form-data',
-      },
-      body: formData as any
+      headers,
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
@@ -641,29 +679,30 @@ export const ticketsAPI = {
   async sendComment(ticketId: number, contenido: string, archivos?: any[]): Promise<ApiResponse> {
     const headers = await getAuthHeaders();
     
-    const formData = new FormData();
-    formData.append('contenido', contenido);
-    
-    if (archivos && archivos.length > 0) {
-      archivos.forEach((archivo, index) => {
-        formData.append('archivos', {
-          uri: archivo.uri,
-          type: archivo.type,
-          name: archivo.name,
-        } as any);
-      });
+    // Validar que el contenido no esté vacío
+    if (!contenido || contenido.trim().length === 0) {
+      throw new Error('El mensaje no puede estar vacío');
     }
+    
+    // Para web, enviar como JSON en lugar de FormData
+    // Probar con diferentes nombres de campo que el backend podría esperar
+    const requestBody = {
+      mensaje: contenido.trim(),  // Intentar con 'mensaje' en lugar de 'contenido'
+      contenido: contenido.trim(), // Mantener 'contenido' como fallback
+      archivos: archivos || []
+    };
+
+    // Logs removidos para evitar problemas en Android
 
     const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TICKETS.SEND_COMMENT}/${ticketId}/comentarios`, {
       method: 'POST',
-      headers: {
-        ...headers,
-        'Content-Type': 'multipart/form-data',
-      },
-      body: formData as any
+      headers,
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
+    
+    // Logs removidos para evitar problemas en Android
     
     if (!response.ok) {
       throw new Error(data.message || 'Error enviando comentario');
@@ -690,7 +729,8 @@ export const evidenciasAPI = {
       throw new Error(data.message || 'Error obteniendo evidencias');
     }
 
-    return data;
+    // El endpoint devuelve {data: [...]}, extraer el array
+    return data.data || data;
   },
 
   // Descargar evidencia

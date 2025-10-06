@@ -535,13 +535,6 @@ export interface ConfiguracionRequestDTO {
   nombreApp?: string;
 }
 
-export interface ColoresRequestDTO {
-  colorPrimario?: string;
-  colorSecundario?: string;
-  colorFondo?: string;
-  colorTexto?: string;
-}
-
 // ========== TIPOS LEGACY (para compatibilidad) ==========
 
 export interface User {
@@ -1215,7 +1208,7 @@ class ApiClient {
 
   // ========== NOTIFICACIONES POR ROLES ==========
   
-  async getRoleNotifications(userEmail: string, page: number = 0, size: number = 20): Promise<any> {
+  async getRoleNotifications(userEmail: string, page: number = 0, size: number = 100): Promise<any> {
     return this.request(`/notifications/role-based/user/${userEmail}?page=${page}&size=${size}`);
   }
 
@@ -1319,9 +1312,13 @@ class ApiClient {
     console.log('💬 [API] Enviando comentario:', { ticketId, mensaje });
     
     try {
+      // Enviar tanto 'mensaje' como 'contenido' para compatibilidad
       const response = await this.request<ApiResponse>(`/tickets/${ticketId}/comentarios`, {
         method: 'POST',
-        body: JSON.stringify({ mensaje })
+        body: JSON.stringify({ 
+          mensaje: mensaje,
+          contenido: mensaje 
+        })
       });
       
       console.log('✅ [API] Comentario enviado exitosamente:', response);
@@ -1587,15 +1584,11 @@ class ApiClient {
     return this.request('/superadmin/configuraciones');
   }
 
-  async getColoresSistema(): Promise<ApiResponse> {
-    return this.request('/superadmin/configuraciones/colores');
-  }
-
   async getConfiguracionesPorCategoria(categoria: string): Promise<ConfiguracionResponseDTO[]> {
     return this.request(`/superadmin/configuraciones/${categoria}`);
   }
 
-  async actualizarColores(data: ColoresRequestDTO): Promise<ApiResponse> {
+  async actualizarColores(data: ConfiguracionRequestDTO): Promise<ApiResponse> {
     return this.request('/superadmin/configuraciones/colores', {
       method: 'PUT',
       body: JSON.stringify(data),
