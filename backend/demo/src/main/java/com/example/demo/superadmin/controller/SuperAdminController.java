@@ -155,6 +155,22 @@ public class SuperAdminController {
     }
     
     /**
+     * Obtener colores del sistema (público para todos los roles)
+     * GET /api/superadmin/configuraciones/colores
+     */
+    @GetMapping("/configuraciones/colores")
+    public ResponseEntity<?> obtenerColores() {
+        try {
+            log.info("Obteniendo colores del sistema");
+            Map<String, String> colores = configuracionService.obtenerColores();
+            return ResponseEntity.ok(ApiResponse.success("Colores obtenidos exitosamente", colores));
+        } catch (Exception e) {
+            log.error("Error obteniendo colores del sistema", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error("Error obteniendo colores del sistema: " + e.getMessage()));
+        }
+    }
+    
+    /**
      * Actualizar colores del sistema
      * PUT /api/superadmin/configuraciones/colores
      */

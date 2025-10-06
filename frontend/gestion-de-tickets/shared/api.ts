@@ -539,6 +539,7 @@ export interface ColoresRequestDTO {
   colorPrimario?: string;
   colorSecundario?: string;
   colorFondo?: string;
+  colorTexto?: string;
 }
 
 // ========== TIPOS LEGACY (para compatibilidad) ==========
@@ -1584,6 +1585,10 @@ class ApiClient {
   // Configuraciones
   async getConfiguraciones(): Promise<Record<string, Record<string, string>>> {
     return this.request('/superadmin/configuraciones');
+  }
+
+  async getColoresSistema(): Promise<ApiResponse> {
+    return this.request('/superadmin/configuraciones/colores');
   }
 
   async getConfiguracionesPorCategoria(categoria: string): Promise<ConfiguracionResponseDTO[]> {

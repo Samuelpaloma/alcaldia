@@ -29,6 +29,7 @@
     --system-primary: #007bff;
     --system-secondary: #6c757d;
     --system-background: #ffffff;
+    --system-text: #000000;
   }
 
   .dark {
@@ -160,6 +161,117 @@
 
 .sidebar-secondary {
   background-color: var(--system-secondary) !important;
+}
+
+/* ===== ESTILOS GLOBALES DEL SISTEMA ===== */
+
+/* Aplicar colores del sistema globalmente */
+body {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+/* Forzar aplicación de colores del sistema */
+* {
+  --tw-bg-opacity: 1;
+  --tw-text-opacity: 1;
+}
+
+/* Aplicar colores del sistema a todos los elementos */
+html {
+  background-color: var(--system-background) !important;
+}
+
+/* Forzar colores en elementos específicos */
+.app-container,
+.main-content,
+.content-wrapper {
+  background-color: var(--system-background) !important;
+  color: var(--system-text) !important;
+}
+
+/* Botones primarios globales */
+button.btn-primary,
+.btn-primary,
+button[class*="primary"],
+.bg-blue-600,
+.bg-blue-500,
+[class*="bg-blue-"]:not([class*="bg-blue-50"]):not([class*="bg-blue-100"]) {
+  background-color: var(--system-primary) !important;
+  border-color: var(--system-primary) !important;
+  color: white !important;
+}
+
+button.btn-primary:hover,
+.btn-primary:hover,
+button[class*="primary"]:hover {
+  background-color: var(--system-primary) !important;
+  opacity: 0.9 !important;
+}
+
+/* Botones secundarios globales */
+button.btn-secondary,
+.btn-secondary,
+button[class*="secondary"],
+.bg-gray-600,
+.bg-gray-500,
+[class*="bg-gray-"]:not([class*="bg-gray-50"]):not([class*="bg-gray-100"]) {
+  background-color: var(--system-secondary) !important;
+  border-color: var(--system-secondary) !important;
+  color: white !important;
+}
+
+button.btn-secondary:hover,
+.btn-secondary:hover,
+button[class*="secondary"]:hover {
+  background-color: var(--system-secondary) !important;
+  opacity: 0.9 !important;
+}
+
+/* Sidebar y navegación global */
+.sidebar,
+[class*="sidebar"],
+.bg-blue-900,
+.bg-gray-900,
+nav[class*="bg-"],
+aside[class*="bg-"] {
+  background-color: var(--system-primary) !important;
+}
+
+/* Texto global */
+p, span, div, h1, h2, h3, h4, h5, h6 {
+  color: var(--system-text) !important;
+}
+
+/* Logo del sistema */
+.system-logo,
+[data-logo="system"] {
+  content: var(--system-logo-url);
+}
+
+/* Aplicar a elementos específicos de Tailwind que se usan comúnmente */
+.bg-primary {
+  background-color: var(--system-primary) !important;
+}
+
+.text-primary {
+  color: var(--system-primary) !important;
+}
+
+.border-primary {
+  border-color: var(--system-primary) !important;
+}
+
+.bg-secondary {
+  background-color: var(--system-secondary) !important;
+}
+
+.text-secondary {
+  color: var(--system-secondary) !important;
+}
+
+.border-secondary {
+  border-color: var(--system-secondary) !important;
 }
 
 .compact-mode .space-y-6 > * + * {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api, UsuarioDTO, ConfiguracionRequestDTO } from '../../../shared/api';
-// import { useGlobalColors } from '../../../hooks/use-global-colors';
+import { useGlobalSystem } from '../../components/GlobalSystemProvider';
 import './SuperAdminDashboard.css';
 
 interface SuperAdminDashboardProps {
@@ -10,13 +10,7 @@ interface SuperAdminDashboardProps {
 
 const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) => {
   const location = useLocation();
-  
-  // Estados para colores del sistema
-  const [colors, setColors] = useState({
-    colorPrimario: '#007bff',
-    colorSecundario: '#6c757d',
-    colorFondo: '#ffffff'
-  });
+  const { colors, updateSystemColors, loadSystemConfiguration } = useGlobalSystem();
   
   const [administradores, setAdministradores] = useState<UsuarioDTO[]>([]);
   const [configuraciones, setConfiguraciones] = useState<Record<string, Record<string, string>>>({});
@@ -48,27 +42,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
       setAdministradores(administradoresData);
       setConfiguraciones(configuracionesData);
       
-      // Cargar colores del sistema
-      if (configuracionesData.colores) {
-        const systemColors = {
-          colorPrimario: configuracionesData.colores.color_primario || '#007bff',
-          colorSecundario: configuracionesData.colores.color_secundario || '#6c757d',
-          colorFondo: configuracionesData.colores.color_fondo || '#ffffff'
-        };
-        setColors(systemColors);
-        
-        // Aplicar colores globalmente
-        const root = document.documentElement;
-        root.style.setProperty('--system-primary', systemColors.colorPrimario);
-        root.style.setProperty('--system-secondary', systemColors.colorSecundario);
-        root.style.setProperty('--system-background', systemColors.colorFondo);
-        root.style.setProperty('--primary', systemColors.colorPrimario);
-        root.style.setProperty('--secondary', systemColors.colorSecundario);
-        root.style.setProperty('--background', systemColors.colorFondo);
-        
-        // Aplicar colores a elementos existentes
-        applyColorsToExistingElements(systemColors);
-      }
+      // Los colores del sistema se cargan automáticamente por el GlobalSystemProvider
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar datos');
       console.error('Error cargando datos:', err);
@@ -128,61 +102,26 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
       const newColors = {
         colorPrimario: configuraciones.apariencia?.colorPrimario || colors.colorPrimario,
         colorSecundario: configuraciones.apariencia?.colorSecundario || colors.colorSecundario,
-        colorFondo: configuraciones.apariencia?.colorFondo || colors.colorFondo
+        colorFondo: configuraciones.apariencia?.colorFondo || colors.colorFondo,
+        colorTexto: configuraciones.apariencia?.colorTexto || colors.colorTexto || '#000000'
       };
       
-      // Actualizar colores en la API
-      await api.actualizarColores(newColors);
+      // Usar el sistema global para actualizar colores
+      const result = await updateSystemColors(newColors);
       
-      // Actualizar estado local
-      setColors(newColors);
-      
-      // Aplicar colores globalmente
-      const root = document.documentElement;
-      root.style.setProperty('--system-primary', newColors.colorPrimario);
-      root.style.setProperty('--system-secondary', newColors.colorSecundario);
-      root.style.setProperty('--system-background', newColors.colorFondo);
-      root.style.setProperty('--primary', newColors.colorPrimario);
-      root.style.setProperty('--secondary', newColors.colorSecundario);
-      root.style.setProperty('--background', newColors.colorFondo);
-      
-      // Aplicar colores a elementos existentes
-      applyColorsToExistingElements(newColors);
-      
-      await loadData(); // Recargar datos
+      if (result.success) {
+        console.log('✅ Colores actualizados exitosamente');
+        // Recargar datos para reflejar cambios
+        await loadData();
+      } else {
+        console.error('❌ Error actualizando colores:', result.error);
+      }
     } catch (err) {
-      console.error('Error actualizando colores:', err);
+      console.error('❌ Error actualizando colores:', err);
     }
   };
 
-  // Función para aplicar colores a elementos existentes
-  const applyColorsToExistingElements = (newColors: typeof colors) => {
-    // Aplicar colores a botones primarios
-    const primaryButtons = document.querySelectorAll('.bg-blue-600, .bg-blue-500, [class*="bg-blue-"], .btn-primary');
-    primaryButtons.forEach(button => {
-      if (button instanceof HTMLElement) {
-        button.style.backgroundColor = newColors.colorPrimario;
-        button.style.borderColor = newColors.colorPrimario;
-      }
-    });
-
-    // Aplicar colores a botones secundarios
-    const secondaryButtons = document.querySelectorAll('.bg-gray-600, .bg-gray-500, [class*="bg-gray-"], .btn-secondary');
-    secondaryButtons.forEach(button => {
-      if (button instanceof HTMLElement) {
-        button.style.backgroundColor = newColors.colorSecundario;
-        button.style.borderColor = newColors.colorSecundario;
-      }
-    });
-
-    // Aplicar colores a la sidebar
-    const sidebar = document.querySelector('.sidebar, [class*="sidebar"], .bg-blue-900, .bg-gray-900');
-    if (sidebar instanceof HTMLElement) {
-      sidebar.style.backgroundColor = newColors.colorPrimario;
-    }
-
-    console.log('🎨 Colores aplicados a elementos existentes:', newColors);
-  };
+  // Los colores se aplican automáticamente por el sistema global
 
   if (loading) {
     return (
@@ -414,6 +353,26 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                     </span>
                   </div>
                 </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Texto</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={configuraciones.apariencia?.colorTexto || colors.colorTexto || '#000000'}
+                      onChange={(e) => {
+                        const newConfigs = { ...configuraciones };
+                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
+                        newConfigs.apariencia.colorTexto = e.target.value;
+                        setConfiguraciones(newConfigs);
+                      }}
+                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
+                    />
+                    <span className="font-mono text-sm text-gray-600">
+                      {configuraciones.apariencia?.colorTexto || colors.colorTexto || '#000000'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-6 pt-4 border-t border-gray-200">
@@ -459,6 +418,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                   <p>Primario: {colors.colorPrimario}</p>
                   <p>Secundario: {colors.colorSecundario}</p>
                   <p>Fondo: {colors.colorFondo}</p>
+                  <p>Texto: {colors.colorTexto || '#000000'}</p>
                 </div>
               </div>
             </div>

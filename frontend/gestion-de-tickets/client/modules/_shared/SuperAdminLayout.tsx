@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { logout } from "../auth/auth";
+import SystemColorLoader from "../../components/SystemColorLoader";
 import "./AppLayout.css";
 
 export default function SuperAdminLayout() {
@@ -119,6 +120,7 @@ export default function SuperAdminLayout() {
 
       <main className="flex-1 overflow-auto">
         <Outlet />
+        <SystemColorLoader />
       </main>
     </div>
   );

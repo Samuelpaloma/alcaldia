@@ -2,7 +2,8 @@ import "./global.css";
 import "./App.css";
 
 import { Toaster } from "@/components/ui/toaster";
-// import { SystemColorsProvider } from "./components/SystemColorsProvider";
+import { GlobalSystemProvider, GlobalSystemStyles } from "./components/GlobalSystemProvider";
+import GlobalColorApplier from "./components/GlobalColorApplier";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -75,12 +76,15 @@ const LogoutNavigate = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <I18nProvider>
-        <NotificationProvider>
-          <BrowserRouter>
-            <GlobalWebSocket />
+      <GlobalSystemProvider>
+        <GlobalSystemStyles />
+        <GlobalColorApplier />
+        <Toaster />
+        <Sonner />
+        <I18nProvider>
+          <NotificationProvider>
+            <BrowserRouter>
+              <GlobalWebSocket />
             <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -139,9 +143,10 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-        </NotificationProvider>
-      </I18nProvider>
+            </BrowserRouter>
+          </NotificationProvider>
+        </I18nProvider>
+      </GlobalSystemProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

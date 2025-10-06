@@ -10,6 +10,7 @@ import LogoutModal from "../auth/LogoutModal";
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
+import SystemColorLoader from "../../components/SystemColorLoader";
 import "./AppLayout.css";
 
 export default function AdminLayout() {
@@ -176,6 +177,7 @@ export default function AdminLayout() {
       />
       
       {/* Sistema de notificaciones toast en tiempo real - Integrado en GlobalWebSocket */}
+      <SystemColorLoader />
     </div>
   );
 }

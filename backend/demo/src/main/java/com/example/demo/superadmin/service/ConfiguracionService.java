@@ -199,6 +199,57 @@ public class ConfiguracionService {
             .build());
     }
     
+    /**
+     * Obtener colores del sistema
+     */
+    public Map<String, String> obtenerColores() {
+        log.info("Obteniendo colores del sistema");
+        Map<String, String> colores = new HashMap<>();
+        
+        // Obtener color primario
+        ConfiguracionSistema colorPrimario = configuracionRepository.findByClave("color_primario")
+            .filter(ConfiguracionSistema::getActiva)
+            .orElse(null);
+        if (colorPrimario != null) {
+            colores.put("colorPrimario", colorPrimario.getValor());
+        } else {
+            colores.put("colorPrimario", "#007bff"); // Valor por defecto
+        }
+        
+        // Obtener color secundario
+        ConfiguracionSistema colorSecundario = configuracionRepository.findByClave("color_secundario")
+            .filter(ConfiguracionSistema::getActiva)
+            .orElse(null);
+        if (colorSecundario != null) {
+            colores.put("colorSecundario", colorSecundario.getValor());
+        } else {
+            colores.put("colorSecundario", "#6c757d"); // Valor por defecto
+        }
+        
+        // Obtener color de fondo
+        ConfiguracionSistema colorFondo = configuracionRepository.findByClave("color_fondo")
+            .filter(ConfiguracionSistema::getActiva)
+            .orElse(null);
+        if (colorFondo != null) {
+            colores.put("colorFondo", colorFondo.getValor());
+        } else {
+            colores.put("colorFondo", "#ffffff"); // Valor por defecto
+        }
+        
+        // Obtener color de texto
+        ConfiguracionSistema colorTexto = configuracionRepository.findByClave("color_texto")
+            .filter(ConfiguracionSistema::getActiva)
+            .orElse(null);
+        if (colorTexto != null) {
+            colores.put("colorTexto", colorTexto.getValor());
+        } else {
+            colores.put("colorTexto", "#000000"); // Valor por defecto
+        }
+        
+        log.info("Colores obtenidos: {}", colores);
+        return colores;
+    }
+    
     // Método auxiliar para convertir a DTO
     private ConfiguracionResponseDTO convertirAResponseDTO(ConfiguracionSistema configuracion) {
         return ConfiguracionResponseDTO.builder()

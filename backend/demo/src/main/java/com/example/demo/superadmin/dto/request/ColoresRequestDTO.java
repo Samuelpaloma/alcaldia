@@ -23,4 +23,8 @@ public class ColoresRequestDTO {
     @Pattern(regexp = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$", 
              message = "El color de fondo debe ser un código hexadecimal válido")
     private String colorFondo;
+    
+    @Pattern(regexp = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$", 
+             message = "El color de texto debe ser un código hexadecimal válido")
+    private String colorTexto;
 }
