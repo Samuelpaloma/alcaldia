@@ -1267,7 +1267,10 @@ export default function TicketsManagement() {
       'ASIGNADO': { color: 'bg-blue-600 text-white', icon: Users, label: t('tickets.status.ASIGNADO') },
       'ESCALADO': { color: 'bg-red-600 text-white', icon: ArrowUp, label: t('tickets.status.ESCALADO') },
       'PENDIENTE': { color: 'bg-yellow-600 text-white', icon: Clock, label: t('tickets.status.PENDIENTE') },
-      'RESUELTO': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.status.resolved') }
+      'RESUELTO': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.status.resolved') },
+      // Estados finales adicionales
+      'CERRADO': { color: 'bg-green-700 text-white', icon: CheckCircle, label: t('tickets.status.closed') },
+      'TERMINADO': { color: 'bg-green-700 text-white', icon: CheckCircle, label: t('tickets.status.TERMINADO') }
     };
     
     const config = statusConfig[status] || statusConfig['PENDIENTE'];
@@ -1489,7 +1492,7 @@ export default function TicketsManagement() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">{t("tickets_management.resolved")}</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {tickets.filter(t => t.estado === 'RESUELTO').length}
+                  {tickets.filter(t => t.estado === 'RESUELTO' || t.estado === 'CERRADO' || t.estado === 'TERMINADO').length}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">
@@ -1559,6 +1562,7 @@ export default function TicketsManagement() {
 
               {/* Botones de acción */}
               <div className="flex gap-2 pt-4 border-t">
+                {/* Siempre mostrar Ver */}
                 <Button 
                   variant="outline"
                   size="sm" 
@@ -1568,33 +1572,41 @@ export default function TicketsManagement() {
                   <Eye className="w-4 h-4 mr-1" />
 {t("tickets_management.view")}
                 </Button>
-                
-                {!ticket.tecnicoEmail ? (
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleAssignTicket(ticket)}
-                    className="flex-1"
-                  >
-                    <UserPlus className="w-4 h-4 mr-1" />
-                    {t("tickets.assign")}
-                  </Button>
+
+                {/* Segundo espacio: Finalizado si está cerrado/terminado; si no, Asignar/Escalar */}
+                {(ticket.estado === 'CERRADO' || ticket.estado === 'TERMINADO') ? (
+                  <div className="flex-1 flex items-center justify-center px-3 py-2 text-sm text-white bg-green-600 rounded-md h-9 text-center font-medium">
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Finalizado
+                  </div>
                 ) : (
-                  // Verificar si ya se escaló (solo una escalación por ticket)
-                  ticket.historialAsignaciones?.some(asignacion => asignacion.tipoOperacion === 'ESCALAMIENTO') ? (
-                    <div className="flex-1 flex items-center justify-center px-3 py-2 text-sm text-muted-foreground bg-muted rounded-md h-9 text-center">
-                      <Eye className="w-4 h-4 mr-1" />
-{t("tickets_management.already_escalated")}
-                    </div>
-                  ) : (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleEscalateTicket(ticket)}
+                  !ticket.tecnicoEmail ? (
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleAssignTicket(ticket)}
                       className="flex-1"
                     >
-                      <ArrowUp className="w-4 h-4 mr-1" />
-                      {t("tickets.escalate")}
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      {t("tickets.assign")}
                     </Button>
+                  ) : (
+                    // Verificar si ya se escaló (solo una escalación por ticket)
+                    ticket.historialAsignaciones?.some(asignacion => asignacion.tipoOperacion === 'ESCALAMIENTO') ? (
+                      <div className="flex-1 flex items-center justify-center px-3 py-2 text-sm text-muted-foreground bg-muted rounded-md h-9 text-center">
+                        <Eye className="w-4 h-4 mr-1" />
+{t("tickets_management.already_escalated")}
+                      </div>
+                    ) : (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleEscalateTicket(ticket)}
+                        className="flex-1"
+                      >
+                        <ArrowUp className="w-4 h-4 mr-1" />
+                        {t("tickets.escalate")}
+                      </Button>
+                    )
                   )
                 )}
               </div>

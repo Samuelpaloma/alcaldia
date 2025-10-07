@@ -165,7 +165,13 @@ export default function TicketsManagement() {
       'asignado': { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Users, label: t('tickets.status.ASIGNADO') },
       'escalado': { color: 'bg-red-100 text-red-800 border-red-200', icon: ArrowUp, label: t('tickets.status.ESCALADO') },
       'pendiente': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: t('tickets.status.PENDIENTE') },
-      'resuelto': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: t('tickets.status.resolved') }
+      'resuelto': { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle, label: t('tickets.status.resolved') },
+      // estados finales adicionales que pueden venir en minúscula
+      'cerrado': { color: 'bg-green-200 text-green-900 border-green-300', icon: CheckCircle, label: t('tickets.status.closed') },
+      'terminado': { color: 'bg-green-200 text-green-900 border-green-300', icon: CheckCircle, label: t('tickets.status.TERMINADO') },
+      // y en mayúscula por si llegan sin normalizar
+      'CERRADO': { color: 'bg-green-200 text-green-900 border-green-300', icon: CheckCircle, label: t('tickets.status.closed') },
+      'TERMINADO': { color: 'bg-green-200 text-green-900 border-green-300', icon: CheckCircle, label: t('tickets.status.TERMINADO') }
     };
     
     const config = statusConfig[status] || statusConfig['pendiente'];
@@ -376,7 +382,7 @@ export default function TicketsManagement() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Resueltos</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tickets.filter(t => t.estado === 'resuelto').length}
+                  {tickets.filter(t => t.estado === 'resuelto' || t.estado === 'cerrado' || t.estado === 'terminado' || t.estado === 'RESUELTO' || t.estado === 'CERRADO' || t.estado === 'TERMINADO').length}
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-full">

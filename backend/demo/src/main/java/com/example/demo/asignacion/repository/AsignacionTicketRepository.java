@@ -16,6 +16,9 @@ public interface AsignacionTicketRepository extends JpaRepository<AsignacionTick
     // Buscar asignación activa por ticket
     Optional<AsignacionTicket> findByTicketIdAndActivaTrue(Long ticketId);
     
+    // Buscar todas las asignaciones activas por ticket
+    List<AsignacionTicket> findAllByTicketIdAndActivaTrue(Long ticketId);
+    
     // Buscar la asignación activa más reciente por ticket
     @Query("SELECT a FROM AsignacionTicket a WHERE a.ticketId = :ticketId AND a.activa = true ORDER BY a.fechaAsignacion DESC")
     Optional<AsignacionTicket> findAsignacionActivaMasReciente(@Param("ticketId") Long ticketId);

@@ -2178,6 +2178,15 @@ class ApiClient {
 
 
   /**
+   * Cerrar ticket desde administrador
+   */
+  async cerrarTicketAdmin(ticketId: number, comentario?: string): Promise<ApiResponse> {
+    return this.request(`/admin/tickets/${ticketId}/cerrar?comentario=${comentario || ''}`, {
+      method: 'PUT'
+    });
+  }
+
+  /**
    * Obtener estadísticas para administradores
    */
   async getAdminStats(): Promise<EstadisticasAdminResponseDTO> {

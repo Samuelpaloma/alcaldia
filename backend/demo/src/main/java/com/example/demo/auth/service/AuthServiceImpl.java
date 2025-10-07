@@ -517,12 +517,10 @@ public class AuthServiceImpl implements AuthService {
         Usuario usuario = usuarioRepository.findByEmail(email)
             .orElseThrow(() -> new AuthException("Usuario no encontrado"));
         
-        // Validar que solo usuarios web (SUPERADMIN, ADMINISTRADOR, FUNCIONARIO) puedan recuperar contraseña
-        // Los TECNICOS deben usar la aplicación móvil
-        if (usuario.getUserType() == TipoUsuario.TECNICO) {
-            log.warn("Intento de recuperación de contraseña desde web para usuario TECNICO: {}", email);
-            throw new AuthException("Los técnicos deben usar la aplicación móvil para recuperar su contraseña");
-        }
+        // Permitir recuperación de contraseña para todos los tipos de usuario
+        // Los técnicos pueden recuperar desde la aplicación móvil
+        log.info("Permitiendo recuperación de contraseña para usuario tipo: {} - email: {}", 
+            usuario.getUserType(), email);
         
         // Eliminar verificaciones anteriores de forma segura
         try {

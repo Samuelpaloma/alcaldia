@@ -241,7 +241,8 @@ export default function ResetPasswordScreen() {
                     }
                   }}
                   secureTextEntry={!showNewPassword}
-                  keyboardType="numeric"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   maxLength={10}
                 />
                 <TouchableOpacity
@@ -275,7 +276,8 @@ export default function ResetPasswordScreen() {
                     }
                   }}
                   secureTextEntry={!showConfirmPassword}
-                  keyboardType="numeric"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   maxLength={10}
                 />
                 <TouchableOpacity

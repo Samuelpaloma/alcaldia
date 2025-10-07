@@ -337,6 +337,28 @@ public class AuthController {
             ));
         }
     }
+
+    /**
+     * Solicitar recuperación de contraseña para aplicación móvil (permite técnicos)
+     */
+    @PostMapping("/mobile/forgot-password")
+    public ResponseEntity<ApiResponse> forgotPasswordMobile(@Valid @RequestBody ForgotPasswordRequest request) {
+        log.info("Solicitud de recuperación de contraseña desde móvil para: {}", request.getEmail());
+        
+        try {
+            // Usar el servicio de reset de contraseña que no tiene restricciones
+            passwordResetService.sendResetToken(request.getEmail());
+            
+            return ResponseEntity.ok(new ApiResponse(
+                "El código fue enviado a tu correo"
+            ));
+        } catch (Exception e) {
+            log.error("Error en forgot-password mobile: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(new ApiResponse(
+                "Error interno del servidor: " + e.getMessage()
+            ));
+        }
+    }
     
     /**
      * Resetear contraseña con código
@@ -347,6 +369,24 @@ public class AuthController {
         
         LoginResponse loginResponse = authService.resetPasswordWithCode(request);
         return ResponseEntity.ok(loginResponse);
+    }
+
+    /**
+     * Resetear contraseña con token para aplicación móvil
+     */
+    @PostMapping("/mobile/reset-password")
+    public ResponseEntity<ApiResponse> resetPasswordMobile(@Valid @RequestBody MobileResetPasswordRequest request) {
+        log.info("Reset de contraseña desde móvil para: {}", request.getEmail());
+        
+        try {
+            passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok(new ApiResponse("Contraseña actualizada exitosamente"));
+        } catch (Exception e) {
+            log.error("Error en reset-password mobile: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(new ApiResponse(
+                "Error interno del servidor: " + e.getMessage()
+            ));
+        }
     }
     
     // ========== LOGOUT ==========

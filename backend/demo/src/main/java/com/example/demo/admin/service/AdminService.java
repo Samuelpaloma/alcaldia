@@ -12,6 +12,7 @@ import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.asignacion.repository.HistorialAsignacionRepository;
 import com.example.demo.asignacion.model.HistorialAsignacion;
+import com.example.demo.notificacion.service.NotificationRoleService;
 import lombok.RequiredArgsConstructor;
 import java.util.Optional;
 import java.util.Comparator;
@@ -37,6 +38,7 @@ public class AdminService {
     private final UsuarioRepository usuarioRepository;
     private final HistorialAsignacionRepository historialAsignacionRepository;
     private final com.example.demo.asignacion.service.AsignacionService asignacionService;
+    private final NotificationRoleService notificationRoleService;
     
     /**
      * Obtener todos los tickets con evidencias e historial
@@ -103,6 +105,71 @@ public class AdminService {
         return tickets.stream()
             .map(this::convertirTicketAResponseDTO)
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * Cerrar ticket desde administrador
+     */
+    @Transactional
+    public TicketResponseDTO cerrarTicket(Long ticketId, String emailAdmin, String comentario) {
+        log.info("🔒 [ADMIN] ===== CERRANDO TICKET DESDE ADMIN =====");
+        log.info("🔒 [ADMIN] Ticket ID: {}", ticketId);
+        log.info("🔒 [ADMIN] Admin email: {}", emailAdmin);
+        log.info("🔒 [ADMIN] Comentario: {}", comentario);
+        
+        // 1. Buscar ticket
+        Ticket ticket = ticketRepository.findById(ticketId)
+            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        
+        log.info("🔒 [ADMIN] Ticket encontrado - Estado actual: {}", ticket.getStatus());
+        
+        // 2. Buscar administrador
+        Usuario admin = usuarioRepository.findByEmail(emailAdmin)
+            .orElseThrow(() -> new RuntimeException("Administrador no encontrado"));
+        
+        log.info("🔒 [ADMIN] Admin encontrado - ID: {}, Nombre: {}", admin.getId(), admin.getFullName());
+        
+        // 3. Verificar que el ticket no esté ya cerrado
+        if ("CERRADO".equals(ticket.getStatus())) {
+            throw new RuntimeException("El ticket ya está cerrado");
+        }
+        
+        // 4. Obtener estado anterior
+        String estadoAnterior = ticket.getStatus();
+        
+        // 5. Actualizar estado a CERRADO
+        ticket.setStatus("CERRADO");
+        ticket.setUpdatedAt(LocalDateTime.now());
+        ticketRepository.save(ticket);
+        
+        log.info("🔒 [ADMIN] Estado actualizado en BD - Nuevo estado: {}", ticket.getStatus());
+        
+        // 6. Crear historial de cambio de estado
+        HistorialEstadoTicket historial = HistorialEstadoTicket.builder()
+            .ticket(ticket)
+            .cambiadoPor(admin)
+            .estadoAnterior(estadoAnterior)
+            .estadoNuevo("CERRADO")
+            .comentario(comentario != null ? comentario : "Ticket cerrado por administrador")
+            .observaciones("Ticket cerrado desde el panel de administración")
+            .tipoUsuario("ADMINISTRADOR")
+            .build();
+        
+        historialRepository.save(historial);
+        log.info("🔒 [ADMIN] Historial guardado exitosamente");
+        
+        // 7. Enviar notificaciones
+        try {
+            notificationRoleService.notificarCierreTicket(ticketId, admin.getId());
+            log.info("🔒 [ADMIN] Notificaciones enviadas");
+        } catch (Exception e) {
+            log.error("🔒 [ADMIN] Error enviando notificaciones", e);
+        }
+        
+        log.info("✅ [ADMIN] ===== TICKET CERRADO EXITOSAMENTE =====");
+        log.info("✅ [ADMIN] Ticket {} - Estado actualizado: {} → CERRADO", ticketId, estadoAnterior);
+        
+        return convertirTicketAResponseDTO(ticket);
     }
     
     /**

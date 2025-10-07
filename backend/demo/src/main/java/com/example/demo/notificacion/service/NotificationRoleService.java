@@ -42,6 +42,7 @@ public class NotificationRoleService {
     public static final String TIPO_TICKET_CERRADO = "ticket_cerrado";
     public static final String TIPO_COMENTARIO_AGREGADO = "comentario_agregado";
     public static final String TIPO_TICKET_ESCALADO = "ticket_escalado";
+    public static final String TIPO_TICKET_RECHAZADO = "ticket_rechazado";
     
     // Constantes para notificaciones de SLA
     public static final String TIPO_SLA_VENCIDO = "sla_vencido";
@@ -724,6 +725,60 @@ public class NotificationRoleService {
             System.err.println("Error serializando destinatarios: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Error creando notificación: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Crea notificaciones cuando un cliente rechaza la resolución de un ticket
+     */
+    public void notificarRechazoResolucion(Long ticketId, Long usuarioActorId) {
+        try {
+            Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+            
+            Usuario usuarioActor = usuarioRepository.findById(usuarioActorId)
+                .orElseThrow(() -> new RuntimeException("Usuario actor no encontrado"));
+
+            // Notificación para administradores (para reasignación)
+            String mensajeAdmin = String.format("El ticket #%d del funcionario %s fue rechazado por el cliente. Requiere reasignación.", 
+                ticketId, ticket.getCreatorName());
+            
+            List<String> destinatariosAdmin = Arrays.asList("rol:administrador");
+            
+            crearNotificacion(
+                TIPO_TICKET_RECHAZADO,
+                mensajeAdmin,
+                destinatariosAdmin,
+                ticketId,
+                usuarioActorId,
+                usuarioActor.getEmail(),
+                usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
+                "alta"
+            );
+
+            // Notificación para el técnico asignado (si existe)
+            if (ticket.getAssignedTechnician() != null) {
+                String mensajeTecnico = String.format("El ticket #%d que resolviste fue rechazado por el cliente. Se requiere nueva intervención.", 
+                    ticketId);
+                
+                List<String> destinatariosTecnico = Arrays.asList(
+                    "tecnico:" + ticket.getAssignedTechnician().getEmail()
+                );
+                
+                crearNotificacion(
+                    TIPO_TICKET_RECHAZADO,
+                    mensajeTecnico,
+                    destinatariosTecnico,
+                    ticketId,
+                    usuarioActorId,
+                    usuarioActor.getEmail(),
+                    usuarioActor.getFullName() + " " + usuarioActor.getLastName(),
+                    "normal"
+                );
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error creando notificaciones de rechazo de resolución: " + e.getMessage());
         }
     }
 }

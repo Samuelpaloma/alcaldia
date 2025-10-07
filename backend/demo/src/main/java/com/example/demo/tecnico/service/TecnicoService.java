@@ -27,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -58,19 +60,48 @@ public class TecnicoService {
         
         log.info("🔍 [TECNICO] Técnico encontrado: {} (ID: {})", tecnico.getEmail(), tecnico.getId());
         
-        List<Ticket> tickets = ticketRepository.findByAssignedTechnicianOrderByCreatedAtDesc(tecnico);
+        // 1. Obtener tickets asignados directamente
+        List<Ticket> ticketsDirectos = ticketRepository.findByAssignedTechnicianOrderByCreatedAtDesc(tecnico);
+        log.info("🔍 [TECNICO] Tickets asignados directamente: {}", ticketsDirectos.size());
         
-        log.info("🔍 [TECNICO] Tickets encontrados: {} tickets asignados a {}", tickets.size(), emailTecnico);
+        // 2. Obtener tickets escalados (asignaciones activas)
+        List<AsignacionTicket> asignacionesActivas = asignacionTicketRepository.findByTecnicoIdAndActivaTrue(tecnico.getId());
+        log.info("🔍 [TECNICO] Asignaciones activas encontradas: {}", asignacionesActivas.size());
+        
+        // 3. Obtener tickets de las asignaciones activas
+        List<Ticket> ticketsEscalados = new ArrayList<>();
+        for (AsignacionTicket asignacion : asignacionesActivas) {
+            Optional<Ticket> ticketOpt = ticketRepository.findById(asignacion.getTicketId());
+            if (ticketOpt.isPresent()) {
+                Ticket ticket = ticketOpt.get();
+                // Solo incluir si no está ya en la lista directa
+                boolean yaIncluido = ticketsDirectos.stream()
+                    .anyMatch(t -> t.getId().equals(ticket.getId()));
+                if (!yaIncluido) {
+                    ticketsEscalados.add(ticket);
+                    log.info("🔍 [TECNICO] Ticket escalado agregado: {} - Estado: {}", 
+                        ticket.getId(), ticket.getStatus());
+                }
+            }
+        }
+        
+        // 4. Combinar ambas listas
+        List<Ticket> todosLosTickets = new ArrayList<>();
+        todosLosTickets.addAll(ticketsDirectos);
+        todosLosTickets.addAll(ticketsEscalados);
+        
+        log.info("🔍 [TECNICO] Total tickets encontrados: {} ({} directos + {} escalados)", 
+            todosLosTickets.size(), ticketsDirectos.size(), ticketsEscalados.size());
         
         // Log de cada ticket encontrado
-        for (Ticket ticket : tickets) {
+        for (Ticket ticket : todosLosTickets) {
             log.info("🔍 [TECNICO] Ticket {} - Estado: {}, Técnico: {}", 
                 ticket.getId(), 
                 ticket.getStatus(), 
                 ticket.getAssignedTechnicianEmail());
         }
         
-        return tickets.stream()
+        return todosLosTickets.stream()
             .map(this::convertirTicketAResponseDTO)
             .collect(Collectors.toList());
     }
@@ -85,8 +116,22 @@ public class TecnicoService {
         Usuario tecnico = usuarioRepository.findByEmail(emailTecnico)
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
         
-        Ticket ticket = ticketRepository.findById(ticketId)
-            .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        // Usar findAllById para manejar casos donde hay múltiples resultados
+        List<Ticket> tickets = ticketRepository.findAllById(Collections.singletonList(ticketId));
+        
+        if (tickets.isEmpty()) {
+            log.error("No se encontró el ticket con ID: {}", ticketId);
+            throw new RuntimeException("Ticket no encontrado");
+        }
+        
+        if (tickets.size() > 1) {
+            log.warn("Múltiples tickets encontrados con ID: {}. Usando el primero.", ticketId);
+        }
+        
+        Ticket ticket = tickets.get(0);
+        log.info("Ticket encontrado - ID: {}, Estado: {}, Técnico asignado: {}", 
+            ticket.getId(), ticket.getStatus(), 
+            ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null");
         
         // Verificar que el ticket esté actualmente asignado al técnico
         boolean tieneAcceso = false;

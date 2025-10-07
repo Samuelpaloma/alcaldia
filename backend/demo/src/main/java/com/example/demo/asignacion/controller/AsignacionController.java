@@ -123,6 +123,24 @@ public class AsignacionController {
     }
     
     /**
+     * MÉTODO TEMPORAL: Corregir ticket escalado
+     * POST /api/asignaciones/corregir-escalado/{ticketId}
+     */
+    @PostMapping("/corregir-escalado/{ticketId}")
+    public ResponseEntity<?> corregirTicketEscalado(@PathVariable Long ticketId) {
+        try {
+            log.info("🔧 [CONTROLLER] Corrigiendo ticket escalado: {}", ticketId);
+            asignacionService.corregirTicketEscalado(ticketId);
+            return ResponseEntity.ok(ApiResponse.success("Ticket corregido exitosamente"));
+        } catch (Exception e) {
+            log.error("Error corrigiendo ticket escalado", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al corregir ticket: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
      * Desasignar ticket
      * DELETE /api/asignaciones/desasignar/{ticketId}
      */

@@ -30,42 +30,65 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                                   FilterChain filterChain) throws ServletException, IOException {
         
         String path = request.getRequestURI();
-        log.info("🔍 JwtRequestFilter procesando ruta: {}", path);
+        boolean isWebSocketPath = path.startsWith("/ws");
+        
+        // Solo loggear rutas no-WebSocket para evitar spam
+        if (!isWebSocketPath) {
+            log.info("🔍 JwtRequestFilter procesando ruta: {}", path);
+        }
         
         try {
             String jwt = getJwtFromRequest(request);
-            log.info("🔑 JWT extraído: {}", jwt != null ? "Sí" : "No");
-            if (jwt != null) {
-                log.info("🔑 JWT (primeros 20 chars): {}", jwt.substring(0, Math.min(20, jwt.length())));
+            
+            // Solo loggear JWT para rutas no-WebSocket
+            if (!isWebSocketPath) {
+                log.info("🔑 JWT extraído: {}", jwt != null ? "Sí" : "No");
+                if (jwt != null) {
+                    log.info("🔑 JWT (primeros 20 chars): {}", jwt.substring(0, Math.min(20, jwt.length())));
+                }
             }
             
             if (StringUtils.hasText(jwt)) {
-                log.info("🔑 Validando JWT...");
+                if (!isWebSocketPath) {
+                    log.info("🔑 Validando JWT...");
+                }
                 if (jwtTokenProvider.validateToken(jwt)) {
-                    log.info("✅ JWT válido, obteniendo usuario...");
+                    if (!isWebSocketPath) {
+                        log.info("✅ JWT válido, obteniendo usuario...");
+                    }
                     Long userId = jwtTokenProvider.getUserIdFromJWT(jwt);
-                    log.info("🔑 User ID extraído: {}", userId);
+                    if (!isWebSocketPath) {
+                        log.info("🔑 User ID extraído: {}", userId);
+                    }
                     
                     UserDetails userDetails = userDetailsService.loadUserById(userId);
                     
                     if (userDetails != null) {
-                        log.info("✅ Usuario encontrado: {}", userDetails.getUsername());
+                        if (!isWebSocketPath) {
+                            log.info("✅ Usuario encontrado: {}", userDetails.getUsername());
+                        }
                         UsernamePasswordAuthenticationToken authentication = 
                             new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                         
-                        log.info("✅ Usuario autenticado: {} con roles: {}", 
-                                userDetails.getUsername(), userDetails.getAuthorities());
+                        if (!isWebSocketPath) {
+                            log.info("✅ Usuario autenticado: {} con roles: {}", 
+                                    userDetails.getUsername(), userDetails.getAuthorities());
+                        }
                     } else {
                         log.warn("⚠️ Usuario no encontrado para ID: {}", userId);
                     }
                 } else {
-                    log.warn("⚠️ JWT inválido o expirado");
+                    if (!isWebSocketPath) {
+                        log.warn("⚠️ JWT inválido o expirado");
+                    }
                 }
             } else {
-                log.info("ℹ️ No hay JWT en la petición a: {}", path);
+                if (!isWebSocketPath) {
+                    log.info("ℹ️ No hay JWT en la petición a: {}", path);
+                }
             }
         } catch (Exception ex) {
             log.error("❌ Error estableciendo autenticación: ", ex);
@@ -75,36 +98,53 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     }
     
     private String getJwtFromRequest(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        boolean isWebSocketPath = path.startsWith("/ws");
+        
         // Buscar en el header Authorization
         String bearerToken = request.getHeader("Authorization");
-        log.info("🔍 Header Authorization: {}", bearerToken != null ? "Presente" : "Ausente");
+        if (!isWebSocketPath) {
+            log.info("🔍 Header Authorization: {}", bearerToken != null ? "Presente" : "Ausente");
+        }
         
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             String token = bearerToken.substring(7);
-            log.info("🔑 Token extraído del header Authorization");
+            if (!isWebSocketPath) {
+                log.info("🔑 Token extraído del header Authorization");
+            }
             return token;
         }
         
         // Buscar en el header X-Authorization (fallback)
         String xAuthToken = request.getHeader("X-Authorization");
-        log.info("🔍 Header X-Authorization: {}", xAuthToken != null ? "Presente" : "Ausente");
+        if (!isWebSocketPath) {
+            log.info("🔍 Header X-Authorization: {}", xAuthToken != null ? "Presente" : "Ausente");
+        }
         
         if (StringUtils.hasText(xAuthToken) && xAuthToken.startsWith("Bearer ")) {
             String token = xAuthToken.substring(7);
-            log.info("🔑 Token extraído del header X-Authorization");
+            if (!isWebSocketPath) {
+                log.info("🔑 Token extraído del header X-Authorization");
+            }
             return token;
         }
         
         // Buscar en query parameter (fallback)
         String queryToken = request.getParameter("token");
-        log.info("🔍 Query parameter token: {}", queryToken != null ? "Presente" : "Ausente");
+        if (!isWebSocketPath) {
+            log.info("🔍 Query parameter token: {}", queryToken != null ? "Presente" : "Ausente");
+        }
         
         if (StringUtils.hasText(queryToken)) {
-            log.info("🔑 Token extraído del query parameter");
+            if (!isWebSocketPath) {
+                log.info("🔑 Token extraído del query parameter");
+            }
             return queryToken;
         }
         
-        log.info("ℹ️ No se encontró token en ningún lugar");
+        if (!isWebSocketPath) {
+            log.info("ℹ️ No se encontró token en ningún lugar");
+        }
         return null;
     }
     
@@ -127,8 +167,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         
         boolean shouldNotFilter = isAuthPath || isPublicPath || isWebSocketPath;
         
-        log.info("🔍 JwtRequestFilter - Ruta: {} - Es auth: {} - Es pública: {} - Es WebSocket: {} - NO FILTRAR: {}", 
-                 path, isAuthPath, isPublicPath, isWebSocketPath, shouldNotFilter);
+        // Solo loggear para rutas no-WebSocket para evitar spam
+        if (!isWebSocketPath) {
+            log.info("🔍 JwtRequestFilter - Ruta: {} - Es auth: {} - Es pública: {} - Es WebSocket: {} - NO FILTRAR: {}", 
+                     path, isAuthPath, isPublicPath, isWebSocketPath, shouldNotFilter);
+        }
         
         return shouldNotFilter;
     }

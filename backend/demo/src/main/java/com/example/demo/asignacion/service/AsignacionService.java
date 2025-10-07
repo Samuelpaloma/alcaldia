@@ -164,16 +164,15 @@ public class AsignacionService {
             throw new RuntimeException("No se puede escalar un ticket al mismo técnico que ya está asignado: " + ticket.getAssignedTechnician().getEmail());
         }
         
-        // NO desactivar la asignación anterior - mantenerla como historial
-        // Solo verificar que existe para logging
-        Optional<AsignacionTicket> asignacionAnterior = asignacionTicketRepository
-            .findAsignacionActivaMasReciente(ticketId);
+        // Desactivar todas las asignaciones activas anteriores
+        List<AsignacionTicket> asignacionesActivas = asignacionTicketRepository
+            .findAllByTicketIdAndActivaTrue(ticketId);
         
-        if (asignacionAnterior.isPresent()) {
-            AsignacionTicket anterior = asignacionAnterior.get();
-            log.info("📋 [ESCALACION] Asignación anterior encontrada - Técnico ID: {} (se mantiene como historial)", 
-                anterior.getTecnicoId());
-            // NO desactivar - mantener la relación del técnico original
+        for (AsignacionTicket asignacionAnterior : asignacionesActivas) {
+            asignacionAnterior.setActiva(false);
+            asignacionTicketRepository.save(asignacionAnterior);
+            log.info("📋 [ESCALACION] Desactivando asignación anterior ID: {} - Técnico ID: {} (mantenida como historial)", 
+                asignacionAnterior.getId(), asignacionAnterior.getTecnicoId());
         }
         
         AsignacionTicket escalacion = new AsignacionTicket();
@@ -191,13 +190,22 @@ public class AsignacionService {
         // Obtener estado anterior antes de cambiarlo
         String estadoAnterior = ticket.getStatus();
         
-        // NO cambiar el técnico asignado del ticket - solo crear registro de escalación
-        log.info("🔄 [ESCALACION] Manteniendo técnico asignado original: {} (NO cambiar)", 
+        // ACTUALIZAR el técnico asignado del ticket al técnico escalado
+        log.info("🔄 [ESCALACION] Cambiando técnico asignado de: {} a: {}", 
+            ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null",
+            tecnico.getEmail());
+        
+        // Cambiar el técnico asignado al técnico escalado
+        log.info("🔄 [ESCALACION] ANTES - Ticket {} asignado a: {}", 
+            ticketId, 
             ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null");
         
-        // NO cambiar el técnico asignado - mantener el original
-        // ticket.setAssignedTechnician(tecnico);
-        // ticket.setAssignedTechnicianEmail(tecnico.getEmail());
+        ticket.setAssignedTechnician(tecnico);
+        ticket.setAssignedTechnicianEmail(tecnico.getEmail());
+        
+        log.info("🔄 [ESCALACION] DESPUÉS - Ticket {} asignado a: {}", 
+            ticketId, 
+            ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null");
         
         // Cambiar estado a ESCALADO cuando se hace una escalación
         String nuevoEstado = "ESCALADO";
@@ -205,7 +213,9 @@ public class AsignacionService {
         log.info("🔄 [ESCALACION] Cambiando estado: {} → {} (escalación)", estadoAnterior, nuevoEstado);
         ticket.setStatus(nuevoEstado);
         
+        log.info("🔄 [ESCALACION] Guardando ticket {} en base de datos...", ticketId);
         ticketRepository.save(ticket);
+        log.info("🔄 [ESCALACION] Ticket {} guardado exitosamente", ticketId);
         
         log.info("✅ [ESCALACION] Ticket {} escalado correctamente. Técnico escalado: {} ({}). Estado: {} → {}", 
             ticketId, tecnico.getFullName(), tecnico.getEmail(), estadoAnterior, nuevoEstado);
@@ -213,7 +223,7 @@ public class AsignacionService {
         // Verificar que se guardó correctamente
         Ticket ticketVerificado = ticketRepository.findById(ticketId).orElse(null);
         if (ticketVerificado != null) {
-            log.info("✅ [ESCALACION] Verificación - Ticket {} guardado con técnico original: {} y estado: {}", 
+            log.info("✅ [ESCALACION] Verificación - Ticket {} guardado con técnico escalado: {} y estado: {}", 
                 ticketId, 
                 ticketVerificado.getAssignedTechnicianEmail(), 
                 ticketVerificado.getStatus());
@@ -238,6 +248,52 @@ public class AsignacionService {
         }
         
         return convertirADTO(escalacionGuardada, ticket, tecnico);
+    }
+    
+    /**
+     * MÉTODO TEMPORAL: Corregir ticket escalado que no se actualizó correctamente
+     */
+    public void corregirTicketEscalado(Long ticketId) {
+        log.info("🔧 [CORRECCION] Corrigiendo ticket escalado: {}", ticketId);
+        
+        Optional<Ticket> ticketOpt = ticketRepository.findById(ticketId);
+        if (ticketOpt.isEmpty()) {
+            log.error("🔧 [CORRECCION] Ticket {} no encontrado", ticketId);
+            return;
+        }
+        
+        Ticket ticket = ticketOpt.get();
+        log.info("🔧 [CORRECCION] Ticket {} encontrado - Estado: {}, Técnico actual: {}", 
+            ticketId, ticket.getStatus(), 
+            ticket.getAssignedTechnician() != null ? ticket.getAssignedTechnician().getEmail() : "null");
+        
+        // Buscar la asignación activa más reciente
+        Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository.findAsignacionActivaMasReciente(ticketId);
+        if (asignacionActiva.isPresent()) {
+            AsignacionTicket asignacion = asignacionActiva.get();
+            log.info("🔧 [CORRECCION] Asignación activa encontrada - Técnico ID: {}", asignacion.getTecnicoId());
+            
+            // Buscar el técnico
+            Optional<Usuario> tecnicoOpt = usuarioRepository.findById(asignacion.getTecnicoId());
+            if (tecnicoOpt.isPresent()) {
+                Usuario tecnico = tecnicoOpt.get();
+                log.info("🔧 [CORRECCION] Técnico encontrado: {} ({})", tecnico.getEmail(), tecnico.getFullName());
+                
+                // Actualizar el ticket con el técnico correcto
+                ticket.setAssignedTechnician(tecnico);
+                ticket.setAssignedTechnicianEmail(tecnico.getEmail());
+                ticket.setStatus("ESCALADO");
+                
+                ticketRepository.save(ticket);
+                
+                log.info("🔧 [CORRECCION] Ticket {} corregido - Técnico: {}, Estado: ESCALADO", 
+                    ticketId, tecnico.getEmail());
+            } else {
+                log.error("🔧 [CORRECCION] Técnico con ID {} no encontrado", asignacion.getTecnicoId());
+            }
+        } else {
+            log.error("🔧 [CORRECCION] No se encontró asignación activa para ticket {}", ticketId);
+        }
     }
     
     public void desasignarTicket(Long ticketId, String emailDesasignador) {

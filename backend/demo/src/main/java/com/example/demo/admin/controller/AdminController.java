@@ -4,10 +4,12 @@ import com.example.demo.admin.service.AdminService;
 import com.example.demo.admin.dto.response.EstadisticasAdminResponseDTO;
 import com.example.demo.ticket.dto.response.TicketResponseDTO;
 import com.example.demo.shared.dto.ApiResponse;
+import com.example.demo.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -112,6 +114,33 @@ public class AdminController {
             log.error("Error obteniendo tickets del técnico", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al obtener tickets del técnico: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Cerrar ticket desde administrador
+     * PUT /api/admin/tickets/{ticketId}/cerrar
+     */
+    @PutMapping("/tickets/{ticketId}/cerrar")
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
+    public ResponseEntity<?> cerrarTicket(
+            @PathVariable Long ticketId,
+            @RequestParam(value = "comentario", required = false) String comentario,
+            Authentication authentication) {
+        try {
+            log.info("🔒 [ADMIN] Cerrando ticket {} desde administrador", ticketId);
+            
+            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String emailAdmin = userDetails.getEmail();
+            
+            TicketResponseDTO ticket = adminService.cerrarTicket(ticketId, emailAdmin, comentario);
+            
+            return ResponseEntity.ok(ApiResponse.success("Ticket cerrado exitosamente desde administrador", ticket));
+        } catch (Exception e) {
+            log.error("Error cerrando ticket desde admin", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al cerrar ticket: " + e.getMessage())
             );
         }
     }

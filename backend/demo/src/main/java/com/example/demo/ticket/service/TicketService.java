@@ -31,4 +31,13 @@ public interface TicketService {
     // Obtener nombre del usuario
     String obtenerNombreUsuario(String emailUsuario);
     
+    // Obtener tickets por usuario (para cliente)
+    List<TicketResponseDTO> obtenerTicketsPorUsuario(String emailUsuario);
+    
+    // Obtener seguimiento de ticket (para cliente)
+    TicketResponseDTO obtenerSeguimientoTicket(Long ticketId, String emailUsuario);
+    
+    // Responder a resolución de ticket
+    void responderResolucionTicket(Long ticketId, String accion, String comentario, String emailUsuario);
+    
 }

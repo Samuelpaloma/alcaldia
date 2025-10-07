@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import com.example.demo.ticket.dto.request.TicketRequestDTO;
 import com.example.demo.ticket.dto.response.HistorialTicketResponseDTO;
@@ -41,6 +42,7 @@ import com.example.demo.asignacion.dto.response.AsignacionResponseDTO;
 import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 
 @Service
+@Slf4j
 public class TicketServiceImpl implements TicketService {
     
     @Autowired
@@ -286,6 +288,106 @@ public class TicketServiceImpl implements TicketService {
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con email: " + emailUsuario));
         return usuario.getFirstName();
+    }
+
+    @Override
+    public List<TicketResponseDTO> obtenerTicketsPorUsuario(String emailUsuario) {
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        // Usar Pageable para obtener todos los tickets del usuario
+        Pageable pageable = Pageable.unpaged();
+        Page<Ticket> ticketPage = ticketRepository.findByCreatorOrderByCreatedAtDesc(usuario, pageable);
+        List<Ticket> tickets = ticketPage.getContent();
+        
+        return tickets.stream()
+                .map(this::convertirTicketAResponseDTOBasico)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public TicketResponseDTO obtenerSeguimientoTicket(Long ticketId, String emailUsuario) {
+        return obtenerTicketParaSeguimiento(ticketId, emailUsuario);
+    }
+
+    @Override
+    @Transactional
+    public void responderResolucionTicket(Long ticketId, String accion, String comentario, String emailUsuario) {
+        log.info("🔒 [CLIENTE] ===== RESPONDIENDO A RESOLUCIÓN =====");
+        log.info("🔒 [CLIENTE] Ticket ID: {}", ticketId);
+        log.info("🔒 [CLIENTE] Acción: {}", accion);
+        log.info("🔒 [CLIENTE] Comentario: {}", comentario);
+        log.info("🔒 [CLIENTE] Email usuario: {}", emailUsuario);
+        
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        
+        log.info("🔒 [CLIENTE] Ticket encontrado - Estado actual: {}", ticket.getStatus());
+        log.info("🔒 [CLIENTE] Creador del ticket: {}", ticket.getCreatorEmail());
+        
+        // Verificar que el usuario tenga acceso al ticket
+        String creadorEmail = ticket.getCreatorEmail();
+        if (creadorEmail == null || !creadorEmail.equals(emailUsuario)) {
+            log.error("🔒 [CLIENTE] Usuario {} no tiene permisos para el ticket {}", emailUsuario, ticketId);
+            throw new RuntimeException("No tienes permisos para responder este ticket");
+        }
+        
+        // Verificar que el ticket esté en estado RESUELTO
+        if (!"RESUELTO".equals(ticket.getStatus())) {
+            log.error("🔒 [CLIENTE] Ticket {} no está en estado RESUELTO. Estado actual: {}", ticketId, ticket.getStatus());
+            throw new RuntimeException("Solo se puede responder a tickets en estado RESUELTO");
+        }
+        
+        log.info("🔒 [CLIENTE] Validaciones pasadas correctamente");
+        
+        String estadoAnterior = ticket.getStatus();
+        String estadoNuevo;
+        
+        if ("CONFIRMAR".equals(accion)) {
+            estadoNuevo = "CERRADO";
+        } else if ("RECHAZAR".equals(accion)) {
+            estadoNuevo = "PENDIENTE";
+        } else {
+            throw new RuntimeException("Acción no válida. Use 'CONFIRMAR' o 'RECHAZAR'");
+        }
+        
+        // Actualizar estado del ticket
+        log.info("🔒 [CLIENTE] Actualizando estado: {} → {}", estadoAnterior, estadoNuevo);
+        ticket.setStatus(estadoNuevo);
+        ticketRepository.save(ticket);
+        log.info("🔒 [CLIENTE] Estado actualizado en BD exitosamente");
+        
+        // Crear historial de cambio de estado
+        Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        log.info("🔒 [CLIENTE] Usuario encontrado: {} ({})", usuario.getEmail(), usuario.getFullName());
+        
+        HistorialEstadoTicket historial = new HistorialEstadoTicket();
+        historial.setTicket(ticket);
+        historial.setEstadoAnterior(estadoAnterior);
+        historial.setEstadoNuevo(estadoNuevo);
+        historial.setComentario(comentario != null ? comentario : "Cliente " + accion.toLowerCase() + " la resolución");
+        historial.setObservaciones("Respuesta del cliente a la resolución");
+        historial.setFechaCambio(java.time.LocalDateTime.now());
+        historial.setCambiadoPor(usuario);
+        historial.setTipoUsuario("CLIENTE");
+        
+        historialRepository.save(historial);
+        log.info("🔒 [CLIENTE] Historial guardado exitosamente");
+        
+        // Si se rechaza, notificar a administradores para reasignación
+        if ("RECHAZAR".equals(accion)) {
+            try {
+                notificationRoleService.notificarRechazoResolucion(ticketId, usuario.getId());
+                log.info("🔒 [CLIENTE] Notificación de rechazo enviada");
+            } catch (Exception e) {
+                log.error("🔒 [CLIENTE] Error enviando notificación de rechazo: {}", e.getMessage());
+            }
+        }
+        
+        log.info("✅ [CLIENTE] ===== RESPUESTA A RESOLUCIÓN COMPLETADA =====");
+        log.info("✅ [CLIENTE] Ticket {} - Estado actualizado: {} → {}", ticketId, estadoAnterior, estadoNuevo);
     }
 
     // Métodos auxiliares
