@@ -1,0 +1,180 @@
+/* ===== TEMA OSCURO AGRESIVO - ASEGURAR QUE SE VEA REALMENTE OSCURO ===== */
+
+/* Cuando el tema está en oscuro, forzar colores oscuros a TODOS los elementos */
+body[style*="background-color: rgb(15, 15, 15)"],
+body[style*="background-color: #0f0f0f"],
+html[style*="background-color: rgb(15, 15, 15)"],
+html[style*="background-color: #0f0f0f"] {
+  /* Forzar fondo negro a TODOS los elementos */
+  * {
+    background-color: #0f0f0f !important;
+    color: #ffffff !important;
+  }
+  
+  /* Excepciones para contenedores específicos */
+  .card,
+  [class*="card"],
+  .bg-white,
+  [class*="bg-white"],
+  .modal,
+  [data-radix-dialog-content],
+  [data-radix-alert-dialog-content] {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+  
+  /* Contenedores secundarios */
+  .bg-gray-100,
+  .bg-slate-100,
+  [class*="bg-gray-100"],
+  [class*="bg-slate-100"] {
+    background-color: #2d2d2d !important;
+    color: #ffffff !important;
+  }
+  
+  /* Sidebar completamente oscura */
+  aside,
+  nav,
+  .sidebar,
+  [class*="sidebar"],
+  [class*="nav"],
+  aside *,
+  nav *,
+  .sidebar *,
+  [class*="sidebar"] *,
+  [class*="nav"] * {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+  
+  /* Inputs y formularios */
+  input,
+  select,
+  textarea,
+  button {
+    background-color: transparent !important;
+    color: #ffffff !important;
+    border-color: #444444 !important;
+  }
+  
+  /* Botones primarios */
+  button[class*="bg-primary"],
+  button[class*="create-btn"],
+  .btn-primary {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: #ffffff !important;
+  }
+  
+  /* Iconos */
+  svg,
+  [class*="lucide"],
+  i,
+  .icon {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    stroke: #ffffff !important;
+  }
+  
+  /* Texto */
+  p,
+  span,
+  div,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  a,
+  strong,
+  em,
+  small,
+  b,
+  i {
+    color: #ffffff !important;
+  }
+  
+  /* Links */
+  a {
+    color: #ffffff !important;
+  }
+  
+  a:hover {
+    color: #cccccc !important;
+  }
+  
+  /* Bordes */
+  .border,
+  [class*="border"] {
+    border-color: #444444 !important;
+  }
+}
+
+/* Aplicar también cuando las variables CSS indican tema oscuro */
+:root[style*="--system-background: #0f0f0f"],
+:root[style*="--system-background: rgb(15, 15, 15)"] {
+  /* Mismas reglas que arriba */
+  * {
+    background-color: #0f0f0f !important;
+    color: #ffffff !important;
+  }
+  
+  .card,
+  [class*="card"],
+  .bg-white,
+  [class*="bg-white"],
+  .modal,
+  [data-radix-dialog-content],
+  [data-radix-alert-dialog-content] {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+  
+  aside,
+  nav,
+  .sidebar,
+  [class*="sidebar"],
+  [class*="nav"] {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+  
+  input,
+  select,
+  textarea,
+  button {
+    background-color: transparent !important;
+    color: #ffffff !important;
+    border-color: #444444 !important;
+  }
+  
+  svg,
+  [class*="lucide"],
+  i,
+  .icon {
+    color: #ffffff !important;
+    fill: #ffffff !important;
+    stroke: #ffffff !important;
+  }
+  
+  p,
+  span,
+  div,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  label,
+  a,
+  strong,
+  em,
+  small,
+  b,
+  i {
+    color: #ffffff !important;
+  }
+}

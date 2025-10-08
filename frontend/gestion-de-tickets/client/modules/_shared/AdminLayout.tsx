@@ -10,7 +10,6 @@ import LogoutModal from "../auth/LogoutModal";
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
-import { useForceColorApplication } from "../../hooks/useForceColorApplication";
 import "./AppLayout.css";
 
 export default function AdminLayout() {
@@ -19,9 +18,6 @@ export default function AdminLayout() {
   const { userInfo } = useUserInfo();
   const userEmail = userInfo?.email || 'samupalo3@gmail.com'; // Fallback para admin
   const userRole = userInfo?.tipoUsuario?.toLowerCase() || 'administrador'; // Fallback para admin
-  
-  // Forzar aplicación de colores del sistema
-  useForceColorApplication();
   
   console.log('🔔 AdminLayout: ===== INFORMACIÓN DEL USUARIO =====');
   console.log('🔔 AdminLayout: userInfo completo:', userInfo);
@@ -56,11 +52,11 @@ export default function AdminLayout() {
   
   return (
     <div className="app-container grid md:grid-cols-[240px_1fr]">
-      <aside className="hidden md:flex md:flex-col md:h-screen md:sticky md:top-0 border-r bg-background">
+      <aside className="hidden md:flex md:flex-col md:h-screen md:sticky md:top-0 border-r bg-white">
         <div className="h-16 flex items-center justify-between px-4 border-b gap-2">
           <Link to="/admin" className="font-extrabold tracking-tight text-xl">{t("brand.name")}</Link>
           <div className="flex items-center gap-2">
-            <select aria-label="language" value={locale} onChange={(e)=>setLocale(e.target.value as any)} className="h-8 rounded-md border px-2 text-xs bg-background">
+            <select aria-label="language" value={locale} onChange={(e)=>setLocale(e.target.value as any)} className="h-8 rounded-md border px-2 text-xs bg-white">
               <option value="es">ES</option>
               <option value="en">EN</option>
             </select>
@@ -83,7 +79,7 @@ export default function AdminLayout() {
         </nav>
       </aside>
 
-      <header className="md:hidden app-header border-b bg-background/70">
+      <header className="md:hidden app-header border-b bg-white">
         <div className="px-4 h-16 flex items-center gap-4 justify-between">
           <div className="flex items-center gap-3">
             <button 
@@ -98,7 +94,7 @@ export default function AdminLayout() {
             <Link to="/admin" className="font-extrabold tracking-tight text-xl">{t("brand.name")}</Link>
           </div>
           <div className="flex items-center gap-2">
-            <select aria-label="language" value={locale} onChange={(e)=>setLocale(e.target.value as any)} className="h-8 rounded-md border px-2 text-xs bg-background">
+            <select aria-label="language" value={locale} onChange={(e)=>setLocale(e.target.value as any)} className="h-8 rounded-md border px-2 text-xs bg-white">
               <option value="es">ES</option>
               <option value="en">EN</option>
             </select>
@@ -111,7 +107,7 @@ export default function AdminLayout() {
 
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-b bg-background">
+        <div className="md:hidden border-b bg-white">
           <nav className="p-4 space-y-2">
             <div className="nav-section">{t("nav.admin_section")}</div>
             <div className="grid gap-1">

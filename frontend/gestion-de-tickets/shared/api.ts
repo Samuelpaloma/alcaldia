@@ -1644,6 +1644,47 @@ class ApiClient {
     });
   }
 
+  async getTemaActual(): Promise<{ success: boolean; data?: { tema: string } }> {
+    try {
+      console.log('🎨 Obteniendo tema actual del sistema...');
+      
+      const response = await this.request<{ success: boolean; data?: { tema: string } }>('/superadmin/configuraciones/tema');
+      console.log('📡 Respuesta de tema:', response);
+      
+      if (response.success && response.data) {
+        console.log('✅ Tema actual obtenido:', response.data.tema);
+        return response;
+      } else {
+        throw new Error('No se pudo obtener el tema actual');
+      }
+    } catch (error) {
+      console.error('❌ Error obteniendo tema actual:', error);
+      
+      // Retornar tema por defecto en caso de error
+      return {
+        success: true,
+        data: { tema: 'claro' }
+      };
+    }
+  }
+
+  async actualizarTema(tema: string): Promise<ApiResponse> {
+    try {
+      console.log('🎨 Actualizando tema del sistema a:', tema);
+      
+      const response = await this.request<ApiResponse>('/superadmin/configuraciones/tema', {
+        method: 'PUT',
+        body: JSON.stringify({ tema }),
+      });
+      
+      console.log('📡 Respuesta de actualización de tema:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error actualizando tema:', error);
+      throw error;
+    }
+  }
+
   async actualizarColoresContenedores(data: {
     colorContenedor?: string;
     colorContenedorSecundario?: string;

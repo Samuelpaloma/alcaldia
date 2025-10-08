@@ -7,7 +7,6 @@ import { logout, getAuth } from "../auth/auth";
 import NotificationsModal from "../notifications/NotificationsModal";
 import SettingsModal from "../system_configuration/SettingsModal";
 import LogoutModal from "../auth/LogoutModal";
-import { useForceColorApplication } from "../../hooks/useForceColorApplication";
 import "./AppLayout.css";
 
 export default function TechnicianLayout() {
@@ -17,9 +16,6 @@ export default function TechnicianLayout() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
-  
-  // Forzar aplicación de colores del sistema
-  useForceColorApplication();
   
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");

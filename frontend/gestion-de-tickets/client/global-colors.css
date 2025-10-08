@@ -1,11 +1,11 @@
-/* Variables CSS globales para colores del sistema */
+/* Variables CSS globales para colores del sistema - Se actualizan dinámicamente por ThemeApplier */
 :root {
-  --system-primary: #007bff;
-  --system-secondary: #6c757d;
+  --system-primary: #000000;
+  --system-secondary: #333333;
   --system-background: #ffffff;
   --system-text: #000000;
   --system-container: #ffffff;
-  --system-container-secondary: #f8f9fa;
+  --system-container-secondary: #f5f5f5;
 }
 
 /* Aplicar colores del sistema globalmente - SOLO al fondo principal */
@@ -171,8 +171,8 @@ main:not(.card):not([class*="bg-white"]):not([class*="bg-gray"]):not([class*="bg
 .nav-container,
 aside,
 nav {
-  background-color: var(--system-primary) !important;
-  color: white !important;
+  background-color: white !important;
+  color: black !important;
 }
 
 /* Texto en elementos */

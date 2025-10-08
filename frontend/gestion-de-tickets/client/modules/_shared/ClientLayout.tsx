@@ -11,8 +11,6 @@ import { UnifiedNotificationsModal } from "../notifications/UnifiedNotifications
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
-import SystemColorLoader from "../../components/SystemColorLoader";
-import { useForceColorApplication } from "../../hooks/useForceColorApplication";
 import "./AppLayout.css";
 
 export default function ClientLayout() {
@@ -25,8 +23,6 @@ export default function ClientLayout() {
   const { unreadCount } = useRoleNotifications(userEmail, userRole);
   const navigate = useNavigate();
   
-  // Forzar aplicación de colores del sistema
-  useForceColorApplication();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -258,7 +254,6 @@ export default function ClientLayout() {
           userEmail={userEmail} 
           userRole={userRole} 
         />
-        <SystemColorLoader />
     </div>
   );
 }
