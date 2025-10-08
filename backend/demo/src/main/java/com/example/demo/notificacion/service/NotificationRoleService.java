@@ -693,33 +693,28 @@ public class NotificationRoleService {
             // Guardar en base de datos
             Notification savedNotificacion = NotificationRepository.save(notificacion);
 
-            // Enviar por WebSocket a cada destinatario
-            for (String destinatario : destinatarios) {
-                String[] partes = destinatario.split(":");
-                String email = partes[1];
-                
-                // Enviar notificación personalizada por WebSocket
-                Map<String, Object> notificacionWebSocket = new HashMap<>();
-                notificacionWebSocket.put("id", savedNotificacion.getId());
-                notificacionWebSocket.put("tipo", tipo);
-                notificacionWebSocket.put("mensaje", mensaje);
-                notificacionWebSocket.put("destinatarios", destinatarios);
-                notificacionWebSocket.put("ticketId", ticketId);
-                notificacionWebSocket.put("usuarioActorNombre", usuarioActorNombre);
-                notificacionWebSocket.put("prioridad", prioridad);
-                notificacionWebSocket.put("leida", false);
-                notificacionWebSocket.put("fechaCreacion", savedNotificacion.getCreatedAt());
+            // Enviar por WebSocket UNA SOLA VEZ con todos los destinatarios
+            // El frontend se encargará de filtrar por usuario/rol
+            Map<String, Object> notificacionWebSocket = new HashMap<>();
+            notificacionWebSocket.put("id", savedNotificacion.getId());
+            notificacionWebSocket.put("tipo", tipo);
+            notificacionWebSocket.put("mensaje", mensaje);
+            notificacionWebSocket.put("destinatarios", destinatarios);
+            notificacionWebSocket.put("ticketId", ticketId);
+            notificacionWebSocket.put("usuarioActorNombre", usuarioActorNombre);
+            notificacionWebSocket.put("prioridad", prioridad);
+            notificacionWebSocket.put("leida", false);
+            notificacionWebSocket.put("fechaCreacion", savedNotificacion.getCreatedAt());
 
-                // Enviar por WebSocket global (el frontend filtrará por usuario/rol)
-                System.out.println("🔔 [DEBUG] Enviando notificación por WebSocket:");
-                System.out.println("🔔 [DEBUG] - Canal: /topic/notifications");
-                System.out.println("🔔 [DEBUG] - Mensaje: " + notificacionWebSocket);
-                System.out.println("🔔 [DEBUG] - MessagingTemplate: " + (messagingTemplate != null ? "INYECTADO" : "NULL"));
-                
-                messagingTemplate.convertAndSend("/topic/notifications", notificacionWebSocket);
-                
-                System.out.println("🔔 [DEBUG] ✅ Notificación enviada por WebSocket exitosamente");
-            }
+            // Enviar por WebSocket global (el frontend filtrará por usuario/rol)
+            System.out.println("🔔 [DEBUG] Enviando notificación por WebSocket:");
+            System.out.println("🔔 [DEBUG] - Canal: /topic/notifications");
+            System.out.println("🔔 [DEBUG] - Mensaje: " + notificacionWebSocket);
+            System.out.println("🔔 [DEBUG] - MessagingTemplate: " + (messagingTemplate != null ? "INYECTADO" : "NULL"));
+            
+            messagingTemplate.convertAndSend("/topic/notifications", notificacionWebSocket);
+            
+            System.out.println("🔔 [DEBUG] ✅ Notificación enviada por WebSocket exitosamente");
 
         } catch (JsonProcessingException e) {
             System.err.println("Error serializando destinatarios: " + e.getMessage());

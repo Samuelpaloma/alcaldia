@@ -365,18 +365,13 @@ export default function CreateTicket() {
       setFileName(undefined);
       resetChat();
       
-      toast({
-        title: t("client.chat.success_title"),
-        description: t("client.chat.success_message") + " " + tkt.id,
-      });
+      // Toast removido para evitar interferencia con notificaciones
+      console.log("Ticket creado exitosamente:", tkt.id);
       
     } catch (error) {
       console.error('Error creating ticket:', error);
-      toast({
-        title: t("client.error"),
-        description: error instanceof Error ? error.message : t("client.create_error"),
-        variant: "destructive",
-      });
+      // Toast de error removido para evitar interferencia con notificaciones
+      alert(error instanceof Error ? error.message : t("client.create_error"));
     } finally {
       setIsLoading(false);
     }

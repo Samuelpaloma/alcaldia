@@ -33,16 +33,22 @@ public class AsignacionController {
             @Valid @RequestBody AsignarTicketRequestDTO request,
             Authentication authentication) {
         try {
+            System.out.println("🔔 [CONTROLLER] ===== INICIO ASIGNACIÓN =====");
+            System.out.println("🔔 [CONTROLLER] Request recibido: " + request);
+            System.out.println("🔔 [CONTROLLER] Asignando ticket " + request.getTicketId() + " a técnico " + request.getTecnicoId());
+            
             log.info("=== INICIO ASIGNACIÓN ===");
             log.info("Request recibido: {}", request);
-            log.info("Authentication: {}", authentication);
             log.info("Asignando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
             
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailAsignador = userDetails.getEmail();
+            System.out.println("🔔 [CONTROLLER] Email asignador: " + emailAsignador);
             log.info("Email asignador: {}", emailAsignador);
             
+            System.out.println("🔔 [CONTROLLER] ✅ Llamando a asignacionService.asignarTicket()...");
             AsignacionResponseDTO asignacion = asignacionService.asignarTicket(request, emailAsignador);
+            System.out.println("🔔 [CONTROLLER] ✅ Asignación exitosa: " + asignacion);
             log.info("Asignación exitosa: {}", asignacion);
             
             return ResponseEntity.ok(asignacion);

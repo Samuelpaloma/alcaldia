@@ -10,6 +10,7 @@ import LogoutModal from "../auth/LogoutModal";
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
+import NotificationToast from "../../components/NotificationToast";
 import "./AppLayout.css";
 
 export default function AdminLayout() {
@@ -30,6 +31,8 @@ export default function AdminLayout() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Tienes una notificación nueva");
 
   // Escuchar evento para abrir modal desde toast
   useEffect(() => {
@@ -44,6 +47,39 @@ export default function AdminLayout() {
       window.removeEventListener('openNotificationsModal', handleOpenModal);
     };
   }, []);
+
+  // Mostrar toast cuando hay notificaciones no leídas
+  useEffect(() => {
+    if (unreadCount > 0) {
+      console.log('🔔 AdminLayout: Mostrando toast de notificación nueva. Unread count:', unreadCount);
+      setShowToast(true);
+    }
+  }, [unreadCount]);
+
+  // Escuchar eventos de WebSocket para mostrar toast
+  useEffect(() => {
+    const handleNewNotification = (event: CustomEvent) => {
+      console.log('🔔 AdminLayout: Recibida nueva notificación via WebSocket:', event.detail);
+      if (event.detail?.mensaje) {
+        setToastMessage(event.detail.mensaje);
+      } else {
+        setToastMessage("Tienes una notificación nueva");
+      }
+      setShowToast(true);
+    };
+
+    window.addEventListener('newNotification', handleNewNotification as EventListener);
+    
+    return () => {
+      window.removeEventListener('newNotification', handleNewNotification as EventListener);
+    };
+  }, []);
+
+  // Función para abrir modal desde toast
+  const handleViewNotifications = () => {
+    setShowToast(false);
+    setShowNotifications(true);
+  };
   
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
@@ -182,6 +218,14 @@ export default function AdminLayout() {
       />
       
       {/* Sistema de notificaciones toast en tiempo real - Integrado en GlobalWebSocket */}
+      
+      {/* Toast de notificaciones */}
+      <NotificationToast
+        show={showToast}
+        onClose={() => setShowToast(false)}
+        onViewNotifications={handleViewNotifications}
+        message={toastMessage}
+      />
     </div>
   );
 }

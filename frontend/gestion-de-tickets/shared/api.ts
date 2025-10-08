@@ -842,6 +842,7 @@ class ApiClient {
     ubicacion: string;
     departamento: string;
     cargo: string;
+    tipoUsuario: string;
   }> {
     return this.request('/usuarios/profile');
   }

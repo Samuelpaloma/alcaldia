@@ -1,174 +1,149 @@
 import React, { useState, useEffect } from 'react';
+import { Bell, X, Eye } from 'lucide-react';
 
 interface NotificationToastProps {
-  notification: {
-    id: number;
-    tipo: string;
-    mensaje: string;
-    usuarioActorNombre?: string;
-    ticketId?: number;
-    prioridad: string;
-    fechaCreacion: string;
-  };
+  show: boolean;
   onClose: () => void;
-  onMarkAsRead?: () => void;
+  onViewNotifications: () => void;
+  message?: string;
 }
 
-export const NotificationToast: React.FC<NotificationToastProps> = ({
-  notification,
+const NotificationToast: React.FC<NotificationToastProps> = ({
+  show,
   onClose,
-  onMarkAsRead
+  onViewNotifications,
+  message = "Tienes una notificación nueva"
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Mostrar con animación
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    
-    // Auto-ocultar después de 5 segundos
-    const autoHideTimer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300); // Esperar animación de salida
-    }, 5000);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(autoHideTimer);
-    };
-  }, [onClose]);
-
-  const getIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'ticket_creado':
-        return '📝';
-      case 'ticket_asignado':
-        return '👤';
-      case 'ticket_en_proceso':
-        return '⚙️';
-      case 'ticket_resuelto':
-        return '✅';
-      case 'ticket_cerrado':
-        return '🔒';
-      case 'comentario_agregado':
-        return '💬';
-      default:
-        return '🔔';
+    if (show) {
+      console.log('🔔 [TOAST] Mostrando toast de notificación');
+      setIsVisible(true);
+      // Auto-close after 5 seconds
+      const timer = setTimeout(() => {
+        console.log('🔔 [TOAST] Auto-cerrando toast después de 5 segundos');
+        handleClose();
+      }, 5000);
+      return () => clearTimeout(timer);
     }
+  }, [show]);
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      onClose();
+    }, 300); // Wait for animation to complete
   };
 
-  const getColor = (tipo: string) => {
-    switch (tipo) {
-      case 'ticket_creado':
-        return 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/20';
-      case 'ticket_asignado':
-        return 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20';
-      case 'ticket_en_proceso':
-        return 'border-l-orange-500 bg-orange-50 dark:bg-orange-900/20';
-      case 'ticket_resuelto':
-        return 'border-l-green-500 bg-green-50 dark:bg-green-900/20';
-      case 'ticket_cerrado':
-        return 'border-l-gray-500 bg-gray-50 dark:bg-gray-900/20';
-      case 'comentario_agregado':
-        return 'border-l-purple-500 bg-purple-50 dark:bg-purple-900/20';
-      default:
-        return 'border-l-gray-500 bg-gray-50 dark:bg-gray-900/20';
-    }
-  };
-
-  const formatTime = (fechaCreacion: string) => {
-    const date = new Date(fechaCreacion);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (!show) return null;
+  
+  // Toast temporal para debug
+  if (show) {
+    console.log('🔔 [TOAST DEBUG] Toast debería estar visible ahora');
     
-    if (diffInSeconds < 60) return 'Hace un momento';
-    if (diffInSeconds < 3600) return `Hace ${Math.floor(diffInSeconds / 60)} min`;
-    if (diffInSeconds < 86400) return `Hace ${Math.floor(diffInSeconds / 3600)} h`;
-    return date.toLocaleDateString();
-  };
+    // Toast temporal para debug - IMPOSIBLE DE OCULTAR
+    setTimeout(() => {
+      const debugToast = document.createElement('div');
+      debugToast.innerHTML = `
+        <div style="
+          position: fixed !important;
+          top: 20px !important;
+          left: 20px !important;
+          background: red !important;
+          color: white !important;
+          padding: 20px !important;
+          border-radius: 8px !important;
+          z-index: 9999999 !important;
+          font-size: 16px !important;
+          font-weight: bold !important;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        ">
+          🔔 TOAST DEBUG - VISIBLE
+        </div>
+      `;
+      document.body.appendChild(debugToast);
+      
+      // Remover después de 3 segundos
+      setTimeout(() => {
+        if (debugToast.parentNode) {
+          debugToast.parentNode.removeChild(debugToast);
+        }
+      }, 3000);
+    }, 100);
+  }
 
   return (
-    <div
-      className={`
-        fixed top-4 right-4 z-50 max-w-sm w-full
-        bg-white dark:bg-slate-800 
-        border border-slate-200 dark:border-slate-700
-        border-l-4 shadow-lg rounded-lg
-        transform transition-all duration-300 ease-in-out
-        ${getColor(notification.tipo)}
-        ${isVisible 
-          ? 'translate-x-0 opacity-100' 
-          : 'translate-x-full opacity-0'
-        }
-      `}
+    <div 
+      className={`fixed bottom-4 right-4 transition-all duration-300 ease-in-out ${
+        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+      }`} 
+      style={{ 
+        zIndex: 999999, 
+        position: 'fixed', 
+        bottom: '16px', 
+        right: '16px',
+        pointerEvents: 'auto',
+        display: 'block',
+        visibility: 'visible'
+      }}
     >
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="text-2xl">
-              {getIcon(notification.tipo)}
-            </div>
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
-                Nueva Notificación
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {formatTime(notification.fechaCreacion)}
-              </p>
+      <div 
+        className="notification-toast bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm" 
+        style={{ 
+          backgroundColor: '#ffffff !important', 
+          border: '1px solid #e5e7eb !important', 
+          borderRadius: '8px !important', 
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1) !important', 
+          padding: '16px !important', 
+          maxWidth: '384px !important',
+          position: 'relative !important',
+          zIndex: '999999 !important',
+          display: 'block !important',
+          visibility: 'visible !important',
+          opacity: '1 !important',
+          pointerEvents: 'auto !important'
+        }}
+      >
+        <div className="flex items-start gap-3">
+          {/* Icon */}
+          <div className="flex-shrink-0">
+            <Bell className="w-5 h-5 text-blue-500" />
+          </div>
+          
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 mb-2">
+              {message}
+            </p>
+            
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button
+                onClick={onViewNotifications}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+              >
+                <Eye className="w-3 h-3" />
+                Ver
+              </button>
+              
+              <button
+                onClick={handleClose}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Cerrar
+              </button>
             </div>
           </div>
           
           {/* Close button */}
           <button
-            onClick={() => {
-              setIsVisible(false);
-              setTimeout(onClose, 300);
-            }}
-            className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+            onClick={handleClose}
+            className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X className="w-4 h-4" />
           </button>
-        </div>
-
-        {/* Content */}
-        <div className="mt-3">
-          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-            {notification.mensaje}
-          </p>
-          
-          {notification.ticketId && (
-            <div className="mt-2 flex items-center text-xs text-slate-500 dark:text-slate-400">
-              <span className="mr-1">🎫</span>
-              Ticket #{notification.ticketId}
-            </div>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-              {notification.prioridad || 'Normal'}
-            </span>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-              NUEVA
-            </span>
-          </div>
-          
-          {onMarkAsRead && (
-            <button
-              onClick={() => {
-                onMarkAsRead();
-                setIsVisible(false);
-                setTimeout(onClose, 300);
-              }}
-              className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors"
-            >
-              Marcar leída
-            </button>
-          )}
         </div>
       </div>
     </div>
@@ -176,4 +151,3 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
 };
 
 export default NotificationToast;
-

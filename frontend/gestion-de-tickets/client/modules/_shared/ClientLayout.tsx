@@ -11,6 +11,7 @@ import { UnifiedNotificationsModal } from "../notifications/UnifiedNotifications
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
+import NotificationToast from "../../components/NotificationToast";
 import "./AppLayout.css";
 
 export default function ClientLayout() {
@@ -27,6 +28,8 @@ export default function ClientLayout() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Tienes una notificación nueva");
 
   // Escuchar evento para abrir modal desde toast
   useEffect(() => {
@@ -41,7 +44,40 @@ export default function ClientLayout() {
       window.removeEventListener('openNotificationsModal', handleOpenModal);
     };
   }, []);
+
+  // Mostrar toast cuando hay notificaciones no leídas
+  useEffect(() => {
+    if (unreadCount > 0) {
+      console.log('🔔 ClientLayout: Mostrando toast por notificaciones no leídas:', unreadCount);
+      setShowToast(true);
+    }
+  }, [unreadCount]);
+
+  // Escuchar notificaciones nuevas via WebSocket
+  useEffect(() => {
+    const handleNewNotification = (event: CustomEvent) => {
+      console.log('🔔 ClientLayout: Recibida nueva notificación via WebSocket:', event.detail);
+      if (event.detail?.mensaje) {
+        setToastMessage(event.detail.mensaje);
+      } else {
+        setToastMessage("Tienes una notificación nueva");
+      }
+      setShowToast(true);
+    };
+
+    window.addEventListener('newNotification', handleNewNotification as EventListener);
+    
+    return () => {
+      window.removeEventListener('newNotification', handleNewNotification as EventListener);
+    };
+  }, []);
   
+  // Función para manejar el botón "Ver" del toast
+  const handleViewNotifications = () => {
+    setShowToast(false);
+    setShowNotifications(true);
+  };
+
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
   
@@ -253,6 +289,14 @@ export default function ClientLayout() {
         <NotificationSystem 
           userEmail={userEmail} 
           userRole={userRole} 
+        />
+        
+        {/* Toast de notificaciones */}
+        <NotificationToast
+          show={showToast}
+          onClose={() => setShowToast(false)}
+          onViewNotifications={handleViewNotifications}
+          message={toastMessage}
         />
     </div>
   );

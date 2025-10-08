@@ -86,9 +86,19 @@ public class AsignacionService {
                                  emailAsignador, "ASIGNACION", request.getComentario());
         
         // Enviar notificaciones por roles
+        System.out.println("🔔 [ASIGNACION] ===== ENVIANDO NOTIFICACIONES =====");
+        System.out.println("🔔 [ASIGNACION] Ticket ID: " + ticket.getId());
+        System.out.println("🔔 [ASIGNACION] Admin asignador: " + emailAsignador);
+        System.out.println("🔔 [ASIGNACION] Técnico asignado: " + tecnico.getEmail());
+        System.out.println("🔔 [ASIGNACION] Cliente creador: " + ticket.getCreatorEmail());
+        
         Usuario admin = usuarioRepository.findByEmail(emailAsignador).orElse(null);
         if (admin != null) {
+            System.out.println("🔔 [ASIGNACION] ✅ Admin encontrado, enviando notificaciones...");
             notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
+            System.out.println("🔔 [ASIGNACION] ✅ Notificaciones enviadas");
+        } else {
+            System.out.println("🔔 [ASIGNACION] ❌ Admin no encontrado");
         }
         
         return convertirADTO(asignacionGuardada, ticket, tecnico);
