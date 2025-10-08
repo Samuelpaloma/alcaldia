@@ -27,7 +27,9 @@ import NotificacionesModal from './components/NotificacionesModal';
 import PreferenciasNotificacionesModal from './components/PreferenciasNotificacionesModal';
 import LanguageSelector from '../components/LanguageSelector';
 import { useFocusEffect } from '@react-navigation/native';
-import { tecnicoAPI, authAPI, evidenciasAPI, ticketsAPI, Ticket as APITicket, DashboardData, Evidence } from '../config/api';
+import { tecnicoAPI, authAPI, evidenciasAPI, ticketsAPI, Ticket as APITicket, DashboardData, Evidence, API_CONFIG } from '../config/api';
+import { useTicketTextProcessor } from '../utils/textProcessor';
+import * as ImagePicker from 'expo-image-picker';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -52,6 +54,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   const navigation = useNavigation<NavigationProp>();
   const { theme, isDark } = useTheme();
   const { t } = useTranslation();
+  const { processText } = useTicketTextProcessor();
   const styles = createStyles(theme);
 
   // Función para traducir estados
@@ -569,11 +572,58 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
               >
                 {/* Header del ticket */}
                 <View style={styles.ticketHeaderNew}>
-                  <Text style={styles.ticketTitleNew}>{ticket.id}: {ticket.consulta || ticket.descripcion}</Text>
+                  {(() => {
+                    const originalText = ticket.consulta || ticket.descripcion || '';
+                    console.log('🎯 [TICKET] ID:', ticket.id);
+                    console.log('🎯 [TICKET] Texto original completo:', JSON.stringify(originalText));
+                    
+                    // Procesamiento directo en el componente
+                    let processedText = originalText;
+                    
+                    // Reemplazos que manejan saltos de línea
+                    processedText = processedText.replace(/client\.chat\.selected_category\s+hardware/g, `${t('client.chat.selected_category')}: hardware`);
+                    processedText = processedText.replace(/client\.chat\.message\s+hardware/g, `${t('client.chat.message')}: hardware`);
+                    processedText = processedText.replace(/client\.chat\.selected_category\s+(\w+)/g, `${t('client.chat.selected_category')}: $1`);
+                    processedText = processedText.replace(/client\.chat\.message\s+(\w+)/g, `${t('client.chat.message')}: $1`);
+                    
+                    // Reemplazos que manejan saltos de línea entre claves
+                    processedText = processedText.replace(/client\.chat\.selected_category\s*\n\s*client\.chat\.message/g, `${t('client.chat.selected_category')}\n${t('client.chat.message')}`);
+                    
+                    // Reemplazos para claves solas (al final)
+                    processedText = processedText.replace(/client\.chat\.selected_category/g, t('client.chat.selected_category'));
+                    processedText = processedText.replace(/client\.chat\.message/g, t('client.chat.message'));
+                    
+                    console.log('🎯 [TICKET] Texto procesado directo:', JSON.stringify(processedText));
+                    console.log('🎯 [TICKET] ¿Son iguales?', originalText === processedText);
+                    
+                    return (
+                      <Text style={styles.ticketTitleNew}>{ticket.id}: {processedText}</Text>
+                    );
+                  })()}
                 </View>
 
                 {/* Descripción */}
-                <Text style={styles.ticketDescriptionNew}>{ticket.descripcion}</Text>
+                <Text style={styles.ticketDescriptionNew}>
+                  {(() => {
+                    const descText = ticket.descripcion || '';
+                    let processedDesc = descText;
+                    
+                    // Reemplazos directos para la descripción
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category\s+hardware/g, `${t('client.chat.selected_category')}: hardware`);
+                    processedDesc = processedDesc.replace(/client\.chat\.message\s+hardware/g, `${t('client.chat.message')}: hardware`);
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category\s+(\w+)/g, `${t('client.chat.selected_category')}: $1`);
+                    processedDesc = processedDesc.replace(/client\.chat\.message\s+(\w+)/g, `${t('client.chat.message')}: $1`);
+                    
+                    // Reemplazos que manejan saltos de línea entre claves
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category\s*\n\s*client\.chat\.message/g, `${t('client.chat.selected_category')}\n${t('client.chat.message')}`);
+                    
+                    // Reemplazos para claves solas (al final)
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category/g, t('client.chat.selected_category'));
+                    processedDesc = processedDesc.replace(/client\.chat\.message/g, t('client.chat.message'));
+                    
+                    return processedDesc;
+                  })()}
+                </Text>
 
                 {/* Tags de estado y prioridad */}
                 <View style={styles.tagsContainer}>
@@ -922,7 +972,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
               <View style={styles.ticketInfo}>
                 <Text style={styles.ticketInfoTitle}>Ticket #{selectedTicket.id}</Text>
                 <Text style={styles.ticketInfoDescription}>
-                  {selectedTicket.consulta || selectedTicket.descripcion}
+                  {processText(selectedTicket.consulta || selectedTicket.descripcion || '')}
                 </Text>
               </View>
             )}
@@ -1026,19 +1076,19 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                   </View>
                   <View style={styles.evidenceContent}>
                     <Text style={styles.evidenceTitle}>{evidencia.nombreCompletoArchivo || evidencia.nombreArchivo}</Text>
-                    <Text style={styles.evidenceSubtitle}>{evidencia.descripcion || 'Evidencia del ticket'}</Text>
+                    <Text style={styles.evidenceSubtitle}>{processText(evidencia.descripcion || 'Evidencia del ticket')}</Text>
                     <Text style={styles.evidenceDate}>
-                      Fecha: {new Date(evidencia.fechaSubida).toLocaleDateString()}
+                      {t('common.date')}: {new Date(evidencia.fechaSubida).toLocaleDateString()}
                     </Text>
                     <Text style={styles.evidenceSize}>
-                      Tamaño: {evidencia.tamanioFormateado || 'N/A'}
+                      {t('evidences.file_size')}: {evidencia.tamanioFormateado || 'N/A'}
                     </Text>
                     <Text style={styles.evidenceType}>
-                      {isImage ? 'Imagen' : isVideo ? 'Video' : isAudio ? 'Audio' : 'Documento'}
+                      {isImage ? t('evidences.file_type') : isVideo ? t('evidences.file_type') : isAudio ? t('evidences.file_type') : t('evidences.file_type')}
                     </Text>
                     {evidencia.subidoPorNombre && (
                       <Text style={styles.evidenceUploader}>
-                        Subido por: {evidencia.subidoPorNombre}
+                        {t('evidences.uploaded_by')}: {evidencia.subidoPorNombre}
                       </Text>
                     )}
                   </View>
@@ -1047,7 +1097,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                       style={styles.downloadButton}
                       onPress={() => descargarEvidencia(evidencia.ticketId, evidencia.nombreArchivo)}
                     >
-                      <Text style={styles.downloadButtonText}>⬇ Descargar</Text>
+                      <Text style={styles.downloadButtonText}>⬇ {t('evidences.download')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1055,7 +1105,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             })
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No hay evidencias para este ticket</Text>
+              <Text style={styles.emptyText}>{t('evidences.no_evidences')}</Text>
             </View>
           )}
         </ScrollView>
@@ -1068,17 +1118,17 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     <Modal visible={evidenciasVisible} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Mis Evidencias</Text>
+            <Text style={styles.modalTitle}>{t('evidences.title')}</Text>
             <TouchableOpacity onPress={() => setEvidenciasVisible(false)}>
               <Text style={styles.closeButton}>×</Text>
             </TouchableOpacity>
           </View>
-        <Text style={styles.modalSubtitle}>Registra y consulta las evidencias de tus tickets.</Text>
+        <Text style={styles.modalSubtitle}>{t('evidences.subtitle')}</Text>
         
         <View style={styles.searchContainer}>
           <TextInput 
             style={styles.searchInput}
-            placeholder="Buscar evidencias..."
+            placeholder={t('evidences.search_evidences')}
             placeholderTextColor="#999"
             value={searchText}
             onChangeText={setSearchText}
@@ -1086,19 +1136,19 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         </View>
 
         <View style={styles.filterContainer}>
-          <Text style={styles.filterLabel}>Total: {todasLasEvidencias.length} evidencias</Text>
+          <Text style={styles.filterLabel}>{t('evidences.total')}: {todasLasEvidencias.length} {t('evidences.evidences')}</Text>
           <TouchableOpacity 
             style={styles.filterButton}
             onPress={cargarTodasLasEvidencias}
           >
-            <Text style={styles.filterButtonText}>🔄 Actualizar</Text>
+            <Text style={styles.filterButtonText}>🔄 {t('common.refresh')}</Text>
           </TouchableOpacity>
         </View>
         
         <ScrollView style={styles.modalContent}>
           {evidenciasGlobalesLoading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Cargando evidencias...</Text>
+              <Text style={styles.loadingText}>{t('evidences.loading')}</Text>
             </View>
           ) : todasLasEvidencias.length > 0 ? (
             todasLasEvidencias
@@ -1123,24 +1173,24 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
                     </View>
                     <View style={styles.evidenceContent}>
                       <Text style={styles.evidenceTitle}>{evidencia.nombreCompletoArchivo || evidencia.nombreArchivo}</Text>
-                      <Text style={styles.evidenceSubtitle}>{evidencia.descripcion || 'Evidencia del ticket'}</Text>
+                      <Text style={styles.evidenceSubtitle}>{processText(evidencia.descripcion || 'Evidencia del ticket')}</Text>
                       <Text style={styles.evidenceDate}>
-                        Fecha: {new Date(evidencia.fechaSubida).toLocaleDateString()}
+                        {t('common.date')}: {new Date(evidencia.fechaSubida).toLocaleDateString()}
                       </Text>
                       <Text style={styles.evidenceSize}>
-                        Tamaño: {evidencia.tamanioFormateado || 'N/A'}
+                        {t('evidences.file_size')}: {evidencia.tamanioFormateado || 'N/A'}
                       </Text>
                       <Text style={styles.evidenceType}>
-                        {isImage ? 'Imagen' : isVideo ? 'Video' : isAudio ? 'Audio' : 'Documento'}
+                        {isImage ? t('evidences.file_type') : isVideo ? t('evidences.file_type') : isAudio ? t('evidences.file_type') : t('evidences.file_type')}
                       </Text>
                       {evidencia.ticketNumero && (
                         <Text style={styles.evidenceTicket}>
-                          Ticket #{evidencia.ticketNumero}: {evidencia.ticketConsulta?.substring(0, 50)}...
+                          {t('tickets.ticket_id')} #{evidencia.ticketNumero}: {evidencia.ticketConsulta?.substring(0, 50)}...
                         </Text>
                       )}
                       {evidencia.subidoPorNombre && (
                         <Text style={styles.evidenceUploader}>
-                          Subido por: {evidencia.subidoPorNombre}
+                          {t('evidences.uploaded_by')}: {evidencia.subidoPorNombre}
                         </Text>
                       )}
                     </View>
@@ -1157,12 +1207,12 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
               })
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No hay evidencias disponibles</Text>
+              <Text style={styles.emptyText}>{t('evidences.no_evidences_available')}</Text>
               <TouchableOpacity 
                 style={styles.refreshButton}
                 onPress={cargarTodasLasEvidencias}
               >
-                <Text style={styles.refreshButtonText}>🔄 Cargar Evidencias</Text>
+                <Text style={styles.refreshButtonText}>🔄 {t('evidences.load_evidences')}</Text>
               </TouchableOpacity>
             </View>
           )}

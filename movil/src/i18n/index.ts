@@ -49,6 +49,13 @@ i18n
     interpolation: {
       escapeValue: false,
     },
+    react: {
+      useSuspense: false,
+    },
+    keySeparator: '.',
+    nsSeparator: false,
+    load: 'languageOnly',
+    cleanCode: true,
   });
 
 export default i18n;

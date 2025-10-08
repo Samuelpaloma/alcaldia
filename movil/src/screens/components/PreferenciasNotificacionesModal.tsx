@@ -11,6 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import NotificacionService, { PreferenciasNotificacion } from '../../services/NotificacionService';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface PreferenciasNotificacionesModalProps {
   visible: boolean;
@@ -18,6 +19,7 @@ interface PreferenciasNotificacionesModalProps {
 }
 
 const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalProps> = ({ visible, onClose }) => {
+  const { t } = useTranslation();
   const [preferencias, setPreferencias] = useState<PreferenciasNotificacion>({
     usuarioId: 0,
     pushActivo: true,
@@ -47,7 +49,7 @@ const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalP
       setPreferencias(data);
     } catch (error) {
       console.error('Error cargando preferencias:', error);
-      Alert.alert('Error', 'No se pudieron cargar las preferencias');
+      Alert.alert(t('common.error'), t('notification_preferences.load_error'));
     } finally {
       setLoading(false);
     }
@@ -57,11 +59,11 @@ const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalP
     try {
       setSaving(true);
       await NotificacionService.actualizarPreferencias(preferencias);
-      Alert.alert('Éxito', 'Preferencias guardadas correctamente');
+      Alert.alert(t('common.success'), t('notification_preferences.save_success'));
       onClose();
     } catch (error) {
       console.error('Error guardando preferencias:', error);
-      Alert.alert('Error', 'No se pudieron guardar las preferencias');
+      Alert.alert(t('common.error'), t('notification_preferences.save_error'));
     } finally {
       setSaving(false);
     }
@@ -101,7 +103,7 @@ const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalP
       <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Cargando preferencias...</Text>
+            <Text style={styles.loadingText}>{t('notification_preferences.loading')}</Text>
           </View>
         </SafeAreaView>
       </Modal>
@@ -113,87 +115,87 @@ const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalP
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.cancelButton}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
+            <Text style={styles.cancelButtonText}>{t('notification_preferences.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Preferencias de Notificaciones</Text>
+          <Text style={styles.title}>{t('notification_preferences.title')}</Text>
           <TouchableOpacity 
             onPress={guardarPreferencias} 
             style={[styles.saveButton, saving && styles.saveButtonDisabled]}
             disabled={saving}
           >
             <Text style={[styles.saveButtonText, saving && styles.saveButtonTextDisabled]}>
-              {saving ? 'Guardando...' : 'Guardar'}
+              {saving ? t('notification_preferences.saving') : t('notification_preferences.save')}
             </Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Canales de Notificación</Text>
+            <Text style={styles.sectionTitle}>{t('notification_preferences.notification_channels')}</Text>
             
             {renderSwitch(
-              'Notificaciones Push',
-              'Recibe notificaciones en la aplicación',
+              t('notification_preferences.push_notifications'),
+              t('notification_preferences.push_description'),
               'pushActivo'
             )}
             
             {renderSwitch(
-              'Notificaciones por Email',
-              'Recibe notificaciones por correo electrónico',
+              t('notification_preferences.email_notifications'),
+              t('notification_preferences.email_description'),
               'emailActivo'
             )}
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notificaciones Obligatorias</Text>
+            <Text style={styles.sectionTitle}>{t('notification_preferences.mandatory_notifications')}</Text>
             <Text style={styles.obligatoryText}>
-              Estas notificaciones siempre se enviarán para mantenerte informado sobre tus tickets:
+              {t('notification_preferences.mandatory_description')}
             </Text>
             
             <View style={styles.obligatoryItem}>
-              <Text style={styles.obligatoryLabel}>📋 Tickets Asignados</Text>
-              <Text style={styles.obligatoryDescription}>Cuando se te asigne un nuevo ticket</Text>
+              <Text style={styles.obligatoryLabel}>{t('notification_preferences.assigned_tickets')}</Text>
+              <Text style={styles.obligatoryDescription}>{t('notification_preferences.assigned_description')}</Text>
             </View>
             
             <View style={styles.obligatoryItem}>
-              <Text style={styles.obligatoryLabel}>⚙️ Tickets en Proceso</Text>
-              <Text style={styles.obligatoryDescription}>Cuando aceptes un ticket</Text>
+              <Text style={styles.obligatoryLabel}>{t('notification_preferences.in_progress_tickets')}</Text>
+              <Text style={styles.obligatoryDescription}>{t('notification_preferences.in_progress_description')}</Text>
             </View>
             
             <View style={styles.obligatoryItem}>
-              <Text style={styles.obligatoryLabel}>✅ Tickets Finalizados</Text>
-              <Text style={styles.obligatoryDescription}>Cuando finalices un ticket</Text>
+              <Text style={styles.obligatoryLabel}>{t('notification_preferences.completed_tickets')}</Text>
+              <Text style={styles.obligatoryDescription}>{t('notification_preferences.completed_description')}</Text>
             </View>
             
             <View style={styles.obligatoryItem}>
-              <Text style={styles.obligatoryLabel}>⏰ SLA Vencido</Text>
-              <Text style={styles.obligatoryDescription}>Cuando un ticket esté próximo a vencer</Text>
+              <Text style={styles.obligatoryLabel}>{t('notification_preferences.sla_expired')}</Text>
+              <Text style={styles.obligatoryDescription}>{t('notification_preferences.sla_description')}</Text>
             </View>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notificaciones Opcionales</Text>
+            <Text style={styles.sectionTitle}>{t('notification_preferences.optional_notifications')}</Text>
             <Text style={styles.optionalText}>
-              Puedes desactivar estas notificaciones si no las necesitas:
+              {t('notification_preferences.optional_description')}
             </Text>
             
             {renderSwitch(
-              'Comentarios',
-              'Cuando se agreguen comentarios a tus tickets',
+              t('notification_preferences.comments'),
+              t('notification_preferences.comments_description'),
               'notificacionesComentarios',
               !preferencias.pushActivo && !preferencias.emailActivo
             )}
             
             {renderSwitch(
-              'Evidencias',
-              'Cuando se suban evidencias a tus tickets',
+              t('notification_preferences.evidence'),
+              t('notification_preferences.evidence_description'),
               'notificacionesEvidencias',
               !preferencias.pushActivo && !preferencias.emailActivo
             )}
             
             {renderSwitch(
-              'Alertas del Sistema',
-              'Notificaciones importantes del sistema',
+              t('notification_preferences.system_alerts'),
+              t('notification_preferences.system_alerts_description'),
               'notificacionesSistema',
               !preferencias.pushActivo && !preferencias.emailActivo
             )}
@@ -203,8 +205,7 @@ const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalP
           <View style={styles.infoContainer}>
             <Text style={styles.infoIcon}>ℹ️</Text>
             <Text style={styles.infoText}>
-              Las notificaciones push están activadas por defecto. 
-              Las notificaciones obligatorias siempre se enviarán para mantenerte informado sobre tus tickets.
+              {t('notification_preferences.info_message')}
             </Text>
           </View>
         </ScrollView>
