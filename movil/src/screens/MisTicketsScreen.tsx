@@ -166,11 +166,56 @@ export default function MisTicketsScreen() {
               >
                 {/* Header del ticket */}
                 <View style={styles.ticketHeader}>
-                  <Text style={styles.ticketTitle}>{ticket.id}: {ticket.consulta || ticket.descripcion}</Text>
+                  <Text style={styles.ticketTitle}>
+                    {ticket.id}: {(() => {
+                      const originalText = ticket.consulta || ticket.descripcion || '';
+                      console.log('🎯 [MIS_TICKETS] ID:', ticket.id);
+                      console.log('🎯 [MIS_TICKETS] Texto original:', JSON.stringify(originalText));
+                      
+                      // Procesamiento directo en el componente
+                      let processedText = originalText;
+                      
+                      // Reemplazos que manejan saltos de línea
+                      processedText = processedText.replace(/client\.chat\.selected_category\s+hardware/g, `${t('client.chat.selected_category')}: hardware`);
+                      processedText = processedText.replace(/client\.chat\.message\s+hardware/g, `${t('client.chat.message')}: hardware`);
+                      processedText = processedText.replace(/client\.chat\.selected_category\s+(\w+)/g, `${t('client.chat.selected_category')}: $1`);
+                      processedText = processedText.replace(/client\.chat\.message\s+(\w+)/g, `${t('client.chat.message')}: $1`);
+                      
+                      // Reemplazos que manejan saltos de línea entre claves
+                      processedText = processedText.replace(/client\.chat\.selected_category\s*\n\s*client\.chat\.message/g, `${t('client.chat.selected_category')}\n${t('client.chat.message')}`);
+                      
+                      // Reemplazos para claves solas (al final)
+                      processedText = processedText.replace(/client\.chat\.selected_category/g, t('client.chat.selected_category'));
+                      processedText = processedText.replace(/client\.chat\.message/g, t('client.chat.message'));
+                      
+                      console.log('🎯 [MIS_TICKETS] Texto procesado:', JSON.stringify(processedText));
+                      return processedText;
+                    })()}
+                  </Text>
                 </View>
 
                 {/* Descripción */}
-                <Text style={styles.ticketDescription}>{ticket.descripcion}</Text>
+                <Text style={styles.ticketDescription}>
+                  {(() => {
+                    const descText = ticket.descripcion || '';
+                    let processedDesc = descText;
+                    
+                    // Reemplazos directos para la descripción
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category\s+hardware/g, `${t('client.chat.selected_category')}: hardware`);
+                    processedDesc = processedDesc.replace(/client\.chat\.message\s+hardware/g, `${t('client.chat.message')}: hardware`);
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category\s+(\w+)/g, `${t('client.chat.selected_category')}: $1`);
+                    processedDesc = processedDesc.replace(/client\.chat\.message\s+(\w+)/g, `${t('client.chat.message')}: $1`);
+                    
+                    // Reemplazos que manejan saltos de línea entre claves
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category\s*\n\s*client\.chat\.message/g, `${t('client.chat.selected_category')}\n${t('client.chat.message')}`);
+                    
+                    // Reemplazos para claves solas (al final)
+                    processedDesc = processedDesc.replace(/client\.chat\.selected_category/g, t('client.chat.selected_category'));
+                    processedDesc = processedDesc.replace(/client\.chat\.message/g, t('client.chat.message'));
+                    
+                    return processedDesc;
+                  })()}
+                </Text>
 
                 {/* Información del técnico */}
                 {(ticket as any).tecnicoNombre && (

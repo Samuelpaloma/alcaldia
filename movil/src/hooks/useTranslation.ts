@@ -5,8 +5,18 @@ export const useTranslation = () => {
   const { t: translate, i18n } = useI18nTranslation();
 
   const t = useCallback((key: string, options?: any): string => {
-    const result = translate(key, options);
-    return typeof result === 'string' ? result : key;
+    try {
+      const result = translate(key, options);
+      // Si la traducción no existe, devolver la clave con un prefijo para debug
+      if (typeof result !== 'string' || result === key) {
+        console.warn(`Translation key not found: ${key}`);
+        return key;
+      }
+      return result;
+    } catch (error) {
+      console.error(`Error translating key ${key}:`, error);
+      return key;
+    }
   }, [translate]);
 
   const changeLanguage = useCallback(async (language: string) => {

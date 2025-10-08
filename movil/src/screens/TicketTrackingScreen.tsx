@@ -23,6 +23,7 @@ import { useTheme } from '../hooks/useTheme';
 import { useTranslation } from '../hooks/useTranslation';
 import { webSocketService } from '../services/WebSocketService';
 import EvidenceModal from './components/EvidenceModal';
+import { useTicketTextProcessor } from '../utils/textProcessor';
 import { tecnicoAPI, ticketsAPI, evidenciasAPI, Ticket, Comment, Evidence, API_CONFIG } from '../config/api';
 
 type TicketTrackingRouteProp = RouteProp<RootStackParamList, 'TicketTracking'>;
@@ -127,6 +128,7 @@ export default function TicketTrackingScreen() {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
   const { t } = useTranslation();
+  const { processText } = useTicketTextProcessor();
   const { ticketId } = route.params;
 
   const [ticketInfo, setTicketInfo] = useState<TicketInfo | null>(null);
@@ -1180,7 +1182,7 @@ export default function TicketTrackingScreen() {
                       
                 {item.descripcion && (
                         <Text style={styles.historialDescription}>
-                          {item.descripcion}
+                          {processText(item.descripcion)}
                         </Text>
                       )}
                       
@@ -1556,7 +1558,7 @@ export default function TicketTrackingScreen() {
                     </Text>
                     {(evidencia.descripcion || evidencia.comentario) && (
                       <Text style={styles.evidenciaDescription}>
-                        {evidencia.descripcion || evidencia.comentario}
+                        {processText(evidencia.descripcion || evidencia.comentario || '')}
                       </Text>
                     )}
                 <Text style={styles.evidenciaSubtitle}>
@@ -1714,7 +1716,7 @@ export default function TicketTrackingScreen() {
               
               <View style={styles.resolvedInfoRow}>
                 <Text style={styles.resolvedInfoLabel}>Asunto:</Text>
-                <Text style={styles.resolvedInfoValue}>{ticketInfo.asunto}</Text>
+                <Text style={styles.resolvedInfoValue}>{processText(ticketInfo.asunto)}</Text>
               </View>
               
               <View style={styles.resolvedInfoRow}>

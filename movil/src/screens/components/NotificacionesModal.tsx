@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import NotificacionService, { Notificacion } from '../../services/NotificacionService';
 import { useTheme } from '../../hooks/useTheme';
+import { useTranslation } from '../../hooks/useTranslation';
+import i18n from '../../i18n';
 
 interface NotificacionesModalProps {
   visible: boolean;
@@ -21,6 +23,7 @@ interface NotificacionesModalProps {
 
 const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onClose, onOpenPreferences }) => {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -38,7 +41,7 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
       setNotificaciones(data);
     } catch (error) {
       console.error('Error cargando notificaciones:', error);
-      Alert.alert('Error', 'No se pudieron cargar las notificaciones');
+      Alert.alert(t('common.error'), t('notifications.load_error'));
     } finally {
       setLoading(false);
     }
@@ -66,14 +69,76 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
       );
     } catch (error) {
       console.error('Error marcando como leída:', error);
-      Alert.alert('Error', 'No se pudo marcar la notificación como leída');
+      Alert.alert(t('common.error'), t('notifications.mark_read_error'));
+    }
+  };
+
+  // Función para procesar mensajes de notificaciones
+  const procesarMensajeNotificacion = (mensaje: string): string => {
+    if (!mensaje) return mensaje;
+    
+    let mensajeProcesado = mensaje;
+    const currentLanguage = i18n.language;
+    
+    // Solo traducir si el idioma actual es inglés y el mensaje está en español
+    if (currentLanguage === 'en') {
+      // Reemplazos específicos para mensajes completos (de español a inglés)
+      mensajeProcesado = mensajeProcesado.replace(/Se te asignó el ticket #(\d+) del funcionario (.+)/g, 
+        t('notifications.ticket_assigned_message', { ticketNumber: '$1', employeeName: '$2' }));
+      
+      mensajeProcesado = mensajeProcesado.replace(/Se te escaló el ticket #(\d+) del funcionario (.+)/g, 
+        t('notifications.ticket_escalated_message', { ticketNumber: '$1', employeeName: '$2' }));
+      
+      mensajeProcesado = mensajeProcesado.replace(/El funcionario (.+) agregó un comentario al ticket #(\d+) que tienes asignado/g, 
+        t('notifications.comment_added_message', { employeeName: '$1', ticketNumber: '$2' }));
+      
+      mensajeProcesado = mensajeProcesado.replace(/El funcionario (.+) subió una evidencia al ticket #(\d+) que tienes asignado/g, 
+        t('notifications.evidence_uploaded_message', { employeeName: '$1', ticketNumber: '$2' }));
+      
+      mensajeProcesado = mensajeProcesado.replace(/El ticket #(\d+) ha sido actualizado/g, 
+        t('notifications.ticket_updated_message', { ticketNumber: '$1' }));
+      
+      mensajeProcesado = mensajeProcesado.replace(/El ticket #(\d+) ha sido cerrado/g, 
+        t('notifications.ticket_closed_message', { ticketNumber: '$1' }));
+      
+      // Mensaje de ticket rechazado
+      mensajeProcesado = mensajeProcesado.replace(/El ticket #(\d+) que resolviste fue rechazado por el cliente\. Se requiere nueva intervención\./g, 
+        t('notifications.ticket_rejected_message', { ticketNumber: '$1' }));
+      
+      // Reemplazos para prioridades (de español a inglés)
+      mensajeProcesado = mensajeProcesado.replace(/ALTA/g, t('common.high'));
+      mensajeProcesado = mensajeProcesado.replace(/MEDIA/g, t('common.medium'));
+      mensajeProcesado = mensajeProcesado.replace(/BAJA/g, t('common.low'));
+      mensajeProcesado = mensajeProcesado.replace(/CRITICA/g, t('common.critical'));
+    }
+    // Si el idioma es español, mantener los mensajes como están (ya vienen en español del backend)
+    
+    return mensajeProcesado;
+  };
+
+  // Función para formatear fechas traducidas
+  const formatearFechaTraducida = (fecha: string): string => {
+    const date = new Date(fecha);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor(diffInHours * 60);
+      return t('notifications.minutes_ago', { count: diffInMinutes });
+    } else if (diffInHours < 24) {
+      return t('notifications.hours_ago', { count: Math.floor(diffInHours) });
+    } else if (diffInHours < 48) {
+      return t('notifications.yesterday');
+    } else {
+      return date.toLocaleDateString();
     }
   };
 
   const renderNotificacion = (notificacion: Notificacion) => {
     const icono = NotificacionService.getIconoNotificacion(notificacion.type);
     const colorPrioridad = NotificacionService.getColorPrioridad(notificacion.priority);
-    const fechaFormateada = NotificacionService.formatearFecha(notificacion.createdAt);
+    const fechaFormateada = formatearFechaTraducida(notificacion.createdAt);
+    const mensajeTraducido = procesarMensajeNotificacion(notificacion.message);
 
     return (
       <TouchableOpacity
@@ -91,7 +156,7 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
               styles.notificacionMensaje,
               !notificacion.read && styles.notificacionMensajeNoLeida
             ]}>
-              {notificacion.message}
+              {mensajeTraducido}
             </Text>
             <View style={styles.notificacionMeta}>
               <Text style={styles.notificacionFecha}>{fechaFormateada}</Text>
@@ -109,7 +174,7 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
         
         {notificacion.actorUserName && (
           <Text style={styles.notificacionActor}>
-            Por: {notificacion.actorUserName}
+{t('notifications.by')}: {notificacion.actorUserName}
           </Text>
         )}
       </TouchableOpacity>
@@ -122,7 +187,7 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>Notificaciones</Text>
+          <Text style={styles.title}>{t('notifications.title')}</Text>
           <View style={styles.headerButtons}>
             {onOpenPreferences && (
               <TouchableOpacity onPress={onOpenPreferences} style={styles.settingsButton}>
@@ -143,16 +208,16 @@ const NotificacionesModal: React.FC<NotificacionesModalProps> = ({ visible, onCl
         >
           {loading ? (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Cargando notificaciones...</Text>
+              <Text style={styles.loadingText}>{t('notifications.loading')}</Text>
             </View>
           ) : notificaciones.length > 0 ? (
             notificaciones.map(renderNotificacion)
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>🔔</Text>
-              <Text style={styles.emptyTitle}>No hay notificaciones</Text>
+              <Text style={styles.emptyTitle}>{t('notifications.no_notifications')}</Text>
               <Text style={styles.emptySubtitle}>
-                Te notificaremos cuando tengas nuevas actividades
+                {t('notifications.empty_subtitle')}
               </Text>
             </View>
           )}
