@@ -85,7 +85,7 @@ public class AdminController {
      * GET /api/admin/tickets/sin-asignar
      */
     @GetMapping("/tickets/sin-asignar")
-    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") // Temporalmente deshabilitado
+    // @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'SUPERADMIN')") 
     public ResponseEntity<?> obtenerTicketsSinAsignar() {
         try {
             log.info("Obteniendo tickets sin asignar");
