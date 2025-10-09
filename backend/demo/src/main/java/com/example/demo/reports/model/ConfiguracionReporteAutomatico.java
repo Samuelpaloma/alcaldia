@@ -23,7 +23,7 @@ public class ConfiguracionReporteAutomatico {
     private Long id;
     
     @Column(name = "tipo_reporte", nullable = false)
-    private String tipoReporte; // MENSUAL, SATISFACCION, RENDIMIENTO, CATEGORIA
+    private String tipoReporte; // MENSUAL
     
     @Column(name = "activo", nullable = false)
     @Builder.Default

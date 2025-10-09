@@ -12,7 +12,7 @@ if (isWeb) {
   BASE_URL = 'http://localhost:8080';
 } else {
   // Para Expo Go y dispositivos físicos - usar localhost para desarrollo
-  BASE_URL = 'http://localhost:8080'; // Cambiado a localhost para desarrollo
+  BASE_URL = 'http://192.168.1.10:8080'; // Cambiado a localhost para desarrollo
 }
 
 // Debug temporal para identificar el problema
