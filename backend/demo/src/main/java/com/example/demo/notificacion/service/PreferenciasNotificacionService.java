@@ -140,10 +140,9 @@ public class PreferenciasNotificacionService {
         map.put("notificacionesSla", preferencias.getNotificacionesSla());
         map.put("notificacionesSistema", preferencias.getNotificacionesSistema());
         map.put("frecuenciaEmail", preferencias.getFrecuenciaEmail());
-        map.put("createdAt", preferencias.getCreatedAt());
-        map.put("updatedAt", preferencias.getUpdatedAt());
+        map.put("createdAt", preferencias.getFechaCreacion());
+        map.put("updatedAt", preferencias.getFechaActualizacion());
         
         return map;
     }
 }
-

@@ -71,6 +71,7 @@
   "filters": "Filters",
   "filters.clear": "Clear filters",
   "filters.apply": "Apply filters",
+  "filters.all": "All",
   "filters.status": "Filter by status",
   "filters.priority": "Filter by priority",
   "filters.technician": "Filter by technician",

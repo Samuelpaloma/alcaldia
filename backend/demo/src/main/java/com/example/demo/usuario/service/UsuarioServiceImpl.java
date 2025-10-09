@@ -415,10 +415,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             return;
         }
         
-        // SuperAdmin puede editar admins que él creó
-        if (currentUser.isSuperAdmin() && targetUser.isAdmin() && 
-            targetUser.getCreatedBy() != null && 
-            targetUser.getCreatedBy().getId().equals(currentUser.getId())) {
+        // SuperAdmin puede editar cualquier administrador
+        if (currentUser.isSuperAdmin() && targetUser.isAdmin()) {
             return;
         }
         

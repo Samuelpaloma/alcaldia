@@ -356,6 +356,7 @@ export default function TicketsManagement() {
         }));
       
       setTecnicos(tecnicosMapeados);
+      console.log('👥 [TÉCNICOS] Técnicos cargados para filtro:', tecnicosMapeados.map(t => ({ id: t.id, nombre: t.nombre, email: t.email })));
     } catch (error) {
       console.error('❌ [TÉCNICOS] Error cargando técnicos:', error);
       // Fallback a datos de prueba
@@ -1242,6 +1243,11 @@ export default function TicketsManagement() {
       const matchesPriority = !priorityFilter || priorityFilter === 'all' || ticket.prioridad === priorityMap[priorityFilter];
       const matchesTechnician = !technicianFilter || technicianFilter === 'all' || ticket.tecnicoEmail === technicianFilter;
       
+      // Debug para filtro por técnico
+      if (technicianFilter && technicianFilter !== 'all') {
+        console.log('🔍 [FILTRO-TÉCNICO] Ticket:', ticket.id, 'Técnico del ticket:', ticket.tecnicoEmail, 'Filtro:', technicianFilter, 'Coincide:', ticket.tecnicoEmail === technicianFilter);
+      }
+      
       return matchesSearch && matchesStatus && matchesPriority && matchesTechnician;
     });
   }, [tickets, searchQuery, statusFilter, priorityFilter, technicianFilter]);
@@ -1423,16 +1429,14 @@ export default function TicketsManagement() {
                   <SelectValue placeholder={t("filters.technician")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("filters.technician")}</SelectItem>
-                  <SelectItem value="w@s.com">w@s.com</SelectItem>
-                  <SelectItem value="w@s.comassa">w@s.comassa</SelectItem>
-                  <SelectItem value="marketing@empresa.com">marketing@empresa.com</SelectItem>
-                  <SelectItem value="ventas@empresa.com">ventas@empresa.com</SelectItem>
-                  <SelectItem value="soporte@empresa.com">soporte@empresa.com</SelectItem>
-                  <SelectItem value="ops@empresa.com">ops@empresa.com</SelectItem>
-                  <SelectItem value="legal@empresa.com">legal@empresa.com</SelectItem>
-                  <SelectItem value="it@empresa.com">it@empresa.com</SelectItem>
-                  <SelectItem value="innovacion@empresa.com">innovacion@empresa.com</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {tecnicos
+                    .filter(tecnico => tecnico.activo)
+                    .map(tecnico => (
+                      <SelectItem key={tecnico.id} value={tecnico.email}>
+                        {tecnico.nombre}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
