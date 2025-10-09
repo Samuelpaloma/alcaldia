@@ -66,11 +66,12 @@ public class TicketServiceImpl implements TicketService {
     @Autowired
     private com.example.demo.asignacion.service.AsignacionService asignacionService;
     
-    @Autowired
-    private NotificationRoleService notificationRoleService;
     
     @Autowired
     private ComentarioService comentarioService;
+    
+    @Autowired
+    private NotificationRoleService notificationRoleService;
     
     @Autowired
     private ArchivoTicketService archivoTicketService;
@@ -163,20 +164,9 @@ public class TicketServiceImpl implements TicketService {
             System.out.println("🔍 [DEBUG] No hay archivo adjunto para procesar");
         }
         
-        // Enviar notificación inteligente a los administradores
-        // NOTIFICACIONES: Solo usar el sistema de roles unificado
-        try {
-            // Solo notificar si el creador NO es SuperAdmin (evitar auto-notificaciones)
-            if (creador != null && !"Super Administrador".equals(creador.getFullName() + " " + creador.getLastName())) {
-                System.out.println("🔔 [DEBUG] Enviando notificación de creación de ticket para: " + creador.getEmail());
-                notificationRoleService.notificarCreacionTicket(ticket.getId(), creador.getId());
-            } else {
-                System.out.println("🔔 [DEBUG] Saltando notificación - creador es SuperAdmin");
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Error enviando notificación: " + e.getMessage());
-            e.printStackTrace();
-        }
+        // NOTIFICACIONES: Se envían via endpoint de trigger desde el frontend
+        // Esto evita duplicación de notificaciones
+        System.out.println("🔔 [DEBUG] Notificaciones se enviarán via endpoint de trigger desde el frontend");
 
         return convertirTicketAResponseDTO(ticket);
     }
@@ -411,6 +401,7 @@ public class TicketServiceImpl implements TicketService {
                 ticket.getStatus(),
                 ticket.getCreatorEmail(), // Usar método seguro
                 ticket.getCreatorName(), // Usar método seguro
+                ticket.getCreator() != null ? ticket.getCreator().getId() : null, // Agregar creadorId
                 tecnicoActual != null ? tecnicoActual.getEmail() : null,
                 tecnicoActual != null ? tecnicoActual.getFullName() : null,
                 ticket.getCreatedAt(),
@@ -506,6 +497,7 @@ public class TicketServiceImpl implements TicketService {
             ticket.getStatus(),
             ticket.getCreatorEmail(), // Usar método seguro
             ticket.getCreatorName(), // Usar método seguro
+            ticket.getCreator() != null ? ticket.getCreator().getId() : null, // Agregar creadorId
             tecnicoActual != null ? tecnicoActual.getEmail() : null,
             tecnicoActual != null ? tecnicoActual.getFullName() : null,
             ticket.getCreatedAt(),

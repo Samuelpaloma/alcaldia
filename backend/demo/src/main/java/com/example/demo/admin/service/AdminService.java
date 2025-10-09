@@ -282,6 +282,7 @@ public class AdminService {
             ticket.getStatus() != null ? ticket.getStatus().toString() : "PENDIENTE", // estado
             ticket.getCreatorEmail() != null ? ticket.getCreatorEmail() : "unknown@example.com", // creadorEmail
             ticket.getCreatorName() != null ? ticket.getCreatorName() : "Usuario Desconocido", // creadorNombre
+            ticket.getCreator() != null ? ticket.getCreator().getId() : null, // creadorId
             tecnicoActual != null ? tecnicoActual.getEmail() : null, // tecnicoEmail
             tecnicoActual != null ? tecnicoActual.getFullName() : null, // tecnicoNombre
             ticket.getCreatedAt() != null ? ticket.getCreatedAt() : LocalDateTime.now(), // fechaCreacion

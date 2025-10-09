@@ -13,6 +13,7 @@ public class TicketResponseDTO {
     private String estado;
     private String creadorEmail;
     private String creadorNombre;
+    private Long creadorId;
     private String tecnicoEmail;
     private String tecnicoNombre;
     private LocalDateTime fechaCreacion;
@@ -43,7 +44,7 @@ public class TicketResponseDTO {
 
     // Constructor completo
     public TicketResponseDTO(Long id, String asunto, String descripcion, String prioridad, String estado,
-                             String creadorEmail, String creadorNombre, String tecnicoEmail, String tecnicoNombre, LocalDateTime fechaCreacion,
+                             String creadorEmail, String creadorNombre, Long creadorId, String tecnicoEmail, String tecnicoNombre, LocalDateTime fechaCreacion,
                              LocalDateTime fechaActualizacion, String nombre, String ubicacion,
                              String consulta, String categoria, String archivoAdjunto, String nombreArchivo,
                              List<EvidenciaResponseDTO> evidencias, List<HistorialEstadoResponseDTO> historialEstados,
@@ -56,6 +57,7 @@ public class TicketResponseDTO {
         this.estado = estado;
         this.creadorEmail = creadorEmail;
         this.creadorNombre = creadorNombre;
+        this.creadorId = creadorId;
         this.tecnicoEmail = tecnicoEmail;
         this.tecnicoNombre = tecnicoNombre;
         this.fechaCreacion = fechaCreacion;
@@ -75,7 +77,7 @@ public class TicketResponseDTO {
 
     // Constructor básico para compatibilidad
     public TicketResponseDTO(Long id, String asunto, String descripcion, String prioridad, String estado,
-                             String creadorEmail, String creadorNombre, String tecnicoEmail, String tecnicoNombre, LocalDateTime fechaCreacion) {
+                             String creadorEmail, String creadorNombre, Long creadorId, String tecnicoEmail, String tecnicoNombre, LocalDateTime fechaCreacion) {
         this.id = id;
         this.asunto = asunto;
         this.descripcion = descripcion;
@@ -83,6 +85,7 @@ public class TicketResponseDTO {
         this.estado = estado;
         this.creadorEmail = creadorEmail;
         this.creadorNombre = creadorNombre;
+        this.creadorId = creadorId;
         this.tecnicoEmail = tecnicoEmail;
         this.tecnicoNombre = tecnicoNombre;
         this.fechaCreacion = fechaCreacion;
@@ -96,6 +99,7 @@ public class TicketResponseDTO {
     public String getEstado() { return estado; }
     public String getCreadorEmail() { return creadorEmail; }
     public String getCreadorNombre() { return creadorNombre; }
+    public Long getCreadorId() { return creadorId; }
     public String getTecnicoEmail() { return tecnicoEmail; }
     public String getTecnicoNombre() { return tecnicoNombre; }
     public LocalDateTime getFechaCreacion() { return fechaCreacion; }
@@ -114,6 +118,7 @@ public class TicketResponseDTO {
     
     // Setters
     public void setCreadorNombre(String creadorNombre) { this.creadorNombre = creadorNombre; }
+    public void setCreadorId(Long creadorId) { this.creadorId = creadorId; }
     public void setEvidencias(List<EvidenciaResponseDTO> evidencias) { this.evidencias = evidencias; }
     public void setHistorialEstados(List<HistorialEstadoResponseDTO> historialEstados) { this.historialEstados = historialEstados; }
     public void setArchivosConversacion(List<Object> archivosConversacion) { this.archivosConversacion = archivosConversacion; }

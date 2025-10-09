@@ -34,6 +34,11 @@ export default function AdminLayout() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Tienes una notificación nueva");
 
+  // Configurar título de la página
+  useEffect(() => {
+    document.title = 'NEITickets - Administración';
+  }, []);
+
   // Escuchar evento para abrir modal desde toast
   useEffect(() => {
     const handleOpenModal = () => {
@@ -48,13 +53,8 @@ export default function AdminLayout() {
     };
   }, []);
 
-  // Mostrar toast cuando hay notificaciones no leídas
-  useEffect(() => {
-    if (unreadCount > 0) {
-      console.log('🔔 AdminLayout: Mostrando toast de notificación nueva. Unread count:', unreadCount);
-      setShowToast(true);
-    }
-  }, [unreadCount]);
+  // Mostrar toast solo cuando llegan notificaciones nuevas via WebSocket
+  // (no automáticamente al recargar)
 
   // Escuchar eventos de WebSocket para mostrar toast
   useEffect(() => {

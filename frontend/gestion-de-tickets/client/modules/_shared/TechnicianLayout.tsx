@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Bell, Settings, LogOut, Wrench, FileText, Upload, User } from "lucide-react";
@@ -19,6 +19,11 @@ export default function TechnicianLayout() {
   
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
+  
+  // Configurar título de la página
+  useEffect(() => {
+    document.title = 'NEITickets - Técnico';
+  }, []);
   
   const onLogout = () => { logout(); navigate("/login", { replace: true }); };
   

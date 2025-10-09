@@ -31,6 +31,11 @@ export default function ClientLayout() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("Tienes una notificación nueva");
 
+  // Configurar título de la página
+  useEffect(() => {
+    document.title = 'NEITickets - Cliente';
+  }, []);
+
   // Escuchar evento para abrir modal desde toast
   useEffect(() => {
     const handleOpenModal = () => {
@@ -45,13 +50,8 @@ export default function ClientLayout() {
     };
   }, []);
 
-  // Mostrar toast cuando hay notificaciones no leídas
-  useEffect(() => {
-    if (unreadCount > 0) {
-      console.log('🔔 ClientLayout: Mostrando toast por notificaciones no leídas:', unreadCount);
-      setShowToast(true);
-    }
-  }, [unreadCount]);
+  // Mostrar toast solo cuando llegan notificaciones nuevas via WebSocket
+  // (no automáticamente al recargar)
 
   // Escuchar notificaciones nuevas via WebSocket
   useEffect(() => {

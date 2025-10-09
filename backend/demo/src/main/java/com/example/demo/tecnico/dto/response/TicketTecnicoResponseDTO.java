@@ -24,6 +24,7 @@ public class TicketTecnicoResponseDTO {
     private String ubicacion;
     private String consulta;
     private String categoria;
+    private Long creadorId;
     private String creadorNombre;
     private String creadorEmail;
     private LocalDateTime fechaCreacion;

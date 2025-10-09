@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { logout } from "../auth/auth";
@@ -9,6 +9,12 @@ export default function SuperAdminLayout() {
   const { t, locale, setLocale } = useI18n();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Configurar título de la página
+  useEffect(() => {
+    document.title = 'NEITickets - Super Administrador';
+  }, []);
+  
   const onLogout = () => { logout(); navigate("/login", { replace: true }); };
   
   return (
