@@ -113,16 +113,23 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus("PENDIENTE");
         ticket.setCreator(creador);
         
-        // Guardar ticket
-        ticketRepository.save(ticket);
+        // Guardar ticket y obtener el ticket guardado con ID
+        Ticket ticketGuardado = ticketRepository.save(ticket);
+        
+        // Verificar que el ticket se guardó correctamente
+        if (ticketGuardado.getId() == null) {
+            throw new RuntimeException("Error al guardar el ticket: ID no generado");
+        }
+        
+        System.out.println("✅ [DEBUG] Ticket guardado con ID: " + ticketGuardado.getId());
         
         // Procesar ticket con SLA y automatización integrada
         try {
-            System.out.println("🔧 [DEBUG] Llamando a SLA y automatización para ticket " + ticket.getId());
-            slaAutomationService.procesarTicketCreado(ticket);
-            System.out.println("✅ [DEBUG] SLA y automatización procesados correctamente para ticket " + ticket.getId());
+            System.out.println("🔧 [DEBUG] Llamando a SLA y automatización para ticket " + ticketGuardado.getId());
+            slaAutomationService.procesarTicketCreado(ticketGuardado);
+            System.out.println("✅ [DEBUG] SLA y automatización procesados correctamente para ticket " + ticketGuardado.getId());
         } catch (Exception e) {
-            System.err.println("❌ [DEBUG] Error procesando SLA y automatización para ticket " + ticket.getId() + ": " + e.getMessage());
+            System.err.println("❌ [DEBUG] Error procesando SLA y automatización para ticket " + ticketGuardado.getId() + ": " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -143,7 +150,7 @@ public class TicketServiceImpl implements TicketService {
                 
                 // Usar el servicio de archivos múltiples
                 archivoTicketService.subirArchivo(
-                    ticket.getId(),
+                    ticketGuardado.getId(),
                     request.getNombreArchivo().substring(0, request.getNombreArchivo().lastIndexOf('.')), // nombre sin extensión
                     tipoMime,
                     (long) request.getArchivoAdjunto().length() * 3 / 4, // estimación del tamaño
@@ -178,7 +185,7 @@ public class TicketServiceImpl implements TicketService {
             e.printStackTrace();
         }
 
-        return convertirTicketAResponseDTO(ticket);
+        return convertirTicketAResponseDTO(ticketGuardado);
     }
 
     @Override

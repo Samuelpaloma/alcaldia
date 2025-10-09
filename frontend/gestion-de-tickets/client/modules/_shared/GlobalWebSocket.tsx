@@ -79,12 +79,18 @@ const GlobalWebSocket: React.FC = () => {
       console.log('🔔 [DEBUG] ===== CONFIGURANDO WEBSOCKET GLOBAL =====');
       console.log('🔔 [DEBUG] URL WebSocket: http://localhost:8080/ws');
       console.log('🔔 [DEBUG] 🔥🔥🔥 INICIANDO CREACIÓN DE SOCKET 🔥🔥🔥');
-      const socket = new SockJS('http://localhost:8080/ws');
+      const socket = new SockJS('http://localhost:8080/ws', null, {
+        debug: false,
+        devel: false
+      });
       console.log('🔔 [DEBUG] 🔥🔥🔥 SOCKET CREADO EXITOSAMENTE 🔥🔥🔥');
       const client = new Client({
         webSocketFactory: () => socket,
         debug: (str) => {
-          console.log('🔔 [DEBUG] WebSocket Debug:', str);
+          // Solo mostrar errores críticos
+          if (str.includes('ERROR') || str.includes('error')) {
+            console.log('🔔 [DEBUG] WebSocket Debug:', str);
+          }
         },
         connectHeaders: {},
         heartbeatIncoming: 4000,

@@ -93,6 +93,7 @@ export default function TicketsManagement() {
   const { toast } = useToast();
   const [tickets, setTickets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
@@ -302,6 +303,7 @@ export default function TicketsManagement() {
           prioridad: t.prioridad
         })));
         
+        
         // Verificar si los campos están llegando correctamente
         const primerTicket = response[0];
         console.log('🔍 [TICKETS] Verificación de campos:');
@@ -315,9 +317,10 @@ export default function TicketsManagement() {
       setTickets(response || []);
     } catch (error) {
       console.error('❌ [TICKETS] Error cargando tickets:', error);
-      // Fallback a datos de prueba si falla la API
-      console.log('🔄 [TICKETS] Usando datos de prueba como fallback');
-      setTickets(demoTickets);
+      // No usar datos de demostración, mantener array vacío para evitar confusión
+      console.log('🔄 [TICKETS] Error en la API, mostrando mensaje de error');
+      setTickets([]);
+      setError('Error al cargar los tickets. Por favor, verifica la conexión con el servidor.');
     } finally {
       setIsLoading(false);
     }
@@ -911,14 +914,17 @@ export default function TicketsManagement() {
       
       // Determinar si es evidencia final o archivo de chat
       if (evidencia.idEvidencia) {
-        // Es evidencia final - usar la URL directa para previsualización
+        // Es evidencia final - obtener blob para previsualización
         console.log('🔍 [PREVIEW] Previsualizando evidencia final:', evidencia.idEvidencia);
         const url = evidencia.urlArchivo || evidencia.url;
         if (url) {
-          // Para evidencias finales, abrir directamente en nueva pestaña
-          console.log('🔍 [PREVIEW] Abriendo URL en nueva pestaña:', url);
-          window.open(url, '_blank');
-          return;
+          // Para evidencias finales, obtener el blob desde la URL
+          console.log('🔍 [PREVIEW] Obteniendo blob desde URL:', url);
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Error obteniendo archivo: ${response.status}`);
+          }
+          blob = await response.blob();
         } else {
           throw new Error('No hay URL disponible para esta evidencia final');
         }
@@ -935,12 +941,15 @@ export default function TicketsManagement() {
         if (evidencia.urlArchivo || evidencia.url) {
           console.log('🔍 [PREVIEW] Detectado como evidencia final por URL');
           const url = evidencia.urlArchivo || evidencia.url;
-          window.open(url, '_blank');
-          return;
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Error obteniendo archivo: ${response.status}`);
+          }
+          blob = await response.blob();
+        } else {
+          // Si no tiene identificadores claros, mostrar error detallado
+          throw new Error(`No se pudo determinar el tipo de archivo. Propiedades disponibles: ${Object.keys(evidencia).join(', ')}`);
         }
-        
-        // Si no tiene identificadores claros, mostrar error detallado
-        throw new Error(`No se pudo determinar el tipo de archivo. Propiedades disponibles: ${Object.keys(evidencia).join(', ')}`);
       }
       
       console.log('✅ [PREVIEW] Blob recibido:', blob);
@@ -969,6 +978,72 @@ export default function TicketsManagement() {
     if (previewUrl) {
       window.URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
+    }
+  };
+
+  // Función para descargar archivo
+  const handleDownload = async (evidencia: any) => {
+    console.log('📥 [DOWNLOAD] Iniciando descarga:', evidencia);
+    
+    try {
+      let blob;
+      
+      // Determinar si es evidencia final o archivo de chat
+      if (evidencia.idEvidencia) {
+        // Es evidencia final - usar la URL directa para descarga
+        console.log('📥 [DOWNLOAD] Descargando evidencia final:', evidencia.idEvidencia);
+        const url = evidencia.urlArchivo || evidencia.url;
+        if (url) {
+          // Para evidencias finales, descargar directamente
+          console.log('📥 [DOWNLOAD] Descargando URL directa:', url);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = evidencia.nombreArchivo || evidencia.nombre || 'archivo';
+          link.click();
+          return;
+        } else {
+          throw new Error('No hay URL disponible para esta evidencia final');
+        }
+      } else if (evidencia.idArchivo || evidencia.id) {
+        // Es archivo de chat - usar API para descarga
+        const archivoId = evidencia.idArchivo || evidencia.id;
+        console.log('📥 [DOWNLOAD] Descargando archivo de chat:', archivoId);
+        blob = await api.descargarArchivoTicketEspecifico(currentTicketId!, archivoId);
+      } else {
+        // Si tiene URL, tratar como evidencia final
+        if (evidencia.urlArchivo || evidencia.url) {
+          console.log('📥 [DOWNLOAD] Detectado como evidencia final por URL');
+          const url = evidencia.urlArchivo || evidencia.url;
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = evidencia.nombreArchivo || evidencia.nombre || 'archivo';
+          link.click();
+          return;
+        }
+        
+        throw new Error(`No se pudo determinar el tipo de archivo para descarga`);
+      }
+      
+      console.log('✅ [DOWNLOAD] Blob recibido:', blob);
+      
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = evidencia.nombreArchivo || evidencia.nombre || 'archivo';
+      link.click();
+      
+      // Limpiar la URL del blob
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ [DOWNLOAD] Descarga completada');
+    } catch (error) {
+      console.error('❌ [DOWNLOAD] Error descargando archivo:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo descargar el archivo: " + (error as Error).message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -1102,12 +1177,7 @@ export default function TicketsManagement() {
           window.ticketWebSocket.send(JSON.stringify(notification));
         }
         
-        // Disparar notificación de asignación de ticket
-        try {
-          await api.createTicketAssignmentNotification(selectedTicket.id, parseInt(selectedTecnico), 1); // 1 = admin ID
-        } catch (notificationError) {
-          console.warn('Error enviando notificación de asignación:', notificationError);
-        }
+        // Las notificaciones se envían automáticamente desde el backend al asignar el ticket
         
         // Recargar datos para asegurar consistencia
         await loadTickets();
@@ -1232,12 +1302,14 @@ export default function TicketsManagement() {
       
       const priorityMap: { [key: string]: string } = {
         'all': 'all',
-        'high': 'HIGH',
-        'medium': 'MEDIUM',
-        'low': 'LOW'
+        'high': 'high',
+        'medium': 'medium',
+        'low': 'low'
       };
       
       const matchesStatus = !statusFilter || statusFilter === 'all' || ticket.estado === statusMap[statusFilter];
+      
+      
       const matchesPriority = !priorityFilter || priorityFilter === 'all' || ticket.prioridad === priorityMap[priorityFilter];
       const matchesTechnician = !technicianFilter || technicianFilter === 'all' || ticket.tecnicoEmail === technicianFilter;
       
@@ -1286,6 +1358,9 @@ export default function TicketsManagement() {
 
   const getPriorityBadge = (priority: string) => {
     const priorityConfig = {
+      'ALTA': { color: 'bg-red-600 text-white', icon: AlertTriangle, label: t('tickets.priority.ALTA') },
+      'MEDIA': { color: 'bg-yellow-600 text-white', icon: Clock, label: t('tickets.priority.MEDIA') },
+      'BAJA': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.priority.BAJA') },
       'HIGH': { color: 'bg-red-600 text-white', icon: AlertTriangle, label: t('tickets.priority.ALTA') },
       'MEDIUM': { color: 'bg-yellow-600 text-white', icon: Clock, label: t('tickets.priority.MEDIA') },
       'LOW': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.priority.BAJA') },
@@ -1352,6 +1427,28 @@ export default function TicketsManagement() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            <i className="fas fa-exclamation-circle mr-2"></i>
+            {error}
+          </div>
+          <button 
+            onClick={() => {
+              setError(null);
+              initializeDashboard();
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="users-module">
       {/* Header Section */}
@@ -1363,34 +1460,61 @@ export default function TicketsManagement() {
       </div>
 
       {/* Filters Section */}
-      <Card className="filters-card">
-        <CardHeader>
-          <CardTitle className="flex items-center text-xl">
-            <Filter className="w-5 h-5 mr-2" />
-{t("tickets_management.filters_title")}
-          </CardTitle>
+      <Card className="filters-card shadow-sm border-0 bg-gradient-to-r from-white to-gray-50">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Filter className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-semibold text-gray-900">
+                {t("tickets_management.filters_title")}
+              </CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Filtra y encuentra tickets específicos rápidamente
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="filters-grid">
             {/* Búsqueda */}
             <div className="search-container">
-              <Search className="search-icon" />
-              <Input
-                placeholder={t("tickets.search_placeholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 w-4 h-4" />
+                <Input
+                  placeholder={t("tickets.search_placeholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 search-input border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Estado */}
             <div className="filter-group">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="filter-select">
-                  <SelectValue placeholder={t("filters.status")} />
+                <SelectTrigger className={`filter-select ${statusFilter && statusFilter !== 'all' ? 'filter-active' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-flag text-green-500"></i>
+                    <SelectValue placeholder={t("filters.status")} />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("tickets_management.all_statuses")}</SelectItem>
+                  <SelectItem value="all" className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-list text-gray-500"></i>
+                      <span>Todos los estados</span>
+                    </div>
+                  </SelectItem>
                   <SelectItem value="pendiente">{t("dashboard.status.pending")}</SelectItem>
                   <SelectItem value="asignado">{t("dashboard.status.assigned")}</SelectItem>
                   <SelectItem value="escalado">{t("dashboard.status.escalated")}</SelectItem>
@@ -1402,11 +1526,19 @@ export default function TicketsManagement() {
             {/* Prioridad */}
             <div className="filter-group">
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="filter-select">
-                  <SelectValue placeholder={t("filters.priority")} />
+                <SelectTrigger className={`filter-select ${priorityFilter && priorityFilter !== 'all' ? 'filter-active' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-exclamation-triangle text-orange-500"></i>
+                    <SelectValue placeholder={t("filters.priority")} />
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("filters.priority")}</SelectItem>
+                  <SelectItem value="all" className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-layer-group text-gray-500"></i>
+                      <span>Todas las prioridades</span>
+                    </div>
+                  </SelectItem>
                   <SelectItem value="high">Alta</SelectItem>
                   <SelectItem value="medium">Media</SelectItem>
                   <SelectItem value="low">Baja</SelectItem>
@@ -1417,24 +1549,80 @@ export default function TicketsManagement() {
             {/* Técnico */}
             <div className="filter-group">
               <Select value={technicianFilter} onValueChange={setTechnicianFilter}>
-                <SelectTrigger className="filter-select">
-                  <SelectValue placeholder={t("filters.technician")} />
+                <SelectTrigger className={`filter-select ${technicianFilter && technicianFilter !== 'all' ? 'filter-active' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <i className="fas fa-user-cog text-blue-500"></i>
+                    <SelectValue placeholder="Filtrar por técnico" />
+                    {technicianFilter && technicianFilter !== 'all' && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                        {(() => {
+                          const tecnicoSeleccionado = tecnicos.find(t => t.email === technicianFilter);
+                          return tecnicoSeleccionado ? buildTechnicianName(tecnicoSeleccionado) : 'Técnico';
+                        })()}
+                      </span>
+                    )}
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("filters.technician")}</SelectItem>
-                  <SelectItem value="w@s.com">w@s.com</SelectItem>
-                  <SelectItem value="w@s.comassa">w@s.comassa</SelectItem>
-                  <SelectItem value="marketing@empresa.com">marketing@empresa.com</SelectItem>
-                  <SelectItem value="ventas@empresa.com">ventas@empresa.com</SelectItem>
-                  <SelectItem value="soporte@empresa.com">soporte@empresa.com</SelectItem>
-                  <SelectItem value="ops@empresa.com">ops@empresa.com</SelectItem>
-                  <SelectItem value="legal@empresa.com">legal@empresa.com</SelectItem>
-                  <SelectItem value="it@empresa.com">it@empresa.com</SelectItem>
-                  <SelectItem value="innovacion@empresa.com">innovacion@empresa.com</SelectItem>
+                  <SelectItem value="all" className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <i className="fas fa-users text-gray-500"></i>
+                      <span>Todos los técnicos</span>
+                    </div>
+                  </SelectItem>
+                  {tecnicos.map((tecnico) => {
+                    const nombreCompleto = buildTechnicianName(tecnico);
+                    const displayName = nombreCompleto || tecnico.email || 'Sin nombre';
+                    const iniciales = nombreCompleto 
+                      ? nombreCompleto.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                      : 'TC';
+                    
+                    return (
+                      <SelectItem key={tecnico.id} value={tecnico.email} className="py-3">
+                        <div className="flex items-center gap-3 w-full">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                            {iniciales}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate">
+                              {displayName}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {tecnico.email}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className={`w-2 h-2 rounded-full ${tecnico.activo ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                            <span className="text-xs text-gray-500">
+                              {tecnico.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </div>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
           </div>
+          
+          {/* Botón para limpiar filtros */}
+          {(searchQuery || statusFilter || priorityFilter || technicianFilter) && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setStatusFilter('');
+                  setPriorityFilter('');
+                  setTechnicianFilter('');
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <i className="fas fa-times-circle"></i>
+                <span>Limpiar todos los filtros</span>
+              </button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -2291,15 +2479,7 @@ export default function TicketsManagement() {
                                           )}
                                           <button
                                             className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                                            onClick={() => {
-                                              const url = evidencia.urlArchivo || evidencia.url;
-                                              if (url) {
-                                                const link = document.createElement('a');
-                                                link.href = url;
-                                                link.download = evidencia.nombreArchivo || evidencia.nombre || 'archivo';
-                                                link.click();
-                                              }
-                                            }}
+                                            onClick={() => handleDownload(evidencia)}
                                           >
                                             📥 {t('common.download')}
                                           </button>

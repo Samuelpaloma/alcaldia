@@ -6,7 +6,6 @@ import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.notificacion.model.PreferenciasNotificacion;
 import com.example.demo.notificacion.repository.PreferenciasNotificacionRepository;
 import lombok.RequiredArgsConstructor;
-import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +26,11 @@ public class DataInitializerService implements CommandLineRunner {
     public void run(String... args) throws Exception {
         log.info("🚀 Inicializando datos del sistema...");
         
+        // TEMPORALMENTE DESHABILITADO PARA DEBUGGING
+        log.info("⚠️ DataInitializerService temporalmente deshabilitado");
+        return;
+        
+        /* COMENTADO TEMPORALMENTE
         // 1. Crear superadmin por defecto si no existe
         crearSuperAdminPorDefecto();
         
@@ -37,6 +41,7 @@ public class DataInitializerService implements CommandLineRunner {
         crearTecnicoDePrueba();
         
         log.info("✅ Inicialización de datos completada");
+        */
     }
     
     /**
@@ -165,9 +170,8 @@ public class DataInitializerService implements CommandLineRunner {
             preferencias.setNotificacionesEvidencias(true);
             preferencias.setNotificacionesSla(true);
             preferencias.setNotificacionesSistema(true);
-            preferencias.setFrecuenciaEmail("INMEDIATA");
-            preferencias.setFechaCreacion(LocalDateTime.now());
-            preferencias.setFechaActualizacion(LocalDateTime.now());
+            preferencias.setFrecuenciaEmail("inmediata");
+            // Los campos createdAt y updatedAt se establecen automáticamente con @PrePersist
             
             preferenciasNotificacionRepository.save(preferencias);
             

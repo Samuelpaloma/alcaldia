@@ -47,10 +47,21 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
     apellido: '',
     email: '',
     password: '',
-    cargo: '',
     departamento: '',
     ubicacion: ''
   });
+
+  // Función para limpiar el formulario
+  const resetForm = () => {
+    setFormData({
+      nombre: '',
+      apellido: '',
+      email: '',
+      password: '',
+      departamento: '',
+      ubicacion: ''
+    });
+  };
 
   const loadData = async () => {
     try {
@@ -186,18 +197,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
     } catch (err) {
       console.error('Error cambiando estado:', err);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      nombre: '',
-      apellido: '',
-      email: '',
-      password: '',
-      cargo: '',
-      departamento: '',
-      ubicacion: ''
-    });
   };
 
   const getUserIcon = (tipoUsuario: string) => {
@@ -582,16 +581,6 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
                   </p>
                 </div>
                 
-                
-                <div className="form-group">
-                  <label className="form-label">{t('users.create_technician.position')}</label>
-                  <Input
-                    value={formData.cargo}
-                    onChange={(e) => setFormData({...formData, cargo: e.target.value})}
-                    placeholder={createUserType === 'TECNICO' ? t('users.create_technician.position_placeholder') : 'Administrador'}
-                  />
-                </div>
-                
                 <div className="form-group">
                   <label className="form-label">{t('users.create_technician.department')}</label>
                   <Input
@@ -615,7 +604,10 @@ const UsersModule: React.FC<UsersModuleProps> = ({ userRole }) => {
             <div className="modal-footer">
               <Button
                 variant="outline"
-                onClick={() => setShowCreateModal(false)}
+                onClick={() => {
+                  setShowCreateModal(false);
+                  resetForm();
+                }}
               >
                 {t('users.create_technician.cancel_button')}
               </Button>

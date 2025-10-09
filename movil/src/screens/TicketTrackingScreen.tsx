@@ -15,6 +15,7 @@ import {
   Modal,
   Image,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { RouteProp } from '@react-navigation/native';
@@ -1334,20 +1335,12 @@ export default function TicketTrackingScreen() {
           setArchivoEnPreview(evidencia);
           setShowPreviewModal(true);
         } else if (esPDF) {
-          // Para PDFs, cargar como blob y abrir en nueva pestaña
-          console.log('📄 [PREVIEW] Cargando PDF como blob...');
-          const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
+          // Para PDFs, usar el modal de previsualización
+          console.log('📄 [PREVIEW] Previsualizando PDF en modal...');
           
-          // En React Native, usar Linking para abrir PDF
-          const { Linking } = require('react-native');
-          console.log('📄 [PREVIEW] Abriendo PDF con Linking:', url);
-          
-          Linking.openURL(url).catch(err => {
-            console.error('Error abriendo PDF:', err);
-            Alert.alert('Error', 'No se pudo abrir el PDF');
-          });
+          setPreviewUrl(url);
+          setArchivoEnPreview(evidencia);
+          setShowPreviewModal(true);
         } else {
           // Otros tipos: descargar
           handleDownloadEvidencia(evidencia);
@@ -1525,15 +1518,6 @@ export default function TicketTrackingScreen() {
           </TouchableOpacity>
         </View>
         
-        {/* Botón de subir solo para evidencias finales */}
-        {activeEvidenceTab === 'finales' && (
-          <TouchableOpacity 
-            style={styles.uploadEvidenceButton}
-            onPress={() => setShowUploadEvidenceModal(true)}
-          >
-            <Text style={styles.uploadEvidenceButtonText}>+ Subir Evidencia Final</Text>
-          </TouchableOpacity>
-        )}
 
       {evidenciasActuales.length > 0 ? (
         <ScrollView style={styles.evidenciasList}>
@@ -1934,16 +1918,91 @@ export default function TicketTrackingScreen() {
               </View>
             </View>
 
-            {/* Contenido de previsualización - Solo para imágenes */}
+            {/* Contenido de previsualización - Para imágenes y PDFs */}
             <View style={styles.previewContent}>
               {archivoEnPreview && previewUrl && typeof previewUrl === 'string' ? (
-                <ScrollView contentContainerStyle={styles.previewScrollContent}>
-                  <Image 
-                    source={{ uri: previewUrl }} 
-                    style={styles.previewImage}
-                    resizeMode="contain"
-                  />
-                </ScrollView>
+                (() => {
+                  const esImagen = archivoEnPreview.esImagen || 
+                    (archivoEnPreview.tipoMime && archivoEnPreview.tipoMime.startsWith('image/')) ||
+                    (archivoEnPreview.extension && ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(archivoEnPreview.extension.toLowerCase()));
+                  
+                  const esPDF = archivoEnPreview.esPDF || 
+                    (archivoEnPreview.tipoMime && archivoEnPreview.tipoMime === 'application/pdf') ||
+                    (archivoEnPreview.extension && archivoEnPreview.extension.toLowerCase() === 'pdf');
+                  
+                  if (esImagen) {
+                    return (
+                      <ScrollView contentContainerStyle={styles.previewScrollContent}>
+                        <Image 
+                          source={{ uri: previewUrl }} 
+                          style={styles.previewImage}
+                          resizeMode="contain"
+                        />
+                      </ScrollView>
+                    );
+                  } else if (esPDF) {
+                    // Detectar si WebView está disponible
+                    const isWebViewSupported = Platform.OS === 'ios' || Platform.OS === 'android';
+                    
+                    if (isWebViewSupported) {
+                      return (
+                        <View style={styles.previewContent}>
+                          <WebView
+                            source={{ uri: previewUrl }}
+                            style={styles.previewWebView}
+                            javaScriptEnabled={true}
+                            domStorageEnabled={true}
+                            startInLoadingState={true}
+                            renderLoading={() => (
+                              <View style={styles.webViewLoading}>
+                                <ActivityIndicator size="large" color="#007AFF" />
+                                <Text style={styles.loadingPreviewText}>Cargando PDF...</Text>
+                              </View>
+                            )}
+                            renderError={(errorDomain, errorCode, errorDesc) => (
+                              <View style={styles.previewNotAvailable}>
+                                <Text style={styles.previewNotAvailableIcon}>📄</Text>
+                                <Text style={styles.previewNotAvailableText}>Error al cargar PDF</Text>
+                                <Text style={styles.previewNotAvailableSubtext}>{errorDesc}</Text>
+                              </View>
+                            )}
+                          />
+                        </View>
+                      );
+                    } else {
+                      // Para web u otras plataformas, usar iframe o enlace directo
+                      return (
+                        <View style={styles.previewContent}>
+                          <View style={styles.previewNotAvailable}>
+                            <Text style={styles.previewNotAvailableIcon}>📄</Text>
+                            <Text style={styles.previewNotAvailableText}>Vista previa de PDF</Text>
+                            <Text style={styles.previewNotAvailableSubtext}>
+                              En esta plataforma, usa el botón de descarga para ver el archivo
+                            </Text>
+                            <TouchableOpacity 
+                              style={styles.downloadButtonInPreview}
+                              onPress={() => {
+                                if (archivoEnPreview) {
+                                  handleDownloadEvidencia(archivoEnPreview);
+                                }
+                              }}
+                            >
+                              <Text style={styles.downloadButtonText}>📥 Descargar PDF</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      );
+                    }
+                  } else {
+                    return (
+                      <View style={styles.previewNotAvailable}>
+                        <Text style={styles.previewNotAvailableIcon}>📄</Text>
+                        <Text style={styles.previewNotAvailableText}>Vista previa no disponible</Text>
+                        <Text style={styles.previewNotAvailableSubtext}>Usa el botón de descarga para ver el archivo</Text>
+                      </View>
+                    );
+                  }
+                })()
               ) : (
                 <View style={styles.previewNotAvailable}>
                   <ActivityIndicator size="large" color="#007AFF" />
@@ -2865,14 +2924,34 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   previewNotAvailableText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#9ca3af',
     textAlign: 'center',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  previewNotAvailableSubtext: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 4,
   },
   previewImage: {
     width: '100%',
     height: 500,
     borderRadius: 8,
+  },
+  previewWebView: {
+    width: '100%',
+    height: 500,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  webViewLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
   },
   downloadButtonInPreview: {
     backgroundColor: '#007AFF',

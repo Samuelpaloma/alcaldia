@@ -14,15 +14,10 @@ import {
   Clock, 
   CheckCircle,
   AlertCircle,
-  AlertTriangle,
   Download,
   RefreshCw,
   BarChart3,
-  PieChart,
-  Activity,
-  Calendar,
-  Settings,
-  Zap
+  Activity
 } from 'lucide-react';
 import SLAMonitoringWidget from '../sla_monitoring/SLAMonitoringWidget';
 
@@ -364,12 +359,8 @@ const UnifiedDashboard: React.FC = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-1">
           <TabsTrigger value="overview">{t('dashboard.tabs.summary')}</TabsTrigger>
-          <TabsTrigger value="analytics">{t('dashboard.tabs.analysis')}</TabsTrigger>
-          <TabsTrigger value="performance">{t('dashboard.tabs.performance')}</TabsTrigger>
-          <TabsTrigger value="trends">{t('dashboard.tabs.trends')}</TabsTrigger>
-          <TabsTrigger value="sla">{t('dashboard.tabs.sla_monitoring')}</TabsTrigger>
         </TabsList>
 
         {/* Pestaña Resumen */}
@@ -549,218 +540,6 @@ const UnifiedDashboard: React.FC = () => {
           </div>
         </TabsContent>
 
-        {/* Pestaña Análisis */}
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  Tickets por Categoría
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {metricas?.ticketsPorCategoria.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span className="text-sm font-medium">{item.categoria}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">{item.cantidad}</span>
-                        <div className="w-20 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full" 
-                            style={{ width: `${(item.cantidad / 234) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <PieChart className="w-5 h-5 mr-2" />
-                  Tickets por Estado
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {metricas?.ticketsPorEstado.map((item, index) => {
-                    const colors = ['bg-blue-500', 'bg-yellow-500', 'bg-green-500', 'bg-gray-500'];
-                    return (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 ${colors[index]} rounded-full`}></div>
-                          <span className="text-sm font-medium">{item.estado}</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-600">{item.cantidad}</span>
-                          <Badge variant="outline">{item.cantidad}</Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Pestaña Rendimiento */}
-        <TabsContent value="performance" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Users className="w-5 h-5 mr-2" />
-                Rendimiento de Técnicos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {metricas?.tecnicosMasActivos.map((tecnico, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
-                          {tecnico.tecnico.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium">{tecnico.tecnico}</p>
-                        <p className="text-sm text-gray-600">{tecnico.tickets} tickets resueltos</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline">{tecnico.tickets}</Badge>
-                      <div className="w-20 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full" 
-                          style={{ width: `${(tecnico.tickets / 45) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Pestaña Tendencias */}
-        <TabsContent value="trends" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2" />
-                  Satisfacción del Cliente
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center">
-                  <div className="text-4xl font-bold text-green-600 mb-2">
-                    {metricas?.satisfaccionPromedio}/5.0
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">Promedio de satisfacción</p>
-                  <div className="flex justify-center space-x-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <div
-                        key={star}
-                        className={`w-6 h-6 ${
-                          star <= (metricas?.satisfaccionPromedio || 0)
-                            ? 'text-yellow-400'
-                            : 'text-gray-300'
-                        }`}
-                      >
-                        ★
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  Tendencia Mensual
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {metricas?.ticketsPorMes.map((mes, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{mes.mes}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">{mes.cantidad}</span>
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
-                            style={{ width: `${(mes.cantidad / 203) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Pestaña Monitoreo SLA */}
-        <TabsContent value="sla" className="space-y-6">
-          <div className="grid gap-6">
-            <SLAMonitoringWidget />
-            
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <AlertTriangle className="w-5 h-5 mr-2 text-red-500" />
-                    Tickets con SLA Vencido
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500" />
-                    <p className="text-gray-600 mb-4">Verificando tickets con SLA vencido...</p>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      {t('dashboard.sla.verify_now')}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Clock className="w-5 h-5 mr-2 text-orange-500" />
-                    Tickets Próximos a Vencer
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <Clock className="w-12 h-12 mx-auto mb-4 text-orange-500" />
-                    <p className="text-gray-600 mb-4">Verificando tickets próximos a vencer...</p>
-                    <Button variant="outline" size="sm">
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      {t('dashboard.sla.verify_now')}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );

@@ -83,7 +83,7 @@ export default function Login() {
       let redirectPath = "/client";
       switch (userRole) {
         case "superadmin":
-          redirectPath = "/superadmin";
+          redirectPath = "/superadmin/administradores";
           break;
         case "admin":
           redirectPath = "/admin";
@@ -222,7 +222,7 @@ export default function Login() {
       
       switch (userRole) {
         case "superadmin":
-          redirectPath = "/superadmin";
+          redirectPath = "/superadmin/administradores";
           break;
         case "admin":
           redirectPath = "/admin";
@@ -319,8 +319,8 @@ export default function Login() {
               </Button>
 
               {/* Enlace a recuperar contraseña */}
-              <div className="text-center">
-                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+              <div className="text-center mt-4">
+                <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium">
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
@@ -386,6 +386,13 @@ export default function Login() {
               >
                 Volver a Credenciales
               </Button>
+
+              {/* Enlace a recuperar contraseña */}
+              <div className="text-center mt-4">
+                <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-800 hover:underline font-medium">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </form>
           )}
         </CardContent>

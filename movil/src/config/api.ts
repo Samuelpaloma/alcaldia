@@ -11,8 +11,8 @@ let BASE_URL;
 if (isWeb) {
   BASE_URL = 'http://localhost:8080';
 } else {
-  // Para Expo Go y dispositivos físicos - usar tu IP real
-  BASE_URL = 'http://192.168.1.10:8080'; // Tu IP real
+  // Para Expo Go y dispositivos físicos - usar localhost para desarrollo
+  BASE_URL = 'http://localhost:8080'; // Cambiado a localhost para desarrollo
 }
 
 // Debug temporal para identificar el problema
@@ -67,8 +67,8 @@ export const API_CONFIG = {
       THEME_PREFERENCES: '/api/usuario/preferencias-tema'
     },
     WEBSOCKET: {
-      BASE_URL: 'ws://192.168.1.10:8080/ws', // Para Expo Go y dispositivos
-      PHYSICAL_DEVICE_URL: 'ws://192.168.1.10:8080/ws' // Para dispositivo físico
+      BASE_URL: 'ws://localhost:8080/ws', // Para Expo Go y dispositivos
+      PHYSICAL_DEVICE_URL: 'ws://localhost:8080/ws' // Para dispositivo físico
     }
   },
   TIMEOUT: 30000, // 30 segundos

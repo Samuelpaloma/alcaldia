@@ -29,7 +29,16 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
     if (!ticketId) return;
 
     console.log('🔥 INICIANDO WEBSOCKET para ticket:', ticketId);
+    
+    // Limpiar conexión anterior si existe
+    if (clientRef.current) {
+      console.log('🔥 LIMPIANDO CONEXIÓN ANTERIOR');
+      clientRef.current.deactivate();
+      clientRef.current = null;
+    }
+    
     setIsConnecting(true);
+    setIsConnected(false);
     
     // Obtener token de autenticación
     const auth = getAuth();
@@ -39,8 +48,8 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
     
     // Crear conexión WebSocket con configuración más robusta
     const socket = new SockJS('http://localhost:8080/ws', null, {
-      debug: true,
-      devel: true
+      debug: false, // Reducir logs
+      devel: false
     });
     
     // Agregar listeners adicionales al socket para debugging
@@ -50,10 +59,14 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
     
     socket.onclose = (event) => {
       console.log('🔥 [SOCKET] Socket cerrado:', event.code, event.reason, event.wasClean);
+      setIsConnected(false);
+      setIsConnecting(false);
     };
     
     socket.onerror = (event) => {
       console.error('🔥 [SOCKET] Error en socket:', event);
+      setIsConnected(false);
+      setIsConnecting(false);
     };
     
     const client = new Client({
@@ -62,7 +75,10 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
         return socket;
       },
       debug: (str) => {
-        console.log('🔥 WebSocket Debug:', str);
+        // Solo mostrar errores críticos
+        if (str.includes('ERROR') || str.includes('error')) {
+          console.log('🔥 WebSocket Debug:', str);
+        }
       },
       connectHeaders: {
         // Incluir token JWT en los headers de conexión
@@ -70,7 +86,7 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
       },
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      reconnectDelay: 5000,
+      reconnectDelay: 10000, // Aumentar delay para evitar reconexiones rápidas
       onConnect: (frame) => {
         console.log('🔥 WEBSOCKET CONECTADO:', frame);
         setIsConnected(true);
@@ -114,17 +130,14 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
     clientRef.current = client;
     console.log('🔥 ACTIVANDO CLIENTE WEBSOCKET');
     
-    // Intentar conectar con retry
-    const connectWithRetry = () => {
-      try {
-        client.activate();
-      } catch (error) {
-        console.error('🔥 ERROR ACTIVANDO CLIENTE:', error);
-        setTimeout(connectWithRetry, 2000);
-      }
-    };
-    
-    connectWithRetry();
+    // Conectar sin retry automático para evitar loops infinitos
+    try {
+      client.activate();
+    } catch (error) {
+      console.error('🔥 ERROR ACTIVANDO CLIENTE:', error);
+      setIsConnected(false);
+      setIsConnecting(false);
+    }
 
     return () => {
       console.log('🔥 LIMPIANDO WEBSOCKET');
@@ -132,8 +145,10 @@ export const useWebSocket = ({ ticketId, onMessage, onConnect, onDisconnect }: U
         clientRef.current.deactivate();
         clientRef.current = null;
       }
+      setIsConnected(false);
+      setIsConnecting(false);
     };
-  }, [ticketId, onMessage, onConnect, onDisconnect]);
+  }, [ticketId]); // Remover dependencias que causan re-renders
 
   const sendMessage = (mensaje: string) => {
     console.log('🔥 WEBSOCKET SENDMESSAGE LLAMADO:', { mensaje, ticketId, isConnected });
