@@ -30,3 +30,4 @@ public class ReporteUsuarioResponseDTO {
     private String observaciones;
     private Boolean activo;
 }
+

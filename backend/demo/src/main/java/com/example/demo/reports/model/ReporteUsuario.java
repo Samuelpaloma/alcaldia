@@ -64,3 +64,4 @@ public class ReporteUsuario {
     @Column(name = "observaciones", columnDefinition = "TEXT")
     private String observaciones;
 }
+

@@ -44,3 +44,4 @@ public interface ReporteUsuarioRepository extends JpaRepository<ReporteUsuario, 
     // Buscar por usuario específico por ID
     List<ReporteUsuario> findByUsuarioIdAndActivoTrueOrderByFechaGeneracionDesc(Long usuarioId);
 }
+

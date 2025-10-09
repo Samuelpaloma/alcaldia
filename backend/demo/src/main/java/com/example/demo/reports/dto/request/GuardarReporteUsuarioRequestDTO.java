@@ -39,3 +39,4 @@ public class GuardarReporteUsuarioRequestDTO {
     
     private String observaciones;
 }
+
