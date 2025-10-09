@@ -16,10 +16,8 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
 }) => {
   useEffect(() => {
     if (show) {
-      console.log('🔔 [TOAST] Mostrando toast de notificación');
       // Auto-close after 5 seconds
       const timer = setTimeout(() => {
-        console.log('🔔 [TOAST] Auto-cerrando toast después de 5 segundos');
         onClose();
       }, 5000);
       return () => clearTimeout(timer);
