@@ -33,7 +33,7 @@ export default function ClientLayout() {
 
   // Configurar título de la página
   useEffect(() => {
-    document.title = 'NEITickets - Cliente';
+    document.title = 'NEITickets - Sistema de Gestión de Tickets';
   }, []);
 
   // Escuchar evento para abrir modal desde toast

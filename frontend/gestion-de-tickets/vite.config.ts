@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist/spa",
   },
+  html: {
+    title: "NEITickets - Sistema de Gestión de Tickets",
+    favicon: "/favicon.ico"
+  },
   plugins: [react(), expressPlugin()],
   resolve: {
     alias: {

@@ -22,7 +22,7 @@ export default function TechnicianLayout() {
   
   // Configurar título de la página
   useEffect(() => {
-    document.title = 'NEITickets - Técnico';
+    document.title = 'NEITickets - Sistema de Gestión de Tickets';
   }, []);
   
   const onLogout = () => { logout(); navigate("/login", { replace: true }); };

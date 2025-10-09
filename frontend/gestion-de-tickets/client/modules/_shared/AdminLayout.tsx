@@ -36,7 +36,7 @@ export default function AdminLayout() {
 
   // Configurar título de la página
   useEffect(() => {
-    document.title = 'NEITickets - Administración';
+    document.title = 'NEITickets - Sistema de Gestión de Tickets';
   }, []);
 
   // Escuchar evento para abrir modal desde toast

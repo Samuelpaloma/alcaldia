@@ -12,7 +12,7 @@ export default function SuperAdminLayout() {
   
   // Configurar título de la página
   useEffect(() => {
-    document.title = 'NEITickets - Super Administrador';
+    document.title = 'NEITickets - Sistema de Gestión de Tickets';
   }, []);
   
   const onLogout = () => { logout(); navigate("/login", { replace: true }); };
