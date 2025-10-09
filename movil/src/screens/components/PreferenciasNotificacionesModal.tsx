@@ -133,11 +133,14 @@ const PreferenciasNotificacionesModal: React.FC<PreferenciasNotificacionesModalP
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('notification_preferences.notification_channels')}</Text>
             
-            {renderSwitch(
-              t('notification_preferences.push_notifications'),
-              t('notification_preferences.push_description'),
-              'pushActivo'
-            )}
+            {/* Push notifications - siempre activo, sin toggle */}
+            <View style={styles.obligatoryItem}>
+              <Text style={styles.obligatoryLabel}>{t('notification_preferences.push_notifications')}</Text>
+              <Text style={styles.obligatoryDescription}>{t('notification_preferences.push_description')}</Text>
+              <View style={styles.alwaysActiveBadge}>
+                <Text style={styles.alwaysActiveText}>Siempre activo</Text>
+              </View>
+            </View>
             
             {renderSwitch(
               t('notification_preferences.email_notifications'),
@@ -358,6 +361,19 @@ const styles = StyleSheet.create({
   obligatoryDescription: {
     fontSize: 14,
     color: '#9ca3af',
+  },
+  alwaysActiveBadge: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  alwaysActiveText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

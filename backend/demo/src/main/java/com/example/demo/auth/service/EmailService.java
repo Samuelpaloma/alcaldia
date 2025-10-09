@@ -417,4 +417,24 @@ public class EmailService {
             throw e;
         }
     }
+    
+    /**
+     * Envía un email genérico con asunto y contenido personalizado
+     */
+    public void sendEmail(String to, String subject, String content) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(content);
+            
+            mailSender.send(message);
+            
+            log.info("Email enviado exitosamente a: {} - Asunto: {}", to, subject);
+        } catch (Exception e) {
+            log.error("Error enviando email a: {} - Asunto: {}", to, subject, e);
+            throw e;
+        }
+    }
 }

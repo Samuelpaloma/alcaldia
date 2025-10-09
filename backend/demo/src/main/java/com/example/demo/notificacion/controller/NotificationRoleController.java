@@ -397,8 +397,15 @@ public class NotificationRoleController {
             Long technicianId = Long.valueOf(request.get("technicianId").toString());
             Long assignerId = Long.valueOf(request.get("assignerId").toString());
             
+            System.out.println("🚀 [TRIGGER-DEBUG] ===== EJECUTANDO trigger-ticket-assigned =====");
+            System.out.println("🚀 [TRIGGER-DEBUG] Ticket ID: " + ticketId);
+            System.out.println("🚀 [TRIGGER-DEBUG] Technician ID: " + technicianId);
+            System.out.println("🚀 [TRIGGER-DEBUG] Assigner ID: " + assignerId);
+            
             // Crear notificación de ticket asignado
             notificationRoleService.notificarAsignacionTicket(ticketId, assignerId, technicianId);
+            
+            System.out.println("✅ [TRIGGER-DEBUG] Notificación completada");
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Notificación de ticket asignado enviada exitosamente");
@@ -407,6 +414,9 @@ public class NotificationRoleController {
             return ResponseEntity.ok(response);
             
         } catch (Exception e) {
+            System.err.println("❌ [TRIGGER-DEBUG] Error: " + e.getMessage());
+            e.printStackTrace();
+            
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("error", "Error enviando notificación de ticket asignado: " + e.getMessage());
             return ResponseEntity.status(500).body(errorResponse);

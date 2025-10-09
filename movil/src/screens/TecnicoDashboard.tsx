@@ -8,11 +8,11 @@ import {
   ScrollView,
   Alert,
   RefreshControl,
+  Platform,
   Modal,
   TextInput,
   Image,
-  ActivityIndicator,
-  Platform
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -108,6 +108,7 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
   // Estados para modales (solo sidebar)
   const [notificacionesVisible, setNotificacionesVisible] = useState(false);
   const [preferenciasModalVisible, setPreferenciasModalVisible] = useState(false);
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [evidenciasVisible, setEvidenciasVisible] = useState(false);
   const [finalizarModalVisible, setFinalizarModalVisible] = useState(false);
   const [verEvidenciasModalVisible, setVerEvidenciasModalVisible] = useState(false);
@@ -221,6 +222,21 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         'Has cerrado sesión (con errores menores)',
         [{ text: 'OK' }]
       );
+    }
+  };
+
+  const handleLogoutConfirm = async () => {
+    console.log('✅ [LOGOUT BUTTON] Usuario confirmó logout');
+    setLogoutModalVisible(false);
+    
+    // Usar la función onLogout del App.tsx que maneja la navegación
+    if (onLogout) {
+      console.log('🔄 [LOGOUT BUTTON] Usando función onLogout del App.tsx...');
+      await onLogout();
+      console.log('✅ [LOGOUT BUTTON] onLogout completado');
+    } else {
+      console.log('⚠️ [LOGOUT BUTTON] onLogout no disponible, usando función local...');
+      await handleLogout();
     }
   };
 
@@ -1352,22 +1368,9 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
             {/* Botón de Cerrar Sesión */}
             <TouchableOpacity 
               style={[styles.floatingButton, styles.floatingButtonLogout]}
-              onPress={async () => {
-                Alert.alert(
-                  t('auth.logout_title'),
-                  t('auth.logout_confirm'),
-                  [
-                    { text: t('common.cancel'), style: 'cancel' },
-                    { text: t('common.confirm'), onPress: async () => {
-                      if (onLogout) {
-                        await onLogout();
-                      } else {
-                        await AsyncStorage.removeItem('authToken');
-                        await AsyncStorage.removeItem('userInfo');
-                      }
-                    }}
-                  ]
-                );
+              onPress={() => {
+                console.log('🔴 [LOGOUT BUTTON] Botón de logout presionado');
+                setLogoutModalVisible(true);
               }}
             >
               <Text style={[styles.floatingButtonIcon, styles.logoutIcon]}>→</Text>
@@ -1401,6 +1404,37 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
           onClose={hideToast}
           autoHideDuration={5000}
         />
+        
+        {/* Modal de Confirmación de Logout */}
+        <Modal visible={logoutModalVisible} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Cerrar Sesión</Text>
+              <TouchableOpacity onPress={() => setLogoutModalVisible(false)}>
+                <Text style={styles.modalCloseButton}>×</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>
+                ¿Estás seguro de que quieres cerrar sesión?
+              </Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => setLogoutModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.modalButtonConfirm]}
+                  onPress={handleLogoutConfirm}
+                >
+                  <Text style={styles.modalButtonTextConfirm}>Cerrar Sesión</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </SafeAreaView>
+        </Modal>
         
         {/* Sidebar */}
         {sidebarVisible && (
@@ -2749,6 +2783,52 @@ const createStyles = (theme: any) => StyleSheet.create({
   technicianName: {
     fontSize: 14,
     color: '#ffffff',
+    fontWeight: '600',
+  },
+
+  // Estilos para el modal de logout
+  modalCloseButton: {
+    fontSize: 24,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  modalButtonCancel: {
+    backgroundColor: '#374151',
+    borderWidth: 1,
+    borderColor: '#4b5563',
+  },
+  modalButtonConfirm: {
+    backgroundColor: '#dc2626',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+  },
+  modalButtonTextCancel: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonTextConfirm: {
+    color: '#ffffff',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

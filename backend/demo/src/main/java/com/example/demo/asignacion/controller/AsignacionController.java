@@ -36,10 +36,13 @@ public class AsignacionController {
             System.out.println("🔔 [CONTROLLER] ===== INICIO ASIGNACIÓN =====");
             System.out.println("🔔 [CONTROLLER] Request recibido: " + request);
             System.out.println("🔔 [CONTROLLER] Asignando ticket " + request.getTicketId() + " a técnico " + request.getTecnicoId());
+            System.out.println("🔔 [CONTROLLER] Authentication: " + (authentication != null ? "PRESENTE" : "NULL"));
+            System.out.println("🔔 [CONTROLLER] Authentication Principal: " + (authentication != null && authentication.getPrincipal() != null ? "PRESENTE" : "NULL"));
             
             log.info("=== INICIO ASIGNACIÓN ===");
             log.info("Request recibido: {}", request);
             log.info("Asignando ticket {} a técnico {}", request.getTicketId(), request.getTecnicoId());
+            log.info("Authentication presente: {}", authentication != null);
             
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             String emailAsignador = userDetails.getEmail();
@@ -53,6 +56,8 @@ public class AsignacionController {
             
             return ResponseEntity.ok(asignacion);
         } catch (Exception e) {
+            System.out.println("🔔 [CONTROLLER] ❌ ERROR EN ASIGNACIÓN: " + e.getMessage());
+            e.printStackTrace();
             log.error("=== ERROR EN ASIGNACIÓN ===");
             log.error("Request que falló: {}", request);
             log.error("Error asignando ticket", e);

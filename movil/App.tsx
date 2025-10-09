@@ -54,8 +54,11 @@ export default function App() {
       
       // Llamar al endpoint de logout del backend
       const token = await AsyncStorage.getItem('authToken');
+      console.log('🔑 [APP] Token encontrado:', token ? 'Sí' : 'No');
+      
       if (token) {
         try {
+          console.log('🌐 [APP] Enviando request a logout endpoint...');
           const response = await fetch('http://localhost:8080/api/auth/logout', {
             method: 'POST',
             headers: {
@@ -64,14 +67,19 @@ export default function App() {
             }
           });
           
+          console.log('📡 [APP] Response status:', response.status);
+          console.log('📡 [APP] Response ok:', response.ok);
+          
           if (response.ok) {
             console.log('✅ [APP] Logout exitoso en el backend');
           } else {
             console.log('⚠️ [APP] Error en logout del backend, pero continuando...');
           }
         } catch (error) {
-          console.log('⚠️ [APP] Error en logout del backend, pero continuando...');
+          console.log('⚠️ [APP] Error en logout del backend:', error);
         }
+      } else {
+        console.log('⚠️ [APP] No hay token, saltando logout del backend');
       }
       
       // Limpiar TODO el almacenamiento local para asegurar la autenticación
@@ -80,14 +88,20 @@ export default function App() {
       console.log('✅ [APP] Almacenamiento local completamente limpio');
       
       // Actualizar estado de autenticación
+      console.log('🔄 [APP] Actualizando estado de autenticación a false...');
       setIsAuthenticated(false);
+      console.log('✅ [APP] Estado de autenticación actualizado');
       
       // Navegar a la pantalla de login sin poder volver atrás
+      console.log('🧭 [APP] Navegando a pantalla de login...');
       if (navigationRef.current?.isReady()) {
         navigationRef.current.reset({
           index: 0,
           routes: [{ name: 'Login' }],
         });
+        console.log('✅ [APP] Navegación completada');
+      } else {
+        console.log('⚠️ [APP] NavigationRef no está listo');
       }
       
       console.log('✅ [APP] Logout completado exitosamente');
@@ -109,7 +123,9 @@ export default function App() {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('🔍 [APP] Verificando estado de autenticación...');
       const token = await AsyncStorage.getItem('authToken');
+      console.log('🔑 [APP] Token encontrado en checkAuthStatus:', token ? 'Sí' : 'No');
       if (token) {
         // Verificar si el token sigue válido
         const response = await fetch('http://localhost:8080/api/auth/verify', {
@@ -120,10 +136,12 @@ export default function App() {
         
         if (response.ok) {
           // Token válido
+          console.log('✅ [APP] Token válido, estableciendo autenticación...');
           setIsAuthenticated(true);
           console.log('✅ [APP] Token válido, usuario autenticado');
         } else {
           // Token expirado, ir a Login
+          console.log('⚠️ [APP] Token expirado, limpiando y estableciendo no autenticado...');
           await AsyncStorage.removeItem('authToken');
           await AsyncStorage.clear();
           setIsAuthenticated(false);
@@ -131,23 +149,28 @@ export default function App() {
         }
       } else {
         // Sin token, ir a Login
+        console.log('ℹ️ [APP] Sin token, estableciendo no autenticado...');
         setIsAuthenticated(false);
         console.log('ℹ️ [APP] Sin token, mostrando login');
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
+      console.log('❌ [APP] Error en checkAuthStatus, estableciendo no autenticado...');
       setIsAuthenticated(false);
     } finally {
+      console.log('🏁 [APP] checkAuthStatus completado, estableciendo isReady=true y loading=false');
       setIsReady(true);
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('🔄 [APP] useEffect ejecutándose...');
     checkAuthStatus();
   }, []);
 
   if (loading || !isReady) {
+    console.log('⏳ [APP] Mostrando loader - loading:', loading, 'isReady:', isReady);
     return (
       <View style={styles.loaderContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -155,11 +178,14 @@ export default function App() {
     );
   }
 
+  console.log('🎭 [APP] Render - isAuthenticated:', isAuthenticated, 'isReady:', isReady);
+  
   return (
     <ThemeProvider>
       <NavigationContainer ref={navigationRef}>
         <StatusBar style="auto" />
         <Stack.Navigator initialRouteName={isAuthenticated ? "Home" : "Login"}>
+        {console.log('🧭 [APP] Navegador - initialRouteName:', isAuthenticated ? "Home" : "Login")}
         <Stack.Screen 
           name="Login" 
           component={LoginScreen} 
@@ -169,7 +195,10 @@ export default function App() {
           name="Home" 
           options={{ headerShown: false }}
         >
-          {() => <IndexScreen onLogout={handleLogout} />}
+          {() => {
+            console.log('🏠 [APP] Renderizando Home con onLogout');
+            return <IndexScreen onLogout={handleLogout} />;
+          }}
         </Stack.Screen>
         <Stack.Screen 
           name="Config" 

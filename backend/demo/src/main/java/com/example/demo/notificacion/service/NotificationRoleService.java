@@ -7,6 +7,8 @@ import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.ticket.model.Ticket;
 import com.example.demo.ticket.repository.TicketRepository;
+import com.example.demo.auth.service.EmailService;
+import com.example.demo.notificacion.repository.PreferenciasNotificacionRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +35,12 @@ public class NotificationRoleService {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private PreferenciasNotificacionRepository preferenciasNotificacionRepository;
 
     // Constantes para tipos de notificación
     public static final String TYPE_TICKET_CREATED = "ticket_creado";
@@ -159,6 +167,11 @@ public class NotificationRoleService {
      */
     public void notificarAsignacionTicket(Long ticketId, Long usuarioActorId, Long tecnicoId) {
         try {
+            System.out.println("🚀 [ASIGNACION-DEBUG] ===== INICIANDO NOTIFICACIÓN DE ASIGNACIÓN =====");
+            System.out.println("🚀 [ASIGNACION-DEBUG] Ticket ID: " + ticketId);
+            System.out.println("🚀 [ASIGNACION-DEBUG] Usuario Actor ID: " + usuarioActorId);
+            System.out.println("🚀 [ASIGNACION-DEBUG] Técnico ID: " + tecnicoId);
+            
             Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
             
@@ -167,6 +180,23 @@ public class NotificationRoleService {
             
             Usuario tecnico = usuarioRepository.findById(tecnicoId)
                 .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
+                
+            System.out.println("🚀 [ASIGNACION-DEBUG] Ticket encontrado: " + ticket.getId());
+            System.out.println("🚀 [ASIGNACION-DEBUG] Usuario actor: " + usuarioActor.getEmail());
+            System.out.println("🚀 [ASIGNACION-DEBUG] Técnico: " + tecnico.getEmail() + " (ID: " + tecnico.getId() + ")");
+
+            // 🔥 DEBUG: Verificar preferencias ANTES de enviar email
+            System.out.println("📧 [EMAIL-DEBUG] ===== VERIFICANDO PREFERENCIAS DE EMAIL =====");
+            boolean debeEnviarEmail = debeNotificarPorEmail(tecnico.getId());
+            System.out.println("📧 [EMAIL-DEBUG] ¿Debe enviar email?: " + debeEnviarEmail);
+            
+            if (debeEnviarEmail) {
+                System.out.println("📧 [EMAIL-DEBUG] ✅ Enviando email de asignación...");
+                enviarEmailAsignacionTicket(ticket, tecnico, usuarioActor);
+                System.out.println("📧 [EMAIL-DEBUG] ✅ Email enviado exitosamente");
+            } else {
+                System.out.println("📧 [EMAIL-DEBUG] ❌ NO se envía email - preferencias desactivadas");
+            }
 
             // Notificación para el funcionario (creador del ticket)
             String mensajeFuncionario = String.format("Tu ticket #%d fue asignado al técnico %s", 
@@ -261,6 +291,8 @@ public class NotificationRoleService {
             } else {
                 System.out.println("🔔 [NOTIFICACION] SuperAdmin - Solo WebSocket enviado, no guardado en BD");
             }
+            
+            // ✅ Email ya se envió arriba con verificación de preferencias
 
         } catch (Exception e) {
             System.err.println("Error creando notificaciones de asignación de ticket: " + e.getMessage());
@@ -916,6 +948,98 @@ public class NotificationRoleService {
 
         } catch (Exception e) {
             System.err.println("Error creando notificaciones de rechazo de resolución: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Verifica si se debe notificar por email al usuario
+     */
+    private boolean debeNotificarPorEmail(Long usuarioId) {
+        try {
+            System.out.println("🔍 [PREFERENCIAS] Verificando preferencias para usuario ID: " + usuarioId);
+            
+            // Buscar las preferencias de notificación del usuario
+            Optional<com.example.demo.notificacion.model.PreferenciasNotificacion> preferencias = 
+                preferenciasNotificacionRepository.findByUsuarioId(usuarioId);
+            
+            System.out.println("🔍 [PREFERENCIAS] Resultado de búsqueda: " + (preferencias.isPresent() ? "ENCONTRADO" : "NO ENCONTRADO"));
+            
+            if (preferencias.isPresent()) {
+                boolean emailActivo = preferencias.get().getEmailActivo();
+                System.out.println("📧 [PREFERENCIAS] Usuario " + usuarioId + " - Email activo: " + emailActivo);
+                return emailActivo;
+            } else {
+                // Si no hay preferencias, usar valores por defecto (email activo)
+                System.out.println("📧 [PREFERENCIAS] No se encontraron preferencias para usuario " + usuarioId + " - Usando valores por defecto (email activo)");
+                return true;
+            }
+        } catch (Exception e) {
+            System.err.println("❌ [PREFERENCIAS] Error verificando preferencias de email para usuario " + usuarioId + ": " + e.getMessage());
+            e.printStackTrace();
+            // En caso de error, no enviar email para evitar spam
+            return false;
+        }
+    }
+
+    /**
+     * Envía email de notificación cuando se asigna un ticket a un técnico
+     */
+    private void enviarEmailAsignacionTicket(Ticket ticket, Usuario tecnico, Usuario admin) {
+        try {
+            System.out.println("📧 [EMAIL] Enviando email a técnico: " + tecnico.getEmail() + " (ID: " + tecnico.getId() + ")");
+            String subject = String.format("Nuevo Ticket Asignado #%d - %s", 
+                ticket.getId(), 
+                ticket.getSubject() != null ? ticket.getSubject() : "Sin asunto");
+            
+            String content = String.format(
+                "Hola %s,\n\n" +
+                "Se te ha asignado un nuevo ticket de soporte técnico.\n\n" +
+                "📋 Detalles del Ticket:\n" +
+                "• ID: #%d\n" +
+                "• Asunto: %s\n" +
+                "• Descripción: %s\n" +
+                "• Prioridad: %s\n" +
+                "• Ubicación: %s\n" +
+                "• Creado por: %s\n" +
+                "• Asignado por: %s %s\n" +
+                "• Fecha de asignación: %s\n\n" +
+                "🔧 Acciones requeridas:\n" +
+                "• Revisa los detalles del ticket\n" +
+                "• Contacta al usuario si necesitas más información\n" +
+                "• Actualiza el estado del ticket según tu progreso\n" +
+                "• Sube evidencias del trabajo realizado\n\n" +
+                "💡 Recordatorio:\n" +
+                "• Las notificaciones push están siempre activas para mantenerte informado\n" +
+                "• Puedes gestionar tus preferencias de notificación por email desde la aplicación móvil\n\n" +
+                "Accede al sistema para gestionar este ticket:\n" +
+                "http://localhost:3000 (Web Admin)\n" +
+                "App Móvil (Técnicos)\n\n" +
+                "Si tienes alguna pregunta, contacta a tu administrador.\n\n" +
+                "Saludos,\n" +
+                "Equipo de Soporte Técnico",
+                
+                tecnico.getFullName(),
+                ticket.getId(),
+                ticket.getSubject() != null ? ticket.getSubject() : "Sin asunto",
+                ticket.getQuery() != null ? ticket.getQuery() : "Sin descripción",
+                ticket.getPriority() != null ? ticket.getPriority() : "Media",
+                ticket.getLocation() != null ? ticket.getLocation() : "No especificada",
+                ticket.getCreatorName(),
+                admin.getFullName(),
+                admin.getLastName(),
+                LocalDateTime.now().toString()
+            );
+            
+            // Crear y enviar el email
+            emailService.sendEmail(
+                tecnico.getEmail(),
+                subject,
+                content
+            );
+            
+        } catch (Exception e) {
+            System.err.println("Error enviando email de asignación de ticket: " + e.getMessage());
+            throw e;
         }
     }
 }

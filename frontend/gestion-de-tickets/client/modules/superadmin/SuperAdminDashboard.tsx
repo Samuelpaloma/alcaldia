@@ -19,6 +19,8 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ConfiguracionRequestDTO | null>(null);
   const [temaActual, setTemaActual] = useState<string>('claro');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<UsuarioDTO | null>(null);
 
   // Determinar qué sección mostrar basado en la ruta
   const getCurrentSection = () => {
@@ -95,6 +97,59 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
       loadData(); // Recargar datos
     } catch (err) {
       console.error('Error creando administrador:', err);
+    }
+  };
+
+  // Abrir modal de edición de administrador
+  const editAdmin = (admin: UsuarioDTO) => {
+    console.log('Editando administrador:', admin);
+    setEditingAdmin(admin);
+    setShowEditModal(true);
+  };
+
+  // Guardar cambios del administrador editado
+  const saveAdminEdit = async () => {
+    if (!editingAdmin) return;
+    
+    try {
+      // Usar el endpoint general de usuarios para actualizar
+      const updateData = {
+        nombre: editingAdmin.nombre,
+        apellido: editingAdmin.apellido,
+        ubicacion: editingAdmin.ubicacion,
+        departamento: editingAdmin.departamento,
+        activo: editingAdmin.activo,
+        require2fa: editingAdmin.require2fa
+      };
+      
+      await api.updateUser(editingAdmin.idUsuario || editingAdmin.id, updateData);
+      
+      console.log('Administrador actualizado exitosamente:', editingAdmin);
+      setShowEditModal(false);
+      setEditingAdmin(null);
+      loadData(); // Recargar datos
+      alert('Administrador actualizado exitosamente');
+    } catch (err) {
+      console.error('Error actualizando administrador:', err);
+      alert('Error al actualizar el administrador');
+    }
+  };
+
+  // Cambiar estado activo/inactivo del administrador
+  const toggleAdminStatus = async (admin: UsuarioDTO) => {
+    try {
+      console.log('Cambiando estado del administrador:', admin);
+      
+      // Usar el endpoint específico de SuperAdmin para toggle
+      await api.toggleEstadoAdministrador(admin.idUsuario || admin.id);
+      
+      // Recargar datos para obtener el estado actualizado
+      loadData();
+      
+      alert(`Administrador ${admin.activo ? 'desactivado' : 'activado'} exitosamente`);
+    } catch (err) {
+      console.error('Error cambiando estado del administrador:', err);
+      alert('Error al cambiar el estado del administrador');
     }
   };
 
@@ -272,9 +327,9 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
               <h2 className="text-lg font-semibold text-gray-900">Lista de Administradores</h2>
               <button 
                 onClick={() => openConfigModal()}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="superadmin-create-button"
               >
-                <i className="fas fa-plus"></i>
+                <i className="fas fa-plus text-gray-700"></i>
                 Crear Administrador
               </button>
             </div>
@@ -307,12 +362,20 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
                         {admin.activo ? 'Activo' : 'Inactivo'}
                       </span>
                       <div className="flex gap-2">
-                        <button className="p-2 text-gray-400 hover:text-blue-600 transition-colors">
-                          <i className="fas fa-edit"></i>
-                        </button>
-                        <button className="p-2 text-gray-400 hover:text-green-600 transition-colors">
-                          <i className="fas fa-toggle-on"></i>
-                        </button>
+         <button 
+           className="admin-action-button edit"
+           onClick={() => editAdmin(admin)}
+           title="Editar administrador"
+         >
+           ✏️
+         </button>
+         <button 
+           className="admin-action-button toggle"
+           onClick={() => toggleAdminStatus(admin)}
+           title={admin.activo ? "Desactivar administrador" : "Activar administrador"}
+         >
+           {admin.activo ? "🟢" : "🔴"}
+         </button>
                       </div>
                     </div>
                   </div>
@@ -480,6 +543,188 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
               >
                 <i className="fas fa-save"></i>
                 Crear Administrador
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edición de administrador */}
+      {showEditModal && editingAdmin && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Editar Administrador</h3>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Información básica */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900 border-b pb-2">Información Básica</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
+                    <input
+                      type="text"
+                      value={editingAdmin.nombre || ''}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, nombre: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Apellido *</label>
+                    <input
+                      type="text"
+                      value={editingAdmin.apellido || ''}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, apellido: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input
+                      type="email"
+                      value={editingAdmin.email || ''}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                    <input
+                      type="tel"
+                      value={editingAdmin.telefono || ''}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, telefono: e.target.value})}
+                      placeholder="+57 300 000 0000"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Información laboral */}
+                <div className="space-y-4">
+                  <h4 className="font-medium text-gray-900 border-b pb-2">Información Laboral</h4>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Departamento</label>
+                    <input
+                      type="text"
+                      value={editingAdmin.departamento || ''}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, departamento: e.target.value})}
+                      placeholder="Sistemas, Recursos Humanos, etc."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ubicación</label>
+                    <input
+                      type="text"
+                      value={editingAdmin.ubicacion || ''}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, ubicacion: e.target.value})}
+                      placeholder="Oficina, piso, ciudad"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Usuario</label>
+                    <select
+                      value={editingAdmin.tipoUsuario || 'ADMINISTRADOR'}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, tipoUsuario: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="ADMINISTRADOR">Administrador</option>
+                      <option value="SUPERADMIN">Super Administrador</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select
+                      value={editingAdmin.activo ? '1' : '0'}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, activo: e.target.value === '1'})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="1">Activo</option>
+                      <option value="0">Inactivo</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Configuraciones adicionales */}
+              <div className="mt-6 space-y-4">
+                <h4 className="font-medium text-gray-900 border-b pb-2">Configuraciones Adicionales</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Verificado</label>
+                    <select
+                      value={editingAdmin.emailVerificado ? '1' : '0'}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, emailVerificado: e.target.value === '1'})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="1">Sí</option>
+                      <option value="0">No</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Requiere 2FA</label>
+                    <select
+                      value={editingAdmin.require2fa ? '1' : '0'}
+                      onChange={(e) => setEditingAdmin({...editingAdmin, require2fa: e.target.value === '1'})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="0">No</option>
+                      <option value="1">Sí</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Información de solo lectura */}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-3">Información del Sistema (Solo lectura)</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div>
+                    <span className="font-medium">ID:</span> {editingAdmin.idUsuario || editingAdmin.id}
+                  </div>
+                  <div>
+                    <span className="font-medium">Creado:</span> {editingAdmin.fechaCreacion ? new Date(editingAdmin.fechaCreacion).toLocaleDateString() : 'N/A'}
+                  </div>
+                  <div>
+                    <span className="font-medium">Último acceso:</span> {editingAdmin.ultimoAcceso ? new Date(editingAdmin.ultimoAcceso).toLocaleDateString() : 'Nunca'}
+                  </div>
+                  <div>
+                    <span className="font-medium">Creado por:</span> {editingAdmin.creadoPor || 'Sistema'}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={saveAdminEdit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              >
+                <i className="fas fa-save"></i>
+                Guardar Cambios
               </button>
             </div>
           </div>
