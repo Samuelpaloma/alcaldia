@@ -32,7 +32,6 @@ import ForgotPassword from "./modules/auth/ForgotPassword";
 import ResetPassword from "./modules/auth/ResetPassword";
 import RootRedirect from "./modules/auth/RootRedirect";
 import AdminDashboard from "./modules/admin/AdminDashboard";
-import UnifiedDashboard from "./modules/admin/UnifiedDashboard";
 import SuperAdminDashboard from "./modules/superadmin/SuperAdminDashboard";
 import SuperAdminLayout from "./modules/_shared/SuperAdminLayout";
 import { I18nProvider } from "./i18n";

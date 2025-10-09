@@ -655,8 +655,8 @@ const Reports: React.FC = () => {
     }
   };
 
-  // Función para generar reporte por período
-  const generatePeriodReport = () => {
+  // Función para generar reporte por período - SIN ASYNC
+  const generatePeriodReportAsync = () => {
     const ticketsToUse = allTickets.length > 0 ? allTickets : tickets;
     if (!ticketsToUse || ticketsToUse.length === 0) {
       alert('No hay tickets disponibles para generar el reporte');
@@ -904,14 +904,15 @@ const Reports: React.FC = () => {
       reportData: generatedReport // Guardar todos los datos del reporte
     };
 
-    // Guardar en la base de datos
-    try {
-      await saveReportToDatabase(reportDataToSave);
-      console.log('🔍 [REPORTS-FRONTEND] Reporte por período descargado y guardado en BD:', fileName);
-    } catch (error) {
-      console.error('🔍 [REPORTS-FRONTEND] Error guardando reporte en BD, pero PDF descargado:', error);
-      // El PDF ya se descargó, solo falló el guardado en BD
-    }
+    // Guardar en la base de datos (sin await para evitar problemas de async)
+    saveReportToDatabase(reportDataToSave)
+      .then(() => {
+        console.log('🔍 [REPORTS-FRONTEND] Reporte por período descargado y guardado en BD:', fileName);
+      })
+      .catch((error) => {
+        console.error('🔍 [REPORTS-FRONTEND] Error guardando reporte en BD, pero PDF descargado:', error);
+        // El PDF ya se descargó, solo falló el guardado en BD
+      });
   };
 
   // Función para re-descargar un reporte guardado
@@ -1362,7 +1363,7 @@ const Reports: React.FC = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">&nbsp;</label>
                 <Button 
-                  onClick={generatePeriodReport}
+                  onClick={generatePeriodReportAsync}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   disabled={!canGenerateReport}
                 >
