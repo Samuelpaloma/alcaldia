@@ -5,17 +5,17 @@ Octubre 2025
 
 RESUMEN EJECUTIVO
 -----------------
-Total de Tickets: 20
-Tickets Resueltos: 0 (0,0%)
-Satisfacción Promedio: 0,0/5.0
-Fecha de Generación: 09/10/2025 00:03
+Total de Tickets: 6
+Tickets Resueltos: 0 (0.0%)
+Satisfacción Promedio: 0.0/5.0
+Fecha de Generación: 06/10/2025 22:36
 
 ESTADÍSTICAS DE TICKETS
 ------------------------
-Total de Tickets: 20
-- Resueltos: 0 (0,0%)
-- Pendientes: 0 (0,0%)
-- En Proceso: 1 (5,0%)
+Total de Tickets: 6
+- Resueltos: 0 (0.0%)
+- Pendientes: 3 (50.0%)
+- En Proceso: 0 (0.0%)
 
 ESTADÍSTICAS DE SATISFACCIÓN
 ---------------------------
@@ -23,12 +23,12 @@ No hay encuestas disponibles para este período.
 
 ANÁLISIS POR CATEGORÍA
 ----------------------
-- SOFTWARE: 20 tickets (100,0%)
+- hardware: 4 tickets (66.7%)
+- software: 2 tickets (33.3%)
 
 ANÁLISIS POR TÉCNICO
 --------------------
-- Técnico Prueba: 19 tickets (95,0%)
-- Julian David Naranjo Tecnico: 1 tickets (5,0%)
+- Técnico Prueba: 3 tickets (50.0%)
 
 TENDENCIAS MENSUALES
 --------------------
@@ -43,6 +43,6 @@ Basado en el análisis de tickets y satisfacción:
 3. Capacitar al equipo en áreas con mayor volumen de tickets
 
 ================================================
-Reporte generado automáticamente el 09/10/2025 00:03
+Reporte generado automáticamente el 06/10/2025 22:36
 Sistema de Gestión de Tickets - Alcaldía
 ================================================

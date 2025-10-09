@@ -47,9 +47,6 @@ public class AsignacionService {
     @Autowired
     private NotificationRoleService notificationRoleService;
     
-    @Autowired
-    private com.example.demo.notificacion.service.TicketNotificationIntegrationService ticketNotificationIntegrationService;
-    
     public AsignacionResponseDTO asignarTicket(AsignarTicketRequestDTO request, String emailAsignador) {
         Optional<Ticket> ticketOpt = ticketRepository.findById(request.getTicketId());
         if (ticketOpt.isEmpty()) {
@@ -99,7 +96,7 @@ public class AsignacionService {
         Usuario admin = usuarioRepository.findByEmail(emailAsignador).orElse(null);
         if (admin != null && !TipoUsuario.SUPERADMIN.equals(admin.getUserType())) {
             System.out.println("🔔 [ASIGNACION] ✅ Admin encontrado, enviando notificaciones...");
-            ticketNotificationIntegrationService.onTicketAssigned(ticket.getId(), tecnico.getId(), admin.getId());
+            notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
             System.out.println("🔔 [ASIGNACION] ✅ Notificaciones enviadas");
         } else if (admin != null && TipoUsuario.SUPERADMIN.equals(admin.getUserType())) {
             System.out.println("🔔 [ASIGNACION] ⚠️ Saltando notificaciones - asignador es SuperAdmin");

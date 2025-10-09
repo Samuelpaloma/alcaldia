@@ -670,17 +670,18 @@ const Reports: React.FC = () => {
     switch (selectedPeriod) {
       case 'daily':
         if (selectedDate) {
-          // Usar la fecha seleccionada directamente sin conversión problemática
-          const targetDateStr = selectedDate; // Formato YYYY-MM-DD
+          // Crear fecha local para evitar problemas de zona horaria
+          const [year, month, day] = selectedDate.split('-').map(Number);
+          const targetDate = new Date(year, month - 1, day);
           console.log('📅 [REPORTS] Fecha seleccionada para filtro:', selectedDate);
-          console.log('📅 [REPORTS] Fecha objetivo (string):', targetDateStr);
+          console.log('📅 [REPORTS] Fecha objetivo (local):', targetDate);
+          console.log('📅 [REPORTS] Fecha objetivo (string):', targetDate.toDateString());
           
           filteredTickets = ticketsToUse.filter(ticket => {
             const ticketDate = new Date(ticket.fechaCreacion);
-            const ticketDateStr = ticketDate.toISOString().split('T')[0]; // Convertir a YYYY-MM-DD
-            const isMatch = ticketDateStr === targetDateStr;
+            const isMatch = ticketDate.toDateString() === targetDate.toDateString();
             if (isMatch) {
-              console.log('📅 [REPORTS] Ticket coincidente:', ticket.id, 'Fecha:', ticketDateStr);
+              console.log('📅 [REPORTS] Ticket coincidente:', ticket.id, 'Fecha:', ticketDate.toDateString());
             }
             return isMatch;
           });
@@ -752,7 +753,7 @@ const Reports: React.FC = () => {
     const report = {
       title: `Reporte ${selectedPeriod === 'daily' ? 'Diario' : selectedPeriod === 'monthly' ? 'Mensual' : 'Anual'}`,
       subtitle: selectedPeriod === 'daily' ? 
-        `Análisis del ${selectedDate ? new Date(selectedDate + 'T00:00:00').toLocaleDateString('es-ES') : ''}` :
+        `Análisis del ${selectedDate.split('-').reverse().join('/')}` :
         selectedPeriod === 'monthly' ?
         `Análisis de ${new Date(selectedMonth + '-01').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}` :
         `Análisis del año ${selectedYear}`,

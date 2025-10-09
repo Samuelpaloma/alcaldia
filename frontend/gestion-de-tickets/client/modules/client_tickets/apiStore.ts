@@ -249,7 +249,12 @@ export async function createTicket(input: {
     // Recargar la lista para obtener el ticket real del backend
     await loadTickets();
     
-    // Las notificaciones se envían automáticamente desde el backend al crear el ticket
+    // Disparar notificación de creación de ticket
+    try {
+      await api.createTicketNotification(response.id, response.creadorId || 1);
+    } catch (notificationError) {
+      console.warn('Error enviando notificación de ticket:', notificationError);
+    }
     
     return tempTicket;
   } catch (err) {

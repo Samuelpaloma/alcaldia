@@ -21,7 +21,7 @@ export default function RootRedirect() {
       
       switch (userRole) {
         case "superadmin":
-          redirectPath = "/superadmin/administradores";
+          redirectPath = "/superadmin";
           break;
         case "admin":
           redirectPath = "/admin";

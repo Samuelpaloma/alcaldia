@@ -29,17 +29,9 @@ public class TicketNotificationIntegrationService {
      */
     public void onTicketAssigned(Long ticketId, Long technicianId, Long assignerId) {
         try {
-            System.out.println("🚀 [INTEGRATION] ===== EJECUTANDO onTicketAssigned =====");
-            System.out.println("🚀 [INTEGRATION] Ticket ID: " + ticketId);
-            System.out.println("🚀 [INTEGRATION] Technician ID: " + technicianId);
-            System.out.println("🚀 [INTEGRATION] Assigner ID: " + assignerId);
-            
             notificationRoleService.notificarAsignacionTicket(ticketId, assignerId, technicianId);
-            
-            System.out.println("✅ [INTEGRATION] onTicketAssigned completado exitosamente");
         } catch (Exception e) {
-            System.err.println("❌ [INTEGRATION] Error enviando notificación de asignación de ticket: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Error enviando notificación de asignación de ticket: " + e.getMessage());
         }
     }
 

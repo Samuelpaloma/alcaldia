@@ -1,12 +1,16 @@
 package com.example.demo.notificacion.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "preferencias_notificacion")
+@Table(name = "notification_preferences")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,14 +20,14 @@ public class PreferenciasNotificacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "usuario_id", nullable = false)
+    @Column(name = "usuario_id", nullable = false, unique = true)
     private Long usuarioId;
     
     @Column(name = "push_activo", nullable = false)
-    private Boolean pushActivo = true; // Siempre activo por defecto
+    private Boolean pushActivo = true;
     
     @Column(name = "email_activo", nullable = false)
-    private Boolean emailActivo = false; // Por defecto desactivado
+    private Boolean emailActivo = false;
     
     @Column(name = "notificaciones_ticket_asignado", nullable = false)
     private Boolean notificacionesTicketAsignado = true;
@@ -46,23 +50,14 @@ public class PreferenciasNotificacion {
     @Column(name = "notificaciones_sistema", nullable = false)
     private Boolean notificacionesSistema = true;
     
-    @Column(name = "frecuencia_email")
+    @Column(name = "frecuencia_email", nullable = false)
     private String frecuenciaEmail = "inmediata";
     
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private java.time.LocalDateTime createdAt;
+    @Column(name = "fecha_creacion")
+    @CreationTimestamp
+    private LocalDateTime fechaCreacion;
     
-    @Column(name = "updated_at")
-    private java.time.LocalDateTime updatedAt;
-    
-    @PrePersist
-    protected void onCreate() {
-        createdAt = java.time.LocalDateTime.now();
-        updatedAt = java.time.LocalDateTime.now();
-    }
-    
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = java.time.LocalDateTime.now();
-    }
+    @Column(name = "fecha_actualizacion")
+    @UpdateTimestamp
+    private LocalDateTime fechaActualizacion;
 }

@@ -14,12 +14,12 @@ public class Ticket {
 
     // User who creates the ticket (can be normal user or admin)
     @ManyToOne
-    @JoinColumn(name = "creator_id", referencedColumnName = "id")
+    @JoinColumn(name = "creator_id")
     private Usuario creator;
 
     // Technician assigned to the ticket
     @ManyToOne
-    @JoinColumn(name = "assigned_technician_id", referencedColumnName = "id")
+    @JoinColumn(name = "assigned_technician_id")
     private Usuario assignedTechnician;
     
     // Assigned technician email (for compatibility)

@@ -14,19 +14,7 @@ export default function RoleRoute({ role }: { role: Role }) {
   
   // Verificar rol específico
   if (userRole !== role) {
-    let dest = "/client"; // Default
-    switch (userRole) {
-      case "superadmin":
-        dest = "/superadmin/administradores";
-        break;
-      case "admin":
-        dest = "/admin";
-        break;
-      case "client":
-      default:
-        dest = "/client";
-        break;
-    }
+    const dest = userRole === "admin" ? "/admin" : "/client";
     return <Navigate to={dest} replace />;
   }
   

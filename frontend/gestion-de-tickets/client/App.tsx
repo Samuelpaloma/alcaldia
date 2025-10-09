@@ -139,13 +139,11 @@ const App = () => (
             </Route>
 
             {/* SuperAdmin section (role-restricted) */}
-            <Route element={<RoleRoute role="superadmin" />}>
-              <Route element={<SuperAdminLayout />}>
-                <Route path="/superadmin" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
-                <Route path="/superadmin/administradores" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
-                <Route path="/superadmin/configuraciones" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
-                <Route path="/superadmin/categories" element={<CategoriesManagement userRole="SUPERADMIN" />} />
-              </Route>
+            <Route element={<SuperAdminLayout />}>
+              <Route path="/superadmin" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/administradores" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/configuraciones" element={<SuperAdminDashboard userRole="SUPERADMIN" />} />
+              <Route path="/superadmin/categories" element={<CategoriesManagement userRole="SUPERADMIN" />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

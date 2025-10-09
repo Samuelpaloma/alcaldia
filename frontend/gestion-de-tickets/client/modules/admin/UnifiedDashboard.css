@@ -5,24 +5,6 @@
   margin: 0 auto;
 }
 
-/* Estilos para pestañas */
-.unified-dashboard .tabs-list {
-  background: transparent;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0;
-}
-
-.unified-dashboard .tabs-trigger {
-  border-radius: 0.5rem 0.5rem 0 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.unified-dashboard .tabs-trigger[data-state="active"] {
-  border-bottom-color: #3b82f6;
-  background: #f8fafc;
-}
-
 /* Responsive padding */
 @media (max-width: 768px) {
   .unified-dashboard {
