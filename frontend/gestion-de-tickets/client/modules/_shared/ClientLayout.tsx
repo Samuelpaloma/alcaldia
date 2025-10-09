@@ -11,8 +11,7 @@ import { UnifiedNotificationsModal } from "../notifications/UnifiedNotifications
 import { useRoleNotifications } from "@/hooks/use-role-notifications";
 import { useUserInfo } from "@/hooks/use-user-info";
 import NotificationSystem from "../../components/NotificationSystem";
-import SystemColorLoader from "../../components/SystemColorLoader";
-import { useForceColorApplication } from "../../hooks/useForceColorApplication";
+import NotificationToast from "../../components/NotificationToast";
 import "./AppLayout.css";
 
 export default function ClientLayout() {
@@ -25,12 +24,17 @@ export default function ClientLayout() {
   const { unreadCount } = useRoleNotifications(userEmail, userRole);
   const navigate = useNavigate();
   
-  // Forzar aplicación de colores del sistema
-  useForceColorApplication();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("Tienes una notificación nueva");
+
+  // Configurar título de la página
+  useEffect(() => {
+    document.title = 'NEITickets - Cliente';
+  }, []);
 
   // Escuchar evento para abrir modal desde toast
   useEffect(() => {
@@ -45,7 +49,35 @@ export default function ClientLayout() {
       window.removeEventListener('openNotificationsModal', handleOpenModal);
     };
   }, []);
+
+  // Mostrar toast solo cuando llegan notificaciones nuevas via WebSocket
+  // (no automáticamente al recargar)
+
+  // Escuchar notificaciones nuevas via WebSocket
+  useEffect(() => {
+    const handleNewNotification = (event: CustomEvent) => {
+      console.log('🔔 ClientLayout: Recibida nueva notificación via WebSocket:', event.detail);
+      if (event.detail?.mensaje) {
+        setToastMessage(event.detail.mensaje);
+      } else {
+        setToastMessage("Tienes una notificación nueva");
+      }
+      setShowToast(true);
+    };
+
+    window.addEventListener('newNotification', handleNewNotification as EventListener);
+    
+    return () => {
+      window.removeEventListener('newNotification', handleNewNotification as EventListener);
+    };
+  }, []);
   
+  // Función para manejar el botón "Ver" del toast
+  const handleViewNotifications = () => {
+    setShowToast(false);
+    setShowNotifications(true);
+  };
+
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
   
@@ -258,7 +290,14 @@ export default function ClientLayout() {
           userEmail={userEmail} 
           userRole={userRole} 
         />
-        <SystemColorLoader />
+        
+        {/* Toast de notificaciones */}
+        <NotificationToast
+          show={showToast}
+          onClose={() => setShowToast(false)}
+          onViewNotifications={handleViewNotifications}
+          message={toastMessage}
+        />
     </div>
   );
 }

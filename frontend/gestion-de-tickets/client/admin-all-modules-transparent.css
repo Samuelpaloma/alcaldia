@@ -1,0 +1,812 @@
+/* CSS ULTRA AGRESIVO para hacer transparentes TODOS los fondos oscuros en TODOS los módulos del admin */
+
+/* ===== FORZAR TODOS LOS ELEMENTOS DEL ADMIN A TRANSPARENTE ===== */
+.app-container,
+.app-container *,
+.admin-layout,
+.admin-layout *,
+.admin-dashboard,
+.admin-dashboard *,
+.dashboard-module,
+.dashboard-module *,
+.tickets-module,
+.tickets-module *,
+.unified-dashboard,
+.unified-dashboard *,
+.users-module,
+.users-module *,
+.evidences-module,
+.evidences-module *,
+[class*="admin"],
+[class*="admin"] *,
+[class*="dashboard"],
+[class*="dashboard"] *,
+[class*="module"],
+[class*="module"] * {
+  background-color: transparent !important;
+  color: black !important;
+}
+
+/* ===== FORZAR TODOS LOS ELEMENTOS HTML A TRANSPARENTE ===== */
+html,
+body,
+div,
+section,
+article,
+aside,
+header,
+nav,
+main,
+footer,
+ul,
+ol,
+li,
+p,
+span,
+h1, h2, h3, h4, h5, h6,
+a,
+button,
+input,
+select,
+textarea,
+form,
+table,
+tr,
+td,
+th,
+thead,
+tbody,
+tfoot {
+  background-color: transparent !important;
+  color: black !important;
+}
+
+/* ===== FORZAR TODAS LAS CLASES DE TAILWIND OSCURAS A TRANSPARENTE ===== */
+[class*="bg-gray"],
+[class*="bg-slate"],
+[class*="bg-zinc"],
+[class*="bg-neutral"],
+[class*="bg-stone"],
+[class*="bg-yellow"],
+[class*="bg-amber"],
+[class*="bg-orange"],
+[class*="bg-red"],
+[class*="bg-pink"],
+[class*="bg-rose"],
+[class*="bg-blue"],
+[class*="bg-indigo"],
+[class*="bg-violet"],
+[class*="bg-purple"],
+[class*="bg-fuchsia"],
+[class*="bg-cyan"],
+[class*="bg-teal"],
+[class*="bg-emerald"],
+[class*="bg-green"],
+[class*="bg-lime"],
+[class*="bg-muted"],
+[class*="bg-secondary"],
+[class*="bg-accent"],
+[class*="bg-destructive"],
+[class*="bg-primary"],
+[class*="bg-background"],
+[class*="bg-card"],
+[class*="bg-popover"],
+[class*="bg-input"],
+[class*="bg-ring"],
+[class*="bg-border"] {
+  background-color: transparent !important;
+  color: black !important;
+}
+
+/* ===== FORZAR TODOS LOS ELEMENTOS CON ATRIBUTOS A TRANSPARENTE ===== */
+[class],
+[id],
+[data-*],
+[aria-*],
+[role] {
+  background-color: transparent !important;
+  color: black !important;
+}
+
+/* ===== FORZAR TODOS LOS ELEMENTOS SHADCN/UI A TRANSPARENTE ===== */
+[data-radix-collection-item],
+[data-radix-popper-content-wrapper],
+[data-radix-select-content],
+[data-radix-dropdown-content],
+[data-radix-dialog-content],
+[data-radix-popover-content],
+[data-radix-tooltip-content],
+[data-radix-accordion-content],
+[data-radix-tabs-content],
+[data-radix-alert-dialog-content],
+[data-radix-context-menu-content],
+[data-radix-hover-card-content],
+[data-radix-menubar-content],
+[data-radix-navigation-menu-content],
+[data-radix-scroll-area-viewport],
+[data-radix-separator],
+[data-radix-slider-track],
+[data-radix-switch-thumb],
+[data-radix-toggle-group-item],
+[data-radix-toggle],
+[role="button"],
+[role="menuitem"],
+[role="tab"],
+[role="tabpanel"],
+[role="menubar"],
+[role="navigation"],
+[role="main"],
+[role="banner"],
+[role="contentinfo"],
+[role="complementary"],
+[data-state],
+[aria-expanded],
+[aria-selected],
+[aria-checked],
+[aria-pressed] {
+  background-color: transparent !important;
+  color: black !important;
+}
+
+/* ===== FORZAR TODOS LOS ELEMENTOS REACT A TRANSPARENTE ===== */
+[data-reactroot],
+[data-reactid],
+[data-react-helmet],
+[data-react-scroll-to-bottom],
+[data-react-beautiful-dnd],
+[data-react-virtualized] {
+  background-color: transparent !important;
+  color: black !important;
+}
+
+/* ===== FORZAR TODAS LAS VARIABLES CSS A TRANSPARENTE ===== */
+:root,
+:root * {
+  --background: transparent !important;
+  --foreground: 0 0 0 !important;
+  --card: transparent !important;
+  --card-foreground: 0 0 0 !important;
+  --popover: transparent !important;
+  --popover-foreground: 0 0 0 !important;
+  --primary: transparent !important;
+  --primary-foreground: 0 0 0 !important;
+  --secondary: transparent !important;
+  --secondary-foreground: 0 0 0 !important;
+  --muted: transparent !important;
+  --muted-foreground: 0 0 0 !important;
+  --accent: transparent !important;
+  --accent-foreground: 0 0 0 !important;
+  --destructive: transparent !important;
+  --destructive-foreground: 0 0 0 !important;
+  --border: transparent !important;
+  --input: transparent !important;
+  --ring: transparent !important;
+  --system-primary: transparent !important;
+  --system-secondary: transparent !important;
+  --system-background: transparent !important;
+  --system-text: black !important;
+  --system-container: transparent !important;
+  --system-container-secondary: transparent !important;
+}
+
+/* ===== EXCEPCIÓN: TODOS LOS MODALES DEBEN TENER FONDO BLANCO - NUCLEAR ===== */
+
+/* Forzar TODOS los elementos que podrían ser modales */
+.modal,
+.modal *,
+.modal-content,
+.modal-header,
+.modal-body,
+.modal-footer,
+[class*="modal"],
+[class*="Modal"],
+[data-radix-dialog-content],
+[data-radix-dialog-content] *,
+[data-radix-alert-dialog-content],
+[data-radix-alert-dialog-content] *,
+[data-radix-popover-content],
+[data-radix-popover-content] *,
+[data-radix-tooltip-content],
+[data-radix-tooltip-content] *,
+[data-radix-select-content],
+[data-radix-select-content] *,
+[data-radix-dropdown-content],
+[data-radix-dropdown-content] *,
+[data-radix-context-menu-content],
+[data-radix-context-menu-content] *,
+[data-radix-menubar-content],
+[data-radix-menubar-content] *,
+[data-radix-navigation-menu-content],
+[data-radix-navigation-menu-content] *,
+.dialog,
+.dialog *,
+[class*="dialog"],
+[class*="Dialog"],
+.popover,
+.popover *,
+[class*="popover"],
+[class*="Popover"],
+.tooltip,
+.tooltip *,
+[class*="tooltip"],
+[class*="Tooltip"],
+.overlay,
+.overlay *,
+[class*="overlay"],
+[class*="Overlay"],
+.backdrop,
+.backdrop *,
+[class*="backdrop"],
+[class*="Backdrop"],
+.drawer,
+.drawer *,
+[class*="drawer"],
+[class*="Drawer"],
+.sheet,
+.sheet *,
+[class*="sheet"],
+[class*="Sheet"],
+.slide,
+.slide *,
+[class*="slide"],
+[class*="Slide"],
+[role="dialog"],
+[role="dialog"] *,
+[role="alertdialog"],
+[role="alertdialog"] *,
+[aria-modal="true"],
+[aria-modal="true"] *,
+[data-state="open"],
+[data-state="open"] *,
+[data-open="true"],
+[data-open="true"] * {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+}
+
+/* NUCLEAR: Forzar TODOS los divs que podrían ser modales */
+div[class*="modal"],
+div[class*="Modal"],
+div[class*="dialog"],
+div[class*="Dialog"],
+div[class*="popover"],
+div[class*="Popover"],
+div[class*="overlay"],
+div[class*="Overlay"],
+div[role="dialog"],
+div[role="alertdialog"],
+div[aria-modal="true"],
+div[data-state="open"],
+div[data-open="true"] {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+}
+
+/* NUCLEAR: Forzar TODOS los elementos con posicionamiento que podrían ser modales */
+[style*="position: fixed"],
+[style*="position:absolute"],
+[style*="z-index"],
+div[style*="position: fixed"],
+div[style*="position:absolute"],
+div[style*="z-index"] {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+}
+
+/* NUCLEAR: Forzar TODOS los elementos que contienen texto de modal */
+div:has([class*="modal"]),
+div:has([class*="Modal"]),
+div:has([class*="dialog"]),
+div:has([class*="Dialog"]),
+div:has([role="dialog"]),
+div:has([role="alertdialog"]),
+div:has([aria-modal="true"]) {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+}
+
+/* NUCLEAR: Forzar TODOS los elementos con clases específicas de Shadcn/UI */
+[class*="DialogContent"],
+[class*="DialogHeader"],
+[class*="DialogFooter"],
+[class*="DialogTitle"],
+[class*="DialogDescription"],
+[class*="AlertDialogContent"],
+[class*="AlertDialogHeader"],
+[class*="AlertDialogFooter"],
+[class*="AlertDialogTitle"],
+[class*="AlertDialogDescription"],
+[class*="PopoverContent"],
+[class*="TooltipContent"],
+[class*="SelectContent"],
+[class*="DropdownContent"],
+[class*="SheetContent"],
+[class*="DrawerContent"] {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+}
+
+/* NUCLEAR: Forzar TODOS los elementos que podrían estar en un modal */
+div[class*="fixed"],
+div[class*="absolute"],
+div[class*="relative"] {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+}
+
+/* ===== EXCEPCIÓN: TARJETAS/CARDS DEBEN TENER FONDO BLANCO ===== */
+.card,
+[class*="card"],
+[class*="Card"],
+.widget,
+[class*="widget"],
+[class*="Widget"],
+.tile,
+[class*="tile"],
+[class*="Tile"],
+.panel,
+[class*="panel"],
+[class*="Panel"],
+.accordion,
+[class*="accordion"],
+[class*="Accordion"],
+.collapse,
+[class*="collapse"],
+[class*="Collapse"],
+.expand,
+[class*="expand"],
+[class*="Expand"] {
+  background-color: white !important;
+  color: black !important;
+}
+
+/* ===== EXCEPCIÓN: INPUTS/FORMULARIOS DEBEN TENER FONDO BLANCO ===== */
+input,
+select,
+textarea,
+[type="text"],
+[type="email"],
+[type="password"],
+[type="number"],
+[type="tel"],
+[type="url"],
+[type="search"],
+[type="date"],
+[type="time"],
+[type="datetime-local"],
+[type="month"],
+[type="week"],
+[type="color"],
+[type="range"],
+[type="file"],
+[type="checkbox"],
+[type="radio"],
+[type="submit"],
+[type="button"],
+[type="reset"],
+[class*="input"],
+[class*="Input"],
+[class*="form"],
+[class*="Form"],
+[class*="field"],
+[class*="Field"] {
+  background-color: white !important;
+  color: black !important;
+}
+
+/* ===== EXCEPCIÓN: BOTONES DEBEN TENER FONDO BLANCO ===== */
+button,
+[type="button"],
+[type="submit"],
+[type="reset"],
+[class*="btn"],
+[class*="Btn"],
+[class*="button"],
+[class*="Button"] {
+  background-color: white !important;
+  color: black !important;
+}
+
+button:hover,
+[type="button"]:hover,
+[type="submit"]:hover,
+[type="reset"]:hover,
+[class*="btn"]:hover,
+[class*="Btn"]:hover,
+[class*="button"]:hover,
+[class*="Button"]:hover {
+  background-color: #f3f4f6 !important;
+  color: black !important;
+}
+
+/* ===== FORZAR TODOS LOS ELEMENTOS CON CLASES ESPECÍFICAS ===== */
+.tabs-container,
+.tabs-nav,
+.tab-button,
+.dashboard-tabs,
+.nav-section,
+.nav-link,
+.app-header,
+.header,
+.main-header,
+.content-header,
+.page-header,
+.section-header,
+.card-header,
+.modal-header,
+.alert,
+.notification,
+.toast,
+.badge,
+.tag,
+.label,
+.chip,
+.avatar,
+.thumbnail,
+.preview,
+.placeholder,
+.skeleton,
+.spinner,
+.loader,
+.progress,
+.slider,
+.range,
+.switch,
+.toggle,
+.checkbox,
+.radio,
+.input,
+.textarea,
+.select,
+.combobox,
+.autocomplete,
+.datepicker,
+.timepicker,
+.calendar,
+.tooltip,
+.popover,
+.dropdown,
+.menu,
+.navigation,
+.breadcrumb,
+.pagination,
+.steps,
+.timeline,
+.list,
+.grid,
+.flex,
+.container,
+.wrapper,
+.panel,
+.sidebar,
+.aside,
+.content,
+.main,
+.footer,
+.banner,
+.hero,
+.jumbotron,
+.cover,
+.overlay,
+.backdrop,
+.modal,
+.dialog,
+.drawer,
+.sheet,
+.slide,
+.carousel,
+.gallery,
+.lightbox,
+.tab,
+.accordion,
+.collapse,
+.expand,
+.fold,
+.unfold,
+.show,
+.hide,
+.visible,
+.invisible,
+.opacity,
+.blur,
+.shadow,
+.border,
+.outline,
+.ring,
+.focus,
+.hover,
+.active,
+.selected,
+.checked,
+.pressed,
+.expanded,
+.collapsed,
+.open,
+.closed,
+.loading,
+.error,
+.success,
+.warning,
+.info,
+.danger,
+.safe,
+.enabled,
+.disabled,
+.readonly,
+.required,
+.optional,
+.valid,
+.invalid,
+.dirty,
+.clean,
+.modified,
+.original,
+.changed,
+.unchanged,
+.new,
+.old,
+.current,
+.previous,
+.next,
+.first,
+.last,
+.before,
+.after,
+.top,
+.bottom,
+.left,
+.right,
+.center,
+.start,
+.end,
+.begin,
+.finish,
+.complete,
+.incomplete,
+.done,
+.pending,
+.waiting,
+.processing,
+.ready,
+.busy,
+.idle,
+.online,
+.offline,
+.connected,
+.disconnected,
+.synced,
+.unsynced,
+.saved,
+.unsaved,
+.published,
+.unpublished,
+.visible,
+.hidden,
+.public,
+.private,
+.protected,
+.internal,
+.external,
+.local,
+.remote,
+.static,
+.dynamic,
+.fixed,
+.relative,
+.absolute,
+.sticky,
+.floating,
+.embedded,
+.inline,
+.block,
+.inline-block,
+.flex,
+.inline-flex,
+.grid,
+.inline-grid,
+.table,
+.inline-table,
+.list-item,
+.run-in,
+.contents,
+.none,
+.initial,
+.inherit,
+.unset,
+.revert,
+.all-unset {
+  background-color: transparent !important;
+  color: black !important;
+}
+
+/* ===== FORZAR SIDEBAR IZQUIERDO A FONDO BLANCO ===== */
+aside,
+aside *,
+.app-container aside,
+.app-container aside *,
+nav,
+nav *,
+.nav-section,
+.nav-section *,
+.nav-link,
+.nav-link *,
+.app-container aside .h-16,
+.app-container aside .h-16 *,
+.app-container aside nav,
+.app-container aside nav *,
+.app-container aside .nav-section,
+.app-container aside .nav-section *,
+.app-container aside .nav-link,
+.app-container aside .nav-link *,
+.app-container aside .nav-link.active,
+.app-container aside .nav-link.active *,
+.app-container aside .nav-link:hover,
+.app-container aside .nav-link:hover *,
+.app-container aside .nav-link.active:hover,
+.app-container aside .nav-link.active:hover *,
+/* Forzar TODOS los elementos del sidebar */
+aside div,
+aside span,
+aside a,
+aside button,
+aside svg,
+aside p,
+aside h1, aside h2, aside h3, aside h4, aside h5, aside h6,
+aside ul, aside ol, aside li,
+aside .flex,
+aside .items-center,
+aside .justify-between,
+aside .px-4,
+aside .border-b,
+aside .gap-2,
+aside .font-extrabold,
+aside .tracking-tight,
+aside .text-xl,
+aside .p-3,
+aside .space-y-6,
+aside .overflow-y-auto,
+aside .grid,
+aside .gap-1 {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+  fill: black !important;
+  stroke: black !important;
+}
+
+/* ===== FORZAR ÁREA DE NAVEGACIÓN ESPECÍFICA (DEBAJO DE ADMINISTRACIÓN) ===== */
+.app-container aside nav .grid,
+.app-container aside nav .grid *,
+.app-container aside nav .space-y-6,
+.app-container aside nav .space-y-6 *,
+.app-container aside nav div,
+.app-container aside nav div *,
+.app-container aside nav a,
+.app-container aside nav a *,
+/* Selectores más específicos para los enlaces de navegación */
+.app-container aside nav .grid a,
+.app-container aside nav .grid a *,
+.app-container aside nav .space-y-6 a,
+.app-container aside nav .space-y-6 a *,
+/* Forzar TODOS los enlaces de navegación */
+aside a[href*="/admin"],
+aside a[href*="/tickets"],
+aside a[href*="/users-roles"],
+aside a[href*="/categories"],
+aside a[href*="/automation-rules"],
+aside a[href*="/sla-configuration"],
+aside a[href*="/analytics"],
+aside a[href*="/evidences"],
+/* Forzar por texto específico */
+aside a:contains("Dashboard"),
+aside a:contains("Tickets"),
+aside a:contains("Users"),
+aside a:contains("Categories"),
+aside a:contains("Automation"),
+aside a:contains("SLA"),
+aside a:contains("Analytics"),
+/* Forzar TODOS los enlaces dentro del aside */
+aside a,
+aside a *,
+aside a:hover,
+aside a:hover *,
+aside a.active,
+aside a.active * {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+  fill: black !important;
+  stroke: black !important;
+}
+
+/* ===== NUCLEAR: FORZAR TODO EL SIDEBAR A BLANCO ===== */
+/* Forzar TODOS los elementos que podrían estar en el sidebar */
+.app-container aside,
+.app-container aside *,
+aside,
+aside *,
+/* Forzar por clases específicas de Tailwind que podrían estar en el sidebar */
+[class*="bg-background"],
+[class*="bg-card"],
+[class*="bg-popover"],
+[class*="bg-primary"],
+[class*="bg-secondary"],
+[class*="bg-muted"],
+[class*="bg-accent"],
+[class*="bg-destructive"],
+[class*="bg-border"],
+[class*="bg-input"],
+[class*="bg-ring"],
+[class*="bg-foreground"],
+/* Forzar por posicionamiento que podría estar en el sidebar */
+[class*="sticky"],
+[class*="fixed"],
+[class*="absolute"],
+[class*="relative"],
+/* Forzar TODOS los divs dentro del aside */
+aside div,
+aside div *,
+aside section,
+aside section *,
+aside header,
+aside header *,
+aside nav,
+aside nav *,
+aside ul,
+aside ul *,
+aside ol,
+aside ol *,
+aside li,
+aside li *,
+/* Forzar TODOS los elementos con clases específicas */
+aside [class],
+aside [class] *,
+aside [id],
+aside [id] *,
+/* Forzar elementos por atributos */
+aside [data-*],
+aside [data-*] *,
+aside [aria-*],
+aside [aria-*] *,
+/* Forzar elementos por roles */
+aside [role],
+aside [role] *,
+/* Forzar TODOS los elementos HTML dentro del aside */
+aside html,
+aside html *,
+aside body,
+aside body *,
+aside main,
+aside main *,
+aside article,
+aside article *,
+aside footer,
+aside footer *,
+aside form,
+aside form *,
+aside table,
+aside table *,
+aside tr,
+aside tr *,
+aside td,
+aside td *,
+aside th,
+aside th *,
+aside thead,
+aside thead *,
+aside tbody,
+aside tbody *,
+aside tfoot,
+aside tfoot * {
+  background-color: white !important;
+  background: white !important;
+  color: black !important;
+  fill: black !important;
+  stroke: black !important;
+}

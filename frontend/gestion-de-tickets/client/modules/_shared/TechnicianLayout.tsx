@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Bell, Settings, LogOut, Wrench, FileText, Upload, User } from "lucide-react";
@@ -7,7 +7,6 @@ import { logout, getAuth } from "../auth/auth";
 import NotificationsModal from "../notifications/NotificationsModal";
 import SettingsModal from "../system_configuration/SettingsModal";
 import LogoutModal from "../auth/LogoutModal";
-import { useForceColorApplication } from "../../hooks/useForceColorApplication";
 import "./AppLayout.css";
 
 export default function TechnicianLayout() {
@@ -18,11 +17,13 @@ export default function TechnicianLayout() {
   const [showSettings, setShowSettings] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   
-  // Forzar aplicación de colores del sistema
-  useForceColorApplication();
-  
   const auth = getAuth();
   const userName = auth?.user?.name || t("auth.user");
+  
+  // Configurar título de la página
+  useEffect(() => {
+    document.title = 'NEITickets - Técnico';
+  }, []);
   
   const onLogout = () => { logout(); navigate("/login", { replace: true }); };
   

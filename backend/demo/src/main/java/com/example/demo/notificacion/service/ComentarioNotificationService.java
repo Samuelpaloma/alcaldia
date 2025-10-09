@@ -71,18 +71,18 @@ public class ComentarioNotificationService {
                 if (ticket.getCreator() != null) {
                     destinatarios.add(ticket.getCreator());
                 }
-                // Agregar administradores
+                // Agregar administradores (incluye tanto ADMINISTRADOR como SUPERADMIN)
                 destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.ADMINISTRADOR));
-                destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.SUPERADMIN));
+                // No agregar SUPERADMIN por separado para evitar duplicados
                 
             } else if (usuarioActor.getUserType() == TipoUsuario.FUNCIONARIO) {
                 // Si es funcionario, notificar al técnico asignado y admin
                 if (ticket.getAssignedTechnician() != null) {
                     destinatarios.add(ticket.getAssignedTechnician());
                 }
-                // Agregar administradores
+                // Agregar administradores (incluye tanto ADMINISTRADOR como SUPERADMIN)
                 destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.ADMINISTRADOR));
-                destinatarios.addAll(usuarioRepository.findByUserType(TipoUsuario.SUPERADMIN));
+                // No agregar SUPERADMIN por separado para evitar duplicados
                 
             } else if (usuarioActor.getUserType() == TipoUsuario.ADMINISTRADOR || 
                       usuarioActor.getUserType() == TipoUsuario.SUPERADMIN) {

@@ -11,6 +11,7 @@ import com.example.demo.ticket.model.HistorialEstadoTicket;
 import com.example.demo.ticket.repository.TicketRepository;
 import com.example.demo.ticket.repository.HistorialEstadoTicketRepository;
 import com.example.demo.usuario.model.Usuario;
+import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.notificacion.service.NotificationRoleService;
 import lombok.extern.slf4j.Slf4j;
@@ -86,9 +87,21 @@ public class AsignacionService {
                                  emailAsignador, "ASIGNACION", request.getComentario());
         
         // Enviar notificaciones por roles
+        System.out.println("🔔 [ASIGNACION] ===== ENVIANDO NOTIFICACIONES =====");
+        System.out.println("🔔 [ASIGNACION] Ticket ID: " + ticket.getId());
+        System.out.println("🔔 [ASIGNACION] Admin asignador: " + emailAsignador);
+        System.out.println("🔔 [ASIGNACION] Técnico asignado: " + tecnico.getEmail());
+        System.out.println("🔔 [ASIGNACION] Cliente creador: " + ticket.getCreatorEmail());
+        
         Usuario admin = usuarioRepository.findByEmail(emailAsignador).orElse(null);
-        if (admin != null) {
+        if (admin != null && !TipoUsuario.SUPERADMIN.equals(admin.getUserType())) {
+            System.out.println("🔔 [ASIGNACION] ✅ Admin encontrado, enviando notificaciones...");
             notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
+            System.out.println("🔔 [ASIGNACION] ✅ Notificaciones enviadas");
+        } else if (admin != null && TipoUsuario.SUPERADMIN.equals(admin.getUserType())) {
+            System.out.println("🔔 [ASIGNACION] ⚠️ Saltando notificaciones - asignador es SuperAdmin");
+        } else {
+            System.out.println("🔔 [ASIGNACION] ❌ Admin no encontrado");
         }
         
         return convertirADTO(asignacionGuardada, ticket, tecnico);
@@ -133,7 +146,7 @@ public class AsignacionService {
         
         // Enviar notificaciones por roles
         Usuario admin = usuarioRepository.findByEmail(emailReasignador).orElse(null);
-        if (admin != null) {
+        if (admin != null && !TipoUsuario.SUPERADMIN.equals(admin.getUserType())) {
             notificationRoleService.notificarAsignacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
         }
         
@@ -243,7 +256,7 @@ public class AsignacionService {
         
         // Enviar notificaciones por roles específicas para escalación
         Usuario admin = usuarioRepository.findByEmail(emailEscalador).orElse(null);
-        if (admin != null) {
+        if (admin != null && !TipoUsuario.SUPERADMIN.equals(admin.getUserType())) {
             notificationRoleService.notificarEscalacionTicket(ticket.getId(), admin.getId(), tecnico.getId());
         }
         

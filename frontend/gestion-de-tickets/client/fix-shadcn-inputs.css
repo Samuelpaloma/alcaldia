@@ -1,0 +1,1470 @@
+/* ===== ARREGLAR BORDES DE COMPONENTES SHADCN/UI ===== */
+
+/* Input component de shadcn/ui */
+.input,
+[class*="input"],
+input[class*="border-input"],
+input[class*="bg-background"],
+/* Forzar TODOS los inputs de shadcn/ui */
+input.flex,
+input.h-10,
+input.w-full,
+input.rounded-md,
+input.border,
+input.px-3,
+input.py-2,
+input.text-base,
+input.md\\:text-sm,
+/* Inputs específicos de shadcn/ui con todas las clases */
+input.flex.w-full.rounded-md.border,
+input.border-input.bg-background,
+input.ring-offset-background,
+input.file\\:border-0,
+input.file\\:bg-transparent,
+input.file\\:text-sm,
+input.file\\:font-medium,
+input.file\\:text-foreground,
+input.placeholder\\:text-muted-foreground,
+input.focus-visible\\:outline-none,
+input.focus-visible\\:ring-2,
+input.focus-visible\\:ring-ring,
+input.focus-visible\\:ring-offset-2,
+input.disabled\\:cursor-not-allowed,
+input.disabled\\:opacity-50 {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: transparent !important;
+  color: var(--system-text, #000000) !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  height: 40px !important;
+  box-shadow: none !important;
+  font-weight: 500 !important;
+}
+
+/* Focus state para inputs de shadcn/ui */
+.input:focus,
+[class*="input"]:focus,
+input[class*="border-input"]:focus,
+input[class*="bg-background"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  background-color: transparent !important;
+}
+
+/* Hover state para inputs de shadcn/ui */
+.input:hover,
+[class*="input"]:hover,
+input[class*="border-input"]:hover,
+input[class*="bg-background"]:hover {
+  border-color: #9ca3af !important;
+  background-color: transparent !important;
+}
+
+/* Disabled state para inputs de shadcn/ui */
+.input:disabled,
+[class*="input"]:disabled,
+input[class*="border-input"]:disabled,
+input[class*="bg-background"]:disabled {
+  background-color: transparent !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  border-color: #e5e7eb !important;
+  opacity: 0.5 !important;
+}
+
+/* Placeholder para inputs de shadcn/ui */
+.input::placeholder,
+[class*="input"]::placeholder,
+input[class*="border-input"]::placeholder,
+input[class*="bg-background"]::placeholder,
+input[class*="text-foreground"]::placeholder,
+input[class*="ring-offset-background"]::placeholder,
+input[class*="placeholder:text-muted-foreground"]::placeholder,
+input.flex::placeholder,
+input.h-10::placeholder,
+input.w-full::placeholder,
+input.rounded-md::placeholder,
+input.border::placeholder,
+input.px-3::placeholder,
+input.py-2::placeholder,
+input.text-base::placeholder,
+input.md\\:text-sm::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+/* Select component de shadcn/ui */
+.select,
+[class*="select"],
+select[class*="border-input"],
+select[class*="bg-background"] {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  height: 40px !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") !important;
+  background-position: right 12px center !important;
+  background-repeat: no-repeat !important;
+  background-size: 16px !important;
+  padding-right: 40px !important;
+}
+
+/* Focus state para selects de shadcn/ui */
+.select:focus,
+[class*="select"]:focus,
+select[class*="border-input"]:focus,
+select[class*="bg-background"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Textarea component de shadcn/ui */
+.textarea,
+[class*="textarea"],
+textarea[class*="border-input"],
+textarea[class*="bg-background"] {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  resize: vertical !important;
+  min-height: 80px !important;
+}
+
+/* Focus state para textareas de shadcn/ui */
+.textarea:focus,
+[class*="textarea"]:focus,
+textarea[class*="border-input"]:focus,
+textarea[class*="bg-background"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Forzar estilos en TODOS los inputs dentro de modales */
+.modal-overlay .input,
+.modal-content .input,
+.modal-body .input,
+.modal .input,
+[class*="modal"] .input,
+.modal-overlay [class*="input"],
+.modal-content [class*="input"],
+.modal-body [class*="input"],
+.modal [class*="input"],
+[class*="modal"] [class*="input"] {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: transparent !important;
+  color: var(--system-text, #1f2937) !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  height: 40px !important;
+}
+
+.modal-overlay .input:focus,
+.modal-content .input:focus,
+.modal-body .input:focus,
+.modal .input:focus,
+[class*="modal"] .input:focus,
+.modal-overlay [class*="input"]:focus,
+.modal-content [class*="input"]:focus,
+.modal-body [class*="input"]:focus,
+.modal [class*="input"]:focus,
+[class*="modal"] [class*="input"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Forzar estilos en TODOS los inputs dentro de formularios */
+.form-group .input,
+.form-group [class*="input"],
+.form-grid .input,
+.form-grid [class*="input"] {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: transparent !important;
+  color: var(--system-text, #1f2937) !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  height: 40px !important;
+}
+
+.form-group .input:focus,
+.form-group [class*="input"]:focus,
+.form-grid .input:focus,
+.form-grid [class*="input"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Forzar estilos en TODOS los inputs dentro del módulo de usuarios */
+.users-module .input,
+.users-module [class*="input"],
+.users-management .input,
+.users-management [class*="input"] {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: transparent !important;
+  color: var(--system-text, #1f2937) !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  height: 40px !important;
+}
+
+.users-module .input:focus,
+.users-module [class*="input"]:focus,
+.users-management .input:focus,
+.users-management [class*="input"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* NUCLEAR: Forzar TODOS los inputs que usan variables CSS de shadcn/ui */
+input[class*="border-input"],
+input[class*="bg-background"],
+input[class*="text-foreground"],
+input[class*="ring-offset-background"],
+input[class*="placeholder:text-muted-foreground"] {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: transparent !important;
+  color: var(--system-text, #000000) !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  height: 40px !important;
+  box-shadow: none !important;
+  font-weight: 500 !important;
+}
+
+input[class*="border-input"]:focus,
+input[class*="bg-background"]:focus,
+input[class*="text-foreground"]:focus,
+input[class*="ring-offset-background"]:focus,
+input[class*="placeholder:text-muted-foreground"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* ULTRA NUCLEAR: Forzar TODOS los inputs sin importar las clases */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"] {
+  border: 1px solid #d1d5db !important;
+  border-radius: 8px !important;
+  background-color: transparent !important;
+  color: var(--system-text, #000000) !important;
+  padding: 10px 12px !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  height: 40px !important;
+  box-shadow: none !important;
+  font-weight: 500 !important;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="tel"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* ===== ARREGLAR TEXTO DE BOTONES ===== */
+
+/* Botones de shadcn/ui - Forzar texto negro */
+button,
+.btn,
+[class*="btn"],
+button[class*="bg-primary"],
+button[class*="text-primary-foreground"],
+button[class*="hover:bg-primary"],
+button[class*="create-btn"],
+button[class*="inline-flex"],
+button[class*="items-center"],
+button[class*="justify-center"],
+button[class*="gap-2"],
+button[class*="whitespace-nowrap"],
+button[class*="rounded-md"],
+button[class*="text-sm"],
+button[class*="font-medium"],
+button[class*="ring-offset-background"],
+button[class*="transition-colors"],
+button[class*="focus-visible:outline-none"],
+button[class*="focus-visible:ring-2"],
+button[class*="focus-visible:ring-ring"],
+button[class*="focus-visible:ring-offset-2"],
+button[class*="disabled:pointer-events-none"],
+button[class*="disabled:opacity-50"] {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* NUCLEAR: Forzar TODOS los botones sin importar las clases */
+button {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* Texto dentro de botones */
+button *,
+button span,
+button div,
+button p {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* Iconos dentro de botones */
+button svg,
+button [class*="lucide"] {
+  color: #000000 !important;
+  fill: #000000 !important;
+  stroke: #000000 !important;
+}
+
+/* Botones con fondo primario - mantener contraste */
+button[class*="bg-primary"],
+button[class*="text-primary-foreground"] {
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #000000 !important;
+}
+
+button[class*="bg-primary"]:hover,
+button[class*="text-primary-foreground"]:hover,
+button[class*="hover:bg-primary"] {
+  background-color: #f3f4f6 !important;
+  color: #000000 !important;
+}
+
+/* ===== ARREGLAR ICONOS EN INPUTS DE BÚSQUEDA ===== */
+
+/* Inputs con iconos de búsqueda - agregar padding izquierdo */
+input[type="search"],
+input[placeholder*="Buscar"],
+input[placeholder*="buscar"],
+input[placeholder*="Search"],
+input[placeholder*="search"],
+.search-input,
+.filter-input,
+[class*="search"],
+[class*="Search"] {
+  padding-left: 40px !important;  /* Espacio para el icono */
+  background-position: left 12px center !important;
+  background-repeat: no-repeat !important;
+  background-size: 16px !important;
+}
+
+/* Inputs que tienen iconos dentro (con SVG o iconos) */
+.input-with-icon,
+.input-container input,
+.search-container input,
+.filter-container input,
+[class*="input-container"] input,
+[class*="search-container"] input,
+[class*="filter-container"] input {
+  padding-left: 40px !important;
+}
+
+/* Contenedores de inputs con iconos */
+.input-container,
+.search-container,
+.filter-container,
+[class*="input-container"],
+[class*="search-container"],
+[class*="filter-container"] {
+  position: relative !important;
+}
+
+/* Iconos dentro de contenedores de inputs */
+.input-container svg,
+.search-container svg,
+.filter-container svg,
+[class*="input-container"] svg,
+[class*="search-container"] svg,
+[class*="filter-container"] svg,
+.input-container [class*="lucide"],
+.search-container [class*="lucide"],
+.filter-container [class*="lucide"],
+[class*="input-container"] [class*="lucide"],
+[class*="search-container"] [class*="lucide"],
+[class*="filter-container"] [class*="lucide"] {
+  position: absolute !important;
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+  color: #6b7280 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* NUCLEAR: Forzar padding izquierdo en TODOS los inputs que podrían tener iconos */
+input {
+  padding-left: 12px !important;
+}
+
+/* Excepción: inputs con iconos necesitan más padding - MÁS ESPECÍFICO */
+.relative input,
+div.relative input,
+[class*="relative"] input,
+input.pl-10,
+input[class*="pl-10"],
+.search-input,
+.filter-input {
+  padding-left: 40px !important;
+}
+
+/* NO aplicar padding extra a inputs que ya tienen padding específico */
+input.pl-3,
+input.px-3,
+input[class*="pl-3"],
+input[class*="px-3"] {
+  padding-left: 12px !important;
+}
+
+/* Forzar iconos a estar en la izquierda y no superponerse */
+svg[class*="lucide-search"],
+svg[class*="lucide-magnifying-glass"],
+svg[class*="lucide-search-2"],
+[class*="lucide-search"],
+[class*="lucide-magnifying-glass"],
+[class*="lucide-search-2"],
+/* Iconos de búsqueda específicos */
+.relative svg,
+div.relative svg,
+[class*="relative"] svg,
+.search-icon,
+.filter-icon {
+  position: absolute !important;
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+  color: #6b7280 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Asegurar que los contenedores de búsqueda tengan posición relativa */
+.relative,
+div.relative,
+[class*="relative"],
+.search-container,
+.filter-container {
+  position: relative !important;
+}
+
+/* Asegurar que los inputs dentro de contenedores relativos tengan el padding correcto */
+.relative input,
+div.relative input,
+[class*="relative"] input,
+.search-container input,
+.filter-container input {
+  padding-left: 40px !important;
+}
+
+/* ===== ARREGLAR INPUTS ESPECÍFICOS DE SHADCN/UI ===== */
+
+/* Inputs con todas las clases de shadcn/ui - FORZAR COLOR */
+input.flex.w-full.rounded-md.border.border-input.bg-background.px-3.py-2.text-base,
+input.flex.w-full.rounded-md.border.border-input.bg-background.px-3.py-2.md\\:text-sm,
+input.pl-10.h-9,
+input[placeholder*="Buscar"],
+input[placeholder*="buscar"],
+/* Aplicar a TODOS los inputs que tengan estas clases */
+input[class*="flex"][class*="w-full"][class*="rounded-md"][class*="border"],
+input[class*="border-input"][class*="bg-background"],
+input[class*="px-3"][class*="py-2"],
+input[class*="text-base"],
+input[class*="md:text-sm"],
+input[class*="pl-10"][class*="h-9"] {
+  color: #ffffff !important;
+  background-color: transparent !important;
+  border: 1px solid #444444 !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+
+/* Placeholder específico para estos inputs */
+input.flex.w-full.rounded-md.border.border-input.bg-background.px-3.py-2.text-base::placeholder,
+input.flex.w-full.rounded-md.border.border-input.bg-background.px-3.py-2.md\\:text-sm::placeholder,
+input.pl-10.h-9::placeholder,
+input[placeholder*="Buscar"]::placeholder,
+input[placeholder*="buscar"]::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+/* Focus state para estos inputs específicos */
+input.flex.w-full.rounded-md.border.border-input.bg-background.px-3.py-2.text-base:focus,
+input.flex.w-full.rounded-md.border.border-input.bg-background.px-3.py-2.md\\:text-sm:focus,
+input.pl-10.h-9:focus,
+input[placeholder*="Buscar"]:focus,
+input[placeholder*="buscar"]:focus,
+input[class*="flex"][class*="w-full"][class*="rounded-md"][class*="border"]:focus,
+input[class*="border-input"][class*="bg-background"]:focus,
+input[class*="px-3"][class*="py-2"]:focus,
+input[class*="text-base"]:focus,
+input[class*="md:text-sm"]:focus,
+input[class*="pl-10"][class*="h-9"]:focus {
+  outline: none !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* ===== NUCLEAR: FORZAR COLOR BLANCO EN TEMA OSCURO ===== */
+
+/* Cuando el body tiene fondo oscuro, forzar texto blanco en TODOS los inputs */
+body[style*="background-color: rgb(15, 15, 15)"],
+body[style*="background-color: #0f0f0f"],
+html[style*="background-color: rgb(15, 15, 15)"],
+html[style*="background-color: #0f0f0f"] {
+  input {
+    color: #ffffff !important;
+    background-color: transparent !important;
+    border-color: #444444 !important;
+  }
+  
+  input::placeholder {
+    color: #cccccc !important;
+    opacity: 1 !important;
+  }
+  
+  input:focus {
+    color: #ffffff !important;
+    background-color: transparent !important;
+  }
+}
+
+/* ===== ARREGLAR CONTENEDOR DE BOTONES FLOTANTES ===== */
+
+/* Quitar fondo del contenedor de botones flotantes */
+.fixed.top-6.right-6,
+.fixed.top-4.right-4,
+.fixed.top-6.right-6[style*="background-color"],
+.fixed.top-4.right-4[style*="background-color"] {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+/* Arreglar iconos de botones flotantes - COLOR DINÁMICO */
+.fixed.top-6.right-6 button svg,
+.fixed.top-4.right-4 button svg,
+button[aria-label="Notifications"] svg,
+button[aria-label="Settings"] svg,
+button[aria-label="Logout"] svg,
+button[aria-label="Notifications"] .lucide-bell,
+button[aria-label="Settings"] .lucide-settings,
+button[aria-label="Logout"] .lucide-log-out,
+.lucide-bell,
+.lucide-settings,
+.lucide-log-out {
+  width: 20px !important;
+  height: 20px !important;
+  color: var(--system-text, #000000) !important; /* Color dinámico */
+  fill: none !important;
+  stroke: var(--system-text, #000000) !important; /* Color dinámico */
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+/* Botones flotantes SIN FONDO - SOLO ICONOS VISIBLES */
+.fixed.top-6.right-6 button,
+.fixed.top-4.right-4 button,
+button[aria-label="Notifications"],
+button[aria-label="Settings"],
+button[aria-label="Logout"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+  padding: 8px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1000 !important;
+}
+
+/* Hover state para botones flotantes - SIN FONDO */
+.fixed.top-6.right-6 button:hover,
+.fixed.top-4.right-4 button:hover,
+button[aria-label="Notifications"]:hover,
+button[aria-label="Settings"]:hover,
+button[aria-label="Logout"]:hover {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* ===== ARREGLAR BADGE DE NOTIFICACIONES ===== */
+
+/* Badge rojo de notificaciones - posicionamiento absoluto */
+button[aria-label="Notifications"] .absolute,
+button[aria-label="Notifications"] span[class*="absolute"],
+button[aria-label="Notifications"] .bg-red-500 {
+  position: absolute !important;
+  top: -2px !important;
+  right: -2px !important;
+  width: 12px !important;
+  height: 12px !important;
+  background-color: #ef4444 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 8px !important;
+  font-weight: bold !important;
+  color: white !important;
+  z-index: 10 !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Asegurar que el badge no afecte el tamaño del botón */
+button[aria-label="Notifications"] {
+  overflow: visible !important;
+}
+
+/* ===== ARREGLAR ALINEACIÓN DEL ICONO DE NOTIFICACIONES ===== */
+
+/* Forzar alineación vertical perfecta del icono de notificaciones */
+button[aria-label="Notifications"] svg,
+button[aria-label="Notifications"] .lucide-bell {
+  vertical-align: middle !important;
+  align-self: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: translateY(0) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Asegurar que el contenedor del icono de notificaciones esté centrado */
+button[aria-label="Notifications"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+}
+
+/* ===== FORZAR ICONOS IDÉNTICOS - NUCLEAR ===== */
+
+/* NUCLEAR: Asegurar que TODOS los iconos flotantes sean EXACTAMENTE iguales */
+.fixed.top-6.right-6 .lucide,
+.fixed.top-4.right-4 .lucide,
+.fixed.top-6.right-6 svg,
+.fixed.top-4.right-4 svg,
+.fixed.top-6.right-6 button svg,
+.fixed.top-4.right-4 button svg,
+.fixed.top-6.right-6 button .lucide,
+.fixed.top-4.right-4 button .lucide {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+  color: #ffffff !important;
+  fill: none !important;
+  stroke: #ffffff !important;
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  font-size: 20px !important;
+  line-height: 20px !important;
+  box-sizing: border-box !important;
+}
+
+/* Específicamente el icono de notificaciones - COLOR DINÁMICO */
+button[aria-label="Notifications"] .lucide-bell,
+button[aria-label="Notifications"] svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: var(--system-text, #000000) !important; /* Color dinámico */
+  fill: none !important;
+  stroke: var(--system-text, #000000) !important; /* Color dinámico */
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* Específicamente el icono de configuraciones - COLOR DINÁMICO */
+button[aria-label="Settings"] .lucide-settings,
+button[aria-label="Settings"] svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: var(--system-text, #000000) !important; /* Color dinámico */
+  fill: none !important;
+  stroke: var(--system-text, #000000) !important; /* Color dinámico */
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* Específicamente el icono de logout - COLOR DINÁMICO */
+button[aria-label="Logout"] .lucide-log-out,
+button[aria-label="Logout"] svg {
+  width: 20px !important;
+  height: 20px !important;
+  color: var(--system-text, #000000) !important; /* Color dinámico */
+  fill: none !important;
+  stroke: var(--system-text, #000000) !important; /* Color dinámico */
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* ===== NUCLEAR ABSOLUTO - FORZAR IGUALDAD TOTAL ===== */
+
+/* Forzar que TODOS los SVG dentro de los botones flotantes sean idénticos - COLOR DINÁMICO */
+.fixed.top-6.right-6 svg,
+.fixed.top-4.right-4 svg {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+  color: var(--system-text, #000000) !important; /* Color dinámico */
+  fill: none !important;
+  stroke: var(--system-text, #000000) !important; /* Color dinámico */
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  font-size: 20px !important;
+  line-height: 20px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* Forzar que TODOS los elementos .lucide sean idénticos - COLOR DINÁMICO */
+.fixed.top-6.right-6 .lucide,
+.fixed.top-4.right-4 .lucide {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+  color: var(--system-text, #000000) !important; /* Color dinámico */
+  fill: none !important;
+  stroke: var(--system-text, #000000) !important; /* Color dinámico */
+  stroke-width: 2px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  font-size: 20px !important;
+  line-height: 20px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  scale: 1 !important;
+}
+
+/* ===== ALINEACIÓN PERFECTA DE TODOS LOS ICONOS ===== */
+
+/* Forzar que TODOS los iconos estén alineados exactamente igual */
+.fixed.top-6.right-6 button svg,
+.fixed.top-4.right-4 button svg,
+button[aria-label="Notifications"] svg,
+button[aria-label="Settings"] svg,
+button[aria-label="Logout"] svg {
+  vertical-align: middle !important;
+  align-self: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: translateY(0) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 1001 !important;
+}
+
+/* ===== FORZAR VISIBILIDAD DE ICONOS FLOTANTES ===== */
+
+/* Asegurar que los iconos flotantes sean completamente visibles */
+.fixed.top-6.right-6,
+.fixed.top-4.right-4,
+.fixed.top-6.right-6 button,
+.fixed.top-4.right-4 button {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+  z-index: 1000 !important;
+  position: fixed !important;
+}
+
+/* Forzar que los SVG dentro de los botones sean visibles */
+.fixed.top-6.right-6 button svg,
+.fixed.top-4.right-4 button svg {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-block !important;
+  z-index: 1001 !important;
+}
+
+/* ===== NUCLEAR: FORZAR VISIBILIDAD TOTAL DE BOTONES FLOTANTES ===== */
+
+/* Forzar que el contenedor de botones flotantes sea visible */
+div.hidden.md\:flex.fixed.top-6.right-6,
+div.hidden.md\:flex.fixed.top-4.right-4,
+div[class*="hidden md:flex fixed top-6 right-6"],
+div[class*="hidden md:flex fixed top-4 right-4"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+  position: fixed !important;
+  top: 24px !important;
+  right: 24px !important;
+  z-index: 1000 !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Forzar que TODOS los botones dentro del contenedor sean visibles */
+div.hidden.md\:flex.fixed.top-6.right-6 button,
+div.hidden.md\:flex.fixed.top-4.right-4 button,
+div[class*="hidden md:flex fixed top-6 right-6"] button,
+div[class*="hidden md:flex fixed top-4 right-4"] button {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: flex !important;
+  position: relative !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 8px !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 8px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 1001 !important;
+  box-shadow: none !important;
+}
+
+/* Forzar que TODOS los SVG dentro de estos botones sean visibles */
+div.hidden.md\:flex.fixed.top-6.right-6 button svg,
+div.hidden.md\:flex.fixed.top-4.right-4 button svg,
+div[class*="hidden md:flex fixed top-6 right-6"] button svg,
+div[class*="hidden md:flex fixed top-4 right-4"] button svg {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-block !important;
+  width: 20px !important;
+  height: 20px !important;
+  color: var(--system-text, #000000) !important;
+  stroke: var(--system-text, #000000) !important;
+  fill: none !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  z-index: 1002 !important;
+}
+
+/* ===== MODO OSCURO: ICONOS BLANCOS ===== */
+
+/* Cuando el body tiene fondo oscuro, forzar iconos blancos */
+body[style*="background-color: rgb(15, 15, 15)"],
+body[style*="background-color: #0f0f0f"],
+html[style*="background-color: rgb(15, 15, 15)"],
+html[style*="background-color: #0f0f0f"] {
+  /* Iconos flotantes blancos en modo oscuro */
+  div.hidden.md\:flex.fixed.top-6.right-6 button svg,
+  div.hidden.md\:flex.fixed.top-4.right-4 button svg,
+  div[class*="hidden md:flex fixed top-6 right-6"] button svg,
+  div[class*="hidden md:flex fixed top-4 right-4"] button svg,
+  .fixed.top-6.right-6 button svg,
+  .fixed.top-4.right-4 button svg,
+  button[aria-label="Notifications"] svg,
+  button[aria-label="Settings"] svg,
+  button[aria-label="Logout"] svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    fill: none !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+}
+
+/* ===== REGLAS ESPECÍFICAS PARA MODO OSCURO ===== */
+
+/* Detectar modo oscuro por cualquier indicador y forzar iconos blancos */
+body[style*="background-color: rgb(15, 15, 15)"],
+body[style*="background-color: #0f0f0f"],
+body[style*="background-color: rgb(26, 26, 26)"],
+body[style*="background-color: #1a1a1a"],
+html[style*="background-color: rgb(15, 15, 15)"],
+html[style*="background-color: #0f0f0f"],
+html[style*="background-color: rgb(26, 26, 26)"],
+html[style*="background-color: #1a1a1a"] {
+  /* Iconos de notificaciones blancos */
+  button[aria-label="Notifications"] .lucide-bell,
+  button[aria-label="Notifications"] svg,
+  .lucide-bell {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    fill: none !important;
+  }
+  
+  /* Iconos de configuraciones blancos */
+  button[aria-label="Settings"] .lucide-settings,
+  button[aria-label="Settings"] svg,
+  .lucide-settings {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    fill: none !important;
+  }
+  
+  /* Iconos de logout blancos */
+  button[aria-label="Logout"] .lucide-log-out,
+  button[aria-label="Logout"] svg,
+  .lucide-log-out {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    fill: none !important;
+  }
+}
+
+/* ===== MODAL DE NOTIFICACIONES - BOTONES VISIBLES EN AMBOS TEMAS ===== */
+
+/* NUCLEAR: TODOS los botones dentro de modales */
+div[class*="fixed inset-0"] button,
+div[class*="relative w-full max-w-4xl"] button,
+div[class*="bg-[hsl(var(--card))]"] button,
+div[class*="rounded-xl shadow-2xl"] button,
+[data-radix-dialog-content] button,
+.modal button,
+[class*="modal"] button,
+/* TODOS los botones que contengan texto específico */
+button:contains("Recargar"),
+button:contains("Cerrar"),
+button:contains("Filtrar"),
+button:contains("Buscar"),
+button:contains("Marcar"),
+button:contains("Eliminar"),
+button:contains("Ver"),
+button:contains("Ocultar"),
+/* TODOS los botones con iconos */
+button svg,
+button:has(svg),
+/* TODOS los botones en general dentro de modales */
+div.fixed button,
+div.absolute button,
+div.relative button {
+  background-color: transparent !important;
+  border: 1px solid #d1d5db !important;
+  color: #000000 !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 36px !important;
+  min-width: 36px !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+/* Hover state para TODOS los botones del modal */
+div[class*="fixed inset-0"] button:hover,
+div[class*="relative w-full max-w-4xl"] button:hover,
+div[class*="bg-[hsl(var(--card))]"] button:hover,
+div[class*="rounded-xl shadow-2xl"] button:hover,
+[data-radix-dialog-content] button:hover,
+.modal button:hover,
+[class*="modal"] button:hover,
+div.fixed button:hover,
+div.absolute button:hover,
+div.relative button:hover,
+button:hover {
+  background-color: #f3f4f6 !important;
+  border-color: #9ca3af !important;
+  color: #000000 !important;
+}
+
+/* Iconos dentro de TODOS los botones del modal - TEMA CLARO */
+div[class*="fixed inset-0"] button svg,
+div[class*="relative w-full max-w-4xl"] button svg,
+div[class*="bg-[hsl(var(--card))]"] button svg,
+div[class*="rounded-xl shadow-2xl"] button svg,
+[data-radix-dialog-content] button svg,
+.modal button svg,
+[class*="modal"] button svg,
+div.fixed button svg,
+div.absolute button svg,
+div.relative button svg,
+button svg {
+  width: 16px !important;
+  height: 16px !important;
+  color: #000000 !important;
+  stroke: #000000 !important;
+  fill: none !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* ===== MODO OSCURO: BOTONES DEL MODAL BLANCOS ===== */
+
+/* Botones del modal en modo oscuro */
+body[style*="background-color: rgb(15, 15, 15)"],
+body[style*="background-color: #0f0f0f"],
+body[style*="background-color: rgb(26, 26, 26)"],
+body[style*="background-color: #1a1a1a"],
+html[style*="background-color: rgb(15, 15, 15)"],
+html[style*="background-color: #0f0f0f"],
+html[style*="background-color: rgb(26, 26, 26)"],
+html[style*="background-color: #1a1a1a"] {
+  /* TODOS los botones del modal - modo oscuro */
+  div[class*="fixed inset-0"] button,
+  div[class*="relative w-full max-w-4xl"] button,
+  div[class*="bg-[hsl(var(--card))]"] button,
+  div[class*="rounded-xl shadow-2xl"] button,
+  [data-radix-dialog-content] button,
+  .modal button,
+  [class*="modal"] button,
+  div.fixed button,
+  div.absolute button,
+  div.relative button,
+  button {
+    background-color: transparent !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    min-height: 36px !important;
+    min-width: 36px !important;
+  }
+  
+  /* Hover state para TODOS los botones del modal en modo oscuro */
+  div[class*="fixed inset-0"] button:hover,
+  div[class*="relative w-full max-w-4xl"] button:hover,
+  div[class*="bg-[hsl(var(--card))]"] button:hover,
+  div[class*="rounded-xl shadow-2xl"] button:hover,
+  [data-radix-dialog-content] button:hover,
+  .modal button:hover,
+  [class*="modal"] button:hover,
+  div.fixed button:hover,
+  div.absolute button:hover,
+  div.relative button:hover,
+  button:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: #666666 !important;
+    color: #ffffff !important;
+  }
+  
+  /* Iconos dentro de TODOS los botones del modal en modo oscuro */
+  div[class*="fixed inset-0"] button svg,
+  div[class*="relative w-full max-w-4xl"] button svg,
+  div[class*="bg-[hsl(var(--card))]"] button svg,
+  div[class*="rounded-xl shadow-2xl"] button svg,
+  [data-radix-dialog-content] button svg,
+  .modal button svg,
+  [class*="modal"] button svg,
+  div.fixed button svg,
+  div.absolute button svg,
+  div.relative button svg,
+  button svg {
+    width: 16px !important;
+    height: 16px !important;
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    fill: none !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+
+/* ===== FORZAR VISIBILIDAD DE ICONOS EN BOTONES ===== */
+
+/* Forzar que TODOS los iconos dentro de botones sean visibles y centrados - NUCLEAR */
+button svg,
+button .lucide,
+button [class*="lucide"],
+button i,
+button [class*="icon"],
+div[class*="fixed inset-0"] button svg,
+div[class*="relative w-full max-w-4xl"] button svg,
+div[class*="bg-[hsl(var(--card))]"] button svg,
+div[class*="rounded-xl shadow-2xl"] button svg,
+[data-radix-dialog-content] button svg,
+.modal button svg,
+[class*="modal"] button svg,
+div.fixed button svg,
+div.absolute button svg,
+div.relative button svg {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  min-height: 16px !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+  color: #000000 !important;
+  stroke: #000000 !important;
+  fill: none !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: inline-block !important;
+  position: relative !important;
+  z-index: 10 !important;
+  vertical-align: middle !important;
+  margin: auto !important;
+  align-self: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Centrar iconos específicamente dentro de botones - MODO CLARO */
+button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+/* Asegurar que los iconos estén perfectamente centrados - MODO CLARO */
+button > svg,
+button > .lucide,
+button > [class*="lucide"],
+button > i,
+button > [class*="icon"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  transform: none !important;
+  align-self: center !important;
+  justify-self: center !important;
+}
+
+/* ===== MODO CLARO: CENTRADO ESPECÍFICO ===== */
+
+/* Cuando NO es modo oscuro, aplicar centrado específico */
+body:not([style*="background-color: rgb(15, 15, 15)"]):not([style*="background-color: #0f0f0f"]):not([style*="background-color: rgb(26, 26, 26)"]):not([style*="background-color: #1a1a1a"]),
+html:not([style*="background-color: rgb(15, 15, 15)"]):not([style*="background-color: #0f0f0f"]):not([style*="background-color: rgb(26, 26, 26)"]):not([style*="background-color: #1a1a1a"]) {
+  /* Centrar TODOS los botones en modo claro */
+  button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+  }
+  
+  /* Centrar TODOS los iconos en modo claro */
+  button svg,
+  button .lucide,
+  button [class*="lucide"],
+  button i,
+  button [class*="icon"],
+  div[class*="fixed inset-0"] button svg,
+  div[class*="relative w-full max-w-4xl"] button svg,
+  div[class*="bg-[hsl(var(--card))]"] button svg,
+  div[class*="rounded-xl shadow-2xl"] button svg,
+  [data-radix-dialog-content] button svg,
+  .modal button svg,
+  [class*="modal"] button svg,
+  div.fixed button svg,
+  div.absolute button svg,
+  div.relative button svg {
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    align-self: center !important;
+    justify-self: center !important;
+    vertical-align: middle !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Centrado específico para iconos hijos directos */
+  button > svg,
+  button > .lucide,
+  button > [class*="lucide"],
+  button > i,
+  button > [class*="icon"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    align-self: center !important;
+    justify-self: center !important;
+    vertical-align: middle !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+
+/* ===== TOAST DE NOTIFICACIONES ===== */
+
+/* Toast de notificaciones - tema claro */
+.notification-toast {
+  background-color: #ffffff !important;
+  border-color: #e5e7eb !important;
+  color: #000000 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.notification-toast .text-gray-900 {
+  color: #000000 !important;
+}
+
+.notification-toast .text-blue-500 {
+  color: #3b82f6 !important;
+}
+
+.notification-toast .text-blue-600 {
+  color: #2563eb !important;
+}
+
+.notification-toast .bg-blue-50 {
+  background-color: #eff6ff !important;
+}
+
+.notification-toast .hover\:bg-blue-100:hover {
+  background-color: #dbeafe !important;
+}
+
+.notification-toast .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.notification-toast .hover\:text-gray-700:hover {
+  color: #374151 !important;
+}
+
+.notification-toast .hover\:bg-gray-50:hover {
+  background-color: #f9fafb !important;
+}
+
+.notification-toast .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.notification-toast .hover\:text-gray-600:hover {
+  color: #4b5563 !important;
+}
+
+/* MODO OSCURO: Toast de notificaciones */
+body[style*="background-color: rgb(15, 15, 15)"],
+body[style*="background-color: #0f0f0f"],
+body[style*="background-color: rgb(26, 26, 26)"],
+body[style*="background-color: #1a1a1a"],
+html[style*="background-color: rgb(15, 15, 15)"],
+html[style*="background-color: #0f0f0f"],
+html[style*="background-color: rgb(26, 26, 26)"],
+html[style*="background-color: #1a1a1a"] {
+  .notification-toast {
+    background-color: #1a1a1a !important;
+    border-color: #374151 !important;
+    color: #ffffff !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .notification-toast .text-gray-900 {
+    color: #ffffff !important;
+  }
+
+  .notification-toast .text-blue-500 {
+    color: #60a5fa !important;
+  }
+
+  .notification-toast .text-blue-600 {
+    color: #93c5fd !important;
+  }
+
+  .notification-toast .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+  }
+
+  .notification-toast .hover\:bg-blue-100:hover {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+  }
+
+  .notification-toast .text-gray-500 {
+    color: #9ca3af !important;
+  }
+
+  .notification-toast .hover\:text-gray-700:hover {
+    color: #d1d5db !important;
+  }
+
+  .notification-toast .hover\:bg-gray-50:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .notification-toast .text-gray-400 {
+    color: #6b7280 !important;
+  }
+
+  .notification-toast .hover\:text-gray-600:hover {
+    color: #9ca3af !important;
+  }
+}
+
+/* MODO OSCURO: Iconos blancos */
+body[style*="background-color: rgb(15, 15, 15)"],
+body[style*="background-color: #0f0f0f"],
+body[style*="background-color: rgb(26, 26, 26)"],
+body[style*="background-color: #1a1a1a"],
+html[style*="background-color: rgb(15, 15, 15)"],
+html[style*="background-color: #0f0f0f"],
+html[style*="background-color: rgb(26, 26, 26)"],
+html[style*="background-color: #1a1a1a"] {
+  button svg,
+  button .lucide,
+  button [class*="lucide"],
+  button i,
+  button [class*="icon"],
+  div[class*="fixed inset-0"] button svg,
+  div[class*="relative w-full max-w-4xl"] button svg,
+  div[class*="bg-[hsl(var(--card))]"] button svg,
+  div[class*="rounded-xl shadow-2xl"] button svg,
+  [data-radix-dialog-content] button svg,
+  .modal button svg,
+  [class*="modal"] button svg,
+  div.fixed button svg,
+  div.absolute button svg,
+  div.relative button svg {
+    color: #ffffff !important;
+    stroke: #ffffff !important;
+    fill: none !important;
+    stroke-width: 2 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: inline-block !important;
+    position: relative !important;
+    z-index: 10 !important;
+    vertical-align: middle !important;
+    margin: auto !important;
+    align-self: center !important;
+    flex-shrink: 0 !important;
+  }
+  
+  /* Centrar iconos específicamente dentro de botones en modo oscuro */
+  button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+  }
+  
+  /* Asegurar que los iconos estén perfectamente centrados en modo oscuro */
+  button > svg,
+  button > .lucide,
+  button > [class*="lucide"],
+  button > i,
+  button > [class*="icon"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform: none !important;
+    align-self: center !important;
+    justify-self: center !important;
+  }
+}
+

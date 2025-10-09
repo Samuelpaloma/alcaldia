@@ -12,7 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import com.example.demo.superadmin.util.TemaUtil;
 
 @Service
 @RequiredArgsConstructor
@@ -164,6 +166,58 @@ public class ConfiguracionService {
                 .categoria("colores")
                 .descripcion("Color de contenedores secundarios del sistema")
                 .build());
+        }
+    }
+    
+    /**
+     * Actualizar tema del sistema
+     */
+    public void actualizarTema(String tema) {
+        log.info("Actualizando tema del sistema a: {}", tema);
+        
+        // Obtener colores del tema seleccionado
+        Map<String, String> coloresTema = TemaUtil.obtenerColoresPorTema(tema);
+        
+        // Actualizar cada color individualmente
+        for (Map.Entry<String, String> entry : coloresTema.entrySet()) {
+            String clave = entry.getKey();
+            String valor = entry.getValue();
+            
+            crearOActualizarConfiguracion(ConfiguracionRequestDTO.builder()
+                .clave(clave)
+                .valor(valor)
+                .categoria("colores")
+                .descripcion("Color del tema " + tema)
+                .build());
+        }
+        
+        // Guardar el tema actual como configuración
+        crearOActualizarConfiguracion(ConfiguracionRequestDTO.builder()
+            .clave("tema_actual")
+            .valor(tema)
+            .categoria("tema")
+            .descripcion("Tema actual del sistema")
+            .build());
+        
+        log.info("Tema actualizado exitosamente a: {}", tema);
+    }
+    
+    /**
+     * Obtener tema actual del sistema
+     */
+    public String obtenerTemaActual() {
+        log.info("Obteniendo tema actual del sistema");
+        
+        Optional<ConfiguracionSistema> temaConfig = configuracionRepository
+            .findByClave("tema_actual");
+        
+        if (temaConfig.isPresent() && temaConfig.get().isActiva()) {
+            String tema = temaConfig.get().getValor();
+            log.info("Tema actual encontrado: {}", tema);
+            return tema;
+        } else {
+            log.info("No se encontró tema configurado, usando tema claro por defecto");
+            return "claro";
         }
     }
     

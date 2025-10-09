@@ -2,19 +2,22 @@
   padding: 0.5rem 0.75rem; 
   border-radius: 0.5rem; 
   transition: all 0.2s;
+  background-color: transparent !important;
+  color: black !important;
 }
 .nav-link:hover { 
-  background: hsl(var(--muted)); 
-  color: hsl(var(--foreground));
+  background-color: #f3f4f6 !important;
+  color: black !important;
 }
 .nav-link.active { 
-  background: hsl(var(--primary)); 
-  color: hsl(var(--primary-foreground)); 
+  background-color: #f3f4f6 !important;
+  color: black !important;
 }
 .nav-section { 
   font-size: .75rem; 
   text-transform: uppercase; 
   letter-spacing: .06em; 
-  color: hsl(var(--muted-foreground)); 
+  color: black !important;
   margin: .5rem .25rem; 
+  background-color: transparent !important;
 }

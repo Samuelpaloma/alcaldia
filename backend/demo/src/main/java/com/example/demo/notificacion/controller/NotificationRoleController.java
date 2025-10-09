@@ -4,6 +4,7 @@ import com.example.demo.notificacion.model.Notification;
 import com.example.demo.notificacion.repository.NotificationRepository;
 import com.example.demo.notificacion.service.NotificationRoleService;
 import com.example.demo.usuario.model.Usuario;
+import com.example.demo.usuario.model.TipoUsuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -366,7 +367,7 @@ public class NotificationRoleController {
             
             // Verificar si el creador es SuperAdmin antes de notificar
             Usuario creador = usuarioRepository.findById(creatorId).orElse(null);
-            if (creador != null && "Super Administrador".equals(creador.getFullName() + " " + creador.getLastName())) {
+            if (creador != null && TipoUsuario.SUPERADMIN.equals(creador.getUserType())) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("message", "Notificación saltada - creador es SuperAdmin");
                 response.put("status", "skipped");
@@ -506,6 +507,10 @@ public class NotificationRoleController {
         try {
             Usuario usuario = usuarioRepository.findByEmail(email).orElse(null);
             if (usuario != null && usuario.getUserType() != null) {
+                // Tratar SUPERADMIN como administrador para las notificaciones
+                if (usuario.getUserType() == TipoUsuario.SUPERADMIN) {
+                    return "administrador";
+                }
                 return usuario.getUserType().toString().toLowerCase();
             }
         } catch (Exception e) {

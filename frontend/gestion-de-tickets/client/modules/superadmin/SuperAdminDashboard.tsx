@@ -18,6 +18,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
   const [error, setError] = useState<string | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [editingConfig, setEditingConfig] = useState<ConfiguracionRequestDTO | null>(null);
+  const [temaActual, setTemaActual] = useState<string>('claro');
 
   // Determinar qué sección mostrar basado en la ruta
   const getCurrentSection = () => {
@@ -54,6 +55,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
   // Cargar datos al montar el componente
   useEffect(() => {
     loadData();
+    loadTemaActual();
   }, []);
 
   // Abrir modal de crear administrador
@@ -120,6 +122,45 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
       }
     } catch (err) {
       console.error('❌ Error actualizando colores:', err);
+    }
+  };
+
+  // Cargar tema actual del sistema
+  const loadTemaActual = async () => {
+    try {
+      const response = await api.getTemaActual();
+      if (response.success && response.data) {
+        setTemaActual(response.data.tema || 'claro');
+      }
+    } catch (err) {
+      console.error('Error cargando tema actual:', err);
+      setTemaActual('claro'); // Tema por defecto
+    }
+  };
+
+  // Actualizar tema del sistema
+  const handleUpdateTema = async (tema: string) => {
+    try {
+      console.log('🎨 Actualizando tema a:', tema);
+      
+      const result = await api.actualizarTema(tema);
+      
+      if (result.success) {
+        console.log('✅ Tema actualizado exitosamente');
+        setTemaActual(tema);
+        
+        // Recargar colores del sistema para aplicar el nuevo tema
+        await loadSystemConfiguration();
+        
+        // Mostrar mensaje de éxito
+        alert(`Tema ${tema === 'claro' ? 'Claro' : 'Oscuro'} aplicado exitosamente`);
+      } else {
+        console.error('❌ Error actualizando tema:', result.error);
+        alert('Error al actualizar el tema');
+      }
+    } catch (err) {
+      console.error('❌ Error actualizando tema:', err);
+      alert('Error al actualizar el tema');
     }
   };
 
@@ -286,182 +327,83 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ userRole }) =
       {currentSection === 'configuraciones' && (
         <div>
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Configuración de Colores del Sistema</h1>
-            <p className="text-gray-600">Personaliza la apariencia del sistema</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Configuración de Tema del Sistema</h1>
+            <p className="text-gray-600">Selecciona el tema de apariencia para todo el sistema</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Configuraciones de colores */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Colores Principales</h2>
+          <div className="max-w-4xl mx-auto">
+            {/* Selección de tema */}
+            <div className="bg-white rounded-lg shadow-sm border p-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 text-center">Seleccionar Tema</h2>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color Primario</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={configuraciones.apariencia?.colorPrimario || colors.colorPrimario}
-                      onChange={(e) => {
-                        const newConfigs = { ...configuraciones };
-                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
-                        newConfigs.apariencia.colorPrimario = e.target.value;
-                        setConfiguraciones(newConfigs);
-                      }}
-                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
-                    />
-                    <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorPrimario || colors.colorPrimario}
-                    </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Tema Claro */}
+                <div className="border-2 border-gray-200 rounded-lg p-6 hover:border-blue-300 transition-colors cursor-pointer"
+                     onClick={() => handleUpdateTema('claro')}>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-white border-2 border-gray-300 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                      <i className="fas fa-sun text-2xl text-yellow-500"></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Tema Claro</h3>
+                    <p className="text-sm text-gray-600 mb-4">Interfaz limpia y moderna con fondo blanco</p>
+                    
+                    {/* Vista previa del tema claro */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4 text-left">
+                      <div className="bg-blue-500 text-white px-3 py-1 rounded text-xs font-medium mb-2 inline-block">
+                        Botón
+                      </div>
+                      <div className="bg-gray-100 rounded p-2 mb-2">
+                        <div className="h-2 bg-gray-300 rounded mb-1"></div>
+                        <div className="h-2 bg-gray-300 rounded w-3/4"></div>
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Contenido de ejemplo
+                      </div>
+                    </div>
+                    
+                    <button className="mt-4 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                      Aplicar Tema Claro
+                    </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color Secundario</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={configuraciones.apariencia?.colorSecundario || colors.colorSecundario}
-                      onChange={(e) => {
-                        const newConfigs = { ...configuraciones };
-                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
-                        newConfigs.apariencia.colorSecundario = e.target.value;
-                        setConfiguraciones(newConfigs);
-                      }}
-                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
-                    />
-                    <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorSecundario || colors.colorSecundario}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Fondo</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={configuraciones.apariencia?.colorFondo || colors.colorFondo}
-                      onChange={(e) => {
-                        const newConfigs = { ...configuraciones };
-                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
-                        newConfigs.apariencia.colorFondo = e.target.value;
-                        setConfiguraciones(newConfigs);
-                      }}
-                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
-                    />
-                    <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorFondo || colors.colorFondo}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Contenedores</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={configuraciones.apariencia?.colorContenedor || colors.colorContenedor || '#ffffff'}
-                      onChange={(e) => {
-                        const newConfigs = { ...configuraciones };
-                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
-                        newConfigs.apariencia.colorContenedor = e.target.value;
-                        setConfiguraciones(newConfigs);
-                      }}
-                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
-                    />
-                    <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorContenedor || colors.colorContenedor || '#ffffff'}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Contenedores Secundarios</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={configuraciones.apariencia?.colorContenedorSecundario || colors.colorContenedorSecundario || '#f8f9fa'}
-                      onChange={(e) => {
-                        const newConfigs = { ...configuraciones };
-                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
-                        newConfigs.apariencia.colorContenedorSecundario = e.target.value;
-                        setConfiguraciones(newConfigs);
-                      }}
-                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
-                    />
-                    <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorContenedorSecundario || colors.colorContenedorSecundario || '#f8f9fa'}
-                    </span>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color de Texto</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={configuraciones.apariencia?.colorTexto || colors.colorTexto || '#000000'}
-                      onChange={(e) => {
-                        const newConfigs = { ...configuraciones };
-                        if (!newConfigs.apariencia) newConfigs.apariencia = {};
-                        newConfigs.apariencia.colorTexto = e.target.value;
-                        setConfiguraciones(newConfigs);
-                      }}
-                      className="w-12 h-12 border border-gray-300 rounded cursor-pointer"
-                    />
-                    <span className="font-mono text-sm text-gray-600">
-                      {configuraciones.apariencia?.colorTexto || colors.colorTexto || '#000000'}
-                    </span>
+                {/* Tema Oscuro */}
+                <div className="border-2 border-gray-200 rounded-lg p-6 hover:border-blue-300 transition-colors cursor-pointer"
+                     onClick={() => handleUpdateTema('oscuro')}>
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-gray-800 border-2 border-gray-600 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                      <i className="fas fa-moon text-2xl text-blue-400"></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Tema Oscuro</h3>
+                    <p className="text-sm text-gray-600 mb-4">Interfaz elegante con fondo oscuro para reducir fatiga visual</p>
+                    
+                    {/* Vista previa del tema oscuro */}
+                    <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 text-left">
+                      <div className="bg-blue-400 text-gray-900 px-3 py-1 rounded text-xs font-medium mb-2 inline-block">
+                        Botón
+                      </div>
+                      <div className="bg-gray-700 rounded p-2 mb-2">
+                        <div className="h-2 bg-gray-500 rounded mb-1"></div>
+                        <div className="h-2 bg-gray-500 rounded w-3/4"></div>
+                      </div>
+                      <div className="text-xs text-gray-300">
+                        Contenido de ejemplo
+                      </div>
+                    </div>
+                    
+                    <button className="mt-4 w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors">
+                      Aplicar Tema Oscuro
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <button 
-                  onClick={handleUpdateColors}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                >
-                  <i className="fas fa-save"></i>
-                  Guardar Colores
-                </button>
-              </div>
-            </div>
-
-            {/* Vista previa */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Vista Previa</h3>
-              <div className="space-y-4">
-                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.colorFondo }}>
-                  <h4 className="font-semibold" style={{ color: colors.colorPrimario }}>
-                    Texto Primario
-                  </h4>
-                  <p className="text-sm" style={{ color: colors.colorSecundario }}>
-                    Texto Secundario
-                  </p>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button 
-                    className="px-4 py-2 rounded text-white font-medium"
-                    style={{ backgroundColor: colors.colorPrimario }}
-                  >
-                    Botón Primario
-                  </button>
-                  <button 
-                    className="px-4 py-2 rounded text-white font-medium"
-                    style={{ backgroundColor: colors.colorSecundario }}
-                  >
-                    Botón Secundario
-                  </button>
-                </div>
-                
-                <div className="text-xs text-gray-500">
-                  <p>Primario: {colors.colorPrimario}</p>
-                  <p>Secundario: {colors.colorSecundario}</p>
-                  <p>Fondo: {colors.colorFondo}</p>
-                  <p>Texto: {colors.colorTexto || '#000000'}</p>
-                </div>
+              {/* Estado actual */}
+              <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-900 mb-2">Estado Actual</h4>
+                <p className="text-sm text-gray-600">
+                  Tema actual: <span className="font-medium">{temaActual || 'claro'}</span>
+                </p>
               </div>
             </div>
           </div>

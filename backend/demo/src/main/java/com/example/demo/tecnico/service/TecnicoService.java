@@ -648,6 +648,7 @@ public class TecnicoService {
         response.setCategoria(ticket.getCategory() != null ? ticket.getCategory().getName() : ticket.getCategoryString());
         response.setCreadorNombre(ticket.getCreator().getFullName());
         response.setCreadorEmail(ticket.getCreator().getEmail());
+        response.setCreadorId(ticket.getCreator().getId());
         response.setFechaCreacion(ticket.getCreatedAt());
         response.setFechaActualizacion(ticket.getUpdatedAt());
         response.setArchivoAdjunto(ticket.getAttachedFile());

@@ -2,6 +2,7 @@ package com.example.demo.superadmin.controller;
 
 import com.example.demo.superadmin.dto.request.ConfiguracionRequestDTO;
 import com.example.demo.superadmin.dto.request.ColoresRequestDTO;
+import com.example.demo.superadmin.dto.request.TemaRequestDTO;
 import com.example.demo.superadmin.dto.response.ConfiguracionResponseDTO;
 import com.example.demo.superadmin.service.ConfiguracionService;
 import com.example.demo.superadmin.service.SuperAdminService;
@@ -192,6 +193,41 @@ public class SuperAdminController {
             log.error("Error actualizando colores", e);
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("Error al actualizar colores: " + e.getMessage())
+            );
+        }
+    }
+    
+    /**
+     * Obtener tema actual del sistema (público para todos los roles)
+     * GET /api/superadmin/configuraciones/tema
+     */
+    @GetMapping("/configuraciones/tema")
+    public ResponseEntity<?> obtenerTemaActual() {
+        try {
+            log.info("Obteniendo tema actual del sistema");
+            String tema = configuracionService.obtenerTemaActual();
+            return ResponseEntity.ok(ApiResponse.success("Tema obtenido exitosamente", Map.of("tema", tema)));
+        } catch (Exception e) {
+            log.error("Error obteniendo tema del sistema", e);
+            return ResponseEntity.badRequest().body(ApiResponse.error("Error obteniendo tema del sistema: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Actualizar tema del sistema
+     * PUT /api/superadmin/configuraciones/tema
+     */
+    @PutMapping("/configuraciones/tema")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    public ResponseEntity<?> actualizarTema(@RequestBody TemaRequestDTO request) {
+        try {
+            log.info("Actualizando tema del sistema a: {}", request.getTema());
+            configuracionService.actualizarTema(request.getTema());
+            return ResponseEntity.ok(ApiResponse.success("Tema actualizado exitosamente"));
+        } catch (Exception e) {
+            log.error("Error actualizando tema", e);
+            return ResponseEntity.badRequest().body(
+                ApiResponse.error("Error al actualizar tema: " + e.getMessage())
             );
         }
     }

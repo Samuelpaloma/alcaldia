@@ -26,6 +26,8 @@ import SecurityService from '../services/SecurityService';
 import NotificacionesModal from './components/NotificacionesModal';
 import PreferenciasNotificacionesModal from './components/PreferenciasNotificacionesModal';
 import LanguageSelector from '../components/LanguageSelector';
+import NotificationToast from '../components/NotificationToast';
+import { useRealtimeNotifications } from '../hooks/useRealtimeNotifications';
 import { useFocusEffect } from '@react-navigation/native';
 import { tecnicoAPI, authAPI, evidenciasAPI, ticketsAPI, Ticket as APITicket, DashboardData, Evidence, API_CONFIG } from '../config/api';
 import { useTicketTextProcessor } from '../utils/textProcessor';
@@ -93,6 +95,15 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
     totalEvidencias: 0,
     totalNotificaciones: 0
   });
+
+  // Hook para notificaciones en tiempo real
+  const { 
+    showToast, 
+    toastMessage, 
+    unreadCount, 
+    hideToast, 
+    refreshNotifications 
+  } = useRealtimeNotifications();
 
   // Estados para modales (solo sidebar)
   const [notificacionesVisible, setNotificacionesVisible] = useState(false);
@@ -1378,6 +1389,18 @@ export default function TecnicoDashboard({ onLogout }: TecnicoDashboardProps) {
         <FinalizarModal />
         <VerEvidenciasModal />
         <SeguridadModal />
+        
+        {/* Toast de notificaciones en tiempo real */}
+        <NotificationToast
+          visible={showToast}
+          message={toastMessage}
+          onPress={() => {
+            hideToast();
+            setNotificacionesVisible(true);
+          }}
+          onClose={hideToast}
+          autoHideDuration={5000}
+        />
         
         {/* Sidebar */}
         {sidebarVisible && (

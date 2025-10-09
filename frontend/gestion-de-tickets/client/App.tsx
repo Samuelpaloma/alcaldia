@@ -3,18 +3,12 @@ import "./App.css";
 
 import { Toaster } from "@/components/ui/toaster";
 import { GlobalSystemProvider, GlobalSystemStyles } from "./components/GlobalSystemProvider";
-import GlobalColorApplier from "./components/GlobalColorApplier";
-import ColorPersistenceManager from "./components/ColorPersistenceManager";
-import BackgroundColorForcer from "./components/BackgroundColorForcer";
 import SimpleColorApplier from "./components/SimpleColorApplier";
-import ColorDebugger from "./components/ColorDebugger";
-import ColorApplicationDebugger from "./components/ColorApplicationDebugger";
-import ContainerColorForcer from "./components/ContainerColorForcer";
-import AggressiveColorForcer from "./components/AggressiveColorForcer";
-import PreloadColorForcer from "./components/PreloadColorForcer";
-import ColorReset from "./components/ColorReset";
 import "./global-colors.css";
-import "./aggressive-colors.css";
+import "./admin-all-modules-transparent.css";
+import "./modal-styles.css";
+import "./fix-shadcn-inputs.css";
+import "./dark-theme-aggressive.css";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -89,16 +83,7 @@ const App = () => (
     <TooltipProvider>
       <GlobalSystemProvider>
         <GlobalSystemStyles />
-        <ColorReset />
-        <PreloadColorForcer />
-        <GlobalColorApplier />
-        <ColorPersistenceManager />
-        <BackgroundColorForcer />
         <SimpleColorApplier />
-        <ContainerColorForcer />
-        <AggressiveColorForcer />
-        <ColorDebugger />
-        <ColorApplicationDebugger />
         <Toaster />
         <Sonner />
         <I18nProvider>

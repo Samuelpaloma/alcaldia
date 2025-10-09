@@ -185,6 +185,7 @@
       "ticket_rejected_message": "Ticket #{{ticketNumber}} that you resolved was rejected by the client. New intervention is required.",
       "new_ticket": "New ticket assigned",
     "ticket_updated": "Ticket updated",
+    "tap_to_view": "Tap to view details",
     "ticket_closed": "Ticket closed",
     "ticket_escalated": "Ticket escalated",
     "new_comment": "New comment added",
