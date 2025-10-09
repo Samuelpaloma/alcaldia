@@ -842,12 +842,12 @@ export default function TicketTrackingScreen() {
         console.log('✅ [VALIDACIÓN] Evidencias suficientes para resolver');
       }
       
-      // SOLUCIÓN DIRECTA: Siempre usar acceptTicket para EN_PROCESO
-      if (nuevoEstado === 'EN_PROCESO') {
-        console.log('🚀 [SOLUCIÓN DIRECTA] Usando acceptTicket para EN_PROCESO');
+      // Lógica correcta: usar acceptTicket solo para PENDIENTE, changeTicketState para otros
+      if (nuevoEstado === 'EN_PROCESO' && ticketInfo?.estado === 'PENDIENTE') {
+        console.log('🚀 [CAMBIO ESTADO] Usando acceptTicket para PENDIENTE -> EN_PROCESO');
         await tecnicoAPI.acceptTicket(ticketId);
       } else {
-        console.log('🔄 [SOLUCIÓN DIRECTA] Usando changeTicketState para otros estados');
+        console.log('🔄 [CAMBIO ESTADO] Usando changeTicketState para otros cambios');
         await tecnicoAPI.changeTicketState(ticketId, nuevoEstado, `Estado cambiado a ${nuevoEstado}`);
       }
       
