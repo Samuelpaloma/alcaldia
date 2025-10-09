@@ -796,6 +796,23 @@ export default function TicketTrackingScreen() {
       console.log('🔄 [CAMBIO ESTADO] Estado anterior:', ticketInfo?.estado);
       console.log('🔄 [CAMBIO ESTADO] Estado nuevo:', nuevoEstado);
       
+      // Verificar token de autorización
+      const token = await AsyncStorage.getItem('authToken');
+      console.log('🔑 [AUTH] Token disponible:', !!token);
+      console.log('🔑 [AUTH] Token preview:', token ? token.substring(0, 20) + '...' : 'null');
+      
+      // Información detallada del ticket para debug
+      console.log('🎫 [TICKET DEBUG] Información completa del ticket:', {
+        id: ticketInfo?.id,
+        estado: ticketInfo?.estado,
+        tecnicoAsignado: ticketInfo?.tecnicoAsignado,
+        tecnicoNombre: ticketInfo?.tecnicoNombre,
+        tecnicoEmail: ticketInfo?.tecnicoEmail,
+        puedeCambiarEstado: ticketInfo?.puedeCambiarEstado,
+        esTecnicoEscalado: ticketInfo?.esTecnicoEscalado,
+        rolTecnico: ticketInfo?.rolTecnico
+      });
+      
       // Validar que no se pueda resolver sin evidencias
       if (nuevoEstado === 'RESUELTO') {
         // Recargar evidencias antes de validar
@@ -825,7 +842,14 @@ export default function TicketTrackingScreen() {
         console.log('✅ [VALIDACIÓN] Evidencias suficientes para resolver');
       }
       
-      await tecnicoAPI.changeTicketState(ticketId, nuevoEstado, `Estado cambiado a ${nuevoEstado}`);
+      // SOLUCIÓN DIRECTA: Siempre usar acceptTicket para EN_PROCESO
+      if (nuevoEstado === 'EN_PROCESO') {
+        console.log('🚀 [SOLUCIÓN DIRECTA] Usando acceptTicket para EN_PROCESO');
+        await tecnicoAPI.acceptTicket(ticketId);
+      } else {
+        console.log('🔄 [SOLUCIÓN DIRECTA] Usando changeTicketState para otros estados');
+        await tecnicoAPI.changeTicketState(ticketId, nuevoEstado, `Estado cambiado a ${nuevoEstado}`);
+      }
       
       console.log('✅ [CAMBIO ESTADO] Estado cambiado exitosamente');
       Alert.alert('✅ Éxito', `El ticket ha sido marcado como ${nuevoEstado}`);
@@ -964,7 +988,23 @@ export default function TicketTrackingScreen() {
             )}
             
             {/* Estado ASIGNADO - Primer paso: Iniciar trabajo */}
-            {ticketInfo.estado === 'ASIGNADO' && ticketInfo.puedeCambiarEstado && (
+            {(() => {
+              console.log('🔍 [DEBUG] Verificando botón ASIGNADO:', {
+                estado: ticketInfo.estado,
+                puedeCambiarEstado: ticketInfo.puedeCambiarEstado,
+                rolTecnico: ticketInfo.rolTecnico,
+                esTecnicoEscalado: ticketInfo.esTecnicoEscalado
+              });
+              const condicion1 = ticketInfo.estado === 'ASIGNADO';
+              const condicion2 = ticketInfo.puedeCambiarEstado;
+              const resultado = condicion1 && condicion2;
+              console.log('🔍 [DEBUG] Condiciones ASIGNADO:', {
+                condicion1,
+                condicion2,
+                resultado
+              });
+              return resultado;
+            })() && (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.startButton]}
                 onPress={() => {

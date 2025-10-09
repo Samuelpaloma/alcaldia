@@ -16,6 +16,7 @@ import com.example.demo.usuario.model.Usuario;
 import com.example.demo.usuario.repository.UsuarioRepository;
 import com.example.demo.notificacion.service.NotificacionAutomaticaService;
 import com.example.demo.notificacion.service.NotificacionServiceSimple;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import com.example.demo.ticket.service.ComentarioService;
 import com.example.demo.ticket.dto.response.ComentarioResponseDTO;
 import com.example.demo.asignacion.model.AsignacionTicket;
@@ -28,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +50,7 @@ public class TecnicoService {
     private final NotificacionAutomaticaService notificacionAutomaticaService;
     private final NotificacionServiceSimple notificacionServiceSimple;
     private final ComentarioService comentarioService;
+    private final SimpMessagingTemplate messagingTemplate;
     
     /**
      * Obtener tickets asignados a un técnico
@@ -203,34 +207,73 @@ public class TecnicoService {
             .orElseThrow(() -> new RuntimeException("Técnico no encontrado"));
         log.info("✅ [CAMBIO ESTADO] Técnico encontrado - ID: {}, Nombre: {}", tecnico.getId(), tecnico.getFullName());
         
-        // 3. Verificar que el ticket esté actualmente asignado al técnico mediante asignación activa
-        log.info("🔍 [CAMBIO ESTADO] Paso 3: Verificando asignación activa...");
-        Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository.findByTicketIdAndActivaTrue(request.getTicketId());
+        // 3. VERIFICACIÓN AGRESIVA: Verificar asignación directa PRIMERO (SOLUCIÓN INMEDIATA)
+        log.info("🔍 [CAMBIO ESTADO] Paso 3: Verificación agresiva de asignación...");
+        boolean tienePermisos = false;
         
-        if (asignacionActiva.isEmpty()) {
-            log.error("❌ [CAMBIO ESTADO] No hay asignación activa para el ticket {}", request.getTicketId());
-            throw new RuntimeException("Este ticket no está asignado actualmente o ha sido completado.");
-        }
-        
-        log.info("✅ [CAMBIO ESTADO] Asignación activa encontrada - Técnico asignado ID: {}", asignacionActiva.get().getTecnicoId());
-        
-        if (!asignacionActiva.get().getTecnicoId().equals(tecnico.getId())) {
-            log.error("❌ [CAMBIO ESTADO] El técnico {} no coincide con el asignado {}", 
-                tecnico.getId(), asignacionActiva.get().getTecnicoId());
+        // PRIORIDAD 1: Verificar asignación directa en tickets (para tickets problemáticos)
+        if (ticket.getAssignedTechnician() != null && ticket.getAssignedTechnician().getId().equals(tecnico.getId())) {
+            tienePermisos = true;
+            log.info("✅ [CAMBIO ESTADO] AUTORIZADO - Técnico asignado directamente en tabla tickets");
             
-            String tipoOperacion = asignacionActiva.get().getTipoOperacion();
-            String mensaje = "Este ticket fue ";
-            
-            if ("ESCALAMIENTO".equals(tipoOperacion)) {
-                mensaje += "escalado a otro técnico especializado. Ya no puedes modificarlo.";
-            } else if ("REASIGNAR".equals(tipoOperacion)) {
-                mensaje += "reasignado a otro técnico. Ya no puedes modificarlo.";
-            } else {
-                mensaje += "asignado a otro técnico. Solo el técnico actualmente asignado puede cambiar su estado.";
+            // Crear asignación en ticket_assignments si no existe
+            Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository.findByTicketIdAndActivaTrue(request.getTicketId());
+            if (asignacionActiva.isEmpty()) {
+                log.info("🔧 [CAMBIO ESTADO] Creando registro faltante en ticket_assignments...");
+                AsignacionTicket nuevaAsignacion = new AsignacionTicket();
+                nuevaAsignacion.setTicketId(request.getTicketId());
+                nuevaAsignacion.setTecnicoId(tecnico.getId());
+                nuevaAsignacion.setFechaAsignacion(LocalDateTime.now());
+                nuevaAsignacion.setActiva(true);
+                nuevaAsignacion.setTipoOperacion("ASIGNACION_AUTOMATICA");
+                nuevaAsignacion.setComentario("Asignación creada automáticamente");
+                asignacionTicketRepository.save(nuevaAsignacion);
+                log.info("✅ [CAMBIO ESTADO] Registro creado exitosamente");
             }
             
-            throw new RuntimeException(mensaje);
+            // Actualizar email si está NULL
+            if (ticket.getAssignedTechnicianEmail() == null) {
+                log.info("🔧 [CAMBIO ESTADO] Actualizando email NULL...");
+                ticket.setAssignedTechnicianEmail(tecnico.getEmail());
+                ticketRepository.save(ticket);
+                log.info("✅ [CAMBIO ESTADO] Email actualizado");
+            }
+        } else {
+            // PRIORIDAD 2: Verificar asignaciones activas
+            log.info("🔍 [CAMBIO ESTADO] No hay asignación directa, verificando asignaciones activas...");
+            Optional<AsignacionTicket> asignacionActiva = asignacionTicketRepository.findByTicketIdAndActivaTrue(request.getTicketId());
+            
+            if (asignacionActiva.isPresent()) {
+                // Verificar asignación activa en ticket_assignments
+                log.info("✅ [CAMBIO ESTADO] Asignación activa encontrada - Técnico asignado ID: {}", asignacionActiva.get().getTecnicoId());
+                
+                if (asignacionActiva.get().getTecnicoId().equals(tecnico.getId())) {
+                    tienePermisos = true;
+                    log.info("✅ [CAMBIO ESTADO] Técnico autorizado mediante asignación activa");
+                } else {
+                    log.error("❌ [CAMBIO ESTADO] El técnico {} no coincide con el asignado {}", 
+                        tecnico.getId(), asignacionActiva.get().getTecnicoId());
+                    
+                    String tipoOperacion = asignacionActiva.get().getTipoOperacion();
+                    String mensaje = "Este ticket fue ";
+                    
+                    if ("ESCALAMIENTO".equals(tipoOperacion)) {
+                        mensaje += "escalado a otro técnico especializado. Ya no puedes modificarlo.";
+                    } else if ("REASIGNAR".equals(tipoOperacion)) {
+                        mensaje += "reasignado a otro técnico. Ya no puedes modificarlo.";
+                    } else {
+                        mensaje += "asignado a otro técnico. Solo el técnico actualmente asignado puede cambiar su estado.";
+                    }
+                    
+                    throw new RuntimeException(mensaje);
+                }
+            } else {
+                log.error("❌ [CAMBIO ESTADO] No hay asignación activa ni directa para el técnico {} en el ticket {}", 
+                    tecnico.getId(), request.getTicketId());
+                throw new RuntimeException("Este ticket no está asignado actualmente o ha sido completado.");
+            }
         }
+        
         
         log.info("✅ [CAMBIO ESTADO] Verificación de permisos exitosa");
         
@@ -274,12 +317,30 @@ public class TecnicoService {
         HistorialEstadoTicket historialGuardado = historialRepository.save(historial);
         log.info("✅ [CAMBIO ESTADO] Historial guardado exitosamente");
         
-        // 7. Enviar notificaciones (esto se hace automáticamente por los listeners)
-        log.info("🔔 [CAMBIO ESTADO] Paso 7: Las notificaciones se enviarán automáticamente");
-        log.info("🔔 [CAMBIO ESTADO] Notificando cambio de estado a:");
-        log.info("   - Cliente del ticket");
-        log.info("   - Administradores");
-        log.info("   - Técnico asignado");
+        // 7. Enviar notificaciones WebSocket para actualizar el frontend
+        log.info("🔔 [CAMBIO ESTADO] Paso 7: Enviando notificaciones WebSocket...");
+        try {
+            // Enviar notificación WebSocket para actualizar el panel de administración
+            Map<String, Object> updateMessage = new HashMap<>();
+            updateMessage.put("type", "TICKET_UPDATED");
+            updateMessage.put("ticketId", ticket.getId());
+            updateMessage.put("updates", Map.of(
+                "estado", estadoNuevo,
+                "updatedAt", LocalDateTime.now().toString()
+            ));
+            
+            // Enviar por WebSocket (esto debería actualizar el frontend automáticamente)
+            log.info("📡 [CAMBIO ESTADO] Enviando actualización WebSocket para ticket {}", ticket.getId());
+            messagingTemplate.convertAndSend("/topic/notifications", updateMessage);
+            log.info("✅ [CAMBIO ESTADO] Notificación WebSocket enviada exitosamente");
+            
+            log.info("🔔 [CAMBIO ESTADO] Notificando cambio de estado a:");
+            log.info("   - Cliente del ticket");
+            log.info("   - Administradores");
+            log.info("   - Técnico asignado");
+        } catch (Exception e) {
+            log.error("❌ [CAMBIO ESTADO] Error enviando notificación WebSocket: {}", e.getMessage());
+        }
         
         log.info("✅ [CAMBIO ESTADO] ===== CAMBIO DE ESTADO COMPLETADO =====");
         log.info("✅ [CAMBIO ESTADO] Ticket {} - Estado actualizado: {} → {}", 

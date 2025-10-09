@@ -622,19 +622,31 @@ export const tecnicoAPI = {
   // Cambiar estado de ticket
   async changeTicketState(ticketId: number, nuevoEstado: string, comentario?: string): Promise<ApiResponse> {
     const headers = await getAuthHeaders();
+    
+    const requestBody = {
+      ticketId,
+      nuevoEstado,
+      comentario
+    };
+    
+    console.log('🔄 [API] ===== ENVIANDO CAMBIO DE ESTADO =====');
+    console.log('🔄 [API] URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.CHANGE_TICKET_STATE}`);
+    console.log('🔄 [API] Headers:', headers);
+    console.log('🔄 [API] Request Body:', requestBody);
+    
     const response = await makeRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.TECNICO.CHANGE_TICKET_STATE}`, {
       method: 'PUT',
       headers,
-      body: JSON.stringify({
-        ticketId,
-        nuevoEstado,
-        comentario
-      })
+      body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
     
+    console.log('🔄 [API] Response Status:', response.status);
+    console.log('🔄 [API] Response Data:', data);
+    
     if (!response.ok) {
+      console.error('❌ [API] Error response:', data);
       throw new Error(data.message || 'Error cambiando estado del ticket');
     }
 

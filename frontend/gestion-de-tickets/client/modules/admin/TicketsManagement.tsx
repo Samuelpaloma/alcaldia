@@ -19,6 +19,7 @@ import {
   Plus, 
   Users, 
   Clock, 
+  Play,
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -1265,6 +1266,7 @@ export default function TicketsManagement() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'ASIGNADO': { color: 'bg-blue-600 text-white', icon: Users, label: t('tickets.status.ASIGNADO') },
+      'EN_PROCESO': { color: 'bg-orange-600 text-white', icon: Play, label: t('tickets.status.EN_PROCESO') },
       'ESCALADO': { color: 'bg-red-600 text-white', icon: ArrowUp, label: t('tickets.status.ESCALADO') },
       'PENDIENTE': { color: 'bg-yellow-600 text-white', icon: Clock, label: t('tickets.status.PENDIENTE') },
       'RESUELTO': { color: 'bg-green-600 text-white', icon: CheckCircle, label: t('tickets.status.resolved') },

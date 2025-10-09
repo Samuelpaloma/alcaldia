@@ -377,6 +377,7 @@
   "tickets.status.resolved": "Resolved",
   "tickets.status.closed": "Closed",
   "tickets.status.ASIGNADO": "ASSIGNED",
+  "tickets.status.EN_PROCESO": "IN PROCESS",
   "tickets.status.ESCALADO": "ESCALATED",
   "tickets.status.PENDIENTE": "PENDING",
   "tickets.status.EN_EJECUCION": "IN PROGRESS",

@@ -49,7 +49,7 @@ const Reports: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Estados para el nuevo sistema de reportes por período
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('daily');
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<string>('');
@@ -121,17 +121,46 @@ const Reports: React.FC = () => {
   useEffect(() => {
     loadReportes();
     loadAllTickets();
-    loadSavedReports();
+    loadSavedReports(); // Ahora carga desde la base de datos
   }, []);
 
-  // Función para cargar reportes guardados del localStorage
-  const loadSavedReports = () => {
+  // Aplicar filtros automáticamente cuando cambien
+  useEffect(() => {
+    if (filtros.busqueda || filtros.tipo) {
+      aplicarFiltros();
+    } else {
+      loadSavedReports();
+    }
+  }, [filtros.busqueda, filtros.tipo]);
+
+  // Configurar fecha actual por defecto
+  useEffect(() => {
+    console.log('🚀 [INIT] Configurando fecha por defecto...');
+    const today = new Date();
+    console.log('🚀 [INIT] Fecha actual objeto:', today);
+    // Usar fecha local para evitar problemas de zona horaria
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    console.log('🚀 [INIT] Fecha formateada:', formattedDate);
+    setSelectedDate(formattedDate);
+    console.log('📅 [REPORTS] Fecha actual establecida (local):', formattedDate);
+    console.log('📅 [REPORTS] Fecha actual objeto:', today);
+  }, []);
+
+  // Función para cargar reportes guardados desde la base de datos
+  const loadSavedReports = async () => {
     try {
-      const savedReportsData = localStorage.getItem('savedReports');
-      if (savedReportsData) {
-        const reports = JSON.parse(savedReportsData);
-        setSavedReports(reports);
-        console.log('🔍 [REPORTS-FRONTEND] Reportes guardados cargados:', reports.length);
+      console.log('🔍 [REPORTS-FRONTEND] Cargando reportes desde la base de datos...');
+      const response = await api.obtenerMisReportes();
+      
+      if (response.success) {
+        setSavedReports(response.data || []);
+        console.log('🔍 [REPORTS-FRONTEND] Reportes guardados cargados desde BD:', response.data?.length || 0);
+      } else {
+        console.error('🔍 [REPORTS-FRONTEND] Error cargando reportes desde BD:', response.message);
+        setSavedReports([]);
       }
     } catch (error) {
       console.error('🔍 [REPORTS-FRONTEND] Error cargando reportes guardados:', error);
@@ -139,13 +168,55 @@ const Reports: React.FC = () => {
     }
   };
 
-  // Función para guardar reportes en localStorage
-  const saveReportsToLocalStorage = (reports: any[]) => {
+  // Función para aplicar filtros a los reportes
+  const aplicarFiltros = async () => {
     try {
-      localStorage.setItem('savedReports', JSON.stringify(reports));
-      console.log('🔍 [REPORTS-FRONTEND] Reportes guardados en localStorage:', reports.length);
+      console.log('🔍 [REPORTS-FRONTEND] Aplicando filtros:', filtros);
+      const response = await api.obtenerMisReportes(filtros.tipo, filtros.busqueda);
+      
+      if (response.success) {
+        setSavedReports(response.data || []);
+        console.log('🔍 [REPORTS-FRONTEND] Reportes filtrados cargados:', response.data?.length || 0);
+      } else {
+        console.error('🔍 [REPORTS-FRONTEND] Error aplicando filtros:', response.message);
+      }
     } catch (error) {
-      console.error('🔍 [REPORTS-FRONTEND] Error guardando reportes en localStorage:', error);
+      console.error('🔍 [REPORTS-FRONTEND] Error aplicando filtros:', error);
+    }
+  };
+
+  // Función para guardar reporte en la base de datos
+  const saveReportToDatabase = async (reportData: any) => {
+    try {
+      console.log('🔍 [REPORTS-FRONTEND] Guardando reporte en la base de datos...');
+      
+      const request = {
+        titulo: reportData.title,
+        subtitulo: reportData.subtitle,
+        tipoPeriodo: reportData.periodType,
+        valorPeriodo: reportData.periodValue,
+        nombreArchivo: reportData.fileName,
+        datosReporte: JSON.stringify(reportData.reportData),
+        estadisticas: JSON.stringify(reportData.stats),
+        categoriasTop: JSON.stringify(reportData.topCategories),
+        tecnicosTop: JSON.stringify(reportData.topTechnicians),
+        observaciones: `Reporte generado el ${new Date().toLocaleDateString()}`
+      };
+      
+      const response = await api.guardarReporteUsuario(request);
+      
+      if (response.success) {
+        console.log('🔍 [REPORTS-FRONTEND] Reporte guardado exitosamente en BD con ID:', response.data.id);
+        // Recargar la lista de reportes
+        await loadSavedReports();
+        return response.data;
+      } else {
+        console.error('🔍 [REPORTS-FRONTEND] Error guardando reporte en BD:', response.message);
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('🔍 [REPORTS-FRONTEND] Error guardando reporte en BD:', error);
+      throw error;
     }
   };
 
@@ -599,11 +670,23 @@ const Reports: React.FC = () => {
     switch (selectedPeriod) {
       case 'daily':
         if (selectedDate) {
-          const targetDate = new Date(selectedDate);
+          // Crear fecha local para evitar problemas de zona horaria
+          const [year, month, day] = selectedDate.split('-').map(Number);
+          const targetDate = new Date(year, month - 1, day);
+          console.log('📅 [REPORTS] Fecha seleccionada para filtro:', selectedDate);
+          console.log('📅 [REPORTS] Fecha objetivo (local):', targetDate);
+          console.log('📅 [REPORTS] Fecha objetivo (string):', targetDate.toDateString());
+          
           filteredTickets = ticketsToUse.filter(ticket => {
             const ticketDate = new Date(ticket.fechaCreacion);
-            return ticketDate.toDateString() === targetDate.toDateString();
+            const isMatch = ticketDate.toDateString() === targetDate.toDateString();
+            if (isMatch) {
+              console.log('📅 [REPORTS] Ticket coincidente:', ticket.id, 'Fecha:', ticketDate.toDateString());
+            }
+            return isMatch;
           });
+          
+          console.log('📅 [REPORTS] Tickets filtrados para', selectedDate + ':', filteredTickets.length);
         }
         break;
       case 'monthly':
@@ -662,10 +745,15 @@ const Reports: React.FC = () => {
     }, {});
 
     // Crear el reporte
+    console.log('🔍 [DEBUG] selectedDate antes de crear reporte:', selectedDate);
+    console.log('🔍 [DEBUG] selectedDate.split("-"):', selectedDate ? selectedDate.split('-') : 'N/A');
+    console.log('🔍 [DEBUG] selectedDate.split("-").reverse():', selectedDate ? selectedDate.split('-').reverse() : 'N/A');
+    console.log('🔍 [DEBUG] selectedDate.split("-").reverse().join("/"):', selectedDate ? selectedDate.split('-').reverse().join('/') : 'N/A');
+    
     const report = {
       title: `Reporte ${selectedPeriod === 'daily' ? 'Diario' : selectedPeriod === 'monthly' ? 'Mensual' : 'Anual'}`,
       subtitle: selectedPeriod === 'daily' ? 
-        `Análisis del ${new Date(selectedDate).toLocaleDateString()}` :
+        `Análisis del ${selectedDate.split('-').reverse().join('/')}` :
         selectedPeriod === 'monthly' ?
         `Análisis de ${new Date(selectedMonth + '-01').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}` :
         `Análisis del año ${selectedYear}`,
@@ -689,6 +777,9 @@ const Reports: React.FC = () => {
 
     setGeneratedReport(report);
     console.log('🔍 [REPORTS-FRONTEND] Reporte generado:', report);
+    console.log('📅 [REPORTS-FRONTEND] Fecha seleccionada:', selectedDate);
+    console.log('📅 [REPORTS-FRONTEND] Subtítulo del reporte:', report.subtitle);
+    console.log('📅 [REPORTS-FRONTEND] Fecha formateada para display:', selectedDate ? selectedDate.split('-').reverse().join('/') : 'N/A');
   };
 
   // Función para descargar el reporte generado
@@ -798,9 +889,8 @@ const Reports: React.FC = () => {
     const fileName = `reporte-${selectedPeriod}-${selectedDate || selectedMonth || selectedYear}-${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
 
-    // Guardar el reporte en la lista de reportes guardados
-    const savedReport = {
-      id: Date.now(), // ID único basado en timestamp
+    // Guardar el reporte en la base de datos
+    const reportDataToSave = {
       title: generatedReport.title,
       subtitle: generatedReport.subtitle,
       period: generatedReport.period,
@@ -814,14 +904,14 @@ const Reports: React.FC = () => {
       reportData: generatedReport // Guardar todos los datos del reporte
     };
 
-    // Agregar a la lista de reportes guardados
-    const newSavedReports = [savedReport, ...savedReports];
-    setSavedReports(newSavedReports);
-    
-    // Guardar en localStorage
-    saveReportsToLocalStorage(newSavedReports);
-
-    console.log('🔍 [REPORTS-FRONTEND] Reporte por período descargado y guardado:', fileName);
+    // Guardar en la base de datos
+    try {
+      await saveReportToDatabase(reportDataToSave);
+      console.log('🔍 [REPORTS-FRONTEND] Reporte por período descargado y guardado en BD:', fileName);
+    } catch (error) {
+      console.error('🔍 [REPORTS-FRONTEND] Error guardando reporte en BD, pero PDF descargado:', error);
+      // El PDF ya se descargó, solo falló el guardado en BD
+    }
   };
 
   // Función para re-descargar un reporte guardado
@@ -930,14 +1020,24 @@ const Reports: React.FC = () => {
   };
 
   // Función para eliminar un reporte guardado
-  const deleteSavedReport = (reportId: number) => {
-    const newSavedReports = savedReports.filter(report => report.id !== reportId);
-    setSavedReports(newSavedReports);
-    
-    // Actualizar localStorage
-    saveReportsToLocalStorage(newSavedReports);
-    
-    console.log('🔍 [REPORTS-FRONTEND] Reporte eliminado:', reportId);
+  const deleteSavedReport = async (reportId: number) => {
+    try {
+      console.log('🔍 [REPORTS-FRONTEND] Eliminando reporte de la base de datos:', reportId);
+      
+      const response = await api.eliminarReporteUsuario(reportId);
+      
+      if (response.success) {
+        // Recargar la lista de reportes desde la BD
+        await loadSavedReports();
+        console.log('🔍 [REPORTS-FRONTEND] Reporte eliminado exitosamente de BD:', reportId);
+      } else {
+        console.error('🔍 [REPORTS-FRONTEND] Error eliminando reporte de BD:', response.message);
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      console.error('🔍 [REPORTS-FRONTEND] Error eliminando reporte:', error);
+      throw error;
+    }
   };
 
   const getTipoIcon = (tipo: string) => {
@@ -1231,7 +1331,12 @@ const Reports: React.FC = () => {
                   <Input
                     type="date"
                     value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      console.log('📅 [REPORTS] Fecha seleccionada por el usuario:', newDate);
+                      console.log('📅 [REPORTS] Fecha como objeto Date:', new Date(newDate));
+                      setSelectedDate(newDate);
+                    }}
                   />
                 )}
                 {selectedPeriod === 'monthly' && (
@@ -1346,7 +1451,7 @@ const Reports: React.FC = () => {
                 {/* Botones de acción */}
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="text-sm text-gray-600">
-                    <p>Generado el: {new Date().toLocaleDateString()}</p>
+                    <p>Generado el: {selectedDate ? selectedDate.split('-').reverse().join('/') : new Date().toLocaleDateString()}</p>
                     <p>Período: {generatedReport.period}</p>
                   </div>
                   <div className="flex space-x-2">

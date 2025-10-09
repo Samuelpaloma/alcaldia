@@ -2713,6 +2713,82 @@ class ApiClient {
     return this.request(`/reports/tendencias?meses=${meses}`);
   }
 
+  // ==================== REPORTES DE USUARIO ====================
+
+  /**
+   * Guardar un reporte generado por el usuario
+   */
+  async guardarReporteUsuario(request: GuardarReporteUsuarioRequest): Promise<{
+    success: boolean;
+    message: string;
+    data: ReporteUsuario;
+  }> {
+    return this.request('/reports/usuario/guardar', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Obtener reportes del usuario
+   */
+  async obtenerMisReportes(tipoPeriodo?: string, busqueda?: string): Promise<{
+    success: boolean;
+    message: string;
+    data: ReporteUsuario[];
+  }> {
+    const params = new URLSearchParams();
+    if (tipoPeriodo) params.append('tipoPeriodo', tipoPeriodo);
+    if (busqueda) params.append('busqueda', busqueda);
+    
+    return this.request(`/reports/usuario/mis-reportes?${params.toString()}`);
+  }
+
+  /**
+   * Obtener un reporte específico
+   */
+  async obtenerReporteUsuario(id: number): Promise<{
+    success: boolean;
+    message: string;
+    data: ReporteUsuario;
+  }> {
+    return this.request(`/reports/usuario/${id}`);
+  }
+
+  /**
+   * Eliminar un reporte
+   */
+  async eliminarReporteUsuario(id: number): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.request(`/reports/usuario/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Obtener estadísticas de reportes del usuario
+   */
+  async obtenerEstadisticasReportesUsuario(): Promise<{
+    success: boolean;
+    message: string;
+    data: EstadisticasReportesUsuario;
+  }> {
+    return this.request('/reports/usuario/estadisticas');
+  }
+
+  /**
+   * Obtener todos los reportes (solo para administradores)
+   */
+  async obtenerTodosLosReportes(): Promise<{
+    success: boolean;
+    message: string;
+    data: ReporteUsuario[];
+  }> {
+    return this.request('/reports/usuario/todos');
+  }
+
 }
 
 // Exportar instancia única del cliente API
@@ -2766,4 +2842,47 @@ export interface TendenciaMensual {
   año: number;
   totalTickets: number;
   ticketsResueltos: number;
+}
+
+// ==================== REPORTES DE USUARIO ====================
+
+export interface ReporteUsuario {
+  id: number;
+  usuarioId: number;
+  usuarioNombre: string;
+  usuarioEmail: string;
+  titulo: string;
+  subtitulo?: string;
+  tipoPeriodo: string;
+  valorPeriodo: string;
+  nombreArchivo: string;
+  datosReporte: string;
+  estadisticas?: string;
+  categoriasTop?: string;
+  tecnicosTop?: string;
+  fechaGeneracion: string;
+  observaciones?: string;
+  activo: boolean;
+}
+
+export interface GuardarReporteUsuarioRequest {
+  titulo: string;
+  subtitulo?: string;
+  tipoPeriodo: string;
+  valorPeriodo: string;
+  nombreArchivo: string;
+  datosReporte: string;
+  estadisticas?: string;
+  categoriasTop?: string;
+  tecnicosTop?: string;
+  observaciones?: string;
+}
+
+export interface EstadisticasReportesUsuario {
+  totalReportes: number;
+  reportesDiarios: number;
+  reportesMensuales: number;
+  reportesAnuales: number;
+  usuarioNombre: string;
+  usuarioEmail: string;
 }

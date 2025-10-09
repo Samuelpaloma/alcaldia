@@ -7,6 +7,8 @@ import com.example.demo.automation.model.ReglaAutomatizacion;
 import com.example.demo.automation.repository.ReglaAutomatizacionRepository;
 import com.example.demo.notificacion.service.NotificationRoleService;
 import com.example.demo.usuario.repository.UsuarioRepository;
+import com.example.demo.asignacion.model.AsignacionTicket;
+import com.example.demo.asignacion.repository.AsignacionTicketRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class SLAAutomationService {
     private final TicketRepository ticketRepository;
     private final UsuarioRepository usuarioRepository;
     private final NotificationRoleService notificationRoleService;
+    private final AsignacionTicketRepository asignacionTicketRepository;
     
     /**
      * Procesa un ticket recién creado aplicando SLA y automatización
@@ -300,9 +303,27 @@ public class SLAAutomationService {
                         tecnico -> {
                             if (tecnico.isTecnico() && tecnico.getActive()) {
                                 System.out.println("✅ [SLA Automation] Técnico encontrado: " + tecnico.getEmail() + " (ID: " + tecnico.getId() + ")");
+                                
+                                // Actualizar ticket
                                 ticket.setAssignedTechnician(tecnico);
+                                ticket.setAssignedTechnicianEmail(tecnico.getEmail());
                                 ticket.setStatus("ASIGNADO");
                                 ticketRepository.save(ticket);
+                                
+                                // Crear asignación en ticket_assignments para mantener consistencia
+                                try {
+                                    AsignacionTicket asignacion = new AsignacionTicket();
+                                    asignacion.setTicketId(ticket.getId());
+                                    asignacion.setTecnicoId(tecnico.getId());
+                                    asignacion.setFechaAsignacion(LocalDateTime.now());
+                                    asignacion.setActiva(true);
+                                    asignacion.setTipoOperacion("ASIGNACION_AUTOMATICA");
+                                    asignacion.setComentario("Asignación automática por regla SLA");
+                                    this.asignacionTicketRepository.save(asignacion);
+                                    System.out.println("✅ [SLA Automation] Asignación creada en ticket_assignments");
+                                } catch (Exception ex) {
+                                    log.warn("Error creando asignación automática: {}", ex.getMessage());
+                                }
                                 
                                 try {
                                     if (ticket.getCreator() != null && tecnico.getId() != null) {
@@ -352,6 +373,7 @@ public class SLAAutomationService {
                     System.out.println("✅ [SLA Automation] Técnico seleccionado: " + tecnico.getEmail() + " (ID: " + tecnico.getId() + ")");
                     
                     ticket.setAssignedTechnician(tecnico);
+                    ticket.setAssignedTechnicianEmail(tecnico.getEmail());
                     ticket.setStatus("ASIGNADO");
                     ticketRepository.save(ticket);
                     

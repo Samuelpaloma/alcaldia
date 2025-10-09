@@ -44,6 +44,7 @@
   "tickets.status.resolved": "Resuelto",
   "tickets.status.closed": "Cerrado",
   "tickets.status.ASIGNADO": "ASIGNADO",
+  "tickets.status.EN_PROCESO": "EN PROCESO",
   "tickets.status.ESCALADO": "ESCALADO",
   "tickets.status.PENDIENTE": "PENDIENTE",
   "tickets.status.EN_EJECUCION": "EN EJECUCIÓN",
