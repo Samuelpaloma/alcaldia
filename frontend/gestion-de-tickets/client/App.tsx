@@ -62,6 +62,7 @@ import SatisfactionSurvey from "./modules/satisfaction_survey/SatisfactionSurvey
 import Reports from "./modules/reports/Reports";
 import TrendsAnalysis from "./modules/analytics/TrendsAnalysis";
 import UnifiedAnalytics from "./modules/analytics/UnifiedAnalytics";
+import UnifiedDashboard from "./modules/admin/UnifiedDashboard";
 
 const queryClient = new QueryClient();
 
