@@ -4,12 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NEITickets - Sistema de Gestión de Tickets</title>
-    <!-- Cache bust: 2025-01-08-15:30 -->
+    <!-- Cache bust: 2025-01-08-16:00 -->
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/NEITickets.png?v=2025-01-08" />
-    <link rel="shortcut icon" type="image/png" href="/NEITickets.png?v=2025-01-08" />
-    <link rel="apple-touch-icon" href="/NEITickets.png?v=2025-01-08" />
+    <!-- Favicon múltiples formatos -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="shortcut icon" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/NEITickets.png?v=2025-01-08-16:00" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/NEITickets.png?v=2025-01-08-16:00" />
     
     <!-- Meta tags para SEO -->
     <meta name="description" content="NEITickets - Sistema de gestión de tickets para la Alcaldía de Neiva" />
@@ -25,6 +34,32 @@
 
   <body>
     <div id="root"></div>
+
+    <!-- Script para forzar título y favicon -->
+    <script>
+      // Forzar título inmediatamente
+      document.title = 'NEITickets - Sistema de Gestión de Tickets';
+      
+      // Forzar favicon
+      const favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      favicon.type = 'image/png';
+      favicon.href = '/NEITickets.png?v=2025-01-08-16:00';
+      document.head.appendChild(favicon);
+      
+      // Prevenir que otros scripts cambien el título
+      let originalTitle = 'NEITickets - Sistema de Gestión de Tickets';
+      Object.defineProperty(document, 'title', {
+        get: function() { return originalTitle; },
+        set: function(value) { 
+          if (!value.includes('NEITickets')) {
+            originalTitle = 'NEITickets - Sistema de Gestión de Tickets';
+          } else {
+            originalTitle = value;
+          }
+        }
+      });
+    </script>
 
     <script type="module" src="/client/App.tsx"></script>
   </body>
