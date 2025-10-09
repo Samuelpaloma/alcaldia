@@ -99,6 +99,16 @@ export default function TicketsManagement() {
   const [priorityFilter, setPriorityFilter] = useState("");
   const [technicianFilter, setTechnicianFilter] = useState("");
   
+  // Debug para ver el estado inicial de los filtros
+  useEffect(() => {
+    console.log('🔧 [FILTROS-INICIALES] Estados:', {
+      priorityFilter,
+      statusFilter,
+      technicianFilter,
+      searchQuery
+    });
+  }, [priorityFilter, statusFilter, technicianFilter, searchQuery]);
+  
   // Estados para paginación con URL
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get('page') || '1');
@@ -1234,9 +1244,9 @@ export default function TicketsManagement() {
       
       const priorityMap: { [key: string]: string } = {
         'all': 'all',
-        'high': 'HIGH',
-        'medium': 'MEDIUM',
-        'low': 'LOW'
+        'high': 'high',
+        'medium': 'medium',
+        'low': 'low'
       };
       
       const matchesStatus = !statusFilter || statusFilter === 'all' || ticket.estado === statusMap[statusFilter];
@@ -1246,6 +1256,11 @@ export default function TicketsManagement() {
       // Debug para filtro por técnico
       if (technicianFilter && technicianFilter !== 'all') {
         console.log('🔍 [FILTRO-TÉCNICO] Ticket:', ticket.id, 'Técnico del ticket:', ticket.tecnicoEmail, 'Filtro:', technicianFilter, 'Coincide:', ticket.tecnicoEmail === technicianFilter);
+      }
+      
+      // Debug para filtro por prioridad
+      if (priorityFilter && priorityFilter !== 'all') {
+        console.log('🔍 [FILTRO-PRIORIDAD] Ticket:', ticket.id, 'Prioridad del ticket:', ticket.prioridad, 'Filtro:', priorityFilter, 'Mapeado:', priorityMap[priorityFilter], 'Coincide:', ticket.prioridad === priorityMap[priorityFilter]);
       }
       
       return matchesSearch && matchesStatus && matchesPriority && matchesTechnician;
@@ -1409,12 +1424,15 @@ export default function TicketsManagement() {
 
             {/* Prioridad */}
             <div className="filter-group">
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <Select value={priorityFilter} onValueChange={(value) => {
+                console.log('🎯 [PRIORIDAD-SELECT] Valor seleccionado:', value);
+                setPriorityFilter(value);
+              }}>
                 <SelectTrigger className="filter-select">
                   <SelectValue placeholder={t("filters.priority")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("filters.priority")}</SelectItem>
+                  <SelectItem value="all">{t("filters.all")}</SelectItem>
                   <SelectItem value="high">Alta</SelectItem>
                   <SelectItem value="medium">Media</SelectItem>
                   <SelectItem value="low">Baja</SelectItem>
